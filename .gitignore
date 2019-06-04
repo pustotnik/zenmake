@@ -66,4 +66,5 @@ venv.bak/
 ##################
 .lock-wafbuild
 .vscode
+*.code-workspace
 *.geany
