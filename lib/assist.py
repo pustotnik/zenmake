@@ -10,7 +10,7 @@ import sys, os
 import collections
 import shutil
 from waflib import Options, Configure, Logs
-from utils import unfoldPath
+from utils import *
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] >= 3
