@@ -34,6 +34,9 @@ Last feature exists also in CMake. I don't agree with the position of developers
 #### Scons
 Nowadays we have WAF already. Scons is already too old and slow.
 
+#### Premake
+Actually I did't try to use it. But it's not build system. It's generator for some other build systems and IDE. This is another way to build projects. I don't know how it is useful but it has status beta/alfa. I have checked some modules and it looks like something is working but something is not. And it looks like something too complex. 
+
 ## Why is it called raven?
 Why not? It's just name. Like ninja or meson.
 
