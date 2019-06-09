@@ -34,17 +34,17 @@ def main():
         sys.exit(1)
     sys.dont_write_bytecode = False
 
-    import assist
+    import assist, utils
 
     if not os.path.exists(assist.BUILDROOT):
         os.makedirs(assist.BUILDROOT)
     if assist.BUILDSYMLINK and not os.path.exists(assist.BUILDSYMLINK):
-        assist.mksymlink(assist.BUILDROOT, assist.BUILDSYMLINK)
+        utils.mksymlink(assist.BUILDROOT, assist.BUILDSYMLINK)
 
     # We regard LIB_DIR as a directory where file 'wscript' is located
-    assist.mksymlink(joinpath(LIB_DIR, 'wscript'), joinpath(assist.BUILDROOT, 'wscript'))
+    utils.mksymlink(joinpath(LIB_DIR, 'wscript'), joinpath(assist.BUILDROOT, 'wscript'))
 
-    assist.mksymlink(assist.SRCROOT, assist.SRCSYMLINK)
+    utils.mksymlink(assist.SRCROOT, assist.SRCSYMLINK)
 
     # use of Options.lockfile is not enough
     os.environ['WAFLOCK'] = '.lock-wafbuild'

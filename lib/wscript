@@ -7,28 +7,13 @@
  license: BSD, see LICENSE for more details.
 """
 
-"""
-TODO:
-1) Add support to buid any [sub]project/build task. Possible solutions:
-- Make own cmdline parsing and ignore WAF cmdline parsing
-- Use opt.add_option
-- Use some hack: preparse cmdline before WAF cmdline parsing. I can remove posional args that
-    WAF won't understand. Overriding or adding own command has no sense
-    because I can add extra args to such a command only via opt.add_option.
-2) Add support to build tests
-3) Env vars like C[XX]FLAGS will have first priority? add support to set such params via environment
-and without build type (it's useful for e.g. building distro packages)
-4) See waflib/extras/pyqt5.py
-"""
-
 import sys, os
-import shutil
-from copy import deepcopy
 
 _joinpath  = os.path.join
 _abspath   = os.path.abspath
 
 from waflib import Configure, Build, Options, Context, Logs
+from waflib.ConfigSet import ConfigSet
 
 # Avoid writing .pyc files
 sys.dont_write_bytecode = True
@@ -36,35 +21,21 @@ import buildconf
 sys.dont_write_bytecode = False
 import assist
 
-#WAF_DIR = Context.waf_dir
-
 confParser = assist.BuildConfParser(buildconf)
-
-# Execute the configuration automatically
-Configure.autoconfig = buildconf.waf.get('autoconfig', False)
-
-# WAF detects any our function as command and sometimes we can see them with --help.
-# So I decided to make such a 'namespace' to hide them.
-class tools:
-
-    @staticmethod
-    def makeTargetPath(ctx, dirName, targetName):
-        #return _joinpath(targetName)
-        return _joinpath(ctx.out_dir, dirName, targetName)
-
-################################################
-###    WAF routines
-################################################
 
 # these variables are mandatory ('/' are converted automatically)
 top = assist.BUILDROOT
-out = _joinpath(assist.BUILDROOT, 'out')
+out = assist.BUILDOUT
 
 # mostly for WAF 'dist' command
 APPNAME = buildconf.project['name']
 VERSION = buildconf.project['version']
 
 def options(opt):
+
+    # Remove incompatible options
+    opt.parser.remove_option('-o')
+    opt.parser.remove_option('-t')
 
     # TODO: add support for several builtypes
     #opt.add_option('-b', '--buildtype', action = 'append', choices = confParser.buildTypes(),
@@ -86,105 +57,117 @@ def init(ctx):
     if isinstance(Options.options.buildtype, list) and len(Options.options.buildtype) > 1:
         del Options.options.buildtype[0]
 
+    from copy import deepcopy
     assist.wafcommands = deepcopy(Options.commands)
 
     buildtype = confParser.realBuildType(Options.options.buildtype)
-    for c in (Build.BuildContext, Build.CleanContext, Build.InstallContext, Build.UninstallContext):
+    from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallContext
+    for c in (BuildContext, CleanContext, InstallContext, UninstallContext):
         class CtxClass(c):
             variant = buildtype
 
 def configure(ctx):
 
-    assist.useBuldconfInAutoconfig(ctx)
-
-    # See details here: https://gitlab.com/ita1024/waf/issues/1563
-    #ctx.env.NO_LOCK_IN_RUN = True
-
-    #TODO: think about:
-    #With NO_LOCK_IN_TOP = True this doesn't work:
-    ## ./waf/make.py configure
-    ## ./waf/make.py build
-    ## The project was not configured: run "waf configure" first!
-    #BUT this works:
-    #./waf/make.py configure build
-    # So I can use NO_LOCK_IN_TOP = True if I use 'configure' every time before 'build'
-    #ctx.env.NO_LOCK_IN_TOP = True
-
     #ctx.load('compiler_cxx')
 
-    # make independent copy of root env
-    defaultEnv = ctx.env.derive().detach()
-    buildtype = confParser.realBuildType(Options.options.buildtype)
-    compilerEnv = {}
+    #destOS = Utils.unversioned_sys_platform()
 
-    def loadCompiler(compiler):
-        if compiler not in compilerEnv:
-            ctx.setenv(compiler, env = defaultEnv)
-            ctx.load(compiler)
-            compilerEnv[compiler] = ctx.all_envs[compiler]
+    # make independent copy of root env
+    rootEnv   = assist.deepcopyEnv(ctx.env)
+    buildtype = confParser.realBuildType(Options.options.buildtype)
+    toolchainEnv = {}
+
+    def loadToolchain(toolchain):
+        if toolchain not in toolchainEnv:
+            ctx.setenv(toolchain, env = rootEnv)
+            ctx.load(toolchain)
+            toolchainEnv[toolchain] = ctx.all_envs[toolchain]
 
     # Examples of setings from environment:
     # CC=clang CXX=clang++
-    # CFLAGS=-fsomething LDFLAGS=-Wl,--linker-flag
-    if 'CXX' in os.environ:
-        loadCompiler(os.environ['CXX'])
-    if 'CC' in os.environ:
-        loadCompiler(os.environ['CC'])
+    buildByToolFromEnv = False
+    #TODO: add others
+    toolchainEnvVars = ('CC', 'CXX')
+    for var in toolchainEnvVars:
+        if var in os.environ:
+            buildByToolFromEnv = True
+            loadToolchain(os.environ[var])
+            # TODO: add loading of LINK_CC, LINK_CXX, AR, ?
+            # LINK_CC = CC, LINK_CXX = CXX ?
 
-    for compiler in confParser.compilers(buildtype):
-        loadCompiler(compiler)
+    # special mode when toolchain is set by env var
+    if buildByToolFromEnv:
+        buildtype = ''
+        # task params must not have compiler/linker flags from 'buildtypes' 
+        # TODO
+    
+    for toolchain in confParser.toolchainNames(buildtype):
+        loadToolchain(toolchain)
 
-    # switch to root env due to calls of 'loadCompiler'
+    # switch to root env due to calls of 'loadToolchain'
     ctx.setenv('')
 
-    ctx.env.alltasks = {}
+    ctx.env.alltasks = assist.loadTasksFromCache()
     tasks = confParser.tasks(buildtype)
     ctx.env.alltasks[buildtype] = tasks
 
     for taskName, taskParams in tasks.items():
         # make variant for each task: 'buildtype.taskname'
-        taskVariant = '%s.%s' % (buildtype, taskName)
+        taskVariant = assist.getTaskVariantName(buildtype, taskName)
         # store it
         taskParams['task-build-env'] = taskVariant
 
-        # set up env each type of compiler for tasks
-        parentEnv = defaultEnv
-        compiler = taskParams.get('compiler', None)
-        if compiler:
-            parentEnv = compilerEnv[compiler]
+        # set up env each type of toolchain for tasks
+        toolchain = taskParams.get('toolchain', None)
+        parentEnv = toolchainEnv.get(toolchain, rootEnv)
+        parentEnv = assist.copyEnv(parentEnv)
+
         # and switch to selected env
         ctx.setenv(taskVariant, env = parentEnv)
 
         # set variables
         assist.setTaskEnvVars(ctx.env, taskParams)
 
+        # Waf always loads all *_cache.py files in directory 'c4che' during build step. 
+        # So it loads all stored variants even though they aren't needed. And I decided 
+        # to save variants in different files and load only needed ones.
+        ctx.env.store(assist.makeCacheConfFileName(taskVariant))
+        # It's necessary to delete variant from ctx.all_envs otherwise waf will store in 'c4che'
+        ctx.setenv('')
+        del ctx.all_envs[taskVariant]
+
     #ctx.check(header_name='stdio.h', features='cxx cxxprogram', mandatory=False)
     #ctx.check(header_name='cstdio', features='cxx cxxprogram', mandatory=True)
 
     # Remove unneccesary envs
-    for compiler in compilerEnv.keys():
-        del ctx.all_envs[compiler]
+    for toolchain in toolchainEnv.keys():
+        del ctx.all_envs[toolchain]
 
-def build(ctx):
+    assist.dumpRavenCommonFile()
 
-    if ctx.variant is None:
-        ctx.fatal('No variant!')
+def build(bld):
 
-    buildtype = ctx.variant
-    if buildtype not in ctx.env.alltasks:
-        ctx.fatal("Buildtype '%s' is not found! Step 'configure' was missed?" % buildtype)
+    if bld.variant is None:
+        bld.fatal('No variant!')
+
+    buildtype = bld.variant
+    if buildtype not in bld.env.alltasks:
+        bld.fatal("Buildtype '%s' is not found! Was step 'configure' missed?" % buildtype)
 
     # Since ant_glob can traverse both source and build folders, it is a best practice
     # to call this method only from the most specific build node
-    srcDirNode = ctx.path.find_dir(assist.SRCSYMLINKNAME)
+    srcDirNode = bld.path.find_dir(assist.SRCSYMLINKNAME)
 
-    tasks = ctx.env.alltasks[buildtype]
+    tasks = bld.env.alltasks[buildtype]
     for taskName, taskParams in tasks.items():
         # task env variables are stored in separative env so it's need to switch in
-        ctx.variant = taskParams['task-build-env']
+        bld.variant = taskParams['task-build-env']
+        # load environment for this task
+        bld.all_envs[bld.variant] = ConfigSet(assist.makeCacheConfFileName(bld.variant))
+        
         kwargs = dict(
             name     = taskName,
-            target   = tools.makeTargetPath(ctx, buildtype, taskParams.get('target', '')),
+            target   = assist.makeTargetPath(bld, buildtype, taskParams.get('target', taskName)),
             features = taskParams.get('features', ''),
             lib      = taskParams.get('sys-libs', []),
             libpath  = taskParams.get('sys-lib-path', []),
@@ -201,18 +184,13 @@ def build(ctx):
                 ignorecase = src.get('ignorecase', False),
                 generator = True)
 
-        # Includes paths are given relative to the directory containing the wscript file.
-        # Providing absolute paths are best avoided as they are a source of portability problems.
-        includes = taskParams.get('includes', None)
+        includes = assist.handleTaskIncludesParam(taskParams)
         if includes:
-            if isinstance(includes, assist.string_types):
-                includes = includes.split()
-            includes = [ x if os.path.isabs(x) else _joinpath(assist.SRCSYMLINKNAME, x) for x in includes ]
             kwargs['includes'] =  includes
 
         # create build task generator
-        ctx(**kwargs)
+        bld(**kwargs)
 
     # It's neccesary to revert to origin variant otherwise WAF won't find
     # correct path at the end of building step.
-    ctx.variant = buildtype
+    bld.variant = buildtype
