@@ -21,7 +21,7 @@ import buildconf
 sys.dont_write_bytecode = False
 import assist
 
-confParser = assist.BuildConfParser(buildconf)
+confHandler = None
 
 # these variables are mandatory ('/' are converted automatically)
 top = assist.BUILDROOT
@@ -33,48 +33,48 @@ VERSION = buildconf.project['version']
 
 def options(opt):
 
+    # This method WAF calls before all other methods including 'init'
+
+    global confHandler
+    confHandler = assist.BuildConfHandler(buildconf)
+
     # Remove incompatible options
     opt.parser.remove_option('-o')
     opt.parser.remove_option('-t')
 
     # TODO: add support for several builtypes
-    #opt.add_option('-b', '--buildtype', action = 'append', choices = confParser.buildTypes(),
-    #                default = [confParser.defaultBuildType()],
+    #opt.add_option('-b', '--buildtype', action = 'append', 
+    #                choices = confHandler.supportedBuildTypes,
+    #                default = [confHandler.defaultBuildType],
     #                help = 'set the build type')
 
-    opt.add_option('-b', '--buildtype', action = 'store', choices = confParser.buildTypes(),
-                    default = confParser.defaultBuildType(),
+    opt.add_option('-b', '--buildtype', action = 'store', 
+                    choices = confHandler.supportedBuildTypes,
+                    default = confHandler.defaultBuildType,
                     help = 'set the build type')
 
     #opt.load('compiler_cxx')
 
 def init(ctx):
 
-    # From optparse documentation: It also means that if the default value is non-empty,
-    # the default elements will be present in the parsed value for the option, with any
-    # values from the command line appended after those default values.
-    # Due to this stupid logic we need to do this:
-    if isinstance(Options.options.buildtype, list) and len(Options.options.buildtype) > 1:
-        del Options.options.buildtype[0]
-
     from copy import deepcopy
     assist.wafcommands = deepcopy(Options.commands)
 
-    buildtype = confParser.realBuildType(Options.options.buildtype)
+    confHandler.handleCmdLineArgs()
+
     from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallContext
-    for c in (BuildContext, CleanContext, InstallContext, UninstallContext):
-        class CtxClass(c):
-            variant = buildtype
+    for buildtype in confHandler.selectedBuildTypes:
+        for c in (BuildContext, CleanContext, InstallContext, UninstallContext):
+            class CtxClass(c):
+                variant = buildtype
 
 def configure(ctx):
 
     #ctx.load('compiler_cxx')
 
-    #destOS = Utils.unversioned_sys_platform()
-
     # make independent copy of root env
     rootEnv   = assist.deepcopyEnv(ctx.env)
-    buildtype = confParser.realBuildType(Options.options.buildtype)
+    buildtype = confHandler.realBuildType(Options.options.buildtype)
     toolchainEnv = {}
 
     def loadToolchain(toolchain):
@@ -101,14 +101,14 @@ def configure(ctx):
         # task params must not have compiler/linker flags from 'buildtypes' 
         # TODO
     
-    for toolchain in confParser.toolchainNames(buildtype):
+    for toolchain in confHandler.toolchainNames(buildtype):
         loadToolchain(toolchain)
 
     # switch to root env due to calls of 'loadToolchain'
     ctx.setenv('')
 
     ctx.env.alltasks = assist.loadTasksFromCache()
-    tasks = confParser.tasks(buildtype)
+    tasks = confHandler.tasks(buildtype)
     ctx.env.alltasks[buildtype] = tasks
 
     for taskName, taskParams in tasks.items():
@@ -165,9 +165,10 @@ def build(bld):
         # load environment for this task
         bld.all_envs[bld.variant] = ConfigSet(assist.makeCacheConfFileName(bld.variant))
         
+        target = taskParams.get('target', taskName)
         kwargs = dict(
             name     = taskName,
-            target   = assist.makeTargetPath(bld, buildtype, taskParams.get('target', taskName)),
+            target   = assist.makeTargetPath(bld, buildtype, target),
             features = taskParams.get('features', ''),
             lib      = taskParams.get('sys-libs', []),
             libpath  = taskParams.get('sys-lib-path', []),

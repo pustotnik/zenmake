@@ -27,3 +27,10 @@ def mksymlink(src, dst, force = True):
     if force and (os.path.exists(dst) or os.path.lexists(dst)):
         os.unlink(dst)
     os.symlink(src, dst)
+
+def platform():
+    from waflib.Utils import unversioned_sys_platform
+    result = unversioned_sys_platform()
+    if result.startswith('win32'):
+        result = 'windows'
+    return result

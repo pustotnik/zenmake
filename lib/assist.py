@@ -10,7 +10,9 @@ import sys, os
 import collections
 from waflib import Context, Options, Configure, Build, Utils, Logs
 from waflib.ConfigSet import ConfigSet
-from utils import unfoldPath
+from waflib.Errors import WafError
+import utils
+from autodict import AutoDict
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] >= 3
@@ -39,16 +41,18 @@ Configure.autoconfig = False
 # List of all waf commands. It's used for correct work of distclean command
 wafcommands = []
 
+PLATFORM         = utils.platform()
 WSCRIPT_FILE     = joinpath(os.path.dirname(realpath(__file__)), 'wscript')
 BUILDCONF_FILE   = abspath(buildconf.__file__)
 BUILDCONF_DIR    = os.path.dirname(BUILDCONF_FILE)
 PROJECTNAME      = buildconf.project['name']
-BUILDROOT        = unfoldPath(BUILDCONF_DIR, buildconf.buildroot)
-BUILDSYMLINK     = unfoldPath(BUILDCONF_DIR, getattr(buildconf, 'buildsymlink', None))
+BUILDROOT        = utils.unfoldPath(BUILDCONF_DIR, buildconf.buildroot)
+BUILDSYMLINK     = utils.unfoldPath(BUILDCONF_DIR, getattr(buildconf, 'buildsymlink', None))
 BUILDOUT         = joinpath(BUILDROOT, 'out')
-PROJECTROOT      = unfoldPath(BUILDCONF_DIR, buildconf.project['root'])
-SRCROOT          = unfoldPath(BUILDCONF_DIR, buildconf.srcroot)
-SRCSYMLINKNAME   = '%s-%s' %(os.path.basename(PROJECTROOT), os.path.basename(SRCROOT))
+PROJECTROOT      = utils.unfoldPath(BUILDCONF_DIR, buildconf.project['root'])
+SRCROOT          = utils.unfoldPath(BUILDCONF_DIR, buildconf.srcroot)
+#SRCSYMLINKNAME   = '%s-%s' %(os.path.basename(PROJECTROOT), os.path.basename(SRCROOT))
+SRCSYMLINKNAME   = os.path.basename(PROJECTROOT)
 SRCSYMLINK       = joinpath(BUILDROOT, SRCSYMLINKNAME)
 WAFCACHEDIR      = joinpath(BUILDOUT, Build.CACHE_DIR)
 WAFCACHEFILE     = joinpath(WAFCACHEDIR, Build.CACHE_SUFFIX)
@@ -58,9 +62,10 @@ RAVENCACHESUFFIX = '.raven.py'
 RAVENCMNFILE     = joinpath(BUILDOUT, '.raven-common')
 
 def dumpRavenCommonFile():
+    
     ravenCmn = ConfigSet()
     # Firstly I had added WSCRIPT_FILE in this list but then realized that it's not necessary
-    # because wscript don't have any project settings
+    # because wscript don't have any project settings in our case.
     ravenCmn.monitfiles = [BUILDCONF_FILE]
     ravenCmn.monithash  = 0
 
@@ -147,6 +152,10 @@ def handleTaskIncludesParam(taskParams):
     return includes
 
 def fullclean():
+    """
+    It does almost the same thing as distclean from waf. But distclean can not remove 
+    directory with file wscript or symlink to it if dictclean was called from that wscript.
+    """
 
     import shutil
 
@@ -177,7 +186,7 @@ def fullclean():
         Logs.info("Removing lockfile '%s'" % lockfile)
         os.remove(lockfile)
 
-class BuildConfParser(object):
+class BuildConfHandler(object):
 
     # It's not necessary to define something for built-in toolchains
     # but format is:
@@ -187,32 +196,88 @@ class BuildConfParser(object):
     #         'CXX'     : 'g++',
     #     },
     # }
-    toolchains = {}
 
     def __init__(self, conf):
+
+        self.cmdLineHandled = False
+
         self._origin = conf
-        self._ready  = {}
+        self._platforms  = getattr(self._origin, 'platforms', {})
+        self._toolchains = getattr(self._origin, 'toolchains', {})
+        
+        self._meta  = AutoDict()
+        # just in case
+        self._meta.buildtypes = AutoDict()
 
-        self._ready['tasks']      = {}
-        self._ready['toolchains'] = {}
+        self._preprocess()
 
+    def _preprocess(self):
+        allBuildTypes = set(self._origin.buildtypes.keys())
+        if 'default' in allBuildTypes:
+            allBuildTypes.remove('default')
+        self._meta.buildtypes.allnames = allBuildTypes
+
+        if PLATFORM in self._platforms:
+            validBuildTypes = self._platforms[PLATFORM].get('valid', [])
+            if len(validBuildTypes) == 0:
+                raise WafError("No valid build types for platform '%s' in config" % PLATFORM)
+            for bt in validBuildTypes:
+                if bt not in self._origin.buildtypes:
+                    raise WafError("Build type '%s' for platform '%s' "
+                        "was not found, check your config." % (bt, PLATFORM))
+            self._meta.buildtypes.supported = validBuildTypes
+        else:
+            self._meta.buildtypes.supported = list(allBuildTypes)
+
+    def handleCmdLineArgs(self):
+
+        selectedBuildTypes = []
+
+        # From optparse documentation: It also means that if the default value is non-empty,
+        # the default elements will be present in the parsed value for the option, with any
+        # values from the command line appended after those default values.
+        # Due to this stupid logic we need to do this:
+        if isinstance(Options.options.buildtype, list):
+            if len(Options.options.buildtype) > 1:
+                del Options.options.buildtype[0]
+            selectedBuildTypes = Options.options.buildtype
+        else:
+            selectedBuildTypes = [Options.options.buildtype]
+
+        self._meta.buildtypes.selected = selectedBuildTypes
+
+        self.cmdLineHandled = True
+
+    @property
     def defaultBuildType(self):
-        return self._origin.buildtypes.get('default', '')
+        if 'default' in self._meta.buildtypes:
+            return self._meta.buildtypes.default
 
-    def buildTypes(self):
-        if 'build-types' in self._ready:
-            return self._ready['build-types']
+        buildtype = self._origin.buildtypes.get('default', '')
+        if PLATFORM in self._platforms:
+            buildtype = self._platforms[PLATFORM].get('default', '')
+        if buildtype == 'default' or not buildtype:
+            buildtype = ''
+        elif buildtype not in self._origin.buildtypes:
+            raise WafError("Default build type '%s' was not found, check your config." % buildtype)
+        
+        self._meta.buildtypes.default = buildtype
+        return buildtype
 
-        buildtypes = set(self._origin.buildtypes.keys())
-        if 'default' in buildtypes:
-            buildtypes.remove('default')
-        buildtypes = list(buildtypes)
-        self._ready['build-types'] = buildtypes
-        return buildtypes
+    @property
+    def selectedBuildTypes(self):
+        if not self.cmdLineHandled:
+            raise Exception("Command line args wasn't handled yet")
+
+        return self._meta.buildtypes.selected
+
+    @property
+    def supportedBuildTypes(self):
+        return self._meta.buildtypes.supported
 
     def realBuildType(self, buildtype):
 
-        if 'build-types-map' not in self._ready:
+        if 'map' not in self._meta.buildtypes:
             btMap = dict()
             buildtypes = self._origin.buildtypes
             for bt, val in buildtypes.items():
@@ -220,29 +285,29 @@ class BuildConfParser(object):
                 btKey = bt
                 while not isinstance(btVal, collections.Mapping):
                     if not isinstance(btVal, string_types):
-                        raise ValueError("Invalid type of buildtype value '%s'" % type(btVal))
+                        raise WafError("Invalid type of buildtype value '%s'" % type(btVal))
                     btKey = btVal
                     if btKey not in buildtypes:
-                        raise ValueError("Build type '%s' was not found" % btKey)
+                        raise WafError("Build type '%s' was not found, check your config." % btKey)
                     btVal = buildtypes[btKey]
                     if btKey == bt and btVal == val:
-                        raise ValueError("Circular reference was found")
+                        raise WafError("Circular reference was found")
 
 
                 btMap[bt] = btKey
 
-            self._ready['build-types-map'] = btMap
+            self._meta.buildtypes.map = btMap
 
-        btMap = self._ready['build-types-map']
+        btMap = self._meta.buildtypes.map
         if buildtype not in btMap:
-            raise ValueError("Build type '%s' was not found" % buildtype)
+            raise WafError("Build type '%s' was not found, check your config." % buildtype)
 
         return btMap[buildtype]
 
     def tasks(self, buildtype):
         buildtype = self.realBuildType(buildtype)
-        if buildtype in self._ready['tasks']:
-            return self._ready['tasks'][buildtype]
+        if buildtype in self._meta.tasks:
+            return self._meta.tasks[buildtype]
 
         tasks = {}
 
@@ -264,13 +329,13 @@ class BuildConfParser(object):
             taskBuildParams = taskBuildTypes.get(buildtype, dict())
             task.update(taskBuildParams)
 
-        self._ready['tasks'][buildtype] = tasks
+        self._meta.tasks[buildtype] = tasks
         return tasks
 
     def toolchainNames(self, buildtype):
         buildtype = self.realBuildType(buildtype)
-        if buildtype in self._ready['toolchains']:
-            return self._ready['toolchains'][buildtype]
+        if buildtype in self._meta.toolchains:
+            return self._meta.toolchains[buildtype]
 
         toolchains = set()
         tasks = self.tasks(buildtype)
@@ -280,7 +345,7 @@ class BuildConfParser(object):
                 toolchains.add(c)
 
         toolchains = tuple(toolchains)
-        self._ready['toolchains'][buildtype] = toolchains
+        self._meta.toolchains[buildtype] = toolchains
         return toolchains
 
 def autoconfigure(method):
@@ -305,7 +370,7 @@ def autoconfigure(method):
         
         return h != ravenCmn.monithash
 
-    def areBuildtypesNotConfigured():
+    def areBuildTypesNotConfigured():
         buildtypes = Options.options.buildtype
         if isinstance(buildtypes, string_types):
             buildtypes = [buildtypes]
@@ -348,7 +413,7 @@ def autoconfigure(method):
         if areFilesChanged():
             return runconfig(self, env)
 
-        if areBuildtypesNotConfigured():
+        if areBuildTypesNotConfigured():
             return runconfig(self, env)
 
         return method(self)
