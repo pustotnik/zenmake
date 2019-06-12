@@ -3,7 +3,7 @@
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
- license: BSD, see LICENSE for more details.
+ license: BSD 3-Clause License, see LICENSE for more details.
 """
 
 import sys, os
@@ -75,7 +75,7 @@ def dumpRavenCommonFile():
 
 def loadTasksFromCache():
     """
-    Load cheched tasks from config cache it exists
+    Load cached tasks from config cache if it exists
     """
     result = {}
     try:
@@ -96,6 +96,9 @@ def makeCacheConfFileName(name):
 
 def getTaskVariantName(buildtype, taskName):
     return '%s.%s' % (buildtype, taskName)
+
+def getBuildTypeFromCLI():
+    return Options.options.buildtype
 
 def copyEnv(env):
     
@@ -203,7 +206,7 @@ class BuildConfHandler(object):
 
         self._origin = conf
         self._platforms  = getattr(self._origin, 'platforms', {})
-        self._toolchains = getattr(self._origin, 'toolchains', {})
+        #self._toolchains = getattr(self._origin, 'toolchains', {})
         
         self._meta  = AutoDict()
         # just in case
@@ -229,53 +232,7 @@ class BuildConfHandler(object):
         else:
             self._meta.buildtypes.supported = list(allBuildTypes)
 
-    def handleCmdLineArgs(self):
-
-        selectedBuildTypes = []
-
-        # From optparse documentation: It also means that if the default value is non-empty,
-        # the default elements will be present in the parsed value for the option, with any
-        # values from the command line appended after those default values.
-        # Due to this stupid logic we need to do this:
-        if isinstance(Options.options.buildtype, list):
-            if len(Options.options.buildtype) > 1:
-                del Options.options.buildtype[0]
-            selectedBuildTypes = Options.options.buildtype
-        else:
-            selectedBuildTypes = [Options.options.buildtype]
-
-        self._meta.buildtypes.selected = selectedBuildTypes
-
-        self.cmdLineHandled = True
-
-    @property
-    def defaultBuildType(self):
-        if 'default' in self._meta.buildtypes:
-            return self._meta.buildtypes.default
-
-        buildtype = self._origin.buildtypes.get('default', '')
-        if PLATFORM in self._platforms:
-            buildtype = self._platforms[PLATFORM].get('default', '')
-        if buildtype == 'default' or not buildtype:
-            buildtype = ''
-        elif buildtype not in self._origin.buildtypes:
-            raise WafError("Default build type '%s' was not found, check your config." % buildtype)
-        
-        self._meta.buildtypes.default = buildtype
-        return buildtype
-
-    @property
-    def selectedBuildTypes(self):
-        if not self.cmdLineHandled:
-            raise Exception("Command line args wasn't handled yet")
-
-        return self._meta.buildtypes.selected
-
-    @property
-    def supportedBuildTypes(self):
-        return self._meta.buildtypes.supported
-
-    def realBuildType(self, buildtype):
+    def _getRealBuildType(self, buildtype):
 
         if 'map' not in self._meta.buildtypes:
             btMap = dict()
@@ -298,14 +255,53 @@ class BuildConfHandler(object):
 
             self._meta.buildtypes.map = btMap
 
-        btMap = self._meta.buildtypes.map
-        if buildtype not in btMap:
+        bt = self._meta.buildtypes.map.get(buildtype, False)
+        if not bt:
             raise WafError("Build type '%s' was not found, check your config." % buildtype)
 
-        return btMap[buildtype]
+        return bt
 
-    def tasks(self, buildtype):
-        buildtype = self.realBuildType(buildtype)
+    def handleCmdLineArgs(self):
+
+        buildtype = getBuildTypeFromCLI()
+
+        if buildtype not in self._meta.buildtypes.supported:
+            raise WafError("Invalid choice for build type: '%s', (choose from %s)" 
+                % (buildtype, str(self._meta.buildtypes.supported)[1:-1]))
+
+        self._meta.buildtypes.selected = self._getRealBuildType(buildtype)
+
+        self.cmdLineHandled = True
+
+    @property
+    def defaultBuildType(self):
+        if 'default' in self._meta.buildtypes:
+            return self._meta.buildtypes.default
+
+        buildtype = self._origin.buildtypes.get('default', '')
+        if PLATFORM in self._platforms:
+            buildtype = self._platforms[PLATFORM].get('default', '')
+        if buildtype == 'default' or not buildtype:
+            buildtype = ''
+        elif buildtype not in self._origin.buildtypes:
+            raise WafError("Default build type '%s' was not found, check your config." % buildtype)
+        
+        self._meta.buildtypes.default = buildtype
+        return buildtype
+
+    @property
+    def selectedBuildType(self):
+        if not self.cmdLineHandled:
+            raise Exception("Command line args wasn't handled yet")
+
+        return self._meta.buildtypes.selected
+
+    @property
+    def supportedBuildTypes(self):
+        return self._meta.buildtypes.supported
+
+    def getTasks(self, buildtype):
+        buildtype = self._getRealBuildType(buildtype)
         if buildtype in self._meta.tasks:
             return self._meta.tasks[buildtype]
 
@@ -332,20 +328,21 @@ class BuildConfHandler(object):
         self._meta.tasks[buildtype] = tasks
         return tasks
 
-    def toolchainNames(self, buildtype):
-        buildtype = self.realBuildType(buildtype)
-        if buildtype in self._meta.toolchains:
-            return self._meta.toolchains[buildtype]
+    @property
+    def toolchainNames(self):
+
+        if 'names' in self._meta.toolchains:
+            return self._meta.toolchains.names
 
         toolchains = set()
-        tasks = self.tasks(buildtype)
+        tasks = self.getTasks(self.selectedBuildType)
         for taskParams in tasks.values():
             c = taskParams.get('toolchain', None)
             if c:
                 toolchains.add(c)
 
         toolchains = tuple(toolchains)
-        self._meta.toolchains[buildtype] = toolchains
+        self._meta.toolchains.names = toolchains
         return toolchains
 
 def autoconfigure(method):
@@ -371,16 +368,12 @@ def autoconfigure(method):
         return h != ravenCmn.monithash
 
     def areBuildTypesNotConfigured():
-        buildtypes = Options.options.buildtype
-        if isinstance(buildtypes, string_types):
-            buildtypes = [buildtypes]
-
-        for buildtype in buildtypes:
-            for taskName in buildconf.tasks.keys():
-                taskVariant = getTaskVariantName(buildtype, taskName)
-                fname = makeCacheConfFileName(taskVariant)
-                if not os.path.exists(fname):
-                    return True
+        buildtype = getBuildTypeFromCLI()
+        for taskName in buildconf.tasks.keys():
+            taskVariant = getTaskVariantName(buildtype, taskName)
+            fname = makeCacheConfFileName(taskVariant)
+            if not os.path.exists(fname):
+                return True
         return False
 
     def runconfig(self, env):
@@ -394,7 +387,7 @@ def autoconfigure(method):
             return method(self)
 
         autoconfigure.callCounter += 1
-        if autoconfigure.callCounter > 2:
+        if autoconfigure.callCounter > 10:
             # I some cases due to programming error, user actions or system problems we can get 
             # infinite call of current function. Maybe later I'll think up better protection
             # but in normal case it shouldn't happen.

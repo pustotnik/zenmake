@@ -4,7 +4,7 @@
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
- license: BSD, see LICENSE for more details.
+ license: BSD 3-Clause License, see LICENSE for more details.
 """
 
 import sys, os
@@ -42,14 +42,7 @@ def options(opt):
     opt.parser.remove_option('-o')
     opt.parser.remove_option('-t')
 
-    # TODO: add support for several builtypes
-    #opt.add_option('-b', '--buildtype', action = 'append', 
-    #                choices = confHandler.supportedBuildTypes,
-    #                default = [confHandler.defaultBuildType],
-    #                help = 'set the build type')
-
     opt.add_option('-b', '--buildtype', action = 'store', 
-                    choices = confHandler.supportedBuildTypes,
                     default = confHandler.defaultBuildType,
                     help = 'set the build type')
 
@@ -63,18 +56,19 @@ def init(ctx):
     confHandler.handleCmdLineArgs()
 
     from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallContext
-    for buildtype in confHandler.selectedBuildTypes:
-        for c in (BuildContext, CleanContext, InstallContext, UninstallContext):
-            class CtxClass(c):
-                variant = buildtype
+    buildtype = confHandler.selectedBuildType
+    for c in (BuildContext, CleanContext, InstallContext, UninstallContext):
+        class CtxClass(c):
+            variant = buildtype
 
 def configure(ctx):
 
     #ctx.load('compiler_cxx')
 
+    ctx.env.alltasks = assist.loadTasksFromCache()
+
     # make independent copy of root env
     rootEnv   = assist.deepcopyEnv(ctx.env)
-    buildtype = confHandler.realBuildType(Options.options.buildtype)
     toolchainEnv = {}
 
     def loadToolchain(toolchain):
@@ -100,15 +94,15 @@ def configure(ctx):
         buildtype = ''
         # task params must not have compiler/linker flags from 'buildtypes' 
         # TODO
-    
-    for toolchain in confHandler.toolchainNames(buildtype):
+
+    for toolchain in confHandler.toolchainNames:
         loadToolchain(toolchain)
 
     # switch to root env due to calls of 'loadToolchain'
     ctx.setenv('')
 
-    ctx.env.alltasks = assist.loadTasksFromCache()
-    tasks = confHandler.tasks(buildtype)
+    buildtype = confHandler.selectedBuildType
+    tasks = confHandler.getTasks(buildtype)
     ctx.env.alltasks[buildtype] = tasks
 
     for taskName, taskParams in tasks.items():
@@ -144,7 +138,7 @@ def configure(ctx):
         del ctx.all_envs[toolchain]
 
     assist.dumpRavenCommonFile()
-
+        
 def build(bld):
 
     if bld.variant is None:

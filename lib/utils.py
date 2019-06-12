@@ -3,7 +3,7 @@
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
- license: BSD, see LICENSE for more details.
+ license: BSD 3-Clause License, see LICENSE for more details.
 """
 
 import os
