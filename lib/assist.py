@@ -6,21 +6,17 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-import sys, os
+import sys
+import os
 import collections
+from copy import deepcopy
 from waflib import Context, Options, Configure, Build, Utils, Logs
 from waflib.ConfigSet import ConfigSet
 from waflib.Errors import WafError
 import utils
+from utils import string_types
+import toolchains
 from autodict import AutoDict
-
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] >= 3
-
-if PY3:
-    string_types = str
-else:
-    string_types = basestring
 
 joinpath  = os.path.join
 abspath   = os.path.abspath
@@ -101,8 +97,6 @@ def getBuildTypeFromCLI():
     return Options.options.buildtype
 
 def copyEnv(env):
-    
-    from copy import deepcopy
 
     newenv = ConfigSet()
     # deepcopy only current table whithout parents
@@ -115,8 +109,6 @@ def copyEnv(env):
 def deepcopyEnv(env):
     # Function deepcopy doesn't work with ConfigSet and ConfigSet.detach doesn't make deepcopy 
     # for already detached objects (WAF version is 2.0.15).
-    
-    from copy import deepcopy
 
     newenv = ConfigSet()
     # keys() returns all keys from current env and all parents
@@ -126,21 +118,67 @@ def deepcopyEnv(env):
 
 def setTaskEnvVars(env, taskParams):
 
-    SAME_TYPE_PARAMS = ('cflags', 'cxxflags', 'cppflags', 'linkflags', 'defines')
-
-    for p in SAME_TYPE_PARAMS:
-        val = taskParams.get(p, None)
+    cfgEnvVars = toolchains.CompilersInfo.allCfgEnvVars()
+    for var in cfgEnvVars:
+        val = taskParams.get(var.lower(), None)
         if val:
-            env[p.upper()] = val.split()
+            env[var] = Utils.to_list(val)
 
-    # set variables from env
-    ENV_VARS = ('CFLAGS', 'CXXFLAGS', 'LDFLAGS')
-    for var in ENV_VARS:
-        if var in os.environ:
-            # FIXME: should we add or replace?
-            # env is a copy-on-write dict so we should force write operation
-            current = env[var] # it returns [] if key is not exists
-            env[var] = current + os.environ[var].split()
+def loadDetectedCompiler(cfgCtx, kind):
+
+    # without 'auto-'
+    _kind = kind[5:]
+    
+    compilers = toolchains.CompilersInfo.compilers(_kind)
+    envVar    = toolchains.CompilersInfo.varToSetCompiler(_kind)
+
+    for compiler in compilers:
+        cfgCtx.env.stash()
+        cfgCtx.start_msg('Checking for %r' % compiler)
+        try:
+            cfgCtx.load(compiler)
+        except cfgCtx.errors.ConfigurationError:
+            cfgCtx.env.revert()
+            cfgCtx.end_msg(False)
+        else:
+            if cfgCtx.env[envVar]:
+                cfgCtx.end_msg(cfgCtx.env.get_flat(envVar))
+                cfgCtx.env.commit()
+                break
+            cfgCtx.env.revert()
+            cfgCtx.end_msg(False)
+    else:
+        cfgCtx.fatal('could not configure a %s compiler!' % _kind.upper())
+
+def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
+    
+    toolchainsEnv = {}
+    oldEnvName = cfgCtx.variant
+
+    def loadToolchain(toolchain):
+        toolname = toolchain
+        if toolname in toolchainsEnv:
+            return
+        cfgCtx.setenv(toolname, env = copyFromEnv)
+        custom  = buildconfHandler.customToolchains.get(toolname, None)
+        if custom is not None:
+            for var, val in custom.vars.items():
+                cfgCtx.env[var] = val
+            toolchain = custom.kind
+        
+        if toolchain.startswith('auto-'):
+            loadDetectedCompiler(cfgCtx, toolchain)
+        else:
+            cfgCtx.load(toolchain)
+        toolchainsEnv[toolname] = cfgCtx.env
+
+    for toolchain in buildconfHandler.toolchainNames:
+        loadToolchain(toolchain)        
+
+    # switch to old env due to calls of 'loadToolchain'
+    cfgCtx.setenv(oldEnvName)
+
+    return toolchainsEnv
 
 def handleTaskIncludesParam(taskParams):
     # From wafbook:
@@ -191,23 +229,13 @@ def fullclean():
 
 class BuildConfHandler(object):
 
-    # It's not necessary to define something for built-in toolchains
-    # but format is:
-    # toolchains = {
-    #     'g++': {
-    #         # here you can set/override env vars like 'CXX', 'LINK_CXX', ...
-    #         'CXX'     : 'g++',
-    #     },
-    # }
-
     def __init__(self, conf):
 
         self.cmdLineHandled = False
 
         self._origin = conf
         self._platforms  = getattr(self._origin, 'platforms', {})
-        #self._toolchains = getattr(self._origin, 'toolchains', {})
-        
+
         self._meta  = AutoDict()
         # just in case
         self._meta.buildtypes = AutoDict()
@@ -220,9 +248,10 @@ class BuildConfHandler(object):
             allBuildTypes.remove('default')
         self._meta.buildtypes.allnames = allBuildTypes
 
+        # handle 'buildconf.platforms'
         if PLATFORM in self._platforms:
             validBuildTypes = self._platforms[PLATFORM].get('valid', [])
-            if len(validBuildTypes) == 0:
+            if not validBuildTypes:
                 raise WafError("No valid build types for platform '%s' in config" % PLATFORM)
             for bt in validBuildTypes:
                 if bt not in self._origin.buildtypes:
@@ -231,6 +260,54 @@ class BuildConfHandler(object):
             self._meta.buildtypes.supported = validBuildTypes
         else:
             self._meta.buildtypes.supported = list(allBuildTypes)
+
+        # handle 'buildconf.toolchains'
+        srcToolchains = getattr(self._origin, 'toolchains', {})
+        customToolchains = AutoDict()
+        for name, info in srcToolchains.items():
+            vars = deepcopy(info) # don't change origin
+            kind = vars.pop('kind', None)
+            if kind is None:
+                raise WafError("Toolchain '%s': field 'kind' not found" % name)
+            
+            for k, v in vars.items():
+                # try to identify path and do nothing in another case 
+                path = utils.unfoldPath(BUILDCONF_DIR, v)
+                if os.path.exists(path):
+                    vars[k] = path
+
+            customToolchains[name].kind = kind
+            customToolchains[name].vars = vars
+                    
+        self._meta.toolchains.custom = customToolchains
+
+    def _handleTasksEnvVars(self, tasks):
+
+        cinfo = toolchains.CompilersInfo
+        FLAG_VARS      = cinfo.allFlagVars()
+        TOOLCHAIN_VARS = cinfo.allVarsToSetCompiler()
+
+        for taskParams in tasks.values():
+            # handle flags
+            for var in FLAG_VARS:
+                envVal = os.environ.get(var, None)
+                if not envVal:
+                    continue
+
+                paramName = var.lower()
+                
+                current = taskParams.get(paramName, [])
+                current = Utils.to_list(current)
+                # FIXME: should we add or replace?
+                taskParams[paramName] = current + Utils.to_list(envVal)
+
+            # handle toolchains
+            for var in TOOLCHAIN_VARS:
+                toolchain = os.environ.get(var, None)
+                if not toolchain:
+                    continue
+                if var.lower() in taskParams.get('features', ''):
+                    taskParams['toolchain'] = toolchain
 
     def _getRealBuildType(self, buildtype):
 
@@ -300,8 +377,9 @@ class BuildConfHandler(object):
     def supportedBuildTypes(self):
         return self._meta.buildtypes.supported
 
-    def getTasks(self, buildtype):
-        buildtype = self._getRealBuildType(buildtype)
+    @property
+    def tasks(self):
+        buildtype = self.selectedBuildType
         if buildtype in self._meta.tasks:
             return self._meta.tasks[buildtype]
 
@@ -325,25 +403,31 @@ class BuildConfHandler(object):
             taskBuildParams = taskBuildTypes.get(buildtype, dict())
             task.update(taskBuildParams)
 
+        self._handleTasksEnvVars(tasks)
+
         self._meta.tasks[buildtype] = tasks
         return tasks
 
     @property
     def toolchainNames(self):
 
-        if 'names' in self._meta.toolchains:
+        if 'allnames' in self._meta.toolchains:
             return self._meta.toolchains.names
 
+        # gather unique names
         toolchains = set()
-        tasks = self.getTasks(self.selectedBuildType)
-        for taskParams in tasks.values():
+        for taskParams in self.tasks.values():
             c = taskParams.get('toolchain', None)
             if c:
                 toolchains.add(c)
 
         toolchains = tuple(toolchains)
-        self._meta.toolchains.names = toolchains
+        self._meta.toolchains.allnames = toolchains
         return toolchains
+
+    @property
+    def customToolchains(self):
+        return self._meta.toolchains.custom
 
 def autoconfigure(method):
     """

@@ -7,7 +7,8 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-import sys, os
+import sys
+import os
 
 _joinpath  = os.path.join
 _abspath   = os.path.abspath
@@ -46,8 +47,6 @@ def options(opt):
                     default = confHandler.defaultBuildType,
                     help = 'set the build type')
 
-    #opt.load('compiler_cxx')
-
 def init(ctx):
 
     from copy import deepcopy
@@ -63,57 +62,25 @@ def init(ctx):
 
 def configure(ctx):
 
-    #ctx.load('compiler_cxx')
-
     ctx.env.alltasks = assist.loadTasksFromCache()
 
     # make independent copy of root env
     rootEnv   = assist.deepcopyEnv(ctx.env)
-    toolchainEnv = {}
-
-    def loadToolchain(toolchain):
-        if toolchain not in toolchainEnv:
-            ctx.setenv(toolchain, env = rootEnv)
-            ctx.load(toolchain)
-            toolchainEnv[toolchain] = ctx.all_envs[toolchain]
-
-    # Examples of setings from environment:
-    # CC=clang CXX=clang++
-    buildByToolFromEnv = False
-    #TODO: add others
-    toolchainEnvVars = ('CC', 'CXX')
-    for var in toolchainEnvVars:
-        if var in os.environ:
-            buildByToolFromEnv = True
-            loadToolchain(os.environ[var])
-            # TODO: add loading of LINK_CC, LINK_CXX, AR, ?
-            # LINK_CC = CC, LINK_CXX = CXX ?
-
-    # special mode when toolchain is set by env var
-    if buildByToolFromEnv:
-        buildtype = ''
-        # task params must not have compiler/linker flags from 'buildtypes' 
-        # TODO
-
-    for toolchain in confHandler.toolchainNames:
-        loadToolchain(toolchain)
-
-    # switch to root env due to calls of 'loadToolchain'
-    ctx.setenv('')
+    toolchainsEnv = assist.loadToolchains(ctx, confHandler, rootEnv)
 
     buildtype = confHandler.selectedBuildType
-    tasks = confHandler.getTasks(buildtype)
+    tasks = confHandler.tasks
     ctx.env.alltasks[buildtype] = tasks
 
     for taskName, taskParams in tasks.items():
         # make variant for each task: 'buildtype.taskname'
         taskVariant = assist.getTaskVariantName(buildtype, taskName)
         # store it
-        taskParams['task-build-env'] = taskVariant
+        taskParams['task.build.env'] = taskVariant
 
-        # set up env each type of toolchain for tasks
+        # set up env with toolchain for task
         toolchain = taskParams.get('toolchain', None)
-        parentEnv = toolchainEnv.get(toolchain, rootEnv)
+        parentEnv = toolchainsEnv.get(toolchain, rootEnv)
         parentEnv = assist.copyEnv(parentEnv)
 
         # and switch to selected env
@@ -126,16 +93,16 @@ def configure(ctx):
         # So it loads all stored variants even though they aren't needed. And I decided 
         # to save variants in different files and load only needed ones.
         ctx.env.store(assist.makeCacheConfFileName(taskVariant))
-        # It's necessary to delete variant from ctx.all_envs otherwise waf will store in 'c4che'
+        # It's necessary to delete variant from ctx.all_envs otherwise waf will store it in 'c4che'
         ctx.setenv('')
-        del ctx.all_envs[taskVariant]
+        ctx.all_envs.pop(taskVariant, None)
 
     #ctx.check(header_name='stdio.h', features='cxx cxxprogram', mandatory=False)
     #ctx.check(header_name='cstdio', features='cxx cxxprogram', mandatory=True)
 
     # Remove unneccesary envs
-    for toolchain in toolchainEnv.keys():
-        del ctx.all_envs[toolchain]
+    for toolchain in toolchainsEnv.keys():
+        ctx.all_envs.pop(toolchain, None)
 
     assist.dumpRavenCommonFile()
         
@@ -155,7 +122,7 @@ def build(bld):
     tasks = bld.env.alltasks[buildtype]
     for taskName, taskParams in tasks.items():
         # task env variables are stored in separative env so it's need to switch in
-        bld.variant = taskParams['task-build-env']
+        bld.variant = taskParams['task.build.env']
         # load environment for this task
         bld.all_envs[bld.variant] = ConfigSet(assist.makeCacheConfFileName(bld.variant))
         

@@ -14,25 +14,20 @@ class AutoDict(dict):
 
     def __init__(self, *args, **kwargs):
         super(AutoDict, self).__init__(*args, **kwargs)
-        self.parent = None
 
     def __missing__(self, key):
-        return AutoDict()
+        val = AutoDict()
+        self[key] = val
+        return val
 
     def __getattr__(self, name):
-        if name == 'parent':
-            return super(AutoDict, self).__getattr__(name)
         
         val = self.get(name, None)
         if val is None:
-            self[name] = AutoDict()
-            self[name].parent = self
-            return self[name]
-        else:
-            return val
+            val = AutoDict()
+            self[name] = val
+            
+        return val
 
     def __setattr__(self, name, value):
-        if name == 'parent':
-            super(AutoDict  , self).__setattr__(name, value)
-        else:
-            self[name] = value
+        self[name] = value
