@@ -16,28 +16,21 @@ _abspath   = os.path.abspath
 from waflib import Configure, Build, Options, Context, Logs
 from waflib.ConfigSet import ConfigSet
 
-# Avoid writing .pyc files
-sys.dont_write_bytecode = True
-import buildconf
-sys.dont_write_bytecode = False
 import assist
 
-confHandler = None
+confHandler = assist.BuildConfHandler()
 
 # these variables are mandatory ('/' are converted automatically)
 top = assist.BUILDROOT
 out = assist.BUILDOUT
 
 # mostly for WAF 'dist' command
-APPNAME = buildconf.project['name']
-VERSION = buildconf.project['version']
+APPNAME = assist.PROJECT_NAME
+VERSION = assist.PROJECT_VERSION
 
 def options(opt):
 
     # This method WAF calls before all other methods including 'init'
-
-    global confHandler
-    confHandler = assist.BuildConfHandler(buildconf)
 
     # Remove incompatible options
     opt.parser.remove_option('-o')

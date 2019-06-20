@@ -22,10 +22,7 @@ joinpath  = os.path.join
 abspath   = os.path.abspath
 realpath  = os.path.realpath
 
-# Avoid writing .pyc files
-sys.dont_write_bytecode = True
-import buildconf
-sys.dont_write_bytecode = False
+buildconf = utils.loadPyModule('buildconf')
 
 # Execute the configuration automatically
 autoconfig = buildconf.features.get('autoconfig', True)
@@ -37,11 +34,13 @@ Configure.autoconfig = False
 # List of all waf commands. It's used for correct work of distclean command
 wafcommands = []
 
+PROJECT_NAME     = buildconf.project['name']
+PROJECT_VERSION  = buildconf.project['version']
+
 PLATFORM         = utils.platform()
 WSCRIPT_FILE     = joinpath(os.path.dirname(realpath(__file__)), 'wscript')
 BUILDCONF_FILE   = abspath(buildconf.__file__)
 BUILDCONF_DIR    = os.path.dirname(BUILDCONF_FILE)
-PROJECTNAME      = buildconf.project['name']
 BUILDROOT        = utils.unfoldPath(BUILDCONF_DIR, buildconf.buildroot)
 BUILDSYMLINK     = utils.unfoldPath(BUILDCONF_DIR, getattr(buildconf, 'buildsymlink', None))
 BUILDOUT         = joinpath(BUILDROOT, 'out')
@@ -229,7 +228,7 @@ def fullclean():
 
 class BuildConfHandler(object):
 
-    def __init__(self, conf):
+    def __init__(self, conf = buildconf):
 
         self.cmdLineHandled = False
 

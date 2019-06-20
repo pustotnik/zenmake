@@ -10,7 +10,7 @@ import sys
 import re
 from waflib.Errors import WafError
 from autodict import AutoDict
-from utils import string_types
+import utils
 
 _langinfo = {
     # 'env.var' - environment variable to set compiler
@@ -79,12 +79,10 @@ class CompilersInfo(object):
             return compilers
 
         getterInfo = _langinfo[lang]['compiler.list']
-        module = __import__(getterInfo['module'])
-        #__import__ does the full import, but it returns the top-level package, not the actual module
-        module = sys.modules[getterInfo['module']]
+        module = utils.loadPyModule(getterInfo['module'])
         # call function
         compilers = getattr(module, getterInfo['fun'])()
-        if isinstance(compilers, string_types):
+        if isinstance(compilers, utils.string_types):
             compilers = re.split('[ ,]+', compilers)
         
         _cache[lang].compilers = compilers
