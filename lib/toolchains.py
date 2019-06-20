@@ -82,7 +82,7 @@ class CompilersInfo(object):
         module = utils.loadPyModule(getterInfo['module'])
         # call function
         compilers = getattr(module, getterInfo['fun'])()
-        if isinstance(compilers, utils.string_types):
+        if isinstance(compilers, utils.stringtypes):
             compilers = re.split('[ ,]+', compilers)
         
         _cache[lang].compilers = compilers

@@ -13,19 +13,20 @@ from copy import deepcopy
 from waflib import Context, Options, Configure, Build, Utils, Logs
 from waflib.ConfigSet import ConfigSet
 from waflib.Errors import WafError
+import buildconfutil
 import utils
-from utils import string_types
+from utils import stringtypes
 import toolchains
 from autodict import AutoDict
 
-joinpath  = os.path.join
-abspath   = os.path.abspath
-realpath  = os.path.realpath
+joinpath = os.path.join
+abspath  = os.path.abspath
+realpath = os.path.realpath
 
-buildconf = utils.loadPyModule('buildconf')
+buildconf = buildconfutil.loadConf()
 
 # Execute the configuration automatically
-autoconfig = buildconf.features.get('autoconfig', True)
+autoconfig = buildconf.features['autoconfig']
 
 # Force to turn off internal WAF autoconfigure decorator.
 # It's just to rid of needless work and to save working time.
@@ -42,7 +43,7 @@ WSCRIPT_FILE     = joinpath(os.path.dirname(realpath(__file__)), 'wscript')
 BUILDCONF_FILE   = abspath(buildconf.__file__)
 BUILDCONF_DIR    = os.path.dirname(BUILDCONF_FILE)
 BUILDROOT        = utils.unfoldPath(BUILDCONF_DIR, buildconf.buildroot)
-BUILDSYMLINK     = utils.unfoldPath(BUILDCONF_DIR, getattr(buildconf, 'buildsymlink', None))
+BUILDSYMLINK     = utils.unfoldPath(BUILDCONF_DIR, buildconf.buildsymlink)
 BUILDOUT         = joinpath(BUILDROOT, 'out')
 PROJECTROOT      = utils.unfoldPath(BUILDCONF_DIR, buildconf.project['root'])
 SRCROOT          = utils.unfoldPath(BUILDCONF_DIR, buildconf.srcroot)
@@ -189,7 +190,7 @@ def handleTaskIncludesParam(taskParams):
     # a source of portability problems.
     includes = taskParams.get('includes', None)
     if includes:
-        if isinstance(includes, string_types):
+        if isinstance(includes, stringtypes):
             includes = includes.split()
         includes = [ x if os.path.isabs(x) else \
             joinpath(SRCSYMLINKNAME, x) for x in includes ]
@@ -238,9 +239,9 @@ class BuildConfHandler(object):
         self.cmdLineHandled = False
 
         self._origin = conf
-        self._platforms  = getattr(self._origin, 'platforms', {})
+        self._platforms = self._origin.platforms
 
-        self._meta  = AutoDict()
+        self._meta = AutoDict()
         # just in case
         self._meta.buildtypes = AutoDict()
 
@@ -267,7 +268,7 @@ class BuildConfHandler(object):
             self._meta.buildtypes.supported = list(allBuildTypes)
 
         # handle 'buildconf.toolchains'
-        srcToolchains = getattr(self._origin, 'toolchains', {})
+        srcToolchains = self._origin.toolchains
         customToolchains = AutoDict()
         for name, info in srcToolchains.items():
             vars = deepcopy(info) # don't change origin
@@ -323,7 +324,7 @@ class BuildConfHandler(object):
                 btVal = val
                 btKey = bt
                 while not isinstance(btVal, collections.Mapping):
-                    if not isinstance(btVal, string_types):
+                    if not isinstance(btVal, stringtypes):
                         raise WafError("Invalid type of buildtype value '%s'" 
                                         % type(btVal))
                     btKey = btVal
