@@ -82,11 +82,14 @@ def configure(ctx):
         # set variables
         assist.setTaskEnvVars(ctx.env, taskParams)
 
-        # Waf always loads all *_cache.py files in directory 'c4che' during build step. 
-        # So it loads all stored variants even though they aren't needed. And I decided 
-        # to save variants in different files and load only needed ones.
+        # Waf always loads all *_cache.py files in directory 'c4che' during 
+        # build step. So it loads all stored variants even though they 
+        # aren't needed. And I decided to save variants in different files and 
+        # load only needed ones.
         ctx.env.store(assist.makeCacheConfFileName(taskVariant))
-        # It's necessary to delete variant from ctx.all_envs otherwise waf will store it in 'c4che'
+        
+        # It's necessary to delete variant from ctx.all_envs otherwise 
+        # waf will store it in 'c4che'
         ctx.setenv('')
         ctx.all_envs.pop(taskVariant, None)
 
@@ -106,15 +109,17 @@ def build(bld):
 
     buildtype = bld.variant
     if buildtype not in bld.env.alltasks:
-        bld.fatal("Buildtype '%s' is not found! Was step 'configure' missed?" % buildtype)
+        bld.fatal("Buildtype '%s' is not found! Was step 'configure' missed?" 
+                    % buildtype)
 
-    # Since ant_glob can traverse both source and build folders, it is a best practice
-    # to call this method only from the most specific build node
+    # Since ant_glob can traverse both source and build folders, it is a best 
+    # practice to call this method only from the most specific build node
     srcDirNode = bld.path.find_dir(assist.SRCSYMLINKNAME)
 
     tasks = bld.env.alltasks[buildtype]
     for taskName, taskParams in tasks.items():
-        # task env variables are stored in separative env so it's need to switch in
+        # task env variables are stored in separative env 
+        # so it's need to switch in
         bld.variant = taskParams['task.build.env']
         # load environment for this task
         bld.all_envs[bld.variant] = ConfigSet(assist.makeCacheConfFileName(bld.variant))

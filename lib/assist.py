@@ -59,13 +59,15 @@ RAVENCMNFILE     = joinpath(BUILDOUT, '.raven-common')
 def dumpRavenCommonFile():
     
     ravenCmn = ConfigSet()
-    # Firstly I had added WSCRIPT_FILE in this list but then realized that it's not necessary
-    # because wscript don't have any project settings in our case.
+    # Firstly I had added WSCRIPT_FILE in this list but then realized that 
+    # it's not necessary because wscript don't have any project settings 
+    # in our case.
     ravenCmn.monitfiles = [BUILDCONF_FILE]
     ravenCmn.monithash  = 0
 
     for file in ravenCmn.monitfiles:
-        ravenCmn.monithash = Utils.h_list((ravenCmn.monithash, Utils.readf(file, 'rb')))
+        ravenCmn.monithash = Utils.h_list((ravenCmn.monithash, 
+                                            Utils.readf(file, 'rb')))
     ravenCmn.store(RAVENCMNFILE)
 
 def loadTasksFromCache():
@@ -106,8 +108,9 @@ def copyEnv(env):
     return newenv
 
 def deepcopyEnv(env):
-    # Function deepcopy doesn't work with ConfigSet and ConfigSet.detach doesn't make deepcopy 
-    # for already detached objects (WAF version is 2.0.15).
+    # Function deepcopy doesn't work with ConfigSet and ConfigSet.detach 
+    # doesn't make deepcopy for already detached objects 
+    # (WAF version is 2.0.15).
 
     newenv = ConfigSet()
     # keys() returns all keys from current env and all parents
@@ -181,8 +184,9 @@ def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
 
 def handleTaskIncludesParam(taskParams):
     # From wafbook:
-    # Includes paths are given relative to the directory containing the wscript file.
-    # Providing absolute paths are best avoided as they are a source of portability problems.
+    # Includes paths are given relative to the directory containing the 
+    # wscript file. Providing absolute paths are best avoided as they are 
+    # a source of portability problems.
     includes = taskParams.get('includes', None)
     if includes:
         if isinstance(includes, string_types):
@@ -193,8 +197,9 @@ def handleTaskIncludesParam(taskParams):
 
 def fullclean():
     """
-    It does almost the same thing as distclean from waf. But distclean can not remove 
-    directory with file wscript or symlink to it if dictclean was called from that wscript.
+    It does almost the same thing as distclean from waf. But distclean can 
+    not remove directory with file wscript or symlink to it if dictclean 
+    was called from that wscript.
     """
 
     import shutil
@@ -251,7 +256,8 @@ class BuildConfHandler(object):
         if PLATFORM in self._platforms:
             validBuildTypes = self._platforms[PLATFORM].get('valid', [])
             if not validBuildTypes:
-                raise WafError("No valid build types for platform '%s' in config" % PLATFORM)
+                raise WafError("No valid build types for platform '%s' "
+                                "in config" % PLATFORM)
             for bt in validBuildTypes:
                 if bt not in self._origin.buildtypes:
                     raise WafError("Build type '%s' for platform '%s' "
@@ -318,10 +324,12 @@ class BuildConfHandler(object):
                 btKey = bt
                 while not isinstance(btVal, collections.Mapping):
                     if not isinstance(btVal, string_types):
-                        raise WafError("Invalid type of buildtype value '%s'" % type(btVal))
+                        raise WafError("Invalid type of buildtype value '%s'" 
+                                        % type(btVal))
                     btKey = btVal
                     if btKey not in buildtypes:
-                        raise WafError("Build type '%s' was not found, check your config." % btKey)
+                        raise WafError("Build type '%s' was not found, check "
+                                        "your config." % btKey)
                     btVal = buildtypes[btKey]
                     if btKey == bt and btVal == val:
                         raise WafError("Circular reference was found")
@@ -333,7 +341,8 @@ class BuildConfHandler(object):
 
         bt = self._meta.buildtypes.map.get(buildtype, False)
         if not bt:
-            raise WafError("Build type '%s' was not found, check your config." % buildtype)
+            raise WafError("Build type '%s' was not found, check "
+                            "your config." % buildtype)
 
         return bt
 
@@ -342,8 +351,9 @@ class BuildConfHandler(object):
         buildtype = getBuildTypeFromCLI()
 
         if buildtype not in self._meta.buildtypes.supported:
-            raise WafError("Invalid choice for build type: '%s', (choose from %s)" 
-                % (buildtype, str(self._meta.buildtypes.supported)[1:-1]))
+            raise WafError("Invalid choice for build type: '%s', "
+                "(choose from %s)" % 
+                (buildtype, str(self._meta.buildtypes.supported)[1:-1]))
 
         self._meta.buildtypes.selected = self._getRealBuildType(buildtype)
 
@@ -360,7 +370,8 @@ class BuildConfHandler(object):
         if buildtype == 'default' or not buildtype:
             buildtype = ''
         elif buildtype not in self._origin.buildtypes:
-            raise WafError("Default build type '%s' was not found, check your config." % buildtype)
+            raise WafError("Default build type '%s' was not found, "
+                            "check your config." % buildtype)
         
         self._meta.buildtypes.default = buildtype
         return buildtype
@@ -471,9 +482,10 @@ def autoconfigure(method):
 
         autoconfigure.callCounter += 1
         if autoconfigure.callCounter > 10:
-            # I some cases due to programming error, user actions or system problems we can get 
-            # infinite call of current function. Maybe later I'll think up better protection
-            # but in normal case it shouldn't happen.
+            # I some cases due to programming error, user actions or system 
+            # problems we can get infinite call of current function. Maybe 
+            # later I'll think up better protection but in normal case 
+            # it shouldn't happen.
             raise Exception('Infinite recursion was detected')
 
         env = ConfigSet()
