@@ -164,8 +164,7 @@ class CmdLineParser(object):
 
         self._parser = argparse.ArgumentParser(prog = progName,
             formatter_class = MyHelpFormatter,
-            description = 'Raven: build system',
-            #epilog = 'use "%s help" for the full list of commands' % progName,
+            description = 'Raven: build system based on the Waf build system',
             usage = "%(prog)s <command> [options] [args]",
             add_help = False)
 
@@ -267,8 +266,9 @@ class CmdLineParser(object):
         for cmd in _commands:
             commandHelps[cmd.name] = AutoDict()
             cmdHelpInfo = commandHelps[cmd.name]
-            cmdHelpInfo.help    = cmd.description
-            cmdHelpInfo.usage   = self._makeCmdUsageText(self.progName, cmd)
+            cmdHelpInfo.usage = self._makeCmdUsageText(self.progName, cmd)
+            cmdHelpInfo.help = cmd.description
+            cmdHelpInfo.description = cmd.description.capitalize()
             cmdHelpInfo.aliases = cmd.aliases
 
             if cmd.name == 'help': # It will be processed below
