@@ -21,13 +21,12 @@ class AutoDict(dict):
         return val
 
     def __getattr__(self, name):
-        
-        val = self.get(name, None)
-        if val is None:
+        # We can not use self.get to check value because value 
+        # can be any including None.
+        if name not in self:
             val = AutoDict()
             self[name] = val
-            
-        return val
+        return self[name]
 
     def __setattr__(self, name, value):
         self[name] = value

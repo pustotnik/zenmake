@@ -18,8 +18,6 @@ from waflib.ConfigSet import ConfigSet
 
 import assist
 
-confHandler = assist.BuildConfHandler()
-
 # these variables are mandatory ('/' are converted automatically)
 top = assist.BUILDROOT
 out = assist.BUILDOUT
@@ -33,18 +31,16 @@ def options(opt):
     # This method WAF calls before all other methods including 'init'
 
     # Remove incompatible options
-    opt.parser.remove_option('-o')
-    opt.parser.remove_option('-t')
-
-    opt.add_option('-b', '--buildtype', action = 'store', 
-                    default = confHandler.defaultBuildType,
-                    help = 'set the build type')
+    #opt.parser.remove_option('-o')
+    #opt.parser.remove_option('-t')
+    pass
 
 def init(ctx):
 
     from copy import deepcopy
     assist.wafcommands = deepcopy(Options.commands)
 
+    confHandler = assist.buildConfHandler
     confHandler.handleCmdLineArgs()
 
     from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallContext
@@ -54,6 +50,8 @@ def init(ctx):
             variant = buildtype
 
 def configure(ctx):
+
+    confHandler = assist.buildConfHandler
 
     ctx.env.alltasks = assist.loadTasksFromCache()
 

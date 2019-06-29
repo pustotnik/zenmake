@@ -49,8 +49,6 @@ def loadPyModule(name):
     Load python module by name
     """
     
-    module = __import__(name)
-    #__import__ does the full import, but it returns the top-level package, 
-    # not the actual module
-    module = sys.modules[name]
+    # Without non empty fromlist __import__ returns the top-level package
+    module = __import__(name, fromlist=[None])
     return module

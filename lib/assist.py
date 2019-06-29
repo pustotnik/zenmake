@@ -95,9 +95,6 @@ def makeCacheConfFileName(name):
 def getTaskVariantName(buildtype, taskName):
     return '%s.%s' % (buildtype, taskName)
 
-def getBuildTypeFromCLI():
-    return Options.options.buildtype
-
 def copyEnv(env):
 
     newenv = ConfigSet()
@@ -199,7 +196,7 @@ def handleTaskIncludesParam(taskParams):
 def fullclean():
     """
     It does almost the same thing as distclean from waf. But distclean can 
-    not remove directory with file wscript or symlink to it if dictclean 
+    not remove directory with file wscript or symlink to it if distclean 
     was called from that wscript.
     """
 
@@ -232,6 +229,29 @@ def fullclean():
         Logs.info("Removing lockfile '%s'" % lockfile)
         os.remove(lockfile)
 
+def distclean():
+
+    """
+    Full replacement for distclean from WAF
+    """
+
+    cmdTimer = Utils.Timer()
+
+    import cli
+    if cli.selected:
+        colors = {'yes' : 2, 'auto' : 1, 'no' : 0}[cli.selected.options.color]
+        Logs.enable_colors(colors)
+
+    fullclean()
+
+    Logs.info('%r finished successfully (%s)', 'distclean', cmdTimer)
+
+def _getBuildTypeFromCLI():
+    import cli
+    if not cli.selected or not cli.selected.options.buildtype:
+        return ''
+    return cli.selected.options.buildtype
+
 class BuildConfHandler(object):
 
     def __init__(self, conf = buildconf):
@@ -248,44 +268,13 @@ class BuildConfHandler(object):
         self._preprocess()
 
     def _preprocess(self):
+
+        # NOTICE: this method should not have any heavy operations 
+
         allBuildTypes = set(self._origin.buildtypes.keys())
         if 'default' in allBuildTypes:
             allBuildTypes.remove('default')
         self._meta.buildtypes.allnames = allBuildTypes
-
-        # handle 'buildconf.platforms'
-        if PLATFORM in self._platforms:
-            validBuildTypes = self._platforms[PLATFORM].get('valid', [])
-            if not validBuildTypes:
-                raise WafError("No valid build types for platform '%s' "
-                                "in config" % PLATFORM)
-            for bt in validBuildTypes:
-                if bt not in self._origin.buildtypes:
-                    raise WafError("Build type '%s' for platform '%s' "
-                        "was not found, check your config." % (bt, PLATFORM))
-            self._meta.buildtypes.supported = validBuildTypes
-        else:
-            self._meta.buildtypes.supported = list(allBuildTypes)
-
-        # handle 'buildconf.toolchains'
-        srcToolchains = self._origin.toolchains
-        customToolchains = AutoDict()
-        for name, info in srcToolchains.items():
-            vars = deepcopy(info) # don't change origin
-            kind = vars.pop('kind', None)
-            if kind is None:
-                raise WafError("Toolchain '%s': field 'kind' not found" % name)
-            
-            for k, v in vars.items():
-                # try to identify path and do nothing in another case 
-                path = utils.unfoldPath(BUILDCONF_DIR, v)
-                if os.path.exists(path):
-                    vars[k] = path
-
-            customToolchains[name].kind = kind
-            customToolchains[name].vars = vars
-                    
-        self._meta.toolchains.custom = customToolchains
 
     def _handleTasksEnvVars(self, tasks):
 
@@ -335,7 +324,6 @@ class BuildConfHandler(object):
                     if btKey == bt and btVal == val:
                         raise WafError("Circular reference was found")
 
-
                 btMap[bt] = btKey
 
             self._meta.buildtypes.map = btMap
@@ -349,12 +337,16 @@ class BuildConfHandler(object):
 
     def handleCmdLineArgs(self):
 
-        buildtype = getBuildTypeFromCLI()
+        if self.cmdLineHandled:
+            return
 
-        if buildtype not in self._meta.buildtypes.supported:
+        buildtype = _getBuildTypeFromCLI()
+
+        supportedBuildTypes = self.supportedBuildTypes
+        if buildtype not in supportedBuildTypes:
             raise WafError("Invalid choice for build type: '%s', "
                 "(choose from %s)" % 
-                (buildtype, str(self._meta.buildtypes.supported)[1:-1]))
+                (buildtype, str(supportedBuildTypes)[1:-1]))
 
         self._meta.buildtypes.selected = self._getRealBuildType(buildtype)
 
@@ -386,6 +378,24 @@ class BuildConfHandler(object):
 
     @property
     def supportedBuildTypes(self):
+
+        if 'supported' in self._meta.buildtypes:
+            return self._meta.buildtypes.supported
+
+        # handle 'buildconf.platforms'
+        if PLATFORM in self._platforms:
+            validBuildTypes = self._platforms[PLATFORM].get('valid', [])
+            if not validBuildTypes:
+                raise WafError("No valid build types for platform '%s' "
+                                "in config" % PLATFORM)
+            for bt in validBuildTypes:
+                if bt not in self._origin.buildtypes:
+                    raise WafError("Build type '%s' for platform '%s' "
+                        "was not found, check your config." % (bt, PLATFORM))
+            self._meta.buildtypes.supported = validBuildTypes
+        else:
+            self._meta.buildtypes.supported = list(allBuildTypes)
+        
         return self._meta.buildtypes.supported
 
     @property
@@ -438,7 +448,35 @@ class BuildConfHandler(object):
 
     @property
     def customToolchains(self):
-        return self._meta.toolchains.custom
+
+        if 'custom' in self._meta.toolchains:
+            return self._meta.toolchains.custom
+
+        srcToolchains = self._origin.toolchains
+        customToolchains = AutoDict()
+        for name, info in srcToolchains.items():
+            vars = deepcopy(info) # don't change origin
+            kind = vars.pop('kind', None)
+            if kind is None:
+                raise WafError("Toolchain '%s': field 'kind' not found" % name)
+            
+            for k, v in vars.items():
+                # try to identify path and do nothing in another case 
+                path = utils.unfoldPath(BUILDCONF_DIR, v)
+                if os.path.exists(path):
+                    vars[k] = path
+
+            customToolchains[name].kind = kind
+            customToolchains[name].vars = vars
+                    
+        self._meta.toolchains.custom = customToolchains
+        return customToolchains
+
+"""
+Singleton instance of BuildConfHandler for possibility using of already 
+calculated data in different modules 
+"""
+buildConfHandler = BuildConfHandler()
 
 def autoconfigure(method):
     """
@@ -463,7 +501,7 @@ def autoconfigure(method):
         return h != ravenCmn.monithash
 
     def areBuildTypesNotConfigured():
-        buildtype = getBuildTypeFromCLI()
+        buildtype = _getBuildTypeFromCLI()
         for taskName in buildconf.tasks.keys():
             taskVariant = getTaskVariantName(buildtype, taskName)
             fname = makeCacheConfFileName(taskVariant)
