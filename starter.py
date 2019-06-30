@@ -61,7 +61,7 @@ def main():
         assist.distclean()
         return 0
 
-    if cmd.options.distclean:
+    if cmd.args.distclean:
         assist.distclean()
     
     prepareDirs()

@@ -239,7 +239,7 @@ def distclean():
 
     import cli
     if cli.selected:
-        colors = {'yes' : 2, 'auto' : 1, 'no' : 0}[cli.selected.options.color]
+        colors = {'yes' : 2, 'auto' : 1, 'no' : 0}[cli.selected.args.color]
         Logs.enable_colors(colors)
 
     fullclean()
@@ -248,9 +248,9 @@ def distclean():
 
 def _getBuildTypeFromCLI():
     import cli
-    if not cli.selected or not cli.selected.options.buildtype:
+    if not cli.selected or not cli.selected.args.buildtype:
         return ''
-    return cli.selected.options.buildtype
+    return cli.selected.args.buildtype
 
 class BuildConfHandler(object):
 

@@ -115,7 +115,17 @@ def build(bld):
     srcDirNode = bld.path.find_dir(assist.SRCSYMLINKNAME)
 
     tasks = bld.env.alltasks[buildtype]
+
+    import cli
+    allowedTasks = cli.selected.args.buildtasks
+    if not allowedTasks:
+        allowedTasks = tasks.keys()
+
     for taskName, taskParams in tasks.items():
+
+        if taskName not in allowedTasks:
+            continue
+
         # task env variables are stored in separative env 
         # so it's need to switch in
         bld.variant = taskParams['task.build.env']

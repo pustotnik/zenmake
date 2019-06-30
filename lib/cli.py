@@ -16,7 +16,7 @@ from collections import namedtuple
 import argparse
 from waflib import Logs
 from waflib.Errors import WafError
-from autodict import AutoDict
+from autodict import AutoDict as _AutoDict
 
 if not Logs.log:
     Logs.init_log()
@@ -25,17 +25,17 @@ def _getDefaultBuildType():
     from assist import buildConfHandler
     return buildConfHandler.defaultBuildType
 
-ParsedCommand = namedtuple('ParsedCommand', 'name, posargs, options')
+ParsedCommand = namedtuple('ParsedCommand', 'name, args')
 
 """ 
 Object of ParsedCommand with current command after last parsing of command line
 """
 selected = None
 
-class _Command(AutoDict):
+class _Command(_AutoDict):
     def __init__(self, *args, **kwargs):
         super(_Command, self).__init__(*args, **kwargs)
-        self.setdefault('usageTextTempl', "%s [options] [task name]")
+        self.setdefault('usageTextTempl', "%s [options]")
 
 # Declarative list of commands in CLI
 _commands = [
@@ -54,6 +54,7 @@ _commands = [
         name = 'build',
         aliases = ['bld'],
         description = 'build project',
+        usageTextTempl = "%s [options] [buildtask [buildtask] ... ]",
     ),
     _Command(
         name = 'clean',
@@ -64,11 +65,29 @@ _commands = [
         name = 'distclean',
         aliases = ['dc'],
         description = 'removes the build directory with everything in it',
-        usageTextTempl = "%s"
     ),
 ]
 
-class _Option(AutoDict):
+class _PosArg(_AutoDict):
+    
+    NOTARGPARSE_FIELDS = ('name', 'commands')
+
+    def __init__(self, *args, **kwargs):
+        super(_PosArg, self).__init__(*args, **kwargs)
+
+# Declarative list of positional args after command name in CLI
+_posargs = [
+    # global options that are used before command in cmd line
+    _PosArg(
+        name = 'buildtasks',
+        nargs = '*', # this arg is optional 
+        default = [],
+        help = 'select build tasks, all tasks if nothing is selected',
+        commands = ['build'],
+    ),
+]
+
+class _Option(_AutoDict):
 
     NOTARGPARSE_FIELDS = ('names', 'commands', 'runcmd', 'isglobal')
 
@@ -191,6 +210,16 @@ class CmdLineParser(object):
         else:
             print(cmdHelps[_topic]['help'])
 
+    def _addCmdPosArgs(self, target, cmd):
+        posargs = [x for x in _posargs if cmd.name in x.commands]
+        for arg in posargs:
+            kwargs = _AutoDict()
+            for k, v in arg.items():
+                if v is None or k in _PosArg.NOTARGPARSE_FIELDS:
+                    continue
+                kwargs[k] = v
+            target.add_argument(arg.name, **kwargs)
+
     def _addOptions(self, target, cmd = None):
         if cmd is None:
             # get only global options
@@ -203,7 +232,7 @@ class CmdLineParser(object):
             options = [x for x in _options if isvalid(x)]
 
         for opt in options:
-            kwargs = AutoDict()
+            kwargs = _AutoDict()
             if 'runcmd' in opt:
                 kwargs.action = "store_true"
                 kwargs.help = "run command '%s' before command '%s'" \
@@ -214,15 +243,14 @@ class CmdLineParser(object):
                         continue
                     kwargs[k] = v
             
-            target.add_argument(*opt.names, **kwargs)        
+            target.add_argument(*opt.names, **kwargs)
 
     def _fillCmdInfo(self, parsedArgs):
-        args = AutoDict(vars(parsedArgs))
+        args = _AutoDict(vars(parsedArgs))
         cmd = self._cmdNameMap[args.pop('command')]
         self._command = ParsedCommand(
             name = cmd.name,
-            posargs = [],
-            options = args,
+            args = args,
         )
 
     def _fillWafCmdLine(self):
@@ -230,7 +258,7 @@ class CmdLineParser(object):
             raise WafError("Programming error: _command is None")
         
         cmdline = [self._command.name]
-        options = self._command.options
+        options = self._command.args
         if options.configure:
             cmdline.insert(0, 'configure')
         if options.clean:
@@ -261,10 +289,10 @@ class CmdLineParser(object):
         subparsers = self._parser.add_subparsers(title = 'list of commands',
                                     help = '', metavar = '', dest = 'command')
 
-        commandHelps = AutoDict()
+        commandHelps = _AutoDict()
         helpCmd = None
         for cmd in _commands:
-            commandHelps[cmd.name] = AutoDict()
+            commandHelps[cmd.name] = _AutoDict()
             cmdHelpInfo = commandHelps[cmd.name]
             cmdHelpInfo.usage = self._makeCmdUsageText(self.progName, cmd)
             cmdHelpInfo.help = cmd.description
@@ -278,6 +306,8 @@ class CmdLineParser(object):
             kwargs = cmdHelpInfo
             kwargs['add_help'] = False
             cmdParser = subparsers.add_parser(cmd.name, **kwargs)
+            
+            self._addCmdPosArgs(cmdParser, cmd)
 
             groupCmdOpts = cmdParser.add_argument_group('command options')
             self._addOptions(groupCmdOpts, cmd = cmd)            
