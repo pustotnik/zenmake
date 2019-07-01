@@ -152,6 +152,13 @@ _options = [
         help = 'progress bar',
     ),
     _Option(
+        names = ['-v', '--verbose'],
+        default = 0,
+        action = "count",
+        commands = [x.name for x in _commands if x.name != 'help'],
+        help = 'verbosity level -v -vv or -vvv [default: 0]',
+    ),
+    _Option(
         names = ['--color'],
         default = 'auto',
         choices = ('yes', 'no', 'auto'),
@@ -270,6 +277,8 @@ class CmdLineParser(object):
             cmdline.append('-p')
         if options.jobs:
             cmdline.append('--jobs=' + str(options.jobs))
+        if options.verbose:
+            cmdline.append('-' + options.verbose * 'v')
         if options.color:
             cmdline.append('--color=' + options.color)
         self._wafCmdLine = cmdline
