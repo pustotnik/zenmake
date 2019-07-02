@@ -520,7 +520,7 @@ class BuildConfHandler(object):
             
             for k, v in vars.items():
                 # try to identify path and do nothing in another case 
-                path = utils.unfoldPath(BUILDCONF_DIR, v)
+                path = utils.unfoldPath(PROJECTROOT, v)
                 if os.path.exists(path):
                     vars[k] = path
 
