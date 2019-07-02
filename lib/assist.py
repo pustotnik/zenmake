@@ -297,6 +297,9 @@ def distclean():
 
     Logs.info('%r finished successfully (%s)', 'distclean', cmdTimer)
 
+def isBuildConfFake():
+    return isinstance(buildconf.tasks, stringtypes)
+
 def _getBuildTypeFromCLI():
     import cli
     if not cli.selected or not cli.selected.args.buildtype:
@@ -390,6 +393,10 @@ class BuildConfHandler(object):
 
         if self.cmdLineHandled:
             return
+
+        if isBuildConfFake():
+            raise WafError('Config buildconf.py not found. Check buildconf.py '
+                            'exists in the project directory.')
 
         buildtype = _getBuildTypeFromCLI()
 

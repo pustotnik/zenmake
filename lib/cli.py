@@ -290,7 +290,8 @@ class CmdLineParser(object):
         
         # simple hack for default behavior if command is not defined
         if not args:
-            args = ['build']
+            import assist
+            args = ['help'] if assist.isBuildConfFake() else ['build']
 
         groupGlobal = self._parser.add_argument_group('global options')
         self._addOptions(groupGlobal, cmd = None)

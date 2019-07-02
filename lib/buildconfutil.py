@@ -72,9 +72,7 @@ def loadConf():
         module = utils.loadPyModule('buildconf')
         sys.dont_write_bytecode = False
     except ImportError:
-        Logs.error('Cannot load buildconf.py. Check that buildconf.py '
-                    'exists in the project directory.')
-        sys.exit(1)
+        module = utils.loadPyModule('fakebuildconf')
     
     try:
         initDefaults(module)
