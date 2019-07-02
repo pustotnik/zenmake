@@ -49,21 +49,24 @@ def init(ctx):
         class CtxClass(c):
             variant = buildtype
 
-def configure(ctx):
+def configure(conf):
 
     confHandler = assist.buildConfHandler
 
-    ctx.env.alltasks = assist.loadTasksFromCache()
-
     # make independent copy of root env
-    rootEnv   = assist.deepcopyEnv(ctx.env)
-    toolchainsEnv = assist.loadToolchains(ctx, confHandler, rootEnv)
+    rootEnv   = assist.deepcopyEnv(conf.env)
+    toolchainsEnv = assist.loadToolchains(conf, confHandler, rootEnv)
+
+    conf.env.alltasks = assist.loadTasksFromCache()
 
     buildtype = confHandler.selectedBuildType
     tasks = confHandler.tasks
-    ctx.env.alltasks[buildtype] = tasks
+    conf.env.alltasks[buildtype] = tasks
 
     for taskName, taskParams in tasks.items():
+        
+        taskParams['name'] = taskName
+
         # make variant for each task: 'buildtype.taskname'
         taskVariant = assist.getTaskVariantName(buildtype, taskName)
         # store it
@@ -75,28 +78,28 @@ def configure(ctx):
         parentEnv = assist.copyEnv(parentEnv)
 
         # and switch to selected env
-        ctx.setenv(taskVariant, env = parentEnv)
+        conf.setenv(taskVariant, env = parentEnv)
 
         # set variables
-        assist.setTaskEnvVars(ctx.env, taskParams)
+        assist.setTaskEnvVars(conf.env, taskParams)
+
+        # run checkers
+        assist.runConfTests(conf, buildtype, taskParams)
 
         # Waf always loads all *_cache.py files in directory 'c4che' during 
         # build step. So it loads all stored variants even though they 
         # aren't needed. And I decided to save variants in different files and 
         # load only needed ones.
-        ctx.env.store(assist.makeCacheConfFileName(taskVariant))
+        conf.env.store(assist.makeCacheConfFileName(taskVariant))
         
-        # It's necessary to delete variant from ctx.all_envs otherwise 
+        # It's necessary to delete variant from conf.all_envs otherwise 
         # waf will store it in 'c4che'
-        ctx.setenv('')
-        ctx.all_envs.pop(taskVariant, None)
-
-    #ctx.check(header_name='stdio.h', features='cxx cxxprogram', mandatory=False)
-    #ctx.check(header_name='cstdio', features='cxx cxxprogram', mandatory=True)
+        conf.setenv('')
+        conf.all_envs.pop(taskVariant, None)
 
     # Remove unneccesary envs
     for toolchain in toolchainsEnv.keys():
-        ctx.all_envs.pop(toolchain, None)
+        conf.all_envs.pop(toolchain, None)
 
     assist.dumpRavenCommonFile()
         
@@ -134,7 +137,7 @@ def build(bld):
         
         target = taskParams.get('target', taskName)
         kwargs = dict(
-            name     = taskName,
+            name     = taskParams.get('name', taskName),
             target   = assist.makeTargetPath(bld, buildtype, target),
             features = taskParams.get('features', ''),
             lib      = taskParams.get('sys-libs', []),

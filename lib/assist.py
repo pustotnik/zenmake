@@ -124,6 +124,45 @@ def setTaskEnvVars(env, taskParams):
         if val:
             env[var] = Utils.to_list(val)
 
+def runConfTests(cfgCtx, buildtype, taskParams):
+    
+    confTests = taskParams.get('conftests', [])
+    for entity in confTests:
+        act = entity.pop('act', None)
+        if act == 'check-sys-libs':
+            sysLibs = Utils.to_list(taskParams.get('sys-libs', []))
+            kwargs = entity
+            for lib in sysLibs:
+                kwargs['lib'] = lib
+                cfgCtx.check(**kwargs)
+        elif act == 'check-headers':
+            headers = Utils.to_list(entity.pop('names', []))
+            kwargs = entity
+            for header in headers:
+                kwargs['header_name'] = header
+                cfgCtx.check(**kwargs)
+        elif act == 'check-libs':
+            libs = Utils.to_list(entity.pop('names', []))
+            autodefine = entity.pop('autodefine', False)
+            kwargs = entity
+            for lib in libs:
+                kwargs['lib'] = lib
+                if autodefine:
+                    kwargs['define_name'] = 'HAVE_LIB_' + lib.upper()
+                cfgCtx.check(**kwargs)
+        elif act == 'check':
+            cfgCtx.check(**entity)
+        elif act == 'write-config-header':
+            fileName = entity.pop('file', '%s_%s' % 
+                                    (taskParams['name'].lower(), 'config.h'))
+            fileName = joinpath(buildtype, fileName)
+            entity['guard'] = entity.pop('guard',
+                                        Utils.quote_define_name(PROJECT_NAME + '_' + fileName))
+            cfgCtx.write_config_header(fileName, **entity)
+        else:
+            cfgCtx.fatal('unknown act %r for conftests in task %r!' % 
+                                        (act, taskParams['name']))  
+
 def loadDetectedCompiler(cfgCtx, kind):
 
     # without 'auto-'
@@ -185,12 +224,14 @@ def handleTaskIncludesParam(taskParams):
     # Includes paths are given relative to the directory containing the 
     # wscript file. Providing absolute paths are best avoided as they are 
     # a source of portability problems.
-    includes = taskParams.get('includes', None)
+    includes = taskParams.get('includes', [])
     if includes:
         if isinstance(includes, stringtypes):
             includes = includes.split()
         includes = [ x if os.path.isabs(x) else \
             joinpath(SRCSYMLINKNAME, x) for x in includes ]
+    # the includes='.' add the build directory path
+    includes.append('.')
     return includes
 
 def fullclean():
@@ -201,32 +242,42 @@ def fullclean():
     """
 
     import shutil
+    import cli
+    verbose = 1
+    if cli.selected:
+        verbose = cli.selected.args.verbose
 
     if BUILDSYMLINK and os.path.isdir(BUILDSYMLINK) and os.path.exists(BUILDSYMLINK):
-        Logs.info("Removing directory '%s'" % BUILDSYMLINK)
+        if verbose >= 1:
+            Logs.info("Removing directory '%s'" % BUILDSYMLINK)
         shutil.rmtree(BUILDSYMLINK, ignore_errors = True)
 
     if BUILDSYMLINK and os.path.islink(BUILDSYMLINK) and os.path.lexists(BUILDSYMLINK):
-        Logs.info("Removing symlink '%s'" % BUILDSYMLINK)
+        if verbose >= 1:
+            Logs.info("Removing symlink '%s'" % BUILDSYMLINK)
         os.remove(BUILDSYMLINK)
 
     if os.path.exists(BUILDROOT):
         REALBUILDROOT = os.path.realpath(BUILDROOT)
-        Logs.info("Removing directory '%s'" % REALBUILDROOT)
+        if verbose >= 1:
+            Logs.info("Removing directory '%s'" % REALBUILDROOT)
         shutil.rmtree(REALBUILDROOT, ignore_errors = True)
 
         if os.path.islink(BUILDROOT) and os.path.lexists(BUILDROOT):
-            Logs.info("Removing symlink '%s'" % BUILDROOT)
+            if verbose >= 1:
+                Logs.info("Removing symlink '%s'" % BUILDROOT)
             os.remove(BUILDROOT)
 
     lockfile = os.path.join(PROJECTROOT, Options.lockfile)
     if os.path.exists(lockfile):
-        Logs.info("Removing lockfile '%s'" % lockfile)
+        if verbose >= 1:
+            Logs.info("Removing lockfile '%s'" % lockfile)
         os.remove(lockfile)
 
     lockfile = os.path.join(PROJECTROOT, 'waf', Options.lockfile)
     if os.path.exists(lockfile):
-        Logs.info("Removing lockfile '%s'" % lockfile)
+        if verbose >= 1:
+            Logs.info("Removing lockfile '%s'" % lockfile)
         os.remove(lockfile)
 
 def distclean():
