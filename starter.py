@@ -35,7 +35,7 @@ def main():
     os.environ['WAFLOCK'] = '.lock-wafbuild'
     from waflib import Options
     Options.lockfile = '.lock-wafbuild'
-    from waflib import Scripting, Context, Build
+    from waflib import Scripting, Context, Build, Logs
 
     import assist
     import utils
@@ -54,6 +54,11 @@ def main():
         utils.mksymlink(assist.SRCROOT, assist.SRCSYMLINK)
     
     wafCmdLine = cli.parseAll(sys.argv)
+
+    if assist.isBuildConfFake():
+        Logs.error('Config buildconf.py not found. Check buildconf.py '
+                            'exists in the project directory.')
+        sys.exit(1)
     
     # Special case for 'distclean'
     cmd = cli.selected
