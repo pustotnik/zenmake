@@ -78,9 +78,9 @@ def loadConf():
         initDefaults(module)
         validateAll(module)
     except WafError as e:
-		if Logs.verbose > 1:
-			Logs.pprint('RED', e.verbose_msg)
-		Logs.error(str(e))
-		sys.exit(1)
+        if Logs.verbose > 1:
+            Logs.pprint('RED', e.verbose_msg)
+        Logs.error(str(e))
+        sys.exit(1)
 
     return module
