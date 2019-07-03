@@ -53,23 +53,23 @@ SRCSYMLINK       = joinpath(BUILDROOT, SRCSYMLINKNAME)
 WAFCACHEDIR      = joinpath(BUILDOUT, Build.CACHE_DIR)
 WAFCACHEFILE     = joinpath(WAFCACHEDIR, Build.CACHE_SUFFIX)
 
-RAVENCACHEDIR    = WAFCACHEDIR
-RAVENCACHESUFFIX = '.raven.py'
-RAVENCMNFILE     = joinpath(BUILDOUT, '.raven-common')
+ZENMAKECACHEDIR    = WAFCACHEDIR
+ZENMAKECACHESUFFIX = '.zenmake.py'
+ZENMAKECMNFILE     = joinpath(BUILDOUT, '.zenmake-common')
 
-def dumpRavenCommonFile():
+def dumpZenMakeCommonFile():
     
-    ravenCmn = ConfigSet()
+    zmCmn = ConfigSet()
     # Firstly I had added WSCRIPT_FILE in this list but then realized that 
     # it's not necessary because wscript don't have any project settings 
     # in our case.
-    ravenCmn.monitfiles = [BUILDCONF_FILE]
-    ravenCmn.monithash  = 0
+    zmCmn.monitfiles = [BUILDCONF_FILE]
+    zmCmn.monithash  = 0
 
-    for file in ravenCmn.monitfiles:
-        ravenCmn.monithash = Utils.h_list((ravenCmn.monithash, 
+    for file in zmCmn.monitfiles:
+        zmCmn.monithash = Utils.h_list((zmCmn.monithash, 
                                             Utils.readf(file, 'rb')))
-    ravenCmn.store(RAVENCMNFILE)
+    zmCmn.store(ZENMAKECMNFILE)
 
 def loadTasksFromCache():
     """
@@ -90,7 +90,7 @@ def makeTargetPath(ctx, dirName, targetName):
     return joinpath(ctx.out_dir, dirName, targetName)
 
 def makeCacheConfFileName(name):
-    return joinpath(RAVENCACHEDIR, name + RAVENCACHESUFFIX)
+    return joinpath(ZENMAKECACHEDIR, name + ZENMAKECACHESUFFIX)
 
 def getTaskVariantName(buildtype, taskName):
     return '%s.%s' % (buildtype, taskName)
@@ -543,20 +543,20 @@ def autoconfigure(method):
     """
 
     def areFilesChanged():
-        ravenCmn = ConfigSet()
+        zmCmn = ConfigSet()
         try:
-            ravenCmn.load(RAVENCMNFILE)
+            zmCmn.load(ZENMAKECMNFILE)
         except EnvironmentError:
             return True
 
         h = 0
-        for f in ravenCmn.monitfiles:
+        for f in zmCmn.monitfiles:
             try:
                 h = Utils.h_list((h, Utils.readf(f, 'rb')))
             except EnvironmentError:
                 return True
         
-        return h != ravenCmn.monithash
+        return h != zmCmn.monithash
 
     def areBuildTypesNotConfigured():
         buildtype = _getBuildTypeFromCLI()

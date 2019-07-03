@@ -7,7 +7,7 @@
 """
 
 """
-CLI for raven. 
+CLI for ZenMake. 
 WAF has own CLI and I could use it but I wanted to have a different CLI.
 """
 
@@ -190,7 +190,7 @@ class CmdLineParser(object):
 
         self._parser = argparse.ArgumentParser(prog = progName,
             formatter_class = MyHelpFormatter,
-            description = 'Raven: build system based on the Waf build system',
+            description = 'ZenMake: build system based on the Waf build system',
             usage = "%(prog)s <command> [options] [args]",
             add_help = False)
 

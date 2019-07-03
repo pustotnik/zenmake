@@ -78,9 +78,10 @@ class CompilersInfo(object):
         if compilers:
             return compilers
 
+        # load chosen module
         getterInfo = _langinfo[lang]['compiler.list']
         module = utils.loadPyModule(getterInfo['module'])
-        # call function
+        # and call function
         compilers = getattr(module, getterInfo['fun'])()
         if isinstance(compilers, utils.stringtypes):
             compilers = re.split('[ ,]+', compilers)

@@ -101,7 +101,7 @@ def configure(conf):
     for toolchain in toolchainsEnv.keys():
         conf.all_envs.pop(toolchain, None)
 
-    assist.dumpRavenCommonFile()
+    assist.dumpZenMakeCommonFile()
         
 def build(bld):
 

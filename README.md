@@ -1,4 +1,4 @@
-# Raven
+# ZenMake
 
 ## Brief
 This is one more building tool that based on WAF (https://waf.io/). Actually it is not self-sufficient build system. It's superstructure above WAF, wrapper scripts around WAF. You can regard it as some kind of extension for WAF. I don't try to hide that WAF does most the part. It's for C/C++ projects mostly but may be later I will add some other languages. Especially WAF supports a lot of other languages. It is not universal build system and is not applicable for any C/C++ project. But I hope it will be useful. I began this project for building my own C++ projects. Anyone can use this as example of using WAF also.
@@ -45,8 +45,6 @@ Actually I did't try to use it and I've forgotten about that. But it's not build
 
 Hm, here I found some info about problems with premake: https://medium.com/@julienjorge/an-overview-of-build-systems-mostly-for-c-projects-ac9931494444. And I don't like it.
 
-## Why is it called raven?
-Why not? It's just name. Like ninja or meson.
 
 ## Usage
 TODO: I will add info when tool will be really ready to use.

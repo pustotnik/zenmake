@@ -35,28 +35,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import sys
 import os
 
-# It's should be set to specific path to raven if current script is copied to 
-# some different path without all other files of raven.
-RAVEN_DIR = None
+# It's should be set to specific path to ZenMAke if current script is copied to 
+# some different path without all other files of ZenMake.
+ZENMAKE_DIR = None
 
 #######################################################################
 
 SCRIPT_FILEPATH = os.path.abspath(__file__)
 WORKING_DIR     = os.path.dirname(SCRIPT_FILEPATH)
-if not RAVEN_DIR:
-    RAVEN_DIR = os.path.dirname(os.path.realpath(SCRIPT_FILEPATH))
+if not ZENMAKE_DIR:
+    ZENMAKE_DIR = os.path.dirname(os.path.realpath(SCRIPT_FILEPATH))
 
 def main():
 
-    if RAVEN_DIR not in sys.path:
-        sys.path.insert(0, RAVEN_DIR)
-    if RAVEN_DIR != WORKING_DIR and WORKING_DIR not in sys.path:
+    if ZENMAKE_DIR not in sys.path:
+        sys.path.insert(0, ZENMAKE_DIR)
+    if ZENMAKE_DIR != WORKING_DIR and WORKING_DIR not in sys.path:
         sys.path.insert(0, WORKING_DIR) 
     
     try:
         import starter
     except ImportError:
-        print('Cannot import starter.py. Check that RAVEN_DIR has a valid path')
+        print('Cannot import starter.py. Check that ZENMAKE_DIR has a valid path')
         sys.exit(1)
         
     return starter.main()
