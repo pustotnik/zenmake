@@ -452,7 +452,7 @@ class BuildConfHandler(object):
                         "was not found, check your config." % (bt, PLATFORM))
             self._meta.buildtypes.supported = validBuildTypes
         else:
-            self._meta.buildtypes.supported = list(allBuildTypes)
+            self._meta.buildtypes.supported = list(self._meta.buildtypes.allnames)
         
         return self._meta.buildtypes.supported
 
