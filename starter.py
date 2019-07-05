@@ -12,7 +12,7 @@ import os
 if sys.hexversion < 0x2070ef0:
     raise ImportError('Python >= 2.7 is required')
 
-joinpath  = os.path.join
+joinpath = os.path.join
 
 SCRIPTS_ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
