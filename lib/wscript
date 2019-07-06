@@ -17,6 +17,7 @@ from waflib import Configure, Build, Options, Context, Logs
 from waflib.ConfigSet import ConfigSet
 
 import assist
+import utils
 
 # these variables are mandatory ('/' are converted automatically)
 top = assist.BUILDROOT
@@ -113,9 +114,16 @@ def build(bld):
         bld.fatal("Buildtype '%s' is not found! Was step 'configure' missed?" 
                     % buildtype)
 
+    # Some comments just to remember some details.
+    # - ctx.path represents the path to the wscript file being executed
+    # - ctx.root is the root of the file system or the folder containing 
+    #   the drive letters (win32 systems)
+
+    # Path must be relative
+    srcDir = os.path.relpath(assist.SRCROOT, assist.BUILDROOT)
     # Since ant_glob can traverse both source and build folders, it is a best 
-    # practice to call this method only from the most specific build node
-    srcDirNode = bld.path.find_dir(assist.SRCSYMLINKNAME)
+    # practice to call this method only from the most specific build node.
+    srcDirNode = bld.path.find_dir(srcDir)
 
     tasks = bld.env.alltasks[buildtype]
 
@@ -147,13 +155,16 @@ def build(bld):
             vnum     = taskParams.get('ver-num', ''),
         )
 
-        src = taskParams.get('source', None)
+        src = taskParams.get('source')
         if src:
-            kwargs['source'] = srcDirNode.ant_glob(
-                incl       = src.get('include', ''),
-                excl       = src.get('exclude', ''),
-                ignorecase = src.get('ignorecase', False),
-                generator = True)
+            if isinstance(src, utils.maptype):
+                kwargs['source'] = srcDirNode.ant_glob(
+                    incl       = src.get('include', ''),
+                    excl       = src.get('exclude', ''),
+                    ignorecase = src.get('ignorecase', False),
+                    generator = True)
+            else:
+                kwargs['source'] = srcDirNode.find_node(src)
 
         includes = assist.handleTaskIncludesParam(taskParams)
         if includes:

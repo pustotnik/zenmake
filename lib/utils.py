@@ -17,6 +17,11 @@ if PY3:
 else:
     stringtypes = basestring
 
+try:
+    from collections.abc import Mapping as maptype
+except ImportError:
+    from collections import Mapping as maptype
+
 def unfoldPath(cwd, path):
     if not path:
         return path

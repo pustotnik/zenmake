@@ -50,8 +50,6 @@ def main():
         # We regard LIB_DIR as a directory where file 'wscript' is located
         utils.mksymlink(joinpath(LIB_DIR, 'wscript'), 
                         joinpath(assist.BUILDROOT, 'wscript'))
-
-        utils.mksymlink(assist.SRCROOT, assist.SRCSYMLINK)
     
     wafCmdLine = cli.parseAll(sys.argv)
 

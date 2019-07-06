@@ -15,7 +15,7 @@ from waflib.ConfigSet import ConfigSet
 from waflib.Errors import WafError
 import buildconfutil
 import utils
-from utils import stringtypes
+from utils import stringtypes, maptype
 import toolchains
 from autodict import AutoDict
 
@@ -47,9 +47,6 @@ BUILDSYMLINK     = utils.unfoldPath(BUILDCONF_DIR, buildconf.buildsymlink)
 BUILDOUT         = joinpath(BUILDROOT, 'out')
 PROJECTROOT      = utils.unfoldPath(BUILDCONF_DIR, buildconf.project['root'])
 SRCROOT          = utils.unfoldPath(BUILDCONF_DIR, buildconf.srcroot)
-#SRCSYMLINKNAME   = '%s-%s' %(os.path.basename(PROJECTROOT), os.path.basename(SRCROOT))
-SRCSYMLINKNAME   = os.path.basename(PROJECTROOT)
-SRCSYMLINK       = joinpath(BUILDROOT, SRCSYMLINKNAME)
 WAFCACHEDIR      = joinpath(BUILDOUT, Build.CACHE_DIR)
 WAFCACHEFILE     = joinpath(WAFCACHEDIR, Build.CACHE_SUFFIX)
 
@@ -190,6 +187,9 @@ def loadDetectedCompiler(cfgCtx, kind):
         cfgCtx.fatal('could not configure a %s compiler!' % _kind.upper())
 
 def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
+
+    if not buildconfHandler.toolchainNames:
+        Logs.warn("WARN: No toolchains found. Is buildconf correct?")
     
     toolchainsEnv = {}
     oldEnvName = cfgCtx.variant
@@ -229,8 +229,9 @@ def handleTaskIncludesParam(taskParams):
         if isinstance(includes, stringtypes):
             includes = includes.split()
         includes = [ x if os.path.isabs(x) else \
-            joinpath(SRCSYMLINKNAME, x) for x in includes ]
-    # the includes='.' add the build directory path
+            joinpath(SRCROOT, x) for x in includes ]
+    # The includes='.' add the build directory path. It's needed to use config
+    # header with 'conftests'.
     includes.append('.')
     return includes
 
@@ -366,7 +367,7 @@ class BuildConfHandler(object):
             for bt, val in buildtypes.items():
                 btVal = val
                 btKey = bt
-                while not isinstance(btVal, collections.Mapping):
+                while not isinstance(btVal, maptype):
                     if not isinstance(btVal, stringtypes):
                         raise WafError("Invalid type of buildtype value '%s'" 
                                         % type(btVal))
@@ -490,7 +491,7 @@ class BuildConfHandler(object):
     @property
     def toolchainNames(self):
 
-        if 'allnames' in self._meta.toolchains:
+        if 'names' in self._meta.toolchains:
             return self._meta.toolchains.names
 
         # gather unique names
@@ -501,7 +502,7 @@ class BuildConfHandler(object):
                 toolchains.add(c)
 
         toolchains = tuple(toolchains)
-        self._meta.toolchains.allnames = toolchains
+        self._meta.toolchains.names = toolchains
         return toolchains
 
     @property
