@@ -116,6 +116,7 @@ _options = [
     _Option(
         names = ['-h', '--help'],
         action = 'help',
+        commands = [x.name for x in _commands], # for all commands
         help = 'show this help message for command and exit',
     ),
     _Option(
