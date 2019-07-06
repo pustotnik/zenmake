@@ -47,9 +47,16 @@ def main():
         if assist.BUILDSYMLINK and not os.path.exists(assist.BUILDSYMLINK):
             utils.mksymlink(assist.BUILDROOT, assist.BUILDSYMLINK)
 
-        # We regard LIB_DIR as a directory where file 'wscript' is located
-        utils.mksymlink(joinpath(LIB_DIR, 'wscript'), 
-                        joinpath(assist.BUILDROOT, 'wscript'))
+        # We regard LIB_DIR as a directory where file 'wscript' is located.
+        # Creating of symlink is cheaper than copying of file but on Windows OS
+        # there are some problems with using of symlinks.
+        if assist.PLATFORM == 'windows':
+            from shutil import copyfile
+            copyfile(joinpath(LIB_DIR, 'wscript'), 
+                    joinpath(assist.BUILDROOT, 'wscript'))
+        else:
+            utils.mksymlink(joinpath(LIB_DIR, 'wscript'), 
+                            joinpath(assist.BUILDROOT, 'wscript'))
     
     wafCmdLine = cli.parseAll(sys.argv)
 
