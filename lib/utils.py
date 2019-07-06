@@ -40,7 +40,21 @@ def mksymlink(src, dst, force = True):
     """
     if force and (os.path.exists(dst) or os.path.lexists(dst)):
         os.unlink(dst)
-    os.symlink(src, dst)
+
+    _mksymlink = getattr(os, "symlink", None)
+    if callable(_mksymlink):
+        _mksymlink(src, dst)
+        return
+    
+    # special case
+    # see https://stackoverflow.com/questions/6260149/os-symlink-support-in-windows
+    import ctypes
+    csl = ctypes.windll.kernel32.CreateSymbolicLinkW
+    csl.argtypes = (ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint32)
+    csl.restype = ctypes.c_ubyte
+    flags = 1 if os.path.isdir(src) else 0
+    if csl(dst, src, flags) == 0:
+        raise ctypes.WinError()
 
 def platform():
     from waflib.Utils import unversioned_sys_platform
