@@ -37,7 +37,7 @@ def initDefaults(buildconf):
     if not hasattr(buildconf, 'project'):
         setattr(buildconf, 'project', {})
     params = buildconf.project
-    params['root'] = params.get('root', '.')
+    params['root'] = params.get('root', os.curdir)
     params['name'] = params.get('name', 'NONAME')
     params['version'] = params.get('version', '0.0.0.0')
 
@@ -52,6 +52,8 @@ def initDefaults(buildconf):
     # buildtypes
     if not hasattr(buildconf, 'buildtypes'):
         setattr(buildconf, 'buildtypes', {})
+        buildconf.buildtypes['debug'] = {}
+        buildconf.buildtypes['default'] = 'debug'
 
     # tasks
     if not hasattr(buildconf, 'tasks'):
@@ -59,11 +61,12 @@ def initDefaults(buildconf):
 
     # global vars
     if not hasattr(buildconf, 'buildroot'):
-        setattr(buildconf, 'buildroot', 'build')
+        setattr(buildconf, 'buildroot', 
+                            os.path.join(buildconf.project['root'], 'build'))
     if not hasattr(buildconf, 'buildsymlink'):
         setattr(buildconf, 'buildsymlink', None)
     if not hasattr(buildconf, 'srcroot'):
-        setattr(buildconf, 'srcroot', '.')
+        setattr(buildconf, 'srcroot', buildconf.project['root'])
 
 def loadConf():
     try:
