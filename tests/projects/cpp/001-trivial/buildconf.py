@@ -6,7 +6,6 @@ buildtypes = {
     'default' : 'debug',
 }
 
-# config of tasks, this var is used by wscript
 tasks = {
     'test' : {
         'features' : 'cxx cxxprogram',
