@@ -17,11 +17,11 @@ joinpath = os.path.join
 SCRIPTS_ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
 WAF_DIR = joinpath(SCRIPTS_ROOTDIR, 'waf')
-LIB_DIR = joinpath(SCRIPTS_ROOTDIR, 'lib')
+ZM_DIR = joinpath(SCRIPTS_ROOTDIR, 'zm')
 ARGPARSE_DIR = joinpath(SCRIPTS_ROOTDIR, 'argparse')
 
 sys.path.insert(1, WAF_DIR)
-sys.path.insert(1, LIB_DIR)
+sys.path.insert(1, ZM_DIR)
 # argparse from the https://pypi.org/project/argparse/ supports alieses
 sys.path.insert(1, ARGPARSE_DIR)
 
@@ -47,15 +47,15 @@ def main():
         if assist.BUILDSYMLINK and not os.path.exists(assist.BUILDSYMLINK):
             utils.mksymlink(assist.BUILDROOT, assist.BUILDSYMLINK)
 
-        # We regard LIB_DIR as a directory where file 'wscript' is located.
+        # We regard ZM_DIR as a directory where file 'wscript' is located.
         # Creating of symlink is cheaper than copying of file but on Windows OS
         # there are some problems with using of symlinks.
         if assist.PLATFORM == 'windows':
             from shutil import copyfile
-            copyfile(joinpath(LIB_DIR, 'wscript'), 
+            copyfile(joinpath(ZM_DIR, 'wscript'), 
                     joinpath(assist.BUILDROOT, 'wscript'))
         else:
-            utils.mksymlink(joinpath(LIB_DIR, 'wscript'), 
+            utils.mksymlink(joinpath(ZM_DIR, 'wscript'), 
                             joinpath(assist.BUILDROOT, 'wscript'))
     
     wafCmdLine = cli.parseAll(sys.argv)
