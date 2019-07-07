@@ -13,7 +13,7 @@ import os
 _joinpath  = os.path.join
 _abspath   = os.path.abspath
 
-from waflib import Configure, Build, Options, Context, Logs
+from waflib import Configure, Build, Options, Context, Utils, Logs
 from waflib.ConfigSet import ConfigSet
 
 import assist
@@ -164,7 +164,8 @@ def build(bld):
                     ignorecase = src.get('ignorecase', False),
                     generator = True)
             else:
-                kwargs['source'] = srcDirNode.find_node(src)
+                src = Utils.to_list(src)
+                kwargs['source'] = [ srcDirNode.find_node(s) for s in src ]
 
         includes = assist.handleTaskIncludesParam(taskParams)
         if includes:
