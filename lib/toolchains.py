@@ -9,8 +9,8 @@
 import sys
 import re
 from waflib.Errors import WafError
-from autodict import AutoDict
-import utils
+from autodict import AutoDict as _AutoDict
+from utils import loadPyModule, stringtypes
 
 _langinfo = {
     # 'env.var' - environment variable to set compiler
@@ -37,7 +37,7 @@ _langinfo = {
 }
 
 # private cache
-_cache = AutoDict()
+_cache = _AutoDict()
 
 class CompilersInfo(object):
     
@@ -80,10 +80,10 @@ class CompilersInfo(object):
 
         # load chosen module
         getterInfo = _langinfo[lang]['compiler.list']
-        module = utils.loadPyModule(getterInfo['module'])
+        module = loadPyModule(getterInfo['module'])
         # and call function
         compilers = getattr(module, getterInfo['fun'])()
-        if isinstance(compilers, utils.stringtypes):
+        if isinstance(compilers, stringtypes):
             compilers = re.split('[ ,]+', compilers)
         
         _cache[lang].compilers = compilers
