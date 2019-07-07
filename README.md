@@ -26,14 +26,15 @@ It's very old but actual build system. But because it has too many disadvantages
 WAF is a great build system. It has a lot of possibilities. I like it and have some experience with it. But for me it's meta build system. You can build your projects only with WAF and nothing else. But before you should learn a lot about this system. So it is not easy to use.
 
 #### ninja
-Well. I don't know a lot about this system. I know that it used as backend in meson and CMake. And as I understand this systems definitely is not easy to use and it requires a lot of actions to use. 
+Well. I don't know a lot about this system. I know that it used as backend in Meson and CMake. And as I understand this systems definitely is not easy to use and it requires a lot of actions to use. 
 
-#### meson
+#### Meson
 It's really not bad build system which uses ninja as a backend to build. I tried to use it. And as result I don't like some features of it:
 
 - It tries to be smart when it's not necessary.
-- They offer to use internal language which is like python but it is not python. You can read more details about it here: https://mesonbuild.com/FAQ.html#why-is-meson-not-just-a-python-module-so-i-could-code-my-build-setup-in-python. But such reasons do not use 'real' language are not critical for me. I don't say that all reasons are silly of something like that. I just know that it is not possible to make the best system all the world. Each of them has own advantages and disadvantages. At least 'real' language gives you more freedom to make things.
+- They offer to use internal language which is like python but it is not python. You can read more details about it here: https://mesonbuild.com/FAQ.html#why-is-meson-not-just-a-python-module-so-i-could-code-my-build-setup-in-python. But such reasons do not use 'real' language are not critical for me. I don't say that all reasons are silly or something like that. I just know that it is not possible to make the best system all the world. Each of them has own advantages and disadvantages. At least 'real' language gives you more freedom to make things.
 - It doesn't support target files with a wildcard: https://mesonbuild.com/FAQ.html#why-cant-i-specify-target-files-with-a-wildcard
+- They claim that meson is 'as user friendly as possible' but I think it can be more user friendly in some things.
 
 Last feature exists also in CMake. I don't agree with the position of developers of Meson and CMake that specifying target files with a wildcard is a bad thing. For example authors of Meson wrote that it is not fast. Yes, I agree that for big projects with a lot of files it can be slow in some cases. But for all others it can be fast enough. Why didn't they make it as option? I don't know. Variant with external command in meson doesn't work very well and authors of Meson know about it. In WAF I don't have any problems with it.
 
@@ -41,7 +42,7 @@ Last feature exists also in CMake. I don't agree with the position of developers
 Nowadays we have WAF already. Scons is already too old and slow.
 
 #### Premake/GENie
-Actually I did't try to use it and I've forgotten about that. But it's not build system. It's generator for some other build systems and IDE. This is another way to build projects. I don't know how it is useful but it has status beta/alfa. I have checked some modules and it looks like something is working but something is not. And it looks like something too complex. Description of project looks good. Perhaps I had to try to use it.
+Actually I did't try to use it and I've forgotten about that. But it's not build system. It's generator for some other build systems and IDE. This is another way to build projects. I don't know how it is useful but it has status beta/alfa. I have checked some modules and it looks like something is working but something is not. And it looks like something too complex inside. Description of project looks good. Perhaps I had to try to use it.
 
 Hm, here I found some info about problems with premake: https://medium.com/@julienjorge/an-overview-of-build-systems-mostly-for-c-projects-ac9931494444. And I don't like it.
 
