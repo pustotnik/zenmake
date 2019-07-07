@@ -16,8 +16,8 @@ _abspath   = os.path.abspath
 from waflib import Configure, Build, Options, Context, Utils, Logs
 from waflib.ConfigSet import ConfigSet
 
-import assist
-import utils
+import zm.assist as assist
+from zm.utils import maptype
 
 # these variables are mandatory ('/' are converted automatically)
 top = assist.BUILDROOT
@@ -127,8 +127,8 @@ def build(bld):
 
     tasks = bld.env.alltasks[buildtype]
 
-    import cli
-    allowedTasks = cli.selected.args.buildtasks
+    import zm.cli
+    allowedTasks = zm.cli.selected.args.buildtasks
     if not allowedTasks:
         allowedTasks = tasks.keys()
 
@@ -157,7 +157,7 @@ def build(bld):
 
         src = taskParams.get('source')
         if src:
-            if isinstance(src, utils.maptype):
+            if isinstance(src, maptype):
                 kwargs['source'] = srcDirNode.ant_glob(
                     incl       = src.get('include', ''),
                     excl       = src.get('exclude', ''),

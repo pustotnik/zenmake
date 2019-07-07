@@ -13,17 +13,17 @@ from copy import deepcopy
 from waflib import Context, Options, Configure, Build, Utils, Logs
 from waflib.ConfigSet import ConfigSet
 from waflib.Errors import WafError
-import buildconfutil
-import utils
-from utils import stringtypes, maptype
-import toolchains
-from autodict import AutoDict
+import zm.buildconfutil
+import zm.utils
+from zm.utils import stringtypes, maptype
+import zm.toolchains as toolchains
+from zm.autodict import AutoDict
 
 joinpath = os.path.join
 abspath  = os.path.abspath
 realpath = os.path.realpath
 
-buildconf = buildconfutil.loadConf()
+buildconf = zm.buildconfutil.loadConf()
 
 # Execute the configuration automatically
 autoconfig = buildconf.features['autoconfig']
@@ -38,15 +38,15 @@ wafcommands = []
 PROJECT_NAME     = buildconf.project['name']
 PROJECT_VERSION  = buildconf.project['version']
 
-PLATFORM         = utils.platform()
+PLATFORM         = zm.utils.platform()
 WSCRIPT_FILE     = joinpath(os.path.dirname(realpath(__file__)), 'wscript')
 BUILDCONF_FILE   = abspath(buildconf.__file__)
 BUILDCONF_DIR    = os.path.dirname(BUILDCONF_FILE)
-BUILDROOT        = utils.unfoldPath(BUILDCONF_DIR, buildconf.buildroot)
-BUILDSYMLINK     = utils.unfoldPath(BUILDCONF_DIR, buildconf.buildsymlink)
+BUILDROOT        = zm.utils.unfoldPath(BUILDCONF_DIR, buildconf.buildroot)
+BUILDSYMLINK     = zm.utils.unfoldPath(BUILDCONF_DIR, buildconf.buildsymlink)
 BUILDOUT         = joinpath(BUILDROOT, 'out')
-PROJECTROOT      = utils.unfoldPath(BUILDCONF_DIR, buildconf.project['root'])
-SRCROOT          = utils.unfoldPath(BUILDCONF_DIR, buildconf.srcroot)
+PROJECTROOT      = zm.utils.unfoldPath(BUILDCONF_DIR, buildconf.project['root'])
+SRCROOT          = zm.utils.unfoldPath(BUILDCONF_DIR, buildconf.srcroot)
 WAFCACHEDIR      = joinpath(BUILDOUT, Build.CACHE_DIR)
 WAFCACHEFILE     = joinpath(WAFCACHEDIR, Build.CACHE_SUFFIX)
 
@@ -243,10 +243,10 @@ def fullclean():
     """
 
     import shutil
-    import cli
+    import zm.cli
     verbose = 1
-    if cli.selected:
-        verbose = cli.selected.args.verbose
+    if zm.cli.selected:
+        verbose = zm.cli.selected.args.verbose
 
     if BUILDSYMLINK and os.path.isdir(BUILDSYMLINK) and os.path.exists(BUILDSYMLINK):
         if verbose >= 1:
@@ -289,7 +289,7 @@ def distclean():
 
     cmdTimer = Utils.Timer()
 
-    import cli
+    import zm.cli as cli
     if cli.selected:
         colors = {'yes' : 2, 'auto' : 1, 'no' : 0}[cli.selected.args.color]
         Logs.enable_colors(colors)
@@ -302,7 +302,7 @@ def isBuildConfFake():
     return isinstance(buildconf.tasks, stringtypes)
 
 def _getBuildTypeFromCLI():
-    import cli
+    import zm.cli as cli
     if not cli.selected or not cli.selected.args.buildtype:
         return ''
     return cli.selected.args.buildtype
@@ -521,7 +521,7 @@ class BuildConfHandler(object):
             
             for k, v in vars.items():
                 # try to identify path and do nothing in another case 
-                path = utils.unfoldPath(PROJECTROOT, v)
+                path = zm.utils.unfoldPath(PROJECTROOT, v)
                 if os.path.exists(path):
                     vars[k] = path
 

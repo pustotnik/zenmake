@@ -16,13 +16,13 @@ from collections import namedtuple
 import argparse
 from waflib import Logs
 from waflib.Errors import WafError
-from autodict import AutoDict as _AutoDict
+from zm.autodict import AutoDict as _AutoDict
 
 if not Logs.log:
     Logs.init_log()
 
 def _getDefaultBuildType():
-    from assist import buildConfHandler
+    from zm.assist import buildConfHandler
     return buildConfHandler.defaultBuildType
 
 ParsedCommand = namedtuple('ParsedCommand', 'name, args')
@@ -291,8 +291,8 @@ class CmdLineParser(object):
         
         # simple hack for default behavior if command is not defined
         if not args:
-            import assist
-            args = ['help'] if assist.isBuildConfFake() else ['build']
+            import zm.assist
+            args = ['help'] if zm.assist.isBuildConfFake() else ['build']
 
         groupGlobal = self._parser.add_argument_group('global options')
         self._addOptions(groupGlobal, cmd = None)

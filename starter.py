@@ -21,7 +21,6 @@ ZM_DIR = joinpath(SCRIPTS_ROOTDIR, 'zm')
 ARGPARSE_DIR = joinpath(SCRIPTS_ROOTDIR, 'argparse')
 
 sys.path.insert(1, WAF_DIR)
-sys.path.insert(1, ZM_DIR)
 # argparse from the https://pypi.org/project/argparse/ supports alieses
 sys.path.insert(1, ARGPARSE_DIR)
 
@@ -37,49 +36,49 @@ def main():
     Options.lockfile = '.lock-wafbuild'
     from waflib import Scripting, Context, Build, Logs
 
-    import assist
-    import utils
-    import cli
+    import zm.assist
+    import zm.utils
+    import zm.cli
 
     def prepareDirs():    
-        if not os.path.exists(assist.BUILDROOT):
-            os.makedirs(assist.BUILDROOT)
-        if assist.BUILDSYMLINK and not os.path.exists(assist.BUILDSYMLINK):
-            utils.mksymlink(assist.BUILDROOT, assist.BUILDSYMLINK)
+        if not os.path.exists(zm.assist.BUILDROOT):
+            os.makedirs(zm.assist.BUILDROOT)
+        if zm.assist.BUILDSYMLINK and not os.path.exists(zm.assist.BUILDSYMLINK):
+            zm.utils.mksymlink(zm.assist.BUILDROOT, zm.assist.BUILDSYMLINK)
 
         # We regard ZM_DIR as a directory where file 'wscript' is located.
         # Creating of symlink is cheaper than copying of file but on Windows OS
         # there are some problems with using of symlinks.
-        if assist.PLATFORM == 'windows':
+        if zm.assist.PLATFORM == 'windows':
             from shutil import copyfile
             copyfile(joinpath(ZM_DIR, 'wscript'), 
-                    joinpath(assist.BUILDROOT, 'wscript'))
+                    joinpath(zm.assist.BUILDROOT, 'wscript'))
         else:
-            utils.mksymlink(joinpath(ZM_DIR, 'wscript'), 
-                            joinpath(assist.BUILDROOT, 'wscript'))
+            zm.utils.mksymlink(joinpath(ZM_DIR, 'wscript'), 
+                            joinpath(zm.assist.BUILDROOT, 'wscript'))
     
-    wafCmdLine = cli.parseAll(sys.argv)
+    wafCmdLine = zm.cli.parseAll(sys.argv)
 
-    if assist.isBuildConfFake():
+    if zm.assist.isBuildConfFake():
         Logs.error('Config buildconf.py not found. Check buildconf.py '
                             'exists in the project directory.')
         sys.exit(1)
     
     # Special case for 'distclean'
-    cmd = cli.selected
+    cmd = zm.cli.selected
     if cmd.name == 'distclean':
-        assist.distclean()
+        zm.assist.distclean()
         return 0
 
     if cmd.args.distclean:
-        assist.distclean()
+        zm.assist.distclean()
     
     prepareDirs()
 
     del sys.argv[1:]
     sys.argv.extend(wafCmdLine)
-    Build.BuildContext.execute = assist.autoconfigure(Build.BuildContext.execute)
-    cwd = assist.BUILDROOT
+    Build.BuildContext.execute = zm.assist.autoconfigure(Build.BuildContext.execute)
+    cwd = zm.assist.BUILDROOT
     Scripting.waf_entry_point(cwd, Context.WAFVERSION, WAF_DIR)
 
     return 0

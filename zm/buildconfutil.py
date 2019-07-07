@@ -10,7 +10,7 @@ import os
 import sys
 from waflib import Logs
 from waflib.Errors import WafError
-from utils import loadPyModule
+from zm.utils import loadPyModule
 
 if not Logs.log:
     Logs.init_log()
@@ -75,7 +75,7 @@ def loadConf():
         module = loadPyModule('buildconf')
         sys.dont_write_bytecode = False
     except ImportError:
-        module = loadPyModule('fakebuildconf')
+        module = loadPyModule('zm.fakebuildconf')
     
     try:
         initDefaults(module)

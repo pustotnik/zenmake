@@ -9,8 +9,8 @@
 import sys
 import re
 from waflib.Errors import WafError
-from autodict import AutoDict as _AutoDict
-from utils import loadPyModule, stringtypes
+from zm.autodict import AutoDict as _AutoDict
+from zm.utils import loadPyModule, stringtypes
 
 _langinfo = {
     # 'env.var' - environment variable to set compiler
