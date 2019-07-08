@@ -32,9 +32,6 @@ autoconfig = buildconf.features['autoconfig']
 # It's just to rid of needless work and to save working time.
 Configure.autoconfig = False
 
-# List of all waf commands. It's used for correct work of distclean command
-wafcommands = []
-
 PROJECT_NAME     = buildconf.project['name']
 PROJECT_VERSION  = buildconf.project['version']
 

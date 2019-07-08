@@ -122,7 +122,7 @@ _options = [
     _Option(
         names = ['-b', '--buildtype'],
         default = _getDefaultBuildType(),
-        commands = ['configure', 'build'],
+        commands = ['configure', 'build', 'clean'],
         help = 'set the build type [default: %r]' % _getDefaultBuildType(),
     ),
     _Option(
@@ -195,6 +195,47 @@ class CmdLineParser(object):
             usage = "%(prog)s <command> [options] [args]",
             add_help = False)
 
+        groupGlobal = self._parser.add_argument_group('global options')
+        self._addOptions(groupGlobal, cmd = None)
+
+        subparsers = self._parser.add_subparsers(title = 'list of commands',
+                                    help = '', metavar = '', dest = 'command')
+
+        commandHelps = _AutoDict()
+        helpCmd = None
+        for cmd in _commands:
+            commandHelps[cmd.name] = _AutoDict()
+            cmdHelpInfo = commandHelps[cmd.name]
+            cmdHelpInfo.usage = self._makeCmdUsageText(self.progName, cmd)
+            cmdHelpInfo.help = cmd.description
+            cmdHelpInfo.description = cmd.description.capitalize()
+            cmdHelpInfo.aliases = cmd.aliases
+
+            if cmd.name == 'help': # It will be processed below
+                helpCmd = cmd
+                continue
+            
+            kwargs = cmdHelpInfo
+            kwargs['add_help'] = False
+            cmdParser = subparsers.add_parser(cmd.name, **kwargs)
+            
+            self._addCmdPosArgs(cmdParser, cmd)
+
+            groupCmdOpts = cmdParser.add_argument_group('command options')
+            self._addOptions(groupCmdOpts, cmd = cmd)            
+            cmdHelpInfo.help = cmdParser.format_help()
+
+        # special case for 'help' command
+        if helpCmd is None:
+            raise WafError("Programming error: no command 'help' in _commands")
+        cmd = helpCmd
+        kwargs = commandHelps[cmd.name]
+        kwargs['add_help'] = True
+        cmdParser = subparsers.add_parser(cmd.name, **kwargs)
+        cmdParser.add_argument('topic', nargs='?', default = 'overview')
+
+        self._commandHelps = commandHelps
+
     def _joinCmdNameWithAlieses(self, cmd):
         if not cmd.aliases:
             return cmd.name
@@ -266,7 +307,9 @@ class CmdLineParser(object):
             raise WafError("Programming error: _command is None")
         
         cmdline = [self._command.name]
-        options = self._command.args
+        # self._command.args is AutoDict and it means that it'll create
+        # nonexistent keys in it, so we need to make copy
+        options = _AutoDict(self._command.args)
         if options.configure:
             cmdline.insert(0, 'configure')
         if options.clean:
@@ -275,7 +318,7 @@ class CmdLineParser(object):
         #if options.distclean:
         #    cmdline.insert(0, 'distclean')
         if options.progress:
-            cmdline.append('-p')
+            cmdline.append('--progress')
         if options.jobs:
             cmdline.append('--jobs=' + str(options.jobs))
         if options.verbose:
@@ -293,52 +336,14 @@ class CmdLineParser(object):
         if not args:
             import zm.assist
             args = ['help'] if zm.assist.isBuildConfFake() else ['build']
-
-        groupGlobal = self._parser.add_argument_group('global options')
-        self._addOptions(groupGlobal, cmd = None)
-
-        subparsers = self._parser.add_subparsers(title = 'list of commands',
-                                    help = '', metavar = '', dest = 'command')
-
-        commandHelps = _AutoDict()
-        helpCmd = None
-        for cmd in _commands:
-            commandHelps[cmd.name] = _AutoDict()
-            cmdHelpInfo = commandHelps[cmd.name]
-            cmdHelpInfo.usage = self._makeCmdUsageText(self.progName, cmd)
-            cmdHelpInfo.help = cmd.description
-            cmdHelpInfo.description = cmd.description.capitalize()
-            cmdHelpInfo.aliases = cmd.aliases
-
-            if cmd.name == 'help': # It will be processed below
-                helpCmd = cmd
-                continue
-            
-            kwargs = cmdHelpInfo
-            kwargs['add_help'] = False
-            cmdParser = subparsers.add_parser(cmd.name, **kwargs)
-            
-            self._addCmdPosArgs(cmdParser, cmd)
-
-            groupCmdOpts = cmdParser.add_argument_group('command options')
-            self._addOptions(groupCmdOpts, cmd = cmd)            
-            cmdHelpInfo.help = cmdParser.format_help()
-
-        # special case for 'help' command
-        if helpCmd is None:
-            raise WafError("Programming error: no command 'help' in _commands")
-        cmd = helpCmd
-        kwargs = commandHelps[cmd.name]
-        kwargs['add_help'] = True
-        cmdParser = subparsers.add_parser(cmd.name, **kwargs)
-        cmdParser.add_argument('topic', nargs='?', default = 'overview')
         
         # parse
         args = self._parser.parse_args(args)
         selected = self._cmdNameMap[args.command]
 
         if selected.name == 'help':
-            self._showHelp(commandHelps, args.topic)
+            self._fillCmdInfo(args)
+            self._showHelp(self._commandHelps, args.topic)
             sys.exit(0)
         
         self._fillCmdInfo(args)
@@ -356,9 +361,6 @@ class CmdLineParser(object):
         current command line args for WAF command after last 
         parsing of command line
         """
-        if self._command is None:
-            self.parse()
-
         return self._wafCmdLine
 
 def parseAll(args):

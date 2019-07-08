@@ -38,9 +38,6 @@ def options(opt):
 
 def init(ctx):
 
-    from copy import deepcopy
-    assist.wafcommands = deepcopy(Options.commands)
-
     confHandler = assist.buildConfHandler
     confHandler.handleCmdLineArgs()
 
@@ -111,7 +108,11 @@ def build(bld):
 
     buildtype = bld.variant
     if buildtype not in bld.env.alltasks:
-        bld.fatal("Buildtype '%s' is not found! Was step 'configure' missed?" 
+        if bld.cmd == 'clean':
+            Logs.info("Buildtype '%s' not found. Nothing to clean" % buildtype)
+            return
+        else:
+            bld.fatal("Buildtype '%s' not found! Was step 'configure' missed?" 
                     % buildtype)
 
     # Some comments just to remember some details.
