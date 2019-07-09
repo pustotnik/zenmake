@@ -26,5 +26,6 @@ def unsetEnviron():
 
 if __name__ == '__main__':
     unsetEnviron()
-    argv = [sys.argv[0], 'discover', TESTS_DIR, '*test*.py']
-    unittest.main(verbosity=2, argv = argv)
+    suite = unittest.TestLoader().discover(TESTS_DIR, pattern='*test*.py')
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    sys.exit(not result.wasSuccessful())
