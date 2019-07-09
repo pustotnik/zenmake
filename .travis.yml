@@ -10,17 +10,22 @@ branches:
 os:
   - linux
 
-compiler:
-  - gcc
-  - clang
+#compiler:
+#  - gcc
+#  - clang
 
-#language:
-#  - cpp
 language: python
-python:
-  - "2.7"
-  - "3.5"
-  - "3.6"
+#python:
+#  - "2.7"
+#  - "3.5"
+#  - "3.6"
+
+matrix:
+  include:
+  - python: 2.7
+  - python: 3.5
+  - python: 3.6
+  - python: 3.7
 
 script:
 - "./tests.py"
