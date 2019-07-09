@@ -75,7 +75,7 @@ class TestCli(unittest.TestCase):
             self.assertEqual(self.parser.command, cmd)
             self.assertEqual(cmd.name, cmdname)
             self.assertDictEqual(cmd.args, expectedArgs)
-            for i in xrange(len(check['wafArgs'])):
+            for i in range(len(check['wafArgs'])):
                 wafArg = check['wafArgs'][i]
                 self.assertIn(wafArg, self.parser.wafCmdLine[i])
 
