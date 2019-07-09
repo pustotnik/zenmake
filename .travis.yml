@@ -26,6 +26,10 @@ matrix:
   - python: 3.5
   - python: 3.6
   - python: 3.7
+  - name: Python 2.7.12 on macOS
+    os: osx
+    language: objective-c
+    env: PYENV_VERSION=2.7.12
 
 script:
 - "./tests.py"
