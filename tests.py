@@ -27,4 +27,5 @@ def unsetEnviron():
 if __name__ == '__main__':
     unsetEnviron()
     suite = unittest.TestLoader().discover(TESTS_DIR, pattern='*test*.py')
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    rv = unittest.TextTestRunner(verbosity=2).run(suite)
+    sys.exit(rv)
