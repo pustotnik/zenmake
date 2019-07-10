@@ -37,7 +37,7 @@ matrix:
     env: PYENV_VERSION=3.6.5
   - name: Python 3.7 on macOS
     os: osx
-    osx_image: xcode10.2 
+    osx_image: xcode11 
     language: shell
     env: PYENV_VERSION=3.7.2
 
@@ -50,7 +50,7 @@ install:
       #eval "$(pyenv init -)"
       #eval "$(pyenv virtualenv-init -)"
       pip3 install --upgrade pip
-      #pyenv install --list
+      pyenv install --list
       pyenv install -s $PYENV_VERSION
       export PATH="$HOME/.pyenv/shims:${PATH}"
       pyenv versions
