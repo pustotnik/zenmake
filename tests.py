@@ -25,6 +25,8 @@ def unsetEnviron():
         os.environ.pop(v, None)
 
 if __name__ == '__main__':
+    import zm.utils
+    zm.utils.printSysInfo()
     unsetEnviron()
     suite = unittest.TestLoader().discover(TESTS_DIR, pattern='*test*.py')
     result = unittest.TextTestRunner(verbosity=2).run(suite)

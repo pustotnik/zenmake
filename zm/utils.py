@@ -71,3 +71,38 @@ def loadPyModule(name):
     # Without non empty fromlist __import__ returns the top-level package
     module = __import__(name, fromlist=[None])
     return module
+
+def printSysInfo():
+    """
+    Print some useful system info. It's for testing mostly.
+    """
+    
+    import subprocess
+    import platform as _platform
+    from distutils.spawn import find_executable
+    from zm.autodict import AutoDict as _AutoDict
+
+    print('= System information =')
+    print('CPU name: %s' % _platform.processor())
+    print('Bit architecture: %s' % _platform.architecture()[0])
+    print('Platform: %s' % platform())
+    print('Platform id string: %s' % _platform.platform())
+    print('Python version: %s' % _platform.python_version())
+    print('Python implementation: %s' % _platform.python_implementation())
+
+    compilers = [
+        _AutoDict(header = 'GCC:', bin = 'gcc', verargs = ['--version']),
+        _AutoDict(header = 'CLANG:', bin = 'clang', verargs = ['--version']),
+        _AutoDict(header = 'MSVC:', bin = 'cl', verargs = []),
+    ]
+    for compiler in compilers:
+        bin = find_executable(compiler.bin)
+        if bin:
+            ver = subprocess.check_output([bin] + compiler.verargs, 
+                                            universal_newlines = True)
+            ver = ver.split('\n')[0]
+        else:
+            ver = 'not found'
+        print('%s: %s' % (compiler.header, ver))
+
+    print('')
