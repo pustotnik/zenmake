@@ -9,7 +9,7 @@
 
 import sys 
 import os
-if sys.hexversion < 0x2070ef0:
+if sys.hexversion < 0x2070000:
     raise ImportError('Python >= 2.7 is required')
 
 joinpath = os.path.join
