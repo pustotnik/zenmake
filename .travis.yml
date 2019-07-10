@@ -22,7 +22,10 @@ matrix:
     python: 3.6
   - name: Python 3.7 on Linux
     python: 3.7
-  - name: pypy3.5 on Linux
+  - name: pypy (with python 3.5) on Linux
+    # https://docs.travis-ci.com/user/languages/python/#pypy-support
+    # https://travis-ci.community/t/confusing-pypy-versions/2505
+    # https://travis-ci.community/t/pypy-2-7-on-xenial/889
     python: pypy3.5
   - name: Python 2.7 on macOS
     os: osx
@@ -41,13 +44,14 @@ matrix:
     osx_image: xcode11 
     language: shell
     env: PYENV_VERSION=3.7.2
-  - name: Python 3.7 on windows
+  - name: Python 3.7 on Windows
     # https://github.com/cclauss/Travis-CI-Python-on-three-OSes
     os: windows
     language: shell
     before_install:
-      #- choco install python
+      # by default choco installs last version of python
       - choco install python --version 3.7.2
+      # I'm not sure that it's necessary
       - python -m pip install --upgrade pip
     env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
 
