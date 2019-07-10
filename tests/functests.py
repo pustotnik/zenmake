@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# coding=utf8
+# coding=utf-8
 #
 
 """
@@ -26,7 +26,6 @@ ZM_BIN = os.path.normpath(joinpath(TESTS_DIR, os.path.pardir, "zenmake"))
 class _BaseProjectBuild(object):
 
     def _runZm(self, cmdline):
-        print(cmdline)
         timeout = 60 * 5
         proc = subprocess.Popen(cmdline, stdout = subprocess.PIPE, 
                             stderr = subprocess.STDOUT, cwd = self.cwd,
