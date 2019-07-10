@@ -16,10 +16,10 @@ matrix:
   include:
   - name: Python 2.7 on Linux
     python: 2.7
-  - name: Python 3.5 on Linux
-    python: 3.5
-  - name: Python 3.6 on Linux
-    python: 3.6
+  #- name: Python 3.5 on Linux
+  #  python: 3.5
+  #- name: Python 3.6 on Linux
+  #  python: 3.6
   - name: Python 3.7 on Linux
     python: 3.7
   #- name: Python 2.7 on macOS
@@ -45,20 +45,18 @@ install:
   - |
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then
       set -ex
-      brew update
-      #brew install openssl readline
-      #brew outdated pyenv || brew upgrade pyenv
-      brew install pyenv-virtualenv
-      eval "$(pyenv init -)"
-      eval "$(pyenv virtualenv-init -)"
+      #brew update
+      #brew install pyenv-virtualenv
+      #eval "$(pyenv init -)"
+      #eval "$(pyenv virtualenv-init -)"
       #pip3 install --upgrade pip
       #pyenv install --list
       pyenv install -s $PYENV_VERSION
       export PATH="$HOME/.pyenv/shims:${PATH}"
       pyenv versions
-      pyenv virtualenvs
-      pyenv virtualenv $PYENV_VERSION tenv
-      pyenv activate tenv
+      #pyenv virtualenvs
+      #pyenv virtualenv $PYENV_VERSION tenv
+      #pyenv activate tenv
       #source venv/bin/activate
       # A manual check that the correct version of Python is running.
       python --version
