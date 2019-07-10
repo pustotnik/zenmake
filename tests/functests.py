@@ -18,13 +18,15 @@ import zm.buildconfutil
 
 joinpath = os.path.join
 
+PLATFORM = zm.utils.platform()
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_PROJECTS_DIR = joinpath(TESTS_DIR, 'projects')
-ZM_BIN = joinpath(TESTS_DIR, os.path.pardir, "zenmake")
+ZM_BIN = os.path.normpath(joinpath(TESTS_DIR, os.path.pardir, "zenmake"))
 
 class _BaseProjectBuild(object):
 
     def _runZm(self, cmdline):
+        print(cmdline)
         timeout = 60 * 5
         proc = subprocess.Popen(cmdline, stdout = subprocess.PIPE, 
                             stderr = subprocess.STDOUT, cwd = self.cwd,
@@ -61,7 +63,10 @@ class _BaseProjectBuild(object):
         sys.path.remove(self.cwd)
 
     def testJustBuild(self):
-        cmdLine = [ZM_BIN, 'build']
+        if PLATFORM == 'windows':
+            cmdLine = ['python', ZM_BIN, 'build']
+        else:
+            cmdLine = [ZM_BIN, 'build']
         self.assertEqual(self._runZm(cmdLine), 0)
 
 def collectProjectDirs():
