@@ -70,7 +70,7 @@ install:
 script:
   #- |
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      python tests.py
+      python tests.py;
     else
-      ./tests.py
-    fi
+      ./tests.py;
+    fi;
