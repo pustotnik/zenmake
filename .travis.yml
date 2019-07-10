@@ -49,9 +49,11 @@ install:
       #brew install pyenv-virtualenv
       #eval "$(pyenv init -)"
       #eval "$(pyenv virtualenv-init -)"
-      pip3 install --upgrade pip
+      #pip3 install --upgrade pip
       #pyenv install --list
       pyenv install -s $PYENV_VERSION
+      #SHIMS="$(pyenv root)/shims"
+      export PATH="$(pyenv root)/shims:${PATH}"
       #export PATH="$HOME/.pyenv/shims:${PATH}"
       pyenv versions
       #pyenv virtualenvs
