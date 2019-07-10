@@ -25,25 +25,33 @@ matrix:
   - name: Python 2.7.12 on macOS
     os: osx
     #osx_image: xcode7.3
-    language: objective-c
+    language: shell
     env: PYENV_VERSION=2.7.12
   - name: Python 3.5.5 on macOS
     os: osx
-    language: objective-c
+    language: shell
     env: PYENV_VERSION=3.5.5
   - name: Python 3.6.5 on macOS
     os: osx
-    language: objective-c
+    language: shell
     env: PYENV_VERSION=3.6.5
-  - name: Python 3.7.2 running on macOS
+  - name: Python 3.7.2 on macOS
     os: osx
     osx_image: xcode10.2 
     language: shell
 
 install:
   - |
+    set -ex
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-      pip3 install --upgrade pip
+      #pip3 install --upgrade pip
+      pyenv install --list
+      pyenv install -s $PYENV_VERSION
+      export PATH="$HOME/.pyenv/shims:${PATH}"
+      pyenv-virtualenv venv
+      source venv/bin/activate
+      # A manual check that the correct version of Python is running.
+      python --version
     fi
 
 script:
