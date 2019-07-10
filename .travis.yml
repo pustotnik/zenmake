@@ -16,21 +16,20 @@ matrix:
   include:
   - name: Python 2.7 on Linux
     python: 2.7
-  #- name: Python 3.5 on Linux
-  #  python: 3.5
-  #- name: Python 3.6 on Linux
-  #  python: 3.6
+  - name: Python 3.5 on Linux
+    python: 3.5
+  - name: Python 3.6 on Linux
+    python: 3.6
   - name: Python 3.7 on Linux
     python: 3.7
-  #- name: Python 2.7 on macOS
-  #  os: osx
-  #  #osx_image: xcode7.3
-  #  language: shell
-  #  env: PYENV_VERSION=2.7.12
-  #- name: Python 3.5 on macOS
-  #  os: osx
-  #  language: shell
-  #  env: PYENV_VERSION=3.5.5
+  - name: Python 2.7 on macOS
+    os: osx
+    language: shell
+    env: PYENV_VERSION=2.7.12
+  - name: Python 3.5 on macOS
+    os: osx
+    language: shell
+    env: PYENV_VERSION=3.5.5
   - name: Python 3.6 on macOS
     os: osx
     language: shell
@@ -45,23 +44,15 @@ install:
   - |
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then
       #set -ex
-      #brew update
-      #brew install pyenv-virtualenv
-      #eval "$(pyenv init -)"
-      #eval "$(pyenv virtualenv-init -)"
       #pip3 install --upgrade pip
-      #pyenv install --list
-      pyenv install -s $PYENV_VERSION
-      #SHIMS="$(pyenv root)/shims"
+      #eval "$(pyenv init -)"
       export PATH="$(pyenv root)/shims:${PATH}"
       #export PATH="$HOME/.pyenv/shims:${PATH}"
-      pyenv versions
-      #pyenv virtualenvs
-      #pyenv virtualenv $PYENV_VERSION tenv
-      #pyenv activate tenv
-      #source venv/bin/activate
+      #pyenv install --list
+      pyenv install -s $PYENV_VERSION
+      #pyenv versions
       # A manual check that the correct version of Python is running.
-      python --version
+      #python --version
       #set +ex
     fi
 
