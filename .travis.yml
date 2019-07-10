@@ -46,16 +46,20 @@ install:
     if [ "$TRAVIS_OS_NAME" == "osx" ]; then
       set -ex
       brew update
-      brew install openssl readline
-      brew outdated pyenv || brew upgrade pyenv
+      #brew install openssl readline
+      #brew outdated pyenv || brew upgrade pyenv
       brew install pyenv-virtualenv
-      pip3 install --upgrade pip
+      eval "$(pyenv init -)"
+      eval "$(pyenv virtualenv-init -)"
+      #pip3 install --upgrade pip
       #pyenv install --list
       pyenv install -s $PYENV_VERSION
       export PATH="$HOME/.pyenv/shims:${PATH}"
-      #pyenv-virtualenv venv
-      pyenv virtualenv venv
-      source venv/bin/activate
+      pyenv versions
+      pyenv virtualenvs
+      pyenv virtualenv $PYENV_VERSION tenv
+      pyenv activate tenv
+      #source venv/bin/activate
       # A manual check that the correct version of Python is running.
       python --version
       set +ex
