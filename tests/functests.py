@@ -62,10 +62,10 @@ class _BaseProjectBuild(object):
         sys.path.remove(self.cwd)
 
     def testJustBuild(self):
-        if PLATFORM == 'windows':
-            cmdLine = ['python', ZM_BIN, 'build']
-        else:
-            cmdLine = [ZM_BIN, 'build']
+        pythonbin = sys.executable
+        if not pythonbin:
+            pythonbin = 'python'
+        cmdLine = [pythonbin, ZM_BIN, 'build']
         self.assertEqual(self._runZm(cmdLine), 0)
 
 def collectProjectDirs():
