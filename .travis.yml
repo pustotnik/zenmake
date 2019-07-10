@@ -16,38 +16,38 @@ matrix:
   include:
   - name: Python 2.7 on Linux
     python: 2.7
-  #- name: Python 3.5 on Linux
-  #  python: 3.5
+  - name: Python 3.5 on Linux
+    python: 3.5
   - name: Python 3.6 on Linux
     python: 3.6
-  #- name: Python 3.7 on Linux
-  #  python: 3.7
+  - name: Python 3.7 on Linux
+    python: 3.7
   - name: Python 2.7 on macOS
     os: osx
     language: shell
     env: PYENV_VERSION=2.7.12
-  #- name: Python 3.5 on macOS
-  #  os: osx
-  #  language: shell
-  #  env: PYENV_VERSION=3.5.5
-  #- name: Python 3.6 on macOS
-  #  os: osx
-  #  language: shell
-  #  env: PYENV_VERSION=3.6.5
-  #- name: Python 3.7 on macOS
-  #  os: osx
-  #  osx_image: xcode11 
-  #  language: shell
-  #  env: PYENV_VERSION=3.7.2
-  - name: Python 3.7 on windows
-    # https://github.com/cclauss/Travis-CI-Python-on-three-OSes
-    os: windows
+  - name: Python 3.5 on macOS
+    os: osx
     language: shell
-    before_install:
-      #- choco install python
-      - choco install python --version 3.7.2
-      - python -m pip install --upgrade pip
-    env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
+    env: PYENV_VERSION=3.5.5
+  - name: Python 3.6 on macOS
+    os: osx
+    language: shell
+    env: PYENV_VERSION=3.6.5
+  - name: Python 3.7 on macOS
+    os: osx
+    osx_image: xcode11 
+    language: shell
+    env: PYENV_VERSION=3.7.2
+  #- name: Python 3.7 on windows
+  #  # https://github.com/cclauss/Travis-CI-Python-on-three-OSes
+  #  os: windows
+  #  language: shell
+  #  before_install:
+  #    #- choco install python
+  #    - choco install python --version 3.7.2
+  #    - python -m pip install --upgrade pip
+  #  env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
 
 install:
   - |
@@ -68,7 +68,6 @@ install:
     fi
 
 script:
-  #- |
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
       python tests.py;
     else
