@@ -53,7 +53,8 @@ install:
       #pyenv install --list
       pyenv install -s $PYENV_VERSION
       export PATH="$HOME/.pyenv/shims:${PATH}"
-      pyenv-virtualenv venv
+      #pyenv-virtualenv venv
+      pyenv virtualenv venv
       source venv/bin/activate
       # A manual check that the correct version of Python is running.
       python --version
