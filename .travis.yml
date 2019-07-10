@@ -39,10 +39,18 @@ matrix:
     osx_image: xcode11 
     language: shell
     env: PYENV_VERSION=3.7.2
+  - name: Python 3.7 on windows
+    # https://github.com/cclauss/Travis-CI-Python-on-three-OSes
+    os: windows
+    language: shell
+    before_install:
+      - choco install python
+      - python -m pip install --upgrade pip
+    env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
 
 install:
   - |
-    if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       #set -ex
       #pip3 install --upgrade pip
       #eval "$(pyenv init -)"
@@ -54,7 +62,14 @@ install:
       # A manual check that the correct version of Python is running.
       python --version
       #set +ex
+    elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      pip3 install --upgrade pip
     fi
 
 script:
-- "./tests.py"
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      python tests.py
+    else
+      "./tests.py"
+    fi
