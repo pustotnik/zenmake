@@ -48,11 +48,11 @@ install:
       #eval "$(pyenv init -)"
       export PATH="$(pyenv root)/shims:${PATH}"
       #export PATH="$HOME/.pyenv/shims:${PATH}"
-      #pyenv install --list
+      pyenv install --list
       pyenv install -s $PYENV_VERSION
-      #pyenv versions
+      pyenv versions
       # A manual check that the correct version of Python is running.
-      #python --version
+      python --version
       #set +ex
     fi
 
