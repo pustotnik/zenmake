@@ -16,18 +16,22 @@ matrix:
   include:
   - name: Python 2.7 on Linux
     python: 2.7
-    env: TITLE='Python 2.7 on Linux'
+    env: NAME='Python 2.7 on Linux'
   - name: Python 3.5 on Linux
     python: 3.5
-  #- name: Python 3.6 on Linux
-  #  python: 3.6
-  #- name: Python 3.7 on Linux
-  #  python: 3.7
-  #- name: PyPy (with python 3.5) on Linux
-  #  # https://docs.travis-ci.com/user/languages/python/#pypy-support
-  #  # https://travis-ci.community/t/confusing-pypy-versions/2505
-  #  # https://travis-ci.community/t/pypy-2-7-on-xenial/889
-  #  python: pypy3.5
+    env: NAME='Python 3.5 on Linux'
+  - name: Python 3.6 on Linux
+    python: 3.6
+    env: NAME='Python 3.6 on Linux'
+  - name: Python 3.7 on Linux
+    python: 3.7
+    env: NAME='Python 3.7 on Linux'
+  - name: PyPy (with python 3.5) on Linux
+    # https://docs.travis-ci.com/user/languages/python/#pypy-support
+    # https://travis-ci.community/t/confusing-pypy-versions/2505
+    # https://travis-ci.community/t/pypy-2-7-on-xenial/889
+    python: pypy3.5
+    env: NAME='PyPy (with python 3.5) on Linux'
   #- name: Python 3.7 on Windows
   #  # https://docs.travis-ci.com/user/reference/windows/
   #  # https://github.com/cclauss/Travis-CI-Python-on-three-OSes
@@ -44,23 +48,31 @@ matrix:
   - name: Python 2.7 on macOS
     os: osx
     language: shell
-    env: PYENV_VERSION=2.7.12
-  #- name: Python 3.5 on macOS
-  #  os: osx
-  #  language: shell
-  #  env: PYENV_VERSION=3.5.5
-  #- name: Python 3.6 on macOS
-  #  os: osx
-  #  language: shell
-  #  env: PYENV_VERSION=3.6.5
-  #- name: Python 3.7 on macOS
-  #  os: osx
-  #  osx_image: xcode11 
-  #  language: shell
-  #  env: PYENV_VERSION=3.7.2
+    env: 
+      - PYENV_VERSION=2.7.12
+      - NAME='Python 2.7 on macOS'
+  - name: Python 3.5 on macOS
+    os: osx
+    language: shell
+    env: 
+      - PYENV_VERSION=3.5.5
+      - NAME='Python 3.5 on macOS'
+  - name: Python 3.6 on macOS
+    os: osx
+    language: shell
+    env: 
+      - PYENV_VERSION=3.6.5
+      - NAME='Python 3.6 on macOS'
+  - name: Python 3.7 on macOS
+    os: osx
+    osx_image: xcode11 
+    language: shell
+    env: 
+      - PYENV_VERSION=3.7.2
+      - NAME='Python 3.7 on macOS'
 
 before_install:
-  #- pip install codecov
+  - pip install codecov
   #- pip install python-coveralls
   - pip install coveralls
 
@@ -90,5 +102,5 @@ script:
     fi;
 
 after_success:
-  #- codecov
+  - codecov
   - coveralls
