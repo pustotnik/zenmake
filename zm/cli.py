@@ -19,7 +19,7 @@ from waflib.Errors import WafError
 from zm.autodict import AutoDict as _AutoDict
 
 if not Logs.log:
-    Logs.init_log()
+    Logs.init_log() # pragma: no cover
 
 def _getDefaultBuildType():
     from zm.assist import buildConfHandler
@@ -227,7 +227,7 @@ class CmdLineParser(object):
 
         # special case for 'help' command
         if helpCmd is None:
-            raise WafError("Programming error: no command 'help' in _commands")
+            raise WafError("Programming error: no command 'help' in _commands") # pragma: no cover
         cmd = helpCmd
         kwargs = commandHelps[cmd.name]
         kwargs['add_help'] = True
@@ -248,7 +248,7 @@ class CmdLineParser(object):
     def _showHelp(self, cmdHelps, topic):
         if topic == 'overview':
             self._parser.print_help()
-            return
+            return True
 
         _topic = self._cmdNameMap.get(topic, None)
         if _topic:
@@ -256,8 +256,10 @@ class CmdLineParser(object):
 
         if _topic is None or _topic not in cmdHelps:
             Logs.error("Unknown command/topic to show help: '%s'" % topic)
-        else:
-            print(cmdHelps[_topic]['help'])
+            return False
+        
+        print(cmdHelps[_topic]['help'])
+        return True
 
     def _addCmdPosArgs(self, target, cmd):
         posargs = [x for x in _posargs if cmd.name in x.commands]
@@ -304,7 +306,7 @@ class CmdLineParser(object):
 
     def _fillWafCmdLine(self):
         if self._command is None:
-            raise WafError("Programming error: _command is None")
+            raise WafError("Programming error: _command is None") # pragma: no cover
         
         cmdline = [self._command.name]
         # self._command.args is AutoDict and it means that it'll create
@@ -344,7 +346,7 @@ class CmdLineParser(object):
         if selected.name == 'help':
             self._fillCmdInfo(args)
             self._showHelp(self._commandHelps, args.topic)
-            sys.exit(0)
+            sys.exit(not self._showHelp(self._commandHelps, args.topic))
         
         self._fillCmdInfo(args)
         self._fillWafCmdLine()

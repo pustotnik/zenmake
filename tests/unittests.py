@@ -52,11 +52,12 @@ class TestCli(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             with capturedOutput() as (out, err):
                 self.parser.parse(args)
-        return cm.exception.code, out.getvalue().strip()
+        return cm.exception.code, out.getvalue().strip(), err.getvalue().strip()
 
     def _testMainHelpMsg(self, args):
-        ecode, out = self._parseHelpArgs(args)
+        ecode, out, err = self._parseHelpArgs(args)
         
+        self.assertFalse(err)
         self.assertEqual(ecode, 0)
         self.assertTrue('ZenMake' in out)
         self.assertTrue('based on the Waf build system' in out)
@@ -66,18 +67,35 @@ class TestCli(unittest.TestCase):
         self.assertListEqual(self.parser.wafCmdLine, [])
 
     def _assertAllsForCmd(self, cmdname, checks, baseExpectedArgs):
+
         for check in checks:
             expectedArgs = deepcopy(baseExpectedArgs)
             expectedArgs.update(check['expectedArgsUpdate'])
+
+            def assertAll(cmd, parsercmd, wafcmdline):
+                self.assertIsNotNone(cmd)
+                self.assertIsNotNone(parsercmd)
+                self.assertEqual(parsercmd, cmd)
+                self.assertEqual(cmd.name, cmdname)
+                self.assertDictEqual(cmd.args, expectedArgs)
+                for i in range(len(check['wafArgs'])):
+                    wafArg = check['wafArgs'][i]
+                    self.assertIn(wafArg, wafcmdline[i])
+            
+            # parser with explicit args
             cmd = self.parser.parse(check['args'])
-            self.assertIsNotNone(cmd)
-            self.assertIsNotNone(self.parser.command)
-            self.assertEqual(self.parser.command, cmd)
-            self.assertEqual(cmd.name, cmdname)
-            self.assertDictEqual(cmd.args, expectedArgs)
-            for i in range(len(check['wafArgs'])):
-                wafArg = check['wafArgs'][i]
-                self.assertIn(wafArg, self.parser.wafCmdLine[i])
+            assertAll(cmd, self.parser.command, self.parser.wafCmdLine)
+            
+            # parser with args from sys.argv
+            oldargv = sys.argv
+            sys.argv = ['zenmake'] + check['args']
+            cmd = self.parser.parse()
+            sys.argv = oldargv
+            assertAll(cmd, self.parser.command, self.parser.wafCmdLine)
+
+            # zm.cli.parseAll
+            wafCmdLine = zm.cli.parseAll(['zenmake'] + check['args'])
+            assertAll(zm.cli.selected, zm.cli.selected, wafCmdLine)
 
     def testEmpty(self):        
         self._testMainHelpMsg([])
@@ -85,11 +103,19 @@ class TestCli(unittest.TestCase):
     def testHelp(self):
         self._testMainHelpMsg(['help'])
 
+    def testHelpWrongTopic(self):
+        args = ['help', 'qwerty']
+        ecode, out, err = self._parseHelpArgs(args)
+        self.assertFalse(out)
+        self.assertTrue('Unknown command/topic' in err)
+        self.assertNotEqual(ecode, 0)
+
     def testHelpForCmds(self):
         for cmd in zm.cli._commands:
             args = ['help', cmd.name]
-            ecode, out = self._parseHelpArgs(args)
+            ecode, out, err = self._parseHelpArgs(args)
             self.assertEqual(ecode, 0)
+            self.assertFalse(err)
             if cmd.name == 'help':
                 self.assertTrue('show help' in out)
             else:
