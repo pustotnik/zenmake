@@ -16,6 +16,7 @@ matrix:
   include:
   - name: Python 2.7 on Linux
     python: 2.7
+    env: TITLE='Python 2.7 on Linux'
   - name: Python 3.5 on Linux
     python: 3.5
   #- name: Python 3.6 on Linux
@@ -60,7 +61,8 @@ matrix:
 
 before_install:
   #- pip install codecov
-  - pip install python-coveralls
+  #- pip install python-coveralls
+  - pip install coveralls
 
 install:
   - |
