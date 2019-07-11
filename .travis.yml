@@ -103,4 +103,5 @@ script:
 
 after_success:
   - codecov
-  - coveralls
+  #- coveralls
+  - COVERALLS_PARALLEL=true coveralls
