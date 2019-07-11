@@ -3,6 +3,7 @@
 #### Status
 
 [![Travis](https://travis-ci.com/pustotnik/zenmake.svg?branch=master)](https://travis-ci.com/pustotnik/zenmake)
+[![codecov](https://codecov.io/gh/pustotnik/zenmake/branch/master/graph/badge.svg)](https://codecov.io/gh/pustotnik/zenmake)
 
 ## Brief
 This is one more building tool that based on WAF (https://waf.io/). Actually it is not self-sufficient build system. It's superstructure above WAF, wrapper scripts around WAF. You can regard it as some kind of extension for WAF. I don't try to hide that WAF does most the part. It's for C/C++ projects mostly but may be later I will add some other languages. Especially WAF supports a lot of other languages. It is not universal build system and is not applicable for any C/C++ project. But I hope it will be useful. I began this project for building my own C++ projects. Anyone can use this as example of using WAF also.
