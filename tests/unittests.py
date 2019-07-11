@@ -19,6 +19,7 @@ except ImportError:
 import starter
 import zm.utils
 import zm.buildconfutil
+import zm.autodict
 import zm.cli
 import zm.assist
 
@@ -59,8 +60,8 @@ class TestCli(unittest.TestCase):
         
         self.assertFalse(err)
         self.assertEqual(ecode, 0)
-        self.assertTrue('ZenMake' in out)
-        self.assertTrue('based on the Waf build system' in out)
+        self.assertIn('ZenMake', out)
+        self.assertIn('based on the Waf build system', out)
         self.assertIsNotNone(self.parser.command)
         self.assertEqual(self.parser.command.name, 'help')
         self.assertDictEqual(self.parser.command.args, {'topic': 'overview'})
@@ -107,7 +108,7 @@ class TestCli(unittest.TestCase):
         args = ['help', 'qwerty']
         ecode, out, err = self._parseHelpArgs(args)
         self.assertFalse(out)
-        self.assertTrue('Unknown command/topic' in err)
+        self.assertIn('Unknown command/topic', err)
         self.assertNotEqual(ecode, 0)
 
     def testHelpForCmds(self):
@@ -117,9 +118,9 @@ class TestCli(unittest.TestCase):
             self.assertEqual(ecode, 0)
             self.assertFalse(err)
             if cmd.name == 'help':
-                self.assertTrue('show help' in out)
+                self.assertIn('show help', out)
             else:
-                self.assertTrue(cmd.description.capitalize() in out)
+                self.assertIn(cmd.description.capitalize(), out)
 
     def testCmdBuild(self):
         
@@ -344,3 +345,25 @@ class TestUtils(unittest.TestCase):
         
         self.assertEqual(zm.utils.unfoldPath(cwd, joinpath('$ABC', relpath)),
                         joinpath(cwd, 'qwerty', relpath))
+
+class TestAutoDict(unittest.TestCase):
+    
+    def setUp(self):
+        self.longMessage = True
+
+    def testAll(self):
+        d = zm.autodict.AutoDict()
+        d['test'] = 10
+        self.assertDictEqual(d, {'test' : 10})
+        self.assertTrue(hasattr(d, 'test'))
+        self.assertEqual(d['test'], d.test)
+
+        self.assertNotIn('something', d)
+        d.something = 123
+        self.assertIn('something', d)
+
+        self.assertFalse(d.test2)
+        self.assertFalse(d['test3'].test4)
+
+        d2 = zm.autodict.AutoDict(dict(a = 1, b =2))
+        self.assertDictEqual(d2, dict(a = 1, b =2))

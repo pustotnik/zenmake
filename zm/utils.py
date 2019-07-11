@@ -13,9 +13,9 @@ PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] >= 3
 
 if PY3:
-    stringtypes = str
+    stringtypes = str # pragma: no cover
 else:
-    stringtypes = basestring
+    stringtypes = basestring # pragma: no cover
 
 try:
     from collections.abc import Mapping as maptype
@@ -60,7 +60,7 @@ def platform():
     from waflib.Utils import unversioned_sys_platform
     result = unversioned_sys_platform()
     if result.startswith('win32'):
-        result = 'windows'
+        result = 'windows' # pragma: no cover
     return result
 
 def loadPyModule(name):
