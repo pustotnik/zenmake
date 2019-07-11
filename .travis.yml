@@ -43,7 +43,6 @@ matrix:
       # I'm not sure that it's necessary
       - python -m pip install --upgrade pip
       # for coverage report
-      - python -m pip install codecov
       - python -m pip install coveralls
     env: 
       - PATH=/c/Python37:/c/Python37/Scripts:$PATH
@@ -75,7 +74,6 @@ matrix:
       - NAME='Python 3.7 on macOS'
 
 before_install:
-  - pip install codecov
   - pip install coveralls
 
 install:
@@ -104,5 +102,4 @@ script:
     fi;
 
 after_success:
-  - codecov
   - coveralls

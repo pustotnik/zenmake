@@ -3,7 +3,6 @@
 #### Status
 
 [![Travis](https://travis-ci.com/pustotnik/zenmake.svg?branch=master)](https://travis-ci.com/pustotnik/zenmake)
-[![codecov](https://codecov.io/gh/pustotnik/zenmake/branch/master/graph/badge.svg)](https://codecov.io/gh/pustotnik/zenmake)
 [![coveralls](https://coveralls.io/repos/github/pustotnik/zenmake/badge.svg)](https://coveralls.io/github/pustotnik/zenmake)
 
 ## Brief
