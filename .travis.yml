@@ -56,6 +56,9 @@ matrix:
     language: shell
     env: PYENV_VERSION=3.7.2
 
+before_install:
+  - pip install codecov
+
 install:
   - |
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
@@ -78,5 +81,8 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
       python tests.py;
     else
-      ./tests.py;
+      coverage run tests.py;
     fi;
+
+after_success:
+  - codecov
