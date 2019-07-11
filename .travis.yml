@@ -37,6 +37,8 @@ matrix:
       - choco install python --version 3.7.2
       # I'm not sure that it's necessary
       - python -m pip install --upgrade pip
+      # for coverage report
+      - python -m pip install codecov
     env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
   - name: Python 2.7 on macOS
     os: osx
@@ -79,7 +81,7 @@ install:
 
 script:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      python tests.py;
+      python -m coverage run tests.py;
     else
       coverage run tests.py;
     fi;
