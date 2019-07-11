@@ -49,13 +49,9 @@ def main():
         # We regard ZM_DIR as a directory where file 'wscript' is located.
         # Creating of symlink is cheaper than copying of file but on Windows OS
         # there are some problems with using of symlinks.
-        if zm.assist.PLATFORM == 'windows':
-            from shutil import copyfile
-            copyfile(joinpath(ZM_DIR, 'wscript'), 
+        from shutil import copyfile
+        copyfile(joinpath(ZM_DIR, 'wscript'), 
                     joinpath(zm.assist.BUILDROOT, 'wscript'))
-        else:
-            zm.utils.mksymlink(joinpath(ZM_DIR, 'wscript'), 
-                            joinpath(zm.assist.BUILDROOT, 'wscript'))
     
     wafCmdLine = zm.cli.parseAll(sys.argv)
 
