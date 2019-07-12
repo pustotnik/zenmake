@@ -10,35 +10,11 @@
 """
 
 import sys
-import os
 import unittest
 from copy import deepcopy
-from contextlib import contextmanager
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
-import starter
-import zm.utils
+import tests.common as cmn
 import zm.buildconfutil
-import zm.autodict
 import zm.cli
-import zm.assist
-
-joinpath = os.path.join
-
-TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
-TEST_PROJECTS_DIR = joinpath(TESTS_DIR, 'projects')
-
-@contextmanager
-def capturedOutput():
-    newout, newerr = StringIO(), StringIO()
-    oldout, olderr = sys.stdout, sys.stderr
-    try:
-        sys.stdout, sys.stderr = newout, newerr
-        yield sys.stdout, sys.stderr
-    finally:
-        sys.stdout, sys.stderr = oldout, olderr
 
 class TestCli(unittest.TestCase):
 
@@ -53,7 +29,7 @@ class TestCli(unittest.TestCase):
     def _parseHelpArgs(self, args):
         # CLI prints help and does exit
         with self.assertRaises(SystemExit) as cm:
-            with capturedOutput() as (out, err):
+            with cmn.capturedOutput() as (out, err):
                 self.parser.parse(args)
         return cm.exception.code, out.getvalue().strip(), err.getvalue().strip()
 
@@ -320,52 +296,3 @@ class TestCli(unittest.TestCase):
         ]
 
         self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
-
-class TestUtils(unittest.TestCase):
-
-    def setUp(self):
-        self.longMessage = True
-
-    def tearDown(self):
-        pass
-
-    def testUnfoldPath(self):
-        # it should be always absolute path
-        cwd = os.getcwd()
-
-        abspath = joinpath(cwd, 'something')
-        relpath = joinpath('a', 'b', 'c')
-
-        self.assertIsNone(zm.utils.unfoldPath(cwd, None))
-        self.assertEqual(zm.utils.unfoldPath(cwd, abspath), abspath)
-
-        path = zm.utils.unfoldPath(cwd, relpath)
-        self.assertEqual(joinpath(cwd, relpath), path)
-        self.assertTrue(os.path.isabs(zm.utils.unfoldPath(abspath, relpath)))
-
-        os.environ['ABC'] = 'qwerty'
-
-        self.assertEqual(zm.utils.unfoldPath(cwd, joinpath('$ABC', relpath)),
-                        joinpath(cwd, 'qwerty', relpath))
-
-class TestAutoDict(unittest.TestCase):
-
-    def setUp(self):
-        self.longMessage = True
-
-    def testAll(self):
-        d = zm.autodict.AutoDict()
-        d['test'] = 10
-        self.assertDictEqual(d, {'test' : 10})
-        self.assertTrue(hasattr(d, 'test'))
-        self.assertEqual(d['test'], d.test)
-
-        self.assertNotIn('something', d)
-        d.something = 123
-        self.assertIn('something', d)
-
-        self.assertFalse(d.test2)
-        self.assertFalse(d['test3'].test4)
-
-        d2 = zm.autodict.AutoDict(dict(a = 1, b =2))
-        self.assertDictEqual(d2, dict(a = 1, b =2))

@@ -55,7 +55,10 @@ def mksymlink(src, dst, force = True):
         _mksymlink(src, dst)
         return
 
-    # special case
+    if platform() != 'windows':
+        raise NotImplementedError
+
+    # special solution for python 2 on windows
     # see https://stackoverflow.com/questions/6260149/os-symlink-support-in-windows
     import ctypes
     csl = ctypes.windll.kernel32.CreateSymbolicLinkW

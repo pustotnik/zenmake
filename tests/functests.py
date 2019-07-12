@@ -14,7 +14,7 @@ import os
 import subprocess
 import shutil
 import unittest
-import starter
+import tests.common as cmn
 import zm.utils
 import zm.buildconfutil
 
@@ -22,7 +22,7 @@ joinpath = os.path.join
 
 PLATFORM = zm.utils.platform()
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
-TEST_PROJECTS_DIR = joinpath(TESTS_DIR, 'projects')
+TEST_PROJECTS_DIR = joinpath(cmn.sharedtmpdir, 'projects')
 ZM_BIN = os.path.normpath(joinpath(TESTS_DIR, os.path.pardir, "zenmake"))
 
 class _BaseProjectBuild(object):
@@ -77,6 +77,9 @@ def collectProjectDirs():
             result.append(os.path.relpath(dirpath, TEST_PROJECTS_DIR))
     result.sort()
     return result
+
+# Copy projects into tmp dir
+shutil.copytree(joinpath(TESTS_DIR, 'projects'), TEST_PROJECTS_DIR)
 
 # Declare test cases for each project dynamically
 allprojects = collectProjectDirs()
