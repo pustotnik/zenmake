@@ -41,13 +41,6 @@ matrix:
       - PATH=/c/Python37:/c/Python37/Scripts:$PATH
       - PYTHON_VER=3.7.2
       - NAME='Python 3.7 on Windows'
-  - name: Python 2.7 on Windows
-    os: windows
-    language: shell
-    env:
-      - PATH=/c/Python27:/c/Python27/Scripts:$PATH
-      - PYTHON_VER=2.7.11
-      - NAME='Python 2.7 on Windows'
   - name: Python 2.7 on macOS
     os: osx
     language: shell
