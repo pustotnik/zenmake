@@ -1,7 +1,9 @@
 # ZenMake
 
-#### Status
-
+[![Licence](https://img.shields.io/pypi/l/zenmake.svg)](https://pypi.org/project/zenmake/)
+[![Python](https://img.shields.io/pypi/pyversions/zenmake.svg)](https://pypi.org/project/zenmake/)
+[![PythonImpl](https://img.shields.io/pypi/implementation/zenmake.svg)](https://pypi.org/project/zenmake/)
+[![PyPI](https://img.shields.io/pypi/v/zenmake.svg)](https://pypi.org/project/zenmake/)
 [![Travis](https://travis-ci.com/pustotnik/zenmake.svg?branch=master)](https://travis-ci.com/pustotnik/zenmake)
 [![coveralls](https://coveralls.io/repos/github/pustotnik/zenmake/badge.svg)](https://coveralls.io/github/pustotnik/zenmake)
 
