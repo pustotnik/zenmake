@@ -20,6 +20,8 @@ Programming Language :: Python :: 3.7
 Programming Language :: Python :: Implementation :: CPython
 Programming Language :: Python :: Implementation :: PyPy
 Operating System :: POSIX :: Linux
+Operating System :: MacOS
+Operating System :: Microsoft :: Windows
 Topic :: Software Development :: Build Tools
 """
 
