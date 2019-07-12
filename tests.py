@@ -2,12 +2,14 @@
 # coding=utf-8
 #
 
+# pylint: skip-file
+
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-import sys 
+import sys
 import os
 import unittest
 import starter

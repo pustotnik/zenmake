@@ -16,6 +16,9 @@ if not Logs.log:
     Logs.init_log()
 
 def validateAll(buildconf):
+    """
+    Validate selected buildconf object
+    """
 
     if not buildconf.tasks:
         raise WafError("No tasks were found in buildconf.")
@@ -61,14 +64,18 @@ def initDefaults(buildconf):
 
     # global vars
     if not hasattr(buildconf, 'buildroot'):
-        setattr(buildconf, 'buildroot', 
-                            os.path.join(buildconf.project['root'], 'build'))
+        setattr(buildconf, 'buildroot',
+                os.path.join(buildconf.project['root'], 'build'))
     if not hasattr(buildconf, 'buildsymlink'):
         setattr(buildconf, 'buildsymlink', None)
     if not hasattr(buildconf, 'srcroot'):
         setattr(buildconf, 'srcroot', buildconf.project['root'])
 
 def loadConf():
+    """
+    Load buildconf
+    """
+
     try:
         # Avoid writing .pyc files
         sys.dont_write_bytecode = True
@@ -76,14 +83,14 @@ def loadConf():
         sys.dont_write_bytecode = False
     except ImportError:
         module = loadPyModule('zm.fakebuildconf')
-    
+
     try:
         initDefaults(module)
         validateAll(module)
-    except WafError as e:
+    except WafError as ex:
         if Logs.verbose > 1:
-            Logs.pprint('RED', e.verbose_msg)
-        Logs.error(str(e))
+            Logs.pprint('RED', ex.verbose_msg)
+        Logs.error(str(ex))
         sys.exit(1)
 
     return module

@@ -6,7 +6,6 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-import sys
 import re
 from waflib.Errors import WafError
 from zm.autodict import AutoDict as _AutoDict
@@ -15,7 +14,7 @@ from zm.utils import loadPyModule, stringtypes
 _langinfo = {
     # 'env.var' - environment variable to set compiler
     # 'env.flagvars' - env flag variables that have effect from system environment
-    # 'cfgenv.vars' - WAF ConfigSet variables that is used on 'configure' step 
+    # 'cfgenv.vars' - WAF ConfigSet variables that is used on 'configure' step
     'c' : {
         'env.var'      : 'CC',
         'env.flagvars' : ('CFLAGS', 'CPPFLAGS', 'LDFLAGS'),
@@ -40,37 +39,60 @@ _langinfo = {
 _cache = _AutoDict()
 
 class CompilersInfo(object):
-    
+    """
+    Class for getting some compiler info for supported compilers
+    """
+
+    __slots__ = []
+
     @staticmethod
     def allFlagVars():
-        vars = _cache.get('all.env.flag.vars', [])
-        if vars:
-            return vars
+        """
+        For all compilers return list of all env flag variables that have effect
+        from system environment.
+        """
 
-        for lang, info in _langinfo.items():
-            vars.extend(info['env.flagvars'])
-        vars = list(set(vars))
-        _cache['all.env.flag.vars'] = vars
-        return vars
+        _vars = _cache.get('all.env.flag.vars', [])
+        if _vars:
+            return _vars
+
+        for info in _langinfo.values():
+            _vars.extend(info['env.flagvars'])
+        _vars = list(set(_vars))
+        _cache['all.env.flag.vars'] = _vars
+        return _vars
 
     @staticmethod
     def allCfgEnvVars():
-        vars = _cache.get('all.cfg.env.vars', [])
-        if vars:
-            return vars
+        """
+        For all compilers return list of all WAF ConfigSet variables
+        that is used on 'configure' step.
+        """
 
-        for lang, info in _langinfo.items():
-            vars.extend(info['cfgenv.vars'])
-        vars = list(set(vars))
-        _cache['all.cfg.env.vars'] = vars
-        return vars
-    
+        _vars = _cache.get('all.cfg.env.vars', [])
+        if _vars:
+            return _vars
+
+        for info in _langinfo.values():
+            _vars.extend(info['cfgenv.vars'])
+        _vars = list(set(_vars))
+        _cache['all.cfg.env.vars'] = _vars
+        return _vars
+
     @staticmethod
     def allVarsToSetCompiler():
+        """
+        Return combined list of all environment variables to set compiler.
+        """
+
         return [x['env.var'] for x in _langinfo.values()]
 
     @staticmethod
     def compilers(lang):
+        """
+        Return compilers set for selected language
+        """
+
         if not lang or lang not in _langinfo:
             raise WafError("Compiler for '%s' is not supported" % lang)
 
@@ -85,12 +107,16 @@ class CompilersInfo(object):
         compilers = getattr(module, getterInfo['fun'])()
         if isinstance(compilers, stringtypes):
             compilers = re.split('[ ,]+', compilers)
-        
+
         _cache[lang].compilers = compilers
         return compilers
-    
+
     @staticmethod
     def varToSetCompiler(lang):
+        """
+        For selected language return environment variable to set compiler.
+        """
+
         if not lang or lang not in _langinfo:
             raise WafError("Compiler for '%s' is not supported" % lang)
         return _langinfo[lang]['env.var']

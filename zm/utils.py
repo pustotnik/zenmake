@@ -12,6 +12,9 @@ import sys
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] >= 3
 
+#pylint: disable=invalid-name,undefined-variable,unused-import
+
+# Some python2/3 compatible stuffs
 if PY3:
     stringtypes = str # pragma: no cover
 else:
@@ -22,7 +25,13 @@ try:
 except ImportError:
     from collections import Mapping as maptype
 
+#pylint: enable=invalid-name,undefined-variable,unused-import
+
 def unfoldPath(cwd, path):
+    """
+    Unfold path applying os.path.expandvars, os.path.expanduser and
+    os.path.abspath
+    """
     if not path:
         return path
 
@@ -45,7 +54,7 @@ def mksymlink(src, dst, force = True):
     if callable(_mksymlink):
         _mksymlink(src, dst)
         return
-    
+
     # special case
     # see https://stackoverflow.com/questions/6260149/os-symlink-support-in-windows
     import ctypes
@@ -57,6 +66,9 @@ def mksymlink(src, dst, force = True):
         raise ctypes.WinError()
 
 def platform():
+    """
+    Return current system platfom. For MS Windows paltfrom is always 'windows'.
+    """
     from waflib.Utils import unversioned_sys_platform
     result = unversioned_sys_platform()
     if result.startswith('win32'):
@@ -67,7 +79,7 @@ def loadPyModule(name):
     """
     Load python module by name
     """
-    
+
     # Without non empty fromlist __import__ returns the top-level package
     module = __import__(name, fromlist=[None])
     return module
@@ -76,7 +88,7 @@ def printSysInfo():
     """
     Print some useful system info. It's for testing mostly.
     """
-    
+
     import subprocess
     import platform as _platform
     from distutils.spawn import find_executable
@@ -96,10 +108,10 @@ def printSysInfo():
         _AutoDict(header = 'MSVC:', bin = 'cl', verargs = []),
     ]
     for compiler in compilers:
-        bin = find_executable(compiler.bin)
-        if bin:
-            ver = subprocess.check_output([bin] + compiler.verargs, 
-                                            universal_newlines = True)
+        _bin = find_executable(compiler.bin)
+        if _bin:
+            ver = subprocess.check_output([_bin] + compiler.verargs,
+                                          universal_newlines = True)
             ver = ver.split('\n')[0]
         else:
             ver = 'not found'

@@ -2,12 +2,14 @@
 # coding=utf-8
 #
 
+# pylint: skip-file
+
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-import sys 
+import sys
 import os
 import subprocess
 import shutil
@@ -27,7 +29,7 @@ class _BaseProjectBuild(object):
 
     def _runZm(self, cmdline):
         timeout = 60 * 5
-        proc = subprocess.Popen(cmdline, stdout = subprocess.PIPE, 
+        proc = subprocess.Popen(cmdline, stdout = subprocess.PIPE,
                             stderr = subprocess.STDOUT, cwd = self.cwd,
                             env = os.environ.copy(), universal_newlines = True)
         if zm.utils.PY3:

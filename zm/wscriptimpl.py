@@ -12,20 +12,32 @@ from waflib.ConfigSet import ConfigSet
 import zm.assist as assist
 from zm.utils import maptype
 
+# pylint: disable=unused-argument
+
 def options(opt):
+    """
+    Implementation for wscript.options
+    It's called by Waf as method where cmdline options can be added/removed
+    """
 
     # This method WAF calls before all other methods including 'init'
 
     # Remove incompatible options
     #opt.parser.remove_option('-o')
     #opt.parser.remove_option('-t')
-    pass
 
 def init(ctx):
+    """
+    Partial implementation for wscript.init
+    It's called by Waf before all other commands but after 'options'
+    """
 
     assist.buildConfHandler.handleCmdLineArgs()
 
 def configure(conf):
+    """
+    Implementation for wscript.configure
+    """
 
     confHandler = assist.buildConfHandler
 
@@ -40,7 +52,7 @@ def configure(conf):
     conf.env.alltasks[buildtype] = tasks
 
     for taskName, taskParams in tasks.items():
-        
+
         taskParams['name'] = taskName
 
         # make variant for each task: 'buildtype.taskname'
@@ -62,24 +74,27 @@ def configure(conf):
         # run checkers
         assist.runConfTests(conf, buildtype, taskParams)
 
-        # Waf always loads all *_cache.py files in directory 'c4che' during 
-        # build step. So it loads all stored variants even though they 
-        # aren't needed. And I decided to save variants in different files and 
+        # Waf always loads all *_cache.py files in directory 'c4che' during
+        # build step. So it loads all stored variants even though they
+        # aren't needed. And I decided to save variants in different files and
         # load only needed ones.
         conf.env.store(assist.makeCacheConfFileName(taskVariant))
-        
-        # It's necessary to delete variant from conf.all_envs otherwise 
+
+        # It's necessary to delete variant from conf.all_envs otherwise
         # waf will store it in 'c4che'
         conf.setenv('')
         conf.all_envs.pop(taskVariant, None)
 
     # Remove unneccesary envs
-    for toolchain in toolchainsEnv.keys():
+    for toolchain in toolchainsEnv:
         conf.all_envs.pop(toolchain, None)
 
     assist.dumpZenMakeCommonFile()
-        
+
 def build(bld):
+    """
+    Implementation for wscript.build
+    """
 
     if bld.variant is None:
         bld.fatal('No variant!')
@@ -89,18 +104,17 @@ def build(bld):
         if bld.cmd == 'clean':
             Logs.info("Buildtype '%s' not found. Nothing to clean" % buildtype)
             return
-        else:
-            bld.fatal("Buildtype '%s' not found! Was step 'configure' missed?" 
-                    % buildtype)
+        bld.fatal("Buildtype '%s' not found! Was step 'configure' missed?"
+                  % buildtype)
 
     # Some comments just to remember some details.
     # - ctx.path represents the path to the wscript file being executed
-    # - ctx.root is the root of the file system or the folder containing 
+    # - ctx.root is the root of the file system or the folder containing
     #   the drive letters (win32 systems)
 
     # Path must be relative
     srcDir = os.path.relpath(assist.SRCROOT, assist.BUILDROOT)
-    # Since ant_glob can traverse both source and build folders, it is a best 
+    # Since ant_glob can traverse both source and build folders, it is a best
     # practice to call this method only from the most specific build node.
     srcDirNode = bld.path.find_dir(srcDir)
 
@@ -116,12 +130,12 @@ def build(bld):
         if taskName not in allowedTasks:
             continue
 
-        # task env variables are stored in separative env 
+        # task env variables are stored in separative env
         # so it's need to switch in
         bld.variant = taskParams['task.build.env']
         # load environment for this task
         bld.all_envs[bld.variant] = ConfigSet(assist.makeCacheConfFileName(bld.variant))
-        
+
         target = taskParams.get('target', taskName)
         kwargs = dict(
             name     = taskParams.get('name', taskName),

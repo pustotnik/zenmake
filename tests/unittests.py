@@ -2,12 +2,14 @@
 # coding=utf-8
 #
 
+# pylint: skip-file
+
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-import sys 
+import sys
 import os
 import unittest
 from copy import deepcopy
@@ -39,7 +41,7 @@ def capturedOutput():
         sys.stdout, sys.stderr = oldout, olderr
 
 class TestCli(unittest.TestCase):
-    
+
     def setUp(self):
         self.longMessage = True
         self.buildconf = zm.buildconfutil.loadConf()
@@ -57,7 +59,7 @@ class TestCli(unittest.TestCase):
 
     def _testMainHelpMsg(self, args):
         ecode, out, err = self._parseHelpArgs(args)
-        
+
         self.assertFalse(err)
         self.assertEqual(ecode, 0)
         self.assertIn('ZenMake', out)
@@ -82,11 +84,11 @@ class TestCli(unittest.TestCase):
                 for i in range(len(check['wafArgs'])):
                     wafArg = check['wafArgs'][i]
                     self.assertIn(wafArg, wafcmdline[i])
-            
+
             # parser with explicit args
             cmd = self.parser.parse(check['args'])
             assertAll(cmd, self.parser.command, self.parser.wafCmdLine)
-            
+
             # parser with args from sys.argv
             oldargv = sys.argv
             sys.argv = ['zenmake'] + check['args']
@@ -98,7 +100,7 @@ class TestCli(unittest.TestCase):
             wafCmdLine = zm.cli.parseAll(['zenmake'] + check['args'])
             assertAll(zm.cli.selected, zm.cli.selected, wafCmdLine)
 
-    def testEmpty(self):        
+    def testEmpty(self):
         self._testMainHelpMsg([])
 
     def testHelp(self):
@@ -123,16 +125,16 @@ class TestCli(unittest.TestCase):
                 self.assertIn(cmd.description.capitalize(), out)
 
     def testCmdBuild(self):
-        
+
         baseExpectedArgs = {
             'buildtype' : self.buildconf.buildtypes['default'],
             'jobs' : None,
-            'configure': False, 
-            'color': 'auto', 
-            'clean': False, 
-            'progress': False, 
-            'distclean': False, 
-            'buildtasks': [], 
+            'configure': False,
+            'color': 'auto',
+            'clean': False,
+            'progress': False,
+            'distclean': False,
+            'buildtasks': [],
             'verbose': 0,
         }
 
@@ -199,15 +201,15 @@ class TestCli(unittest.TestCase):
                 wafArgs = [CMDNAME],
             ),
         ]
-        
+
         self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
 
     def testCmdConfigure(self):
-        
+
         baseExpectedArgs = {
             'buildtype' : self.buildconf.buildtypes['default'],
-            'color': 'auto',  
-            'distclean': False, 
+            'color': 'auto',
+            'distclean': False,
             'verbose': 0,
         }
 
@@ -248,10 +250,10 @@ class TestCli(unittest.TestCase):
         self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
 
     def testCmdClean(self):
-        
+
         baseExpectedArgs = {
             'buildtype' : self.buildconf.buildtypes['default'],
-            'color': 'auto', 
+            'color': 'auto',
             'verbose': 0,
         }
 
@@ -287,9 +289,9 @@ class TestCli(unittest.TestCase):
         self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
 
     def testCmdDistclean(self):
-        
+
         baseExpectedArgs = {
-            'color': 'auto', 
+            'color': 'auto',
             'verbose': 0,
         }
 
@@ -320,7 +322,7 @@ class TestCli(unittest.TestCase):
         self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
 
 class TestUtils(unittest.TestCase):
-    
+
     def setUp(self):
         self.longMessage = True
 
@@ -330,24 +332,24 @@ class TestUtils(unittest.TestCase):
     def testUnfoldPath(self):
         # it should be always absolute path
         cwd = os.getcwd()
-        
+
         abspath = joinpath(cwd, 'something')
         relpath = joinpath('a', 'b', 'c')
 
         self.assertIsNone(zm.utils.unfoldPath(cwd, None))
         self.assertEqual(zm.utils.unfoldPath(cwd, abspath), abspath)
-        
+
         path = zm.utils.unfoldPath(cwd, relpath)
         self.assertEqual(joinpath(cwd, relpath), path)
         self.assertTrue(os.path.isabs(zm.utils.unfoldPath(abspath, relpath)))
 
         os.environ['ABC'] = 'qwerty'
-        
+
         self.assertEqual(zm.utils.unfoldPath(cwd, joinpath('$ABC', relpath)),
                         joinpath(cwd, 'qwerty', relpath))
 
 class TestAutoDict(unittest.TestCase):
-    
+
     def setUp(self):
         self.longMessage = True
 

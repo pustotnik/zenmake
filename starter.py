@@ -7,7 +7,7 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-import sys 
+import sys
 import os
 if sys.hexversion < 0x2070000:
     raise ImportError('Python >= 2.7 is required')
@@ -25,8 +25,11 @@ sys.path.insert(1, WAF_DIR)
 sys.path.insert(1, ARGPARSE_DIR)
 
 def main():
+    """
+    Prepare and start Waf with ZenMake stuffs
+    """
 
-    # When set to a non-empty value, the process will not search for a build 
+    # When set to a non-empty value, the process will not search for a build
     # configuration in upper folders.
     os.environ['NOCLIMB'] = '1'
 
@@ -40,7 +43,7 @@ def main():
     import zm.utils
     import zm.cli
 
-    def prepareDirs():    
+    def prepareDirs():
         if not os.path.exists(zm.assist.BUILDROOT):
             os.makedirs(zm.assist.BUILDROOT)
         if zm.assist.BUILDSYMLINK and not os.path.exists(zm.assist.BUILDSYMLINK):
@@ -50,16 +53,16 @@ def main():
         # Creating of symlink is cheaper than copying of file but on Windows OS
         # there are some problems with using of symlinks.
         from shutil import copyfile
-        copyfile(joinpath(ZM_DIR, 'wscript'), 
-                    joinpath(zm.assist.BUILDROOT, 'wscript'))
-    
+        copyfile(joinpath(ZM_DIR, 'wscript'),
+                 joinpath(zm.assist.BUILDROOT, 'wscript'))
+
     wafCmdLine = zm.cli.parseAll(sys.argv)
 
     if zm.assist.isBuildConfFake():
         Logs.error('Config buildconf.py not found. Check buildconf.py '
-                            'exists in the project directory.')
+                   'exists in the project directory.')
         sys.exit(1)
-    
+
     # Special case for 'distclean'
     cmd = zm.cli.selected
     if cmd.name == 'distclean':
@@ -68,7 +71,7 @@ def main():
 
     if cmd.args.distclean:
         zm.assist.distclean()
-    
+
     prepareDirs()
 
     del sys.argv[1:]

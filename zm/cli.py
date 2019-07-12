@@ -6,11 +6,6 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-"""
-CLI for ZenMake. 
-WAF has own CLI and I could use it but I wanted to have a different CLI.
-"""
-
 import sys
 from collections import namedtuple
 import argparse
@@ -27,7 +22,7 @@ def _getDefaultBuildType():
 
 ParsedCommand = namedtuple('ParsedCommand', 'name, args')
 
-""" 
+"""
 Object of ParsedCommand with current command after last parsing of command line
 """
 selected = None
@@ -69,18 +64,15 @@ _commands = [
 ]
 
 class _PosArg(_AutoDict):
-    
-    NOTARGPARSE_FIELDS = ('name', 'commands')
 
-    def __init__(self, *args, **kwargs):
-        super(_PosArg, self).__init__(*args, **kwargs)
+    NOTARGPARSE_FIELDS = ('name', 'commands')
 
 # Declarative list of positional args after command name in CLI
 _posargs = [
     # global options that are used before command in cmd line
     _PosArg(
         name = 'buildtasks',
-        nargs = '*', # this arg is optional 
+        nargs = '*', # this arg is optional
         default = [],
         help = 'select build tasks, all tasks if nothing is selected',
         commands = ['build'],
@@ -101,7 +93,7 @@ class _Option(_AutoDict):
         self.setdefault('default', None)
 
 # Declarative list of options in CLI
-# Special param 'runcmd' is used to declare option that runs another command 
+# Special param 'runcmd' is used to declare option that runs another command
 # before current. There is no need to set 'action' in that case. And it can not
 # be used for global options, of course.
 _options = [
@@ -169,14 +161,18 @@ _options = [
 ]
 
 class CmdLineParser(object):
+    """
+    CLI for ZenMake.
+    WAF has own CLI and I could use it but I wanted to have a different CLI.
+    """
 
     def __init__(self, progName):
 
         self.progName = progName
         self._command = None
         self._wafCmdLine = []
-        
-        # map: cmd name/alies -> cmd name
+
+        # map: cmd name/alies -> _Command
         self._cmdNameMap = {}
         for cmd in _commands:
             self._cmdNameMap[cmd.name] = cmd
@@ -184,22 +180,26 @@ class CmdLineParser(object):
                 self._cmdNameMap[alias] = cmd
 
         class MyHelpFormatter(argparse.HelpFormatter):
+            """ Some customization"""
             def __init__(self, prog):
                 super(MyHelpFormatter, self).__init__(prog,
-                    max_help_position = 27)
+                                                      max_help_position = 27)
                 self._action_max_length = 23
 
-        self._parser = argparse.ArgumentParser(prog = progName,
+        kwargs = dict(
+            prog = progName,
             formatter_class = MyHelpFormatter,
             description = 'ZenMake: build system based on the Waf build system',
             usage = "%(prog)s <command> [options] [args]",
-            add_help = False)
+            add_help = False
+        )
+        self._parser = argparse.ArgumentParser(**kwargs)
 
         groupGlobal = self._parser.add_argument_group('global options')
         self._addOptions(groupGlobal, cmd = None)
 
         subparsers = self._parser.add_subparsers(title = 'list of commands',
-                                    help = '', metavar = '', dest = 'command')
+                                                 dest = 'command')
 
         commandHelps = _AutoDict()
         helpCmd = None
@@ -214,15 +214,15 @@ class CmdLineParser(object):
             if cmd.name == 'help': # It will be processed below
                 helpCmd = cmd
                 continue
-            
+
             kwargs = cmdHelpInfo
             kwargs['add_help'] = False
             cmdParser = subparsers.add_parser(cmd.name, **kwargs)
-            
+
             self._addCmdPosArgs(cmdParser, cmd)
 
             groupCmdOpts = cmdParser.add_argument_group('command options')
-            self._addOptions(groupCmdOpts, cmd = cmd)            
+            self._addOptions(groupCmdOpts, cmd = cmd)
             cmdHelpInfo.help = cmdParser.format_help()
 
         # special case for 'help' command
@@ -257,7 +257,7 @@ class CmdLineParser(object):
         if _topic is None or _topic not in cmdHelps:
             Logs.error("Unknown command/topic to show help: '%s'" % topic)
             return False
-        
+
         print(cmdHelps[_topic]['help'])
         return True
 
@@ -293,7 +293,7 @@ class CmdLineParser(object):
                     if v is None or k in _Option.NOTARGPARSE_FIELDS:
                         continue
                     kwargs[k] = v
-            
+
             target.add_argument(*opt.names, **kwargs)
 
     def _fillCmdInfo(self, parsedArgs):
@@ -307,7 +307,7 @@ class CmdLineParser(object):
     def _fillWafCmdLine(self):
         if self._command is None:
             raise WafError("Programming error: _command is None") # pragma: no cover
-        
+
         cmdline = [self._command.name]
         # self._command.args is AutoDict and it means that it'll create
         # nonexistent keys in it, so we need to make copy
@@ -330,24 +330,25 @@ class CmdLineParser(object):
         self._wafCmdLine = cmdline
 
     def parse(self, args = None):
+        """ Parse command line args """
 
         if args is None:
             args = sys.argv[1:]
-        
+
         # simple hack for default behavior if command is not defined
         if not args:
             import zm.assist
             args = ['help'] if zm.assist.isBuildConfFake() else ['build']
-        
+
         # parse
         args = self._parser.parse_args(args)
-        selected = self._cmdNameMap[args.command]
+        cmd = self._cmdNameMap[args.command]
 
-        if selected.name == 'help':
+        if cmd.name == 'help':
             self._fillCmdInfo(args)
             self._showHelp(self._commandHelps, args.topic)
             sys.exit(not self._showHelp(self._commandHelps, args.topic))
-        
+
         self._fillCmdInfo(args)
         self._fillWafCmdLine()
         return self._command
@@ -359,16 +360,23 @@ class CmdLineParser(object):
 
     @property
     def wafCmdLine(self):
-        """ 
-        current command line args for WAF command after last 
+        """
+        current command line args for WAF command after last
         parsing of command line
         """
         return self._wafCmdLine
 
 def parseAll(args):
+    """
+    Parse all command line args with CmdLineParser and save selected
+    command as object of ParsedCommand in global var 'selected' of this module.
+    Returns parser.wafCmdLine
+    """
     parser = CmdLineParser(args[0])
     cmd = parser.parse(args[1:])
-    
+
+    #pylint: disable=global-statement
     global selected
     selected = cmd
+    #pylint: enable=global-statement
     return parser.wafCmdLine
