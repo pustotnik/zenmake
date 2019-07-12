@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import sys
 import os
 
-# It's should be set to specific path to ZenMake if current script is copied to 
+# It's should be set to specific path to ZenMake if current script is copied to
 # some different path without all other files of ZenMake.
 ZENMAKE_DIR = None
 
@@ -47,18 +47,21 @@ if not ZENMAKE_DIR:
     ZENMAKE_DIR = os.path.dirname(os.path.realpath(SCRIPT_FILEPATH))
 
 def main():
+    """
+    Prepare sys paths and run
+    """
 
     if ZENMAKE_DIR not in sys.path:
         sys.path.insert(0, ZENMAKE_DIR)
     if ZENMAKE_DIR != WORKING_DIR and WORKING_DIR not in sys.path:
         sys.path.insert(0, WORKING_DIR)
-    
+
     try:
         import starter
     except ImportError:
         print('Cannot import starter.py. Check that ZENMAKE_DIR has a valid path')
         sys.exit(1)
-        
+
     return starter.main()
 
 if __name__ == '__main__':
