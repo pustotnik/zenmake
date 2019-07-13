@@ -54,6 +54,7 @@ venv.bak/
 ##################
 .lock-wafbuild
 .vscode
+.pytest_cache/
 .coverage
 htmlcov/
 *.code-workspace

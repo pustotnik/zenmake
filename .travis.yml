@@ -83,9 +83,11 @@ before_install:
       choco install python --version $PYTHON_VER
       # I'm not sure that it's necessary
       python -m pip install --upgrade pip
+      python -m pip install pytest
       # for coverage report
       python -m pip install coveralls
     else
+      pip install pytest
       pip install coveralls
     fi
 
@@ -109,8 +111,10 @@ install:
 
 script:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      python -m coverage run -m pytest tests;
       python -m coverage run tests.py;
     else
+      pytest tests;
       coverage run tests.py;
     fi;
 
