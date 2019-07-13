@@ -105,8 +105,10 @@ class CompilersInfo(object):
         module = loadPyModule(getterInfo['module'])
         # and call function
         compilers = getattr(module, getterInfo['fun'])()
-        if isinstance(compilers, stringtypes):
-            compilers = re.split('[ ,]+', compilers)
+        if not isinstance(compilers, stringtypes):
+            # Code of Waf was changed
+            raise NotImplementedError()
+        compilers = re.split('[ ,]+', compilers)
 
         _cache[lang].compilers = compilers
         return compilers
