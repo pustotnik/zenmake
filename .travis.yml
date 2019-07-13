@@ -112,7 +112,11 @@ install:
     fi
 
 script:
-  - python -m pytest --cov zm tests -v;
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      python -m pytest --cov zm tests -v;
+    else
+      pytest --cov zm tests -v;
+    fi;
 
 after_success:
   - coveralls
