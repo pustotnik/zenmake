@@ -8,7 +8,7 @@
 
 import sys
 from collections import namedtuple
-import argparse
+from aux.argparse import argparse
 from waflib import Logs
 from waflib.Errors import WafError
 from zm.autodict import AutoDict as _AutoDict

@@ -18,11 +18,11 @@ SCRIPTS_ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
 WAF_DIR = joinpath(SCRIPTS_ROOTDIR, 'waf')
 ZM_DIR = joinpath(SCRIPTS_ROOTDIR, 'zm')
-ARGPARSE_DIR = joinpath(SCRIPTS_ROOTDIR, 'argparse')
+AUX_DIR = joinpath(SCRIPTS_ROOTDIR, 'aux')
 
 sys.path.insert(1, WAF_DIR)
 # argparse from the https://pypi.org/project/argparse/ supports alieses
-sys.path.insert(1, ARGPARSE_DIR)
+sys.path.insert(1, AUX_DIR)
 
 def main():
     """
