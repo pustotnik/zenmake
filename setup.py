@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 long_description = 'ZenMake - build system based on WAF'
 
 classifiers = """\
-Development Status :: 2 - Pre-Alpha
+Development Status :: 3 - Alpha
 License :: OSI Approved :: BSD License
 Environment :: Console
 Intended Audience :: Developers
