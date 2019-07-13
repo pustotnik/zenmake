@@ -8,28 +8,23 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-import unittest
 import tests.common as cmn
 import zm.autodict
 
-class TestAutoDict(unittest.TestCase):
-
-    def setUp(self):
-        self.longMessage = True
-
+class TestAutoDict(object):
     def testAll(self):
         d = zm.autodict.AutoDict()
         d['test'] = 10
-        self.assertDictEqual(d, {'test' : 10})
-        self.assertTrue(hasattr(d, 'test'))
-        self.assertEqual(d['test'], d.test)
+        assert d == {'test' : 10}
+        assert hasattr(d, 'test')
+        assert d['test'] == d.test
 
-        self.assertNotIn('something', d)
+        assert 'something' not in d
         d.something = 123
-        self.assertIn('something', d)
+        assert 'something' in d
 
-        self.assertFalse(d.test2)
-        self.assertFalse(d['test3'].test4)
+        assert not d.test2
+        assert not d['test3'].test4
 
         d2 = zm.autodict.AutoDict(dict(a = 1, b =2))
-        self.assertDictEqual(d2, dict(a = 1, b =2))
+        assert d2 == dict(a = 1, b =2)

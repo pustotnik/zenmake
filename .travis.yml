@@ -84,10 +84,12 @@ before_install:
       # I'm not sure that it's necessary
       python -m pip install --upgrade pip
       python -m pip install pytest
+      python -m pip install pytest-cov
       # for coverage report
       python -m pip install coveralls
     else
       pip install pytest
+      pip install pytest-cov
       pip install coveralls
     fi
 
@@ -110,13 +112,7 @@ install:
     fi
 
 script:
-  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      python -m coverage run -m pytest tests;
-      python -m coverage run tests.py;
-    else
-      pytest tests;
-      coverage run tests.py;
-    fi;
+  - python -m pytest --cov zm tests -v;
 
 after_success:
   - coveralls

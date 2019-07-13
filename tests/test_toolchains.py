@@ -9,7 +9,7 @@
 """
 
 import os
-import unittest
+import pytest
 import tests.common as cmn
 from waflib import Utils
 from waflib.Errors import WafError
@@ -19,19 +19,13 @@ CompilersInfo = zm.toolchains.CompilersInfo
 
 SUPPORTED_LANGS = ('c', 'c++')
 
-class TestToolchains(unittest.TestCase):
-
-    def setUp(self):
-        self.longMessage = True
-
-    def tearDown(self):
-        pass
+class TestToolchains(object):
 
     def testAllFlagVars(self):
         gottenVars = CompilersInfo.allFlagVars()
         requiredVars = ['CPPFLAGS', 'CXXFLAGS', 'LDFLAGS', 'CFLAGS']
         for v in requiredVars:
-            self.assertIn(v, gottenVars)
+            assert v in gottenVars
 
     def testAllCfgEnvVars(self):
         gottenVars = CompilersInfo.allCfgEnvVars()
@@ -40,13 +34,13 @@ class TestToolchains(unittest.TestCase):
             'LDFLAGS', 'DEFINES'
         ]
         for v in requiredVars:
-            self.assertIn(v, gottenVars)
+            assert v in gottenVars
 
     def testAllVarsToSetCompiler(self):
         gottenVars = CompilersInfo.allVarsToSetCompiler()
         requiredVars = ['CC', 'CXX']
         for v in requiredVars:
-            self.assertIn(v, gottenVars)
+            assert v in gottenVars
 
     def testVarToSetCompiler(self):
         LANGMAP = {
@@ -55,11 +49,11 @@ class TestToolchains(unittest.TestCase):
         }
         for lang in SUPPORTED_LANGS:
             gottenVar = CompilersInfo.varToSetCompiler(lang)
-            self.assertEqual(gottenVar, LANGMAP[lang])
+            assert gottenVar == LANGMAP[lang]
 
-        with self.assertRaises(WafError):
+        with pytest.raises(WafError):
             CompilersInfo.varToSetCompiler('')
-        with self.assertRaises(WafError):
+        with pytest.raises(WafError):
             CompilersInfo.varToSetCompiler('invalid lang')
 
     def testCompilers(self):
@@ -72,11 +66,11 @@ class TestToolchains(unittest.TestCase):
             wafLang = lang.replace('+', 'x')
             module = importlib.import_module('waflib.Tools.compiler_' + wafLang)
             compilersDict = getattr(module, wafLang + '_compiler')
-            self.assertListEqual(
-                                 list(set(CompilersInfo.compilers(lang))),
-                                 list(set(compilersDict[platform])))
 
-        with self.assertRaises(WafError):
+            assert list(set(CompilersInfo.compilers(lang))) == \
+                                 list(set(compilersDict[platform]))
+
+        with pytest.raises(WafError):
             CompilersInfo.compilers('')
-        with self.assertRaises(WafError):
+        with pytest.raises(WafError):
             CompilersInfo.compilers('invalid lang')

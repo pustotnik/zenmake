@@ -10,19 +10,13 @@
 
 import os
 import shutil
-import unittest
+import pytest
 import tests.common as cmn
 import zm.utils
 
 joinpath = os.path.join
 
-class TestUtils(unittest.TestCase):
-
-    def setUp(self):
-        self.longMessage = True
-
-    def tearDown(self):
-        pass
+class TestUtils(object):
 
     def testUnfoldPath(self):
         # it should be always absolute path
@@ -31,17 +25,17 @@ class TestUtils(unittest.TestCase):
         abspath = joinpath(cwd, 'something')
         relpath = joinpath('a', 'b', 'c')
 
-        self.assertIsNone(zm.utils.unfoldPath(cwd, None))
-        self.assertEqual(zm.utils.unfoldPath(cwd, abspath), abspath)
+        assert zm.utils.unfoldPath(cwd, None) is None
+        assert zm.utils.unfoldPath(cwd, abspath) == abspath
 
         path = zm.utils.unfoldPath(cwd, relpath)
-        self.assertEqual(joinpath(cwd, relpath), path)
-        self.assertTrue(os.path.isabs(zm.utils.unfoldPath(abspath, relpath)))
+        assert joinpath(cwd, relpath) == path
+        assert os.path.isabs(zm.utils.unfoldPath(abspath, relpath))
 
         os.environ['ABC'] = 'qwerty'
 
-        self.assertEqual(zm.utils.unfoldPath(cwd, joinpath('$ABC', relpath)),
-                        joinpath(cwd, 'qwerty', relpath))
+        assert joinpath(cwd, 'qwerty', relpath) == \
+                        zm.utils.unfoldPath(cwd, joinpath('$ABC', relpath))
 
     def testMkSymlink(self):
         destdir = joinpath(cmn.sharedtmpdir, 'test.util.mksymlink')
@@ -54,10 +48,10 @@ class TestUtils(unittest.TestCase):
 
         symlink = joinpath(destdir, 'symlink')
         zm.utils.mksymlink(testfile, symlink)
-        self.assertTrue(os.path.islink(symlink))
+        assert os.path.islink(symlink)
 
-        with self.assertRaises(OSError):
+        with pytest.raises(OSError):
             zm.utils.mksymlink(testfile, symlink, force = False)
 
         zm.utils.mksymlink(testfile, symlink, force = True)
-        self.assertTrue(os.path.islink(symlink))
+        assert os.path.islink(symlink)
