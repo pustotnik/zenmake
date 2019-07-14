@@ -9,40 +9,37 @@
 """
 
 import sys
-import unittest
+import pytest
 from copy import deepcopy
 import tests.common as cmn
 import zm.buildconfutil
 import zm.cli
 
-class TestCli(unittest.TestCase):
+class TestCli(object):
 
-    def setUp(self):
-        self.longMessage = True
+    @pytest.fixture(autouse = True)
+    def setup(self):
         self.buildconf = zm.buildconfutil.loadConf()
         self.parser = zm.cli.CmdLineParser('test')
 
-    def tearDown(self):
-        pass
-
-    def _parseHelpArgs(self, args):
+    def _parseHelpArgs(self, args, capsys):
         # CLI prints help and does exit
-        with self.assertRaises(SystemExit) as cm:
-            with cmn.capturedOutput() as (out, err):
-                self.parser.parse(args)
-        return cm.exception.code, out.getvalue().strip(), err.getvalue().strip()
+        with pytest.raises(SystemExit) as cm:
+            self.parser.parse(args)
+        captured = capsys.readouterr()
+        return cm.value.code, captured.out, captured.err
 
-    def _testMainHelpMsg(self, args):
-        ecode, out, err = self._parseHelpArgs(args)
+    def _testMainHelpMsg(self, args, capsys):
+        ecode, out, err = self._parseHelpArgs(args, capsys)
 
-        self.assertFalse(err)
-        self.assertEqual(ecode, 0)
-        self.assertIn('ZenMake', out)
-        self.assertIn('based on the Waf build system', out)
-        self.assertIsNotNone(self.parser.command)
-        self.assertEqual(self.parser.command.name, 'help')
-        self.assertDictEqual(self.parser.command.args, {'topic': 'overview'})
-        self.assertListEqual(self.parser.wafCmdLine, [])
+        assert not err
+        assert ecode == 0
+        assert 'ZenMake' in out
+        assert 'based on the Waf build system' in out
+        assert self.parser.command is not None
+        assert self.parser.command.name == 'help'
+        assert self.parser.command.args == {'topic': 'overview'}
+        assert self.parser.wafCmdLine == []
 
     def _assertAllsForCmd(self, cmdname, checks, baseExpectedArgs):
 
@@ -51,14 +48,14 @@ class TestCli(unittest.TestCase):
             expectedArgs.update(check['expectedArgsUpdate'])
 
             def assertAll(cmd, parsercmd, wafcmdline):
-                self.assertIsNotNone(cmd)
-                self.assertIsNotNone(parsercmd)
-                self.assertEqual(parsercmd, cmd)
-                self.assertEqual(cmd.name, cmdname)
-                self.assertDictEqual(cmd.args, expectedArgs)
+                assert cmd is not None
+                assert parsercmd is not None
+                assert parsercmd == cmd
+                assert cmd.name == cmdname
+                assert cmd.args == expectedArgs
                 for i in range(len(check['wafArgs'])):
                     wafArg = check['wafArgs'][i]
-                    self.assertIn(wafArg, wafcmdline[i])
+                    assert wafArg in wafcmdline[i]
 
             # parser with explicit args
             cmd = self.parser.parse(check['args'])
@@ -75,29 +72,29 @@ class TestCli(unittest.TestCase):
             wafCmdLine = zm.cli.parseAll(['zenmake'] + check['args'])
             assertAll(zm.cli.selected, zm.cli.selected, wafCmdLine)
 
-    def testEmpty(self):
-        self._testMainHelpMsg([])
+    def testEmpty(self, capsys):
+        self._testMainHelpMsg([], capsys)
 
-    def testHelp(self):
-        self._testMainHelpMsg(['help'])
+    def testHelp(self, capsys):
+        self._testMainHelpMsg(['help'], capsys)
 
-    def testHelpWrongTopic(self):
+    def testHelpWrongTopic(self, capsys):
         args = ['help', 'qwerty']
-        ecode, out, err = self._parseHelpArgs(args)
-        self.assertFalse(out)
-        self.assertIn('Unknown command/topic', err)
-        self.assertNotEqual(ecode, 0)
+        ecode, out, err = self._parseHelpArgs(args, capsys)
+        assert not out
+        assert 'Unknown command/topic' in err
+        assert ecode != 0
 
-    def testHelpForCmds(self):
+    def testHelpForCmds(self, capsys):
         for cmd in zm.cli._commands:
             args = ['help', cmd.name]
-            ecode, out, err = self._parseHelpArgs(args)
-            self.assertEqual(ecode, 0)
-            self.assertFalse(err)
+            ecode, out, err = self._parseHelpArgs(args, capsys)
+            assert ecode == 0
+            assert not err
             if cmd.name == 'help':
-                self.assertIn('show help', out)
+                assert 'show help' in out
             else:
-                self.assertIn(cmd.description.capitalize(), out)
+                assert cmd.description.capitalize() in out
 
     def testCmdBuild(self):
 

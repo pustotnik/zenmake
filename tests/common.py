@@ -9,6 +9,7 @@
 """
 
 import sys
+import os
 import tempfile
 import shutil
 import atexit
@@ -43,4 +44,5 @@ def removeAllTmpDirsForTests():
 
 atexit.register(removeAllTmpDirsForTests)
 
-sharedtmpdir = makeTmpDirForTests()
+SHARED_TMP_DIR = makeTmpDirForTests()
+TEST_PROJECTS_DIR = os.path.join(SHARED_TMP_DIR, 'projects')

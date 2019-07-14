@@ -38,7 +38,7 @@ class TestUtils(object):
                         zm.utils.unfoldPath(cwd, joinpath('$ABC', relpath))
 
     def testMkSymlink(self):
-        destdir = joinpath(cmn.sharedtmpdir, 'test.util.mksymlink')
+        destdir = joinpath(cmn.SHARED_TMP_DIR, 'test.util.mksymlink')
         if os.path.exists(destdir):
             shutil.rmtree(destdir)
         os.makedirs(destdir)

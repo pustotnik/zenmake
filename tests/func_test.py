@@ -12,7 +12,7 @@ import sys
 import os
 import subprocess
 import shutil
-import unittest
+import pytest
 import tests.common as cmn
 import zm.utils
 import zm.buildconfutil
@@ -21,10 +21,20 @@ joinpath = os.path.join
 
 PLATFORM = zm.utils.platform()
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
-TEST_PROJECTS_DIR = joinpath(cmn.sharedtmpdir, 'projects')
 ZM_BIN = os.path.normpath(joinpath(TESTS_DIR, os.path.pardir, "zenmake"))
 
-class _BaseProjectBuild(object):
+# Copy projects into tmp dir
+shutil.copytree(joinpath(TESTS_DIR, 'projects'), cmn.TEST_PROJECTS_DIR)
+
+def collectProjectDirs():
+    result = []
+    for dirpath, _, filenames in os.walk(cmn.TEST_PROJECTS_DIR):
+        if 'buildconf.py' in filenames:
+            result.append(os.path.relpath(dirpath, cmn.TEST_PROJECTS_DIR))
+    result.sort()
+    return result
+
+class TestProject(object):
 
     def _runZm(self, cmdline):
         timeout = 60 * 5
@@ -40,56 +50,18 @@ class _BaseProjectBuild(object):
             print('\n' + stdout)
         return proc.returncode
 
-    def _cleanDirs(self):
-        for path in (self.buildconf.buildroot, self.buildconf.buildsymlink):
-            if not path:
-                continue
-            path = zm.utils.unfoldPath(self.cwd, path)
-            if os.path.isdir(path) and os.path.exists(path):
-                shutil.rmtree(path, ignore_errors = True)
-            elif os.path.islink(path) and os.path.lexists(path):
-                os.remove(path)
-            elif os.path.exists(path) and os.path.isfile(path):
-                os.remove(path)
+    @pytest.fixture(params = collectProjectDirs(), autouse = True)
+    def setup(self, request):
+        def teardown():
+            pass
 
-    def setUp(self):
-        self.longMessage = True
-        sys.path.insert(0, self.cwd)
-        self.buildconf = zm.buildconfutil.loadConf()
-        self._cleanDirs()
+        request.addfinalizer(teardown)
 
-    def tearDown(self):
-        self._cleanDirs()
-        sys.path.remove(self.cwd)
+        self.cwd = joinpath(cmn.TEST_PROJECTS_DIR, request.param)
 
-    def testJustBuild(self):
+    def testJustBuild(self, unsetEnviron):
         pythonbin = sys.executable
         if not pythonbin:
             pythonbin = 'python'
         cmdLine = [pythonbin, ZM_BIN, 'build']
-        self.assertEqual(self._runZm(cmdLine), 0)
-
-def collectProjectDirs():
-    result = []
-    for dirpath, _, filenames in os.walk(TEST_PROJECTS_DIR):
-        if 'buildconf.py' in filenames:
-            result.append(os.path.relpath(dirpath, TEST_PROJECTS_DIR))
-    result.sort()
-    return result
-
-# Copy projects into tmp dir
-shutil.copytree(joinpath(TESTS_DIR, 'projects'), TEST_PROJECTS_DIR)
-
-# Declare test cases for each project dynamically
-allprojects = collectProjectDirs()
-for cwd in allprojects:
-    suffix = ''
-    for p in cwd.split(os.path.sep):
-        suffix += p.capitalize() + '_'
-    if suffix[-1] == '_':
-        suffix = suffix[0:-1]
-    suffix = suffix.replace('-', '_').replace(' ', '_')
-    clsname = 'BuildProject_' + suffix
-    base = (_BaseProjectBuild, unittest.TestCase)
-    attrs = dict(cwd = joinpath(TEST_PROJECTS_DIR, cwd))
-    globals()[clsname] = type(clsname, base, attrs)
+        assert 0 == self._runZm(cmdLine)
