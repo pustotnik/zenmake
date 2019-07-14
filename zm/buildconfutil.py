@@ -13,7 +13,7 @@ from waflib.Errors import WafError
 from zm.utils import loadPyModule
 
 if not Logs.log:
-    Logs.init_log()
+    Logs.init_log() # pragma: no cover
 
 def validateAll(buildconf):
     """
@@ -80,7 +80,7 @@ def loadConf():
         # Avoid writing .pyc files
         sys.dont_write_bytecode = True
         module = loadPyModule('buildconf')
-        sys.dont_write_bytecode = False
+        sys.dont_write_bytecode = False # pragma: no cover
     except ImportError:
         module = loadPyModule('zm.fakebuildconf')
 
@@ -89,7 +89,7 @@ def loadConf():
         validateAll(module)
     except WafError as ex:
         if Logs.verbose > 1:
-            Logs.pprint('RED', ex.verbose_msg)
+            Logs.pprint('RED', ex.verbose_msg) # pragma: no cover
         Logs.error(str(ex))
         sys.exit(1)
 

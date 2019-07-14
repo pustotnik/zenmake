@@ -97,6 +97,7 @@ def printSysInfo():
     from distutils.spawn import find_executable
     from zm.autodict import AutoDict as _AutoDict
 
+    print('==================================================')
     print('= System information =')
     print('CPU name: %s' % _platform.processor())
     print('Bit architecture: %s' % _platform.architecture()[0])
@@ -120,4 +121,4 @@ def printSysInfo():
             ver = 'not found'
         print('%s: %s' % (compiler.header, ver))
 
-    print('')
+    print('==================================================')
