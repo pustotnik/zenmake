@@ -14,12 +14,10 @@ buildtypes = {
     'debug-clang' : {
         'toolchain' : 'clang++',
         'cxxflags' : '-fPIC -O0 -g',
-        'linkflags' : '-Wl,--as-needed',
     },
     'release-clang' : {
         'toolchain' : 'clang++',
         'cxxflags' : '-fPIC -O2',
-        'linkflags' : '-Wl,--as-needed',
     },
     'debug-msvc' : {
         'toolchain' : 'msvc',
