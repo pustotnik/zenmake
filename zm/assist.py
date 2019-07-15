@@ -322,7 +322,7 @@ def isBuildConfFake():
     """
     Return True if loaded buildconf is fake module.
     """
-    return isinstance(buildconf.tasks, stringtypes)
+    return buildconf.__name__.endswith('fakebuildconf')
 
 def _getBuildTypeFromCLI():
     import zm.cli as cli
@@ -355,8 +355,9 @@ class BuildConfHandler(object):
         # NOTICE: this method should not have any heavy operations
 
         allBuildTypes = set(self._origin.buildtypes.keys())
-        if 'default' in allBuildTypes:
-            allBuildTypes.remove('default')
+        for taskParams in self._origin.tasks.values():
+            taskBuildTypes = taskParams.get('buildtypes', {})
+            allBuildTypes.update(taskBuildTypes.keys())
         self._meta.buildtypes.allnames = allBuildTypes
 
     def _handleTasksEnvVars(self, tasks):
@@ -391,7 +392,11 @@ class BuildConfHandler(object):
 
         if 'map' not in self._meta.buildtypes:
             btMap = dict()
-            buildtypes = self._origin.buildtypes
+            buildtypes = dict()
+            buildtypes.update(self._origin.buildtypes)
+            for btype in self._meta.buildtypes.allnames:
+                if btype not in buildtypes:
+                    buildtypes[btype] = {}
             for btype, val in buildtypes.items():
                 btVal = val
                 btKey = btype
@@ -411,10 +416,10 @@ class BuildConfHandler(object):
 
             self._meta.buildtypes.map = btMap
 
-        btype = self._meta.buildtypes.map.get(buildtype, False)
+        btype = self._meta.buildtypes.map.get(buildtype, None)
         if not btype:
-            raise WafError("Build type '%s' was not found, check "
-                           "your config." % buildtype)
+            raise WafError("Build type '%s' doesn't not exist in buildconf." %
+                           buildtype)
 
         return btype
 
@@ -456,7 +461,7 @@ class BuildConfHandler(object):
             buildtype = self._platforms[PLATFORM].get('default', '')
         if buildtype == 'default' or not buildtype:
             buildtype = ''
-        elif buildtype not in self._origin.buildtypes:
+        elif buildtype not in self._meta.buildtypes.allnames:
             raise WafError("Default build type '%s' was not found, "
                            "check your config." % buildtype)
 
@@ -483,6 +488,7 @@ class BuildConfHandler(object):
         if 'supported' in self._meta.buildtypes:
             return self._meta.buildtypes.supported
 
+        supported = set()
         # handle 'buildconf.platforms'
         if PLATFORM in self._platforms:
             validBuildTypes = self._platforms[PLATFORM].get('valid', [])
@@ -493,9 +499,13 @@ class BuildConfHandler(object):
                 if btype not in self._origin.buildtypes:
                     raise WafError("Build type '%s' for platform '%s' "
                                    "was not found, check your config." % (btype, PLATFORM))
-            self._meta.buildtypes.supported = validBuildTypes
+            supported = set(validBuildTypes)
         else:
-            self._meta.buildtypes.supported = list(self._meta.buildtypes.allnames)
+            supported.update(self._meta.buildtypes.allnames)
+
+        if 'default' in supported:
+            supported.remove('default')
+        self._meta.buildtypes.supported = sorted(supported)
 
         return self._meta.buildtypes.supported
 
@@ -516,17 +526,15 @@ class BuildConfHandler(object):
             tasks[taskName] = task
 
             # 1. Copy exising params of selected buildtype from 'buildtypes'
-            task.update(self._origin.buildtypes[buildtype])
+            task.update(self._origin.buildtypes.get(buildtype, {}))
 
             # 2. Copy/replace existing params from origin task
             task.update(taskParams)
             if 'buildtypes' in task:
                 del task['buildtypes']
             # 3. Copy/replace exising params of selected buildtype from 'tasks'
-            taskBuildTypes = taskParams.get('buildtypes', None)
-            if not taskBuildTypes:
-                continue
-            taskBuildParams = taskBuildTypes.get(buildtype, dict())
+            taskBuildTypes = taskParams.get('buildtypes', {})
+            taskBuildParams = taskBuildTypes.get(buildtype, {})
             task.update(taskBuildParams)
 
         self._handleTasksEnvVars(tasks)

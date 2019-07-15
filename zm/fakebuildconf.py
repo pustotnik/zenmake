@@ -11,4 +11,4 @@ buildtypes = {
     'default' : 'debug',
 }
 
-tasks = 'fake'
+tasks = { 'fake' : {} }

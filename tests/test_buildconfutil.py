@@ -72,12 +72,24 @@ class TestBuildconfUtil(object):
         zm.buildconfutil.initDefaults(buildconf)
         assert buildconf.features == { 'autoconfig': False }
 
+        buildconf = FakeBuildConf()
+        buildtypes = {
+            'debug' : {
+                'toolchain' : 'g++',
+                'cxxflags'  : ' -O0 -g',
+                'linkflags' : '-Wl,--as-needed',
+            },
+        }
+        setattr(buildconf, 'buildtypes', buildtypes)
+        zm.buildconfutil.initDefaults(buildconf)
+        assert buildconf.buildtypes == buildtypes
+
     def testLoadConf(self, capsys, monkeypatch):
         import sys
         from zm.utils import stringtypes
         buildconf = zm.buildconfutil.loadConf()
         # It should be fake
-        assert isinstance(buildconf.tasks, stringtypes)
+        assert buildconf.__name__.endswith('fakebuildconf')
 
         # invalidate conf
         monkeypatch.setattr(buildconf, 'tasks', None)
