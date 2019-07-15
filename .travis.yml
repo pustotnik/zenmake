@@ -120,3 +120,8 @@ script:
 
 after_success:
   - coveralls
+
+notifications:
+  email:
+    on_success: always # default: change
+    on_failure: always # default: always
