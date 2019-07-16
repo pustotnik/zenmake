@@ -39,7 +39,8 @@ BUILDCONF_FILE   = abspath(buildconf.__file__)
 BUILDCONF_DIR    = os.path.dirname(BUILDCONF_FILE)
 BUILDROOT        = zm.utils.unfoldPath(BUILDCONF_DIR, buildconf.buildroot)
 BUILDSYMLINK     = zm.utils.unfoldPath(BUILDCONF_DIR, buildconf.buildsymlink)
-BUILDOUT         = joinpath(BUILDROOT, 'out')
+BUILDOUTNAME     = 'out'
+BUILDOUT         = joinpath(BUILDROOT, BUILDOUTNAME)
 PROJECTROOT      = zm.utils.unfoldPath(BUILDCONF_DIR, buildconf.project['root'])
 SRCROOT          = zm.utils.unfoldPath(BUILDCONF_DIR, buildconf.srcroot)
 WAFCACHEDIR      = joinpath(BUILDOUT, Build.CACHE_DIR)
@@ -318,17 +319,19 @@ def distclean():
 
     Logs.info('%r finished successfully (%s)', 'distclean', cmdTimer)
 
-def isBuildConfFake():
+def isBuildConfFake(conf):
     """
     Return True if loaded buildconf is fake module.
     """
-    return buildconf.__name__.endswith('fakebuildconf')
+    return conf.__name__.endswith('fakebuildconf')
 
-def _getBuildTypeFromCLI():
-    import zm.cli as cli
-    if not cli.selected or not cli.selected.args.buildtype:
+def _getBuildTypeFromCLI(clicmd = None):
+    if not clicmd:
+        import zm.cli as cli
+        clicmd = cli.selected
+    if not clicmd or not clicmd.args.buildtype:
         return ''
-    return cli.selected.args.buildtype
+    return clicmd.args.buildtype
 
 class BuildConfHandler(object):
     """
@@ -337,7 +340,7 @@ class BuildConfHandler(object):
 
     __slots__ = ('cmdLineHandled', '_origin', '_platforms','_meta')
 
-    def __init__(self, conf = buildconf):
+    def __init__(self, conf):
 
         self.cmdLineHandled = False
 
@@ -423,7 +426,7 @@ class BuildConfHandler(object):
 
         return btype
 
-    def handleCmdLineArgs(self):
+    def handleCmdLineArgs(self, clicmd = None):
         """
         Apply values from command line
         """
@@ -431,11 +434,11 @@ class BuildConfHandler(object):
         if self.cmdLineHandled:
             return
 
-        if isBuildConfFake():
+        if isBuildConfFake(self._origin):
             raise WafError('Config buildconf.py not found. Check buildconf.py '
                            'exists in the project directory.')
 
-        buildtype = _getBuildTypeFromCLI()
+        buildtype = _getBuildTypeFromCLI(clicmd)
 
         supportedBuildTypes = self.supportedBuildTypes
         if buildtype not in supportedBuildTypes:
@@ -595,7 +598,7 @@ class BuildConfHandler(object):
 Singleton instance of BuildConfHandler for possibility using of already
 calculated data in different modules
 """
-buildConfHandler = BuildConfHandler()
+buildConfHandler = BuildConfHandler(buildconf)
 
 def autoconfigure(method):
     """

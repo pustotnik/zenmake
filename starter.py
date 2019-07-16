@@ -58,7 +58,7 @@ def main():
 
     wafCmdLine = zm.cli.parseAll(sys.argv)
 
-    if zm.assist.isBuildConfFake():
+    if zm.assist.isBuildConfFake(zm.assist.buildconf):
         Logs.error('Config buildconf.py not found. Check buildconf.py '
                    'exists in the project directory.')
         sys.exit(1)

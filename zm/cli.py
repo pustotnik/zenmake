@@ -16,10 +16,6 @@ from zm.autodict import AutoDict as _AutoDict
 if not Logs.log:
     Logs.init_log() # pragma: no cover
 
-def _getDefaultBuildType():
-    from zm.assist import buildConfHandler
-    return buildConfHandler.defaultBuildType
-
 ParsedCommand = namedtuple('ParsedCommand', 'name, args')
 
 """
@@ -113,9 +109,8 @@ _options = [
     ),
     _Option(
         names = ['-b', '--buildtype'],
-        default = _getDefaultBuildType(),
         commands = ['configure', 'build', 'clean'],
-        help = 'set the build type [default: %r]' % _getDefaultBuildType(),
+        help = 'set the build type',
     ),
     _Option(
         names = ['-g', '--configure'],
@@ -146,19 +141,22 @@ _options = [
     ),
     _Option(
         names = ['-v', '--verbose'],
-        default = 0,
         action = "count",
         commands = [x.name for x in _commands if x.name != 'help'],
-        help = 'verbosity level -v -vv or -vvv [default: 0]',
+        help = 'verbosity level -v -vv or -vvv',
     ),
     _Option(
         names = ['--color'],
-        default = 'auto',
         choices = ('yes', 'no', 'auto'),
         commands = [x.name for x in _commands], # for all commands
-        help = 'whether to use colors (yes/no/auto) [default: auto]',
+        help = 'whether to use colors (yes/no/auto)',
     ),
 ]
+
+READY_OPT_DEFAULTS = dict(
+    verbose = 0,
+    color = 'auto',
+)
 
 class CmdLineParser(object):
     """
@@ -166,11 +164,15 @@ class CmdLineParser(object):
     WAF has own CLI and I could use it but I wanted to have a different CLI.
     """
 
-    def __init__(self, progName):
+    def __init__(self, progName, defaults):
 
-        self.progName = progName
+        self._defaults = READY_OPT_DEFAULTS
+        self._defaults.update(defaults)
+        self._options = []
         self._command = None
         self._wafCmdLine = []
+
+        self._setupOptions()
 
         # map: cmd name/alies -> _Command
         self._cmdNameMap = {}
@@ -199,14 +201,14 @@ class CmdLineParser(object):
         self._addOptions(groupGlobal, cmd = None)
 
         subparsers = self._parser.add_subparsers(title = 'list of commands',
-                                                 dest = 'command')
+                                    help = '', metavar = '', dest = 'command')
 
         commandHelps = _AutoDict()
         helpCmd = None
         for cmd in _commands:
             commandHelps[cmd.name] = _AutoDict()
             cmdHelpInfo = commandHelps[cmd.name]
-            cmdHelpInfo.usage = self._makeCmdUsageText(self.progName, cmd)
+            cmdHelpInfo.usage = self._makeCmdUsageText(progName, cmd)
             cmdHelpInfo.help = cmd.description
             cmdHelpInfo.description = cmd.description.capitalize()
             cmdHelpInfo.aliases = cmd.aliases
@@ -235,6 +237,19 @@ class CmdLineParser(object):
         cmdParser.add_argument('topic', nargs='?', default = 'overview')
 
         self._commandHelps = commandHelps
+
+    def _setupOptions(self):
+        self._options = []
+
+        # make independent copy
+        for opt in _options:
+            self._options.append(_Option(opt))
+
+        for opt in self._options:
+            optName = opt.names[-1].replace('-', '')
+            if optName in self._defaults:
+                opt.default = self._defaults[optName]
+                opt.help += ' [default: %r]' % opt.default
 
     def _joinCmdNameWithAlieses(self, cmd):
         if not cmd.aliases:
@@ -274,13 +289,13 @@ class CmdLineParser(object):
     def _addOptions(self, target, cmd = None):
         if cmd is None:
             # get only global options
-            options = [x for x in _options if x.isglobal]
+            options = [x for x in self._options if x.isglobal]
         else:
             def isvalid(opt):
                 if opt.isglobal:
                     return False
                 return cmd.name in opt.commands
-            options = [x for x in _options if isvalid(x)]
+            options = [x for x in self._options if isvalid(x)]
 
         for opt in options:
             kwargs = _AutoDict()
@@ -329,7 +344,7 @@ class CmdLineParser(object):
             cmdline.append('--color=' + options.color)
         self._wafCmdLine = cmdline
 
-    def parse(self, args = None):
+    def parse(self, args = None, buildOnEmpty = False):
         """ Parse command line args """
 
         if args is None:
@@ -337,8 +352,7 @@ class CmdLineParser(object):
 
         # simple hack for default behavior if command is not defined
         if not args:
-            import zm.assist
-            args = ['help'] if zm.assist.isBuildConfFake() else ['build']
+            args = ['build'] if buildOnEmpty else ['help']
 
         # parse
         args = self._parser.parse_args(args)
@@ -346,7 +360,6 @@ class CmdLineParser(object):
 
         if cmd.name == 'help':
             self._fillCmdInfo(args)
-            self._showHelp(self._commandHelps, args.topic)
             sys.exit(not self._showHelp(self._commandHelps, args.topic))
 
         self._fillCmdInfo(args)
@@ -372,8 +385,15 @@ def parseAll(args):
     command as object of ParsedCommand in global var 'selected' of this module.
     Returns parser.wafCmdLine
     """
-    parser = CmdLineParser(args[0])
-    cmd = parser.parse(args[1:])
+
+    import zm.assist
+    buildconf = zm.assist.buildconf
+    buildOnEmpty = not zm.assist.isBuildConfFake(buildconf)
+    defaults = dict(
+        buildtype = zm.assist.buildConfHandler.defaultBuildType
+    )
+    parser = CmdLineParser(args[0], defaults)
+    cmd = parser.parse(args[1:], buildOnEmpty)
 
     #pylint: disable=global-statement
     global selected

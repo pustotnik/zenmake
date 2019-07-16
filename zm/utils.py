@@ -78,13 +78,59 @@ def platform():
         result = 'windows' # pragma: no cover
     return result
 
-def loadPyModule(name):
+def loadPyModule(name, dirpath = None, withImport = True):
     """
-    Load python module by name
+    Load python module by name.
+    Param 'dirpath' is optional param that used to add/remove path into sys.path.
+    Module is not imported (doesn't exist in sys.modules) if withImport is False.
+    With withImport = False you should control where to store returned module object.
     """
 
-    # Without non empty fromlist __import__ returns the top-level package
-    module = __import__(name, fromlist=[None])
+    if withImport:
+        def doImport(name):
+            # Without non empty fromlist __import__ returns the top-level package
+            return __import__(name, fromlist=[None])
+
+        if dirpath:
+            sys.path.insert(0, dirpath)
+            try:
+                module = doImport(name)
+            finally:
+                sys.path.remove(dirpath)
+        else:
+            module = doImport(name)
+        return module
+
+    # In this case we should compile python file manually
+    import types
+    from waflib import Utils
+    from waflib.Errors import WafError
+    module = types.ModuleType(name)
+    filename = '%s.py' % name
+    if not dirpath:
+        # try to find module
+        for path in sys.path:
+            if os.path.exists(os.path.join(path, filename)):
+                dirpath = path
+                break
+
+    if not dirpath:
+        raise WafError('File %r not found' % filename)
+
+    modulePath = os.path.join(dirpath, filename)
+    try:
+        code = Utils.readf(modulePath, m = 'r', encoding = None)
+    except EnvironmentError:
+        raise WafError('Could not read the file %r' % modulePath)
+
+    sys.path.insert(0, dirpath)
+    try:
+        #pylint: disable=exec-used
+        exec(compile(code, modulePath, 'exec'), module.__dict__)
+        #pylint: enable=exec-used
+    finally:
+        sys.path.remove(dirpath)
+
     return module
 
 def printSysInfo():

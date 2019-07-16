@@ -71,15 +71,16 @@ def initDefaults(buildconf):
     if not hasattr(buildconf, 'srcroot'):
         setattr(buildconf, 'srcroot', buildconf.project['root'])
 
-def loadConf():
+def loadConf(name = 'buildconf', dirpath = None, withImport = True):
     """
     Load buildconf
+    Params 'dirpath' and 'withImport' are the params for zm.utils.loadPyModule
     """
 
     try:
         # Avoid writing .pyc files
         sys.dont_write_bytecode = True
-        module = loadPyModule('buildconf')
+        module = loadPyModule(name, dirpath = dirpath, withImport = withImport)
         sys.dont_write_bytecode = False # pragma: no cover
     except ImportError:
         module = loadPyModule('zm.fakebuildconf')

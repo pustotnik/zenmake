@@ -12,15 +12,14 @@ import sys
 import pytest
 from copy import deepcopy
 import tests.common as cmn
-import zm.buildconfutil
 import zm.cli
 
 class TestCli(object):
 
     @pytest.fixture(autouse = True)
     def setup(self):
-        self.buildconf = zm.buildconfutil.loadConf()
-        self.parser = zm.cli.CmdLineParser('test')
+        self.defaults = { 'buildtype': 'somedebug' }
+        self.parser = zm.cli.CmdLineParser('test', self.defaults)
 
     def _parseHelpArgs(self, args, capsys):
         # CLI prints help and does exit
@@ -68,10 +67,6 @@ class TestCli(object):
             sys.argv = oldargv
             assertAll(cmd, self.parser.command, self.parser.wafCmdLine)
 
-            # zm.cli.parseAll
-            wafCmdLine = zm.cli.parseAll(['zenmake'] + check['args'])
-            assertAll(zm.cli.selected, zm.cli.selected, wafCmdLine)
-
     def testEmpty(self, capsys):
         self._testMainHelpMsg([], capsys)
 
@@ -99,7 +94,7 @@ class TestCli(object):
     def testCmdBuild(self):
 
         baseExpectedArgs = {
-            'buildtype' : self.buildconf.buildtypes['default'],
+            'buildtype' : self.defaults['buildtype'],
             'jobs' : None,
             'configure': False,
             'color': 'auto',
@@ -179,7 +174,7 @@ class TestCli(object):
     def testCmdConfigure(self):
 
         baseExpectedArgs = {
-            'buildtype' : self.buildconf.buildtypes['default'],
+            'buildtype' : self.defaults['buildtype'],
             'color': 'auto',
             'distclean': False,
             'verbose': 0,
@@ -224,7 +219,7 @@ class TestCli(object):
     def testCmdClean(self):
 
         baseExpectedArgs = {
-            'buildtype' : self.buildconf.buildtypes['default'],
+            'buildtype' : self.defaults['buildtype'],
             'color': 'auto',
             'verbose': 0,
         }
