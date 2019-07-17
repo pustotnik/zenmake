@@ -9,12 +9,9 @@
 import sys
 from collections import namedtuple
 from auxiliary.argparse import argparse
-from waflib import Logs
-from waflib.Errors import WafError
+from zm import log
+from zm.error import ZenMakeLogicError
 from zm.autodict import AutoDict as _AutoDict
-
-if not Logs.log:
-    Logs.init_log() # pragma: no cover
 
 ParsedCommand = namedtuple('ParsedCommand', 'name, args')
 
@@ -200,8 +197,11 @@ class CmdLineParser(object):
         groupGlobal = self._parser.add_argument_group('global options')
         self._addOptions(groupGlobal, cmd = None)
 
-        subparsers = self._parser.add_subparsers(title = 'list of commands',
-                                    help = '', metavar = '', dest = 'command')
+        kwargs = dict(
+            title = 'list of commands',
+            help = '', metavar = '', dest = 'command'
+        )
+        subparsers = self._parser.add_subparsers(**kwargs)
 
         commandHelps = _AutoDict()
         helpCmd = None
@@ -229,7 +229,8 @@ class CmdLineParser(object):
 
         # special case for 'help' command
         if helpCmd is None:
-            raise WafError("Programming error: no command 'help' in _commands") # pragma: no cover
+            raise ZenMakeLogicError("Programming error: no command "
+                                    "'help' in _commands") # pragma: no cover
         cmd = helpCmd
         kwargs = commandHelps[cmd.name]
         kwargs['add_help'] = True
@@ -270,7 +271,7 @@ class CmdLineParser(object):
             _topic = _topic.name
 
         if _topic is None or _topic not in cmdHelps:
-            Logs.error("Unknown command/topic to show help: '%s'" % topic)
+            log.error("Unknown command/topic to show help: '%s'" % topic)
             return False
 
         print(cmdHelps[_topic]['help'])
@@ -321,7 +322,7 @@ class CmdLineParser(object):
 
     def _fillWafCmdLine(self):
         if self._command is None:
-            raise WafError("Programming error: _command is None") # pragma: no cover
+            raise ZenMakeLogicError("Programming error: _command is None") # pragma: no cover
 
         cmdline = [self._command.name]
         # self._command.args is AutoDict and it means that it'll create
@@ -379,24 +380,14 @@ class CmdLineParser(object):
         """
         return self._wafCmdLine
 
-def parseAll(args):
+def parseAll(args, defaults, buildOnEmpty):
     """
     Parse all command line args with CmdLineParser and save selected
     command as object of ParsedCommand in global var 'selected' of this module.
-    Returns parser.wafCmdLine
+    Returns selected command as object of ParsedCommand and parser.wafCmdLine
     """
 
-    import zm.assist
-    buildconf = zm.assist.buildconf
-    buildOnEmpty = not zm.assist.isBuildConfFake(buildconf)
-    defaults = dict(
-        buildtype = zm.assist.buildConfHandler.defaultBuildType
-    )
     parser = CmdLineParser(args[0], defaults)
     cmd = parser.parse(args[1:], buildOnEmpty)
 
-    #pylint: disable=global-statement
-    global selected
-    selected = cmd
-    #pylint: enable=global-statement
-    return parser.wafCmdLine
+    return cmd, parser.wafCmdLine

@@ -7,7 +7,7 @@
 """
 
 import re
-from waflib.Errors import WafError
+from zm.error import ZenMakeError
 from zm.autodict import AutoDict as _AutoDict
 from zm.utils import loadPyModule, stringtypes
 
@@ -94,7 +94,7 @@ class CompilersInfo(object):
         """
 
         if not lang or lang not in _langinfo:
-            raise WafError("Compiler for '%s' is not supported" % lang)
+            raise ZenMakeError("Compiler for '%s' is not supported" % lang)
 
         compilers = _cache[lang].get('compilers', [])
         if compilers:
@@ -120,5 +120,5 @@ class CompilersInfo(object):
         """
 
         if not lang or lang not in _langinfo:
-            raise WafError("Compiler for '%s' is not supported" % lang)
+            raise ZenMakeError("Compiler for '%s' is not supported" % lang)
         return _langinfo[lang]['env.var']

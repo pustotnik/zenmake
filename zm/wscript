@@ -8,16 +8,17 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-import zm.assist as assist
-import zm.wscriptimpl as wscriptimpl
+from zm import shared, wscriptimpl
+
+_confHandler = shared.buildConfHandler
 
 # these variables are mandatory ('/' are converted automatically)
-top = assist.BUILDROOT
-out = assist.BUILDOUT
+top = _confHandler.confPaths.buildroot
+out = _confHandler.confPaths.buildout
 
 # mostly for WAF 'dist' command
-APPNAME = assist.PROJECT_NAME
-VERSION = assist.PROJECT_VERSION
+APPNAME = _confHandler.projectName
+VERSION = _confHandler.projectVersion
 
 def options(opt):
     wscriptimpl.options(opt)
@@ -26,9 +27,10 @@ def init(ctx):
 
     wscriptimpl.init(ctx)
 
+    buildtype = _confHandler.selectedBuildType
+
     # It's necessary to do it here
     from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallContext
-    buildtype = assist.buildConfHandler.selectedBuildType
     for c in (BuildContext, CleanContext, InstallContext, UninstallContext):
         class CtxClass(c):
             variant = buildtype

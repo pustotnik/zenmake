@@ -3,17 +3,14 @@
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
- license: BSD, see LICENSE for more details.
+ license: BSD 3-Clause License, see LICENSE for more details.
 """
 
 import os
 import sys
-from waflib import Logs
-from waflib.Errors import WafError
+from zm import log
+from zm.error import ZenMakeError
 from zm.utils import loadPyModule
-
-if not Logs.log:
-    Logs.init_log() # pragma: no cover
 
 def validateAll(buildconf):
     """
@@ -21,7 +18,7 @@ def validateAll(buildconf):
     """
 
     if not buildconf.tasks:
-        raise WafError("No tasks were found in buildconf.")
+        raise ZenMakeError("No tasks were found in buildconf.")
 
 def initDefaults(buildconf):
     """
@@ -71,7 +68,7 @@ def initDefaults(buildconf):
     if not hasattr(buildconf, 'srcroot'):
         setattr(buildconf, 'srcroot', buildconf.project['root'])
 
-def loadConf(name = 'buildconf', dirpath = None, withImport = True):
+def loadConf(name = 'buildconf', dirpath = None, withImport = False):
     """
     Load buildconf
     Params 'dirpath' and 'withImport' are the params for zm.utils.loadPyModule
@@ -88,10 +85,10 @@ def loadConf(name = 'buildconf', dirpath = None, withImport = True):
     try:
         initDefaults(module)
         validateAll(module)
-    except WafError as ex:
-        if Logs.verbose > 1:
-            Logs.pprint('RED', ex.verbose_msg) # pragma: no cover
-        Logs.error(str(ex))
+    except ZenMakeError as ex:
+        if log.verbose() > 1:
+            log.pprint('RED', ex.fullmsg) # pragma: no cover
+        log.error(str(ex))
         sys.exit(1)
 
     return module

@@ -12,7 +12,7 @@ import os
 import shutil
 import pytest
 import tests.common as cmn
-import zm.utils
+from zm import utils
 
 joinpath = os.path.join
 
@@ -25,17 +25,17 @@ class TestUtils(object):
         abspath = joinpath(cwd, 'something')
         relpath = joinpath('a', 'b', 'c')
 
-        assert zm.utils.unfoldPath(cwd, None) is None
-        assert zm.utils.unfoldPath(cwd, abspath) == abspath
+        assert utils.unfoldPath(cwd, None) is None
+        assert utils.unfoldPath(cwd, abspath) == abspath
 
-        path = zm.utils.unfoldPath(cwd, relpath)
+        path = utils.unfoldPath(cwd, relpath)
         assert joinpath(cwd, relpath) == path
-        assert os.path.isabs(zm.utils.unfoldPath(abspath, relpath))
+        assert os.path.isabs(utils.unfoldPath(abspath, relpath))
 
         os.environ['ABC'] = 'qwerty'
 
         assert joinpath(cwd, 'qwerty', relpath) == \
-                        zm.utils.unfoldPath(cwd, joinpath('$ABC', relpath))
+                        utils.unfoldPath(cwd, joinpath('$ABC', relpath))
 
     def testMkSymlink(self):
         destdir = joinpath(cmn.SHARED_TMP_DIR, 'test.util.mksymlink')
@@ -47,11 +47,11 @@ class TestUtils(object):
             file.write("trash")
 
         symlink = joinpath(destdir, 'symlink')
-        zm.utils.mksymlink(testfile, symlink)
+        utils.mksymlink(testfile, symlink)
         assert os.path.islink(symlink)
 
         with pytest.raises(OSError):
-            zm.utils.mksymlink(testfile, symlink, force = False)
+            utils.mksymlink(testfile, symlink, force = False)
 
-        zm.utils.mksymlink(testfile, symlink, force = True)
+        utils.mksymlink(testfile, symlink, force = True)
         assert os.path.islink(symlink)

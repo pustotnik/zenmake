@@ -9,17 +9,17 @@
 """
 
 import sys
-import pytest
 from copy import deepcopy
+import pytest
 import tests.common as cmn
-import zm.cli
+from zm import cli
 
 class TestCli(object):
 
     @pytest.fixture(autouse = True)
     def setup(self):
         self.defaults = { 'buildtype': 'somedebug' }
-        self.parser = zm.cli.CmdLineParser('test', self.defaults)
+        self.parser = cli.CmdLineParser('test', self.defaults)
 
     def _parseHelpArgs(self, args, capsys):
         # CLI prints help and does exit
@@ -81,7 +81,7 @@ class TestCli(object):
         assert ecode != 0
 
     def testHelpForCmds(self, capsys):
-        for cmd in zm.cli._commands:
+        for cmd in cli._commands:
             args = ['help', cmd.name]
             ecode, out, err = self._parseHelpArgs(args, capsys)
             assert ecode == 0

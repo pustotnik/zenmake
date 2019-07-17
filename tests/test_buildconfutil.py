@@ -13,7 +13,7 @@ import shutil
 import pytest
 from waflib.Errors import WafError
 import tests.common as cmn
-import zm.buildconfutil
+from zm import buildconfutil
 
 class FakeBuildConf:
     pass
@@ -24,12 +24,12 @@ class TestBuildconfUtil(object):
         buildconf = FakeBuildConf()
         setattr(buildconf, 'tasks', None)
         with pytest.raises(WafError):
-            zm.buildconfutil.validateAll(buildconf)
+            buildconfutil.validateAll(buildconf)
 
     def testInitDefaults(self):
 
         buildconf = FakeBuildConf()
-        zm.buildconfutil.initDefaults(buildconf)
+        buildconfutil.initDefaults(buildconf)
         assert hasattr(buildconf, 'features')
         assert buildconf.features == { 'autoconfig': True }
 
@@ -69,7 +69,7 @@ class TestBuildconfUtil(object):
 
         buildconf = FakeBuildConf()
         setattr(buildconf, 'features', { 'autoconfig' : False })
-        zm.buildconfutil.initDefaults(buildconf)
+        buildconfutil.initDefaults(buildconf)
         assert buildconf.features == { 'autoconfig': False }
 
         buildconf = FakeBuildConf()
@@ -81,20 +81,20 @@ class TestBuildconfUtil(object):
             },
         }
         setattr(buildconf, 'buildtypes', buildtypes)
-        zm.buildconfutil.initDefaults(buildconf)
+        buildconfutil.initDefaults(buildconf)
         assert buildconf.buildtypes == buildtypes
 
     def testLoadConf(self, capsys, monkeypatch):
         import sys
         from zm.utils import stringtypes
-        buildconf = zm.buildconfutil.loadConf()
+        buildconf = buildconfutil.loadConf()
         # It should be fake
         assert buildconf.__name__.endswith('fakebuildconf')
 
         # invalidate conf
         monkeypatch.setattr(buildconf, 'tasks', None)
         with pytest.raises(SystemExit) as cm:
-            buildconf = zm.buildconfutil.loadConf()
+            buildconf = buildconfutil.loadConf()
         captured = capsys.readouterr()
         assert cm.value.code
         assert captured.err

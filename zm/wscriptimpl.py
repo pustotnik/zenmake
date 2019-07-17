@@ -7,10 +7,8 @@
 """
 
 import os
-from waflib import Utils, Logs
 from waflib.ConfigSet import ConfigSet
-import zm.assist as assist
-from zm.utils import maptype
+from zm import log, shared, assist, utils
 
 # pylint: disable=unused-argument
 
@@ -32,20 +30,24 @@ def init(ctx):
     It's called by Waf before all other commands but after 'options'
     """
 
-    assist.buildConfHandler.handleCmdLineArgs()
+    shared.buildConfHandler.handleCmdLineArgs()
 
 def configure(conf):
     """
     Implementation for wscript.configure
     """
 
-    confHandler = assist.buildConfHandler
+    confHandler = shared.buildConfHandler
+
+    conf.env['PROJECT_NAME'] = confHandler.projectName
 
     # make independent copy of root env
     rootEnv   = assist.deepcopyEnv(conf.env)
     toolchainsEnv = assist.loadToolchains(conf, confHandler, rootEnv)
 
-    conf.env.alltasks = assist.loadTasksFromCache()
+    zmcachedir = confHandler.confPaths.zmcachedir
+    wafcachefile = confHandler.confPaths.wafcachefile
+    conf.env.alltasks = assist.loadTasksFromCache(wafcachefile)
 
     buildtype = confHandler.selectedBuildType
     tasks = confHandler.tasks
@@ -78,7 +80,7 @@ def configure(conf):
         # build step. So it loads all stored variants even though they
         # aren't needed. And I decided to save variants in different files and
         # load only needed ones.
-        conf.env.store(assist.makeCacheConfFileName(taskVariant))
+        conf.env.store(assist.makeCacheConfFileName(zmcachedir, taskVariant))
 
         # It's necessary to delete variant from conf.all_envs otherwise
         # waf will store it in 'c4che'
@@ -89,7 +91,7 @@ def configure(conf):
     for toolchain in toolchainsEnv:
         conf.all_envs.pop(toolchain, None)
 
-    assist.dumpZenMakeCommonFile()
+    assist.dumpZenMakeCommonFile(confHandler.confPaths)
 
 def build(bld):
     """
@@ -102,10 +104,12 @@ def build(bld):
     buildtype = bld.variant
     if buildtype not in bld.env.alltasks:
         if bld.cmd == 'clean':
-            Logs.info("Buildtype '%s' not found. Nothing to clean" % buildtype)
+            log.info("Buildtype '%s' not found. Nothing to clean" % buildtype)
             return
         bld.fatal("Buildtype '%s' not found! Was step 'configure' missed?"
                   % buildtype)
+
+    bconfPaths = shared.buildConfHandler.confPaths
 
     # Some comments just to remember some details.
     # - ctx.path represents the path to the wscript file being executed
@@ -113,15 +117,15 @@ def build(bld):
     #   the drive letters (win32 systems)
 
     # Path must be relative
-    srcDir = os.path.relpath(assist.SRCROOT, assist.BUILDROOT)
+    srcDir = os.path.relpath(bconfPaths.srcroot, bconfPaths.buildroot)
     # Since ant_glob can traverse both source and build folders, it is a best
     # practice to call this method only from the most specific build node.
     srcDirNode = bld.path.find_dir(srcDir)
 
     tasks = bld.env.alltasks[buildtype]
 
-    import zm.cli
-    allowedTasks = zm.cli.selected.args.buildtasks
+    import zm.cli as cli
+    allowedTasks = cli.selected.args.buildtasks
     if not allowedTasks:
         allowedTasks = tasks.keys()
 
@@ -134,7 +138,8 @@ def build(bld):
         # so it's need to switch in
         bld.variant = taskParams['task.build.env']
         # load environment for this task
-        bld.all_envs[bld.variant] = ConfigSet(assist.makeCacheConfFileName(bld.variant))
+        cacheFile = assist.makeCacheConfFileName(bconfPaths.zmcachedir, bld.variant)
+        bld.all_envs[bld.variant] = ConfigSet(cacheFile)
 
         target = taskParams.get('target', taskName)
         kwargs = dict(
@@ -150,17 +155,17 @@ def build(bld):
 
         src = taskParams.get('source')
         if src:
-            if isinstance(src, maptype):
+            if isinstance(src, utils.maptype):
                 kwargs['source'] = srcDirNode.ant_glob(
                     incl       = src.get('include', ''),
                     excl       = src.get('exclude', ''),
                     ignorecase = src.get('ignorecase', False),
                     generator = True)
             else:
-                src = Utils.to_list(src)
+                src = utils.toList(src)
                 kwargs['source'] = [ srcDirNode.find_node(s) for s in src ]
 
-        includes = assist.handleTaskIncludesParam(taskParams)
+        includes = assist.handleTaskIncludesParam(taskParams, bconfPaths.srcroot)
         if includes:
             kwargs['includes'] =  includes
 

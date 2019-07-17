@@ -24,6 +24,37 @@ sys.path.insert(1, WAF_DIR)
 # argparse from the https://pypi.org/project/argparse/ supports alieses
 #sys.path.insert(1, AUX_DIR)
 
+def prepareDirs(bconfPaths):
+    """
+    Prepare some paths for correct work
+    """
+    from zm import utils
+
+    if not os.path.exists(bconfPaths.buildroot):
+        os.makedirs(bconfPaths.buildroot)
+    if bconfPaths.buildsymlink and not os.path.exists(bconfPaths.buildsymlink):
+        utils.mksymlink(bconfPaths.buildroot, bconfPaths.buildsymlink)
+
+    # We regard ZM_DIR as a directory where file 'wscript' is located.
+    # Creating of symlink is cheaper than copying of file but on Windows OS
+    # there are some problems with using of symlinks.
+    from shutil import copyfile
+    copyfile(joinpath(ZM_DIR, 'wscript'), bconfPaths.wscriptfile)
+
+def handleCLI(buildConfHandler, args, buildOnEmpty):
+    """
+    Handle CLI and return command object and waf cmd line
+    """
+    from zm import cli
+
+    defaults = dict(
+        buildtype = buildConfHandler.defaultBuildType
+    )
+
+    cmd, wafCmdLine = cli.parseAll(args, defaults, buildOnEmpty)
+    cli.selected = cmd
+    return cmd, wafCmdLine
+
 def main():
     """
     Prepare and start Waf with ZenMake stuffs
@@ -37,47 +68,39 @@ def main():
     os.environ['WAFLOCK'] = '.lock-wafbuild'
     from waflib import Options
     Options.lockfile = '.lock-wafbuild'
-    from waflib import Scripting, Context, Build, Logs
+    from waflib import Scripting, Context, Build
 
-    import zm.assist
-    import zm.utils
-    import zm.cli
+    from zm import log, buildconfutil, assist, shared
 
-    def prepareDirs():
-        if not os.path.exists(zm.assist.BUILDROOT):
-            os.makedirs(zm.assist.BUILDROOT)
-        if zm.assist.BUILDSYMLINK and not os.path.exists(zm.assist.BUILDSYMLINK):
-            zm.utils.mksymlink(zm.assist.BUILDROOT, zm.assist.BUILDSYMLINK)
+    buildconf = buildconfutil.loadConf()
+    buildConfHandler = assist.BuildConfHandler(buildconf)
+    shared.buildConfHandler = buildConfHandler
+    bconfPaths = buildConfHandler.confPaths
+    isBuildConfFake = assist.isBuildConfFake(buildconf)
 
-        # We regard ZM_DIR as a directory where file 'wscript' is located.
-        # Creating of symlink is cheaper than copying of file but on Windows OS
-        # there are some problems with using of symlinks.
-        from shutil import copyfile
-        copyfile(joinpath(ZM_DIR, 'wscript'),
-                 joinpath(zm.assist.BUILDROOT, 'wscript'))
+    cmd, wafCmdLine = handleCLI(buildConfHandler, sys.argv, not isBuildConfFake)
 
-    wafCmdLine = zm.cli.parseAll(sys.argv)
-
-    if zm.assist.isBuildConfFake(zm.assist.buildconf):
-        Logs.error('Config buildconf.py not found. Check buildconf.py '
-                   'exists in the project directory.')
+    if isBuildConfFake:
+        log.error('Config buildconf.py not found. Check buildconf.py '
+                  'exists in the project directory.')
         sys.exit(1)
 
     # Special case for 'distclean'
-    cmd = zm.cli.selected
     if cmd.name == 'distclean':
-        zm.assist.distclean()
+        assist.distclean(bconfPaths)
         return 0
 
     if cmd.args.distclean:
-        zm.assist.distclean()
+        assist.distclean(bconfPaths)
 
-    prepareDirs()
+    prepareDirs(bconfPaths)
 
     del sys.argv[1:]
     sys.argv.extend(wafCmdLine)
-    Build.BuildContext.execute = zm.assist.autoconfigure(Build.BuildContext.execute)
-    cwd = zm.assist.BUILDROOT
+    from zm.autoconfigure import autoconfigure
+    Build.BuildContext.execute = autoconfigure(cmd, buildConfHandler,
+                                               Build.BuildContext.execute)
+    cwd = bconfPaths.buildroot
     Scripting.waf_entry_point(cwd, Context.WAFVERSION, WAF_DIR)
 
     return 0

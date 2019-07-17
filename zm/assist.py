@@ -8,73 +8,42 @@
 
 import os
 from copy import deepcopy
-from waflib import Context, Options, Configure, Build, Utils, Logs
 from waflib.ConfigSet import ConfigSet
-from waflib.Errors import WafError
-import zm.buildconfutil
-import zm.utils
-from zm.utils import stringtypes, maptype
-import zm.toolchains as toolchains
+from zm import utils, toolchains, log
 from zm.autodict import AutoDict
+from zm.error import ZenMakeError
+from zm.constants import WAF_CACHE_DIRNAME, WAF_CACHE_NAMESUFFIX, \
+                         ZENMAKE_CACHE_NAMESUFFIX, ZENMAKE_COMMON_FILENAME, \
+                         PLATFORM, BUILDOUTNAME
 
 joinpath = os.path.join
-abspath  = os.path.abspath
-realpath = os.path.realpath
 
-buildconf = zm.buildconfutil.loadConf()
-
-# Execute the configuration automatically
-autoconfig = buildconf.features['autoconfig']
-
-# Force to turn off internal WAF autoconfigure decorator.
-# It's just to rid of needless work and to save working time.
-Configure.autoconfig = False
-
-PROJECT_NAME     = buildconf.project['name']
-PROJECT_VERSION  = buildconf.project['version']
-
-PLATFORM         = zm.utils.platform()
-WSCRIPT_FILE     = joinpath(os.path.dirname(realpath(__file__)), 'wscript')
-BUILDCONF_FILE   = abspath(buildconf.__file__)
-BUILDCONF_DIR    = os.path.dirname(BUILDCONF_FILE)
-BUILDROOT        = zm.utils.unfoldPath(BUILDCONF_DIR, buildconf.buildroot)
-BUILDSYMLINK     = zm.utils.unfoldPath(BUILDCONF_DIR, buildconf.buildsymlink)
-BUILDOUTNAME     = 'out'
-BUILDOUT         = joinpath(BUILDROOT, BUILDOUTNAME)
-PROJECTROOT      = zm.utils.unfoldPath(BUILDCONF_DIR, buildconf.project['root'])
-SRCROOT          = zm.utils.unfoldPath(BUILDCONF_DIR, buildconf.srcroot)
-WAFCACHEDIR      = joinpath(BUILDOUT, Build.CACHE_DIR)
-WAFCACHEFILE     = joinpath(WAFCACHEDIR, Build.CACHE_SUFFIX)
-
-ZENMAKECACHEDIR    = WAFCACHEDIR
-ZENMAKECACHESUFFIX = '.zenmake.py'
-ZENMAKECMNFILE     = joinpath(BUILDOUT, '.zenmake-common')
-
-def dumpZenMakeCommonFile():
+def dumpZenMakeCommonFile(bconfPaths):
     """
-    Dump file ZENMAKECMNFILE with some things like monitored for changes files
+    Dump file ZENMAKE_COMMON_FILENAME with some things like monitored
+    for changes files.
     """
 
     zmCmn = ConfigSet()
     # Firstly I had added WSCRIPT_FILE in this list but then realized that
     # it's not necessary because wscript don't have any project settings
     # in our case.
-    zmCmn.monitfiles = [BUILDCONF_FILE]
+    zmCmn.monitfiles = [bconfPaths.buildconffile]
     zmCmn.monithash  = 0
 
     for file in zmCmn.monitfiles:
-        zmCmn.monithash = Utils.h_list((zmCmn.monithash,
-                                        Utils.readf(file, 'rb')))
-    zmCmn.store(ZENMAKECMNFILE)
+        zmCmn.monithash = utils.mkHashOfStrings((zmCmn.monithash,
+                                                 utils.readFile(file, 'rb')))
+    zmCmn.store(bconfPaths.zmcmnfile)
 
-def loadTasksFromCache():
+def loadTasksFromCache(cachefile):
     """
     Load cached tasks from config cache if it exists
     """
     result = {}
     try:
         oldenv = ConfigSet()
-        oldenv.load(WAFCACHEFILE)
+        oldenv.load(cachefile)
         if 'alltasks' in oldenv:
             result = oldenv.alltasks
     except EnvironmentError:
@@ -85,9 +54,9 @@ def makeTargetPath(ctx, dirName, targetName):
     """ Compose path for target that is used in build task"""
     return joinpath(ctx.out_dir, dirName, targetName)
 
-def makeCacheConfFileName(name):
+def makeCacheConfFileName(zmcachedir, name):
     """ Make file name of specific zenmake cache config file"""
-    return joinpath(ZENMAKECACHEDIR, name + ZENMAKECACHESUFFIX)
+    return joinpath(zmcachedir, name + ZENMAKE_CACHE_NAMESUFFIX)
 
 def getTaskVariantName(buildtype, taskName):
     """ Get 'variant' for task by fixed template"""
@@ -130,7 +99,7 @@ def setTaskEnvVars(env, taskParams):
     for var in cfgEnvVars:
         val = taskParams.get(var.lower(), None)
         if val:
-            env[var] = Utils.to_list(val)
+            env[var] = utils.toList(val)
 
 def runConfTests(cfgCtx, buildtype, taskParams):
     """
@@ -141,19 +110,19 @@ def runConfTests(cfgCtx, buildtype, taskParams):
     for entity in confTests:
         act = entity.pop('act', None)
         if act == 'check-sys-libs':
-            sysLibs = Utils.to_list(taskParams.get('sys-libs', []))
+            sysLibs = utils.toList(taskParams.get('sys-libs', []))
             kwargs = entity
             for lib in sysLibs:
                 kwargs['lib'] = lib
                 cfgCtx.check(**kwargs)
         elif act == 'check-headers':
-            headers = Utils.to_list(entity.pop('names', []))
+            headers = utils.toList(entity.pop('names', []))
             kwargs = entity
             for header in headers:
                 kwargs['header_name'] = header
                 cfgCtx.check(**kwargs)
         elif act == 'check-libs':
-            libs = Utils.to_list(entity.pop('names', []))
+            libs = utils.toList(entity.pop('names', []))
             autodefine = entity.pop('autodefine', False)
             kwargs = entity
             for lib in libs:
@@ -167,7 +136,8 @@ def runConfTests(cfgCtx, buildtype, taskParams):
             fileName = entity.pop('file', '%s_%s' %
                                   (taskParams['name'].lower(), 'config.h'))
             fileName = joinpath(buildtype, fileName)
-            guardname = Utils.quote_define_name(PROJECT_NAME + '_' + fileName)
+            projectName = cfgCtx.env['PROJECT_NAME'] or ''
+            guardname = utils.quoteDefineName(projectName + '_' + fileName)
             entity['guard'] = entity.pop('guard', guardname)
             cfgCtx.write_config_header(fileName, **entity)
         else:
@@ -209,7 +179,7 @@ def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
     """
 
     if not buildconfHandler.toolchainNames:
-        Logs.warn("WARN: No toolchains found. Is buildconf correct?")
+        log.warn("WARN: No toolchains found. Is buildconf correct?")
 
     toolchainsEnv = {}
     oldEnvName = cfgCtx.variant
@@ -239,7 +209,7 @@ def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
 
     return toolchainsEnv
 
-def handleTaskIncludesParam(taskParams):
+def handleTaskIncludesParam(taskParams, srcroot):
     """
     Get valid 'includes' for build task
     """
@@ -250,16 +220,16 @@ def handleTaskIncludesParam(taskParams):
     # a source of portability problems.
     includes = taskParams.get('includes', [])
     if includes:
-        if isinstance(includes, stringtypes):
+        if isinstance(includes, utils.stringtypes):
             includes = includes.split()
         includes = [ x if os.path.isabs(x) else \
-            joinpath(SRCROOT, x) for x in includes ]
+            joinpath(srcroot, x) for x in includes ]
     # The includes='.' add the build directory path. It's needed to use config
     # header with 'conftests'.
     includes.append('.')
     return includes
 
-def fullclean():
+def fullclean(bconfPaths, verbose = 1):
     """
     It does almost the same thing as distclean from waf. But distclean can
     not remove directory with file wscript or symlink to it if distclean
@@ -267,57 +237,60 @@ def fullclean():
     """
 
     import shutil
-    import zm.cli as cli
-    verbose = 1
-    if cli.selected:
-        verbose = cli.selected.args.verbose
 
     def loginfo(msg):
         if verbose >= 1:
-            Logs.info(msg)
+            log.info(msg)
 
-    if BUILDSYMLINK and os.path.isdir(BUILDSYMLINK) and os.path.exists(BUILDSYMLINK):
-        loginfo("Removing directory '%s'" % BUILDSYMLINK)
-        shutil.rmtree(BUILDSYMLINK, ignore_errors = True)
+    buildsymlink = bconfPaths.buildsymlink
+    buildroot = bconfPaths.buildroot
+    projectroot = bconfPaths.projectroot
 
-    if BUILDSYMLINK and os.path.islink(BUILDSYMLINK) and os.path.lexists(BUILDSYMLINK):
-        loginfo("Removing symlink '%s'" % BUILDSYMLINK)
-        os.remove(BUILDSYMLINK)
+    if buildsymlink and os.path.isdir(buildsymlink) and os.path.exists(buildsymlink):
+        loginfo("Removing directory '%s'" % buildsymlink)
+        shutil.rmtree(buildsymlink, ignore_errors = True)
 
-    if os.path.exists(BUILDROOT):
-        realbuildroot = os.path.realpath(BUILDROOT)
+    if buildsymlink and os.path.islink(buildsymlink) and os.path.lexists(buildsymlink):
+        loginfo("Removing symlink '%s'" % buildsymlink)
+        os.remove(buildsymlink)
+
+    if os.path.exists(buildroot):
+        realbuildroot = os.path.realpath(buildroot)
         loginfo("Removing directory '%s'" % realbuildroot)
         shutil.rmtree(realbuildroot, ignore_errors = True)
 
-        if os.path.islink(BUILDROOT) and os.path.lexists(BUILDROOT):
-            loginfo("Removing symlink '%s'" % BUILDROOT)
-            os.remove(BUILDROOT)
+        if os.path.islink(buildroot) and os.path.lexists(buildroot):
+            loginfo("Removing symlink '%s'" % buildroot)
+            os.remove(buildroot)
 
-    lockfile = os.path.join(PROJECTROOT, Options.lockfile)
+    from waflib import Options
+    lockfile = os.path.join(projectroot, Options.lockfile)
     if os.path.exists(lockfile):
         loginfo("Removing lockfile '%s'" % lockfile)
         os.remove(lockfile)
 
-    lockfile = os.path.join(PROJECTROOT, 'waf', Options.lockfile)
+    lockfile = os.path.join(projectroot, 'waf', Options.lockfile)
     if os.path.exists(lockfile):
         loginfo("Removing lockfile '%s'" % lockfile)
         os.remove(lockfile)
 
-def distclean():
+def distclean(bconfPaths):
     """
     Full replacement for distclean from WAF
     """
 
-    cmdTimer = Utils.Timer()
+    cmdTimer = utils.Timer()
 
+    verbose = 1
     import zm.cli as cli
     if cli.selected:
         colors = {'yes' : 2, 'auto' : 1, 'no' : 0}[cli.selected.args.color]
-        Logs.enable_colors(colors)
+        log.enableColors(colors)
+        verbose = cli.selected.args.verbose
 
-    fullclean()
+    fullclean(bconfPaths, verbose)
 
-    Logs.info('%r finished successfully (%s)', 'distclean', cmdTimer)
+    log.info('%r finished successfully (%s)', 'distclean', cmdTimer)
 
 def isBuildConfFake(conf):
     """
@@ -333,32 +306,56 @@ def _getBuildTypeFromCLI(clicmd = None):
         return ''
     return clicmd.args.buildtype
 
-class BuildConfHandler(object):
+class BuildConfPaths(object):
     """
-    Class to handle params from buildconf
+    Class to calculate different paths depending on buildconf
     """
 
-    __slots__ = ('cmdLineHandled', '_origin', '_platforms','_meta')
+    def __init__(self, conf):
+        dirname    = os.path.dirname
+        abspath    = os.path.abspath
+        unfoldPath = utils.unfoldPath
+
+        self.buildconffile = abspath(conf.__file__)
+        self.buildconfdir  = dirname(self.buildconffile)
+        self.buildroot     = unfoldPath(self.buildconfdir, conf.buildroot)
+        self.buildsymlink  = unfoldPath(self.buildconfdir, conf.buildsymlink)
+        self.buildout      = joinpath(self.buildroot, BUILDOUTNAME)
+        self.projectroot   = unfoldPath(self.buildconfdir, conf.project['root'])
+        self.srcroot       = unfoldPath(self.buildconfdir, conf.srcroot)
+        self.wscriptfile   = joinpath(self.buildroot, 'wscript')
+        self.wafcachedir   = joinpath(self.buildout, WAF_CACHE_DIRNAME)
+        self.wafcachefile  = joinpath(self.wafcachedir, WAF_CACHE_NAMESUFFIX)
+        self.zmcachedir    = self.wafcachedir
+        self.zmcmnfile     = joinpath(self.buildout, ZENMAKE_COMMON_FILENAME)
+
+class BuildConfHandler(object):
+    """
+    Class to handle data from buildconf
+    """
+
+    __slots__ = ('cmdLineHandled', '_conf', '_platforms', '_meta', '_confpaths')
 
     def __init__(self, conf):
 
         self.cmdLineHandled = False
 
-        self._origin = conf
-        self._platforms = self._origin.platforms
+        self._conf = conf
+        self._platforms = self._conf.platforms
 
         self._meta = AutoDict()
         # just in case
         self._meta.buildtypes = AutoDict()
 
+        self._confpaths = BuildConfPaths(conf)
         self._preprocess()
 
     def _preprocess(self):
 
         # NOTICE: this method should not have any heavy operations
 
-        allBuildTypes = set(self._origin.buildtypes.keys())
-        for taskParams in self._origin.tasks.values():
+        allBuildTypes = set(self._conf.buildtypes.keys())
+        for taskParams in self._conf.tasks.values():
             taskBuildTypes = taskParams.get('buildtypes', {})
             allBuildTypes.update(taskBuildTypes.keys())
         self._meta.buildtypes.allnames = allBuildTypes
@@ -379,9 +376,9 @@ class BuildConfHandler(object):
                 paramName = var.lower()
 
                 current = taskParams.get(paramName, [])
-                current = Utils.to_list(current)
+                current = utils.toList(current)
                 # FIXME: should we add or replace?
-                taskParams[paramName] = current + Utils.to_list(envVal)
+                taskParams[paramName] = current + utils.toList(envVal)
 
             # handle toolchains
             for var in toolchainVars:
@@ -396,24 +393,24 @@ class BuildConfHandler(object):
         if 'map' not in self._meta.buildtypes:
             btMap = dict()
             buildtypes = dict()
-            buildtypes.update(self._origin.buildtypes)
+            buildtypes.update(self._conf.buildtypes)
             for btype in self._meta.buildtypes.allnames:
                 if btype not in buildtypes:
                     buildtypes[btype] = {}
             for btype, val in buildtypes.items():
                 btVal = val
                 btKey = btype
-                while not isinstance(btVal, maptype):
-                    if not isinstance(btVal, stringtypes):
-                        raise WafError("Invalid type of buildtype value '%s'"
-                                       % type(btVal))
+                while not isinstance(btVal, utils.maptype):
+                    if not isinstance(btVal, utils.stringtypes):
+                        raise ZenMakeError("Invalid type of buildtype value '%s'"
+                                           % type(btVal))
                     btKey = btVal
                     if btKey not in buildtypes:
-                        raise WafError("Build type '%s' was not found, check "
-                                       "your config." % btKey)
+                        raise ZenMakeError("Build type '%s' was not found, check "
+                                           "your config." % btKey)
                     btVal = buildtypes[btKey]
                     if btKey == btype and btVal == val:
-                        raise WafError("Circular reference was found")
+                        raise ZenMakeError("Circular reference was found")
 
                 btMap[btype] = btKey
 
@@ -421,10 +418,15 @@ class BuildConfHandler(object):
 
         btype = self._meta.buildtypes.map.get(buildtype, None)
         if not btype:
-            raise WafError("Build type '%s' doesn't not exist in buildconf." %
-                           buildtype)
+            raise ZenMakeError("Build type '%s' doesn't not exist"
+                               " in buildconf." % buildtype)
 
         return btype
+
+    def _checkCmdLineHandled(self):
+        if not self.cmdLineHandled:
+            raise Exception("Command line args wasn't handled yet. "
+                            "You should call method handleCmdLineArgs.")
 
     def handleCmdLineArgs(self, clicmd = None):
         """
@@ -434,52 +436,66 @@ class BuildConfHandler(object):
         if self.cmdLineHandled:
             return
 
-        if isBuildConfFake(self._origin):
-            raise WafError('Config buildconf.py not found. Check buildconf.py '
-                           'exists in the project directory.')
+        if isBuildConfFake(self._conf):
+            raise ZenMakeError('Config buildconf.py not found. Check buildconf.py '
+                               'exists in the project directory.')
 
         buildtype = _getBuildTypeFromCLI(clicmd)
 
         supportedBuildTypes = self.supportedBuildTypes
         if buildtype not in supportedBuildTypes:
-            raise WafError("Invalid choice for build type: '%s', "
-                           "(choose from %s)" %
-                           (buildtype, str(supportedBuildTypes)[1:-1]))
+            raise ZenMakeError("Invalid choice for build type: '%s', "
+                               "(choose from %s)" %
+                               (buildtype, str(supportedBuildTypes)[1:-1]))
 
         self._meta.buildtypes.selected = self._getRealBuildType(buildtype)
 
         self.cmdLineHandled = True
 
     @property
+    def conf(self):
+        """ Get buildconf """
+        return self._conf
+
+    @property
+    def projectName(self):
+        """ Get project name """
+        return self._conf.project['name']
+
+    @property
+    def projectVersion(self):
+        """ Get project version """
+        return self._conf.project['version']
+
+    @property
+    def confPaths(self):
+        """ Get object of class BuildConfPaths """
+        return self._confpaths
+
+    @property
     def defaultBuildType(self):
-        """
-        Get calculated default build type
-        """
+        """ Get calculated default build type """
 
         if 'default' in self._meta.buildtypes:
             return self._meta.buildtypes.default
 
-        buildtype = self._origin.buildtypes.get('default', '')
+        buildtype = self._conf.buildtypes.get('default', '')
         if PLATFORM in self._platforms:
             buildtype = self._platforms[PLATFORM].get('default', '')
         if buildtype == 'default' or not buildtype:
             buildtype = ''
         elif buildtype not in self._meta.buildtypes.allnames:
-            raise WafError("Default build type '%s' was not found, "
-                           "check your config." % buildtype)
+            raise ZenMakeError("Default build type '%s' was not found, "
+                               "check your config." % buildtype)
 
         self._meta.buildtypes.default = buildtype
         return buildtype
 
     @property
     def selectedBuildType(self):
-        """
-        Get selected build type
-        """
+        """ Get selected build type """
 
-        if not self.cmdLineHandled:
-            raise Exception("Command line args wasn't handled yet")
-
+        self._checkCmdLineHandled()
         return self._meta.buildtypes.selected
 
     @property
@@ -496,12 +512,13 @@ class BuildConfHandler(object):
         if PLATFORM in self._platforms:
             validBuildTypes = self._platforms[PLATFORM].get('valid', [])
             if not validBuildTypes:
-                raise WafError("No valid build types for platform '%s' "
-                               "in config" % PLATFORM)
+                raise ZenMakeError("No valid build types for platform '%s' "
+                                   "in config" % PLATFORM)
             for btype in validBuildTypes:
-                if btype not in self._origin.buildtypes:
-                    raise WafError("Build type '%s' for platform '%s' "
-                                   "was not found, check your config." % (btype, PLATFORM))
+                if btype not in self._conf.buildtypes:
+                    raise ZenMakeError("Build type '%s' for platform '%s' "
+                                       "was not found, check your config." %
+                                       (btype, PLATFORM))
             supported = set(validBuildTypes)
         else:
             supported.update(self._meta.buildtypes.allnames)
@@ -518,18 +535,20 @@ class BuildConfHandler(object):
         Get all handled build tasks
         """
 
+        self._checkCmdLineHandled()
+
         buildtype = self.selectedBuildType
         if buildtype in self._meta.tasks:
             return self._meta.tasks[buildtype]
 
         tasks = {}
 
-        for taskName, taskParams in self._origin.tasks.items():
+        for taskName, taskParams in self._conf.tasks.items():
             task = {}
             tasks[taskName] = task
 
             # 1. Copy exising params of selected buildtype from 'buildtypes'
-            task.update(self._origin.buildtypes.get(buildtype, {}))
+            task.update(self._conf.buildtypes.get(buildtype, {}))
 
             # 2. Copy/replace existing params from origin task
             task.update(taskParams)
@@ -554,6 +573,8 @@ class BuildConfHandler(object):
         if 'names' in self._meta.toolchains:
             return self._meta.toolchains.names
 
+        self._checkCmdLineHandled()
+
         # gather unique names
         _toolchains = set()
         for taskParams in self.tasks.values():
@@ -574,17 +595,17 @@ class BuildConfHandler(object):
         if 'custom' in self._meta.toolchains:
             return self._meta.toolchains.custom
 
-        srcToolchains = self._origin.toolchains
+        srcToolchains = self._conf.toolchains
         customToolchains = AutoDict()
         for name, info in srcToolchains.items():
             _vars = deepcopy(info) # don't change origin
             kind = _vars.pop('kind', None)
             if kind is None:
-                raise WafError("Toolchain '%s': field 'kind' not found" % name)
+                raise ZenMakeError("Toolchain '%s': field 'kind' not found" % name)
 
             for k, v in _vars.items():
                 # try to identify path and do nothing in another case
-                path = zm.utils.unfoldPath(PROJECTROOT, v)
+                path = utils.unfoldPath(self._confpaths.projectroot, v)
                 if os.path.exists(path):
                     _vars[k] = path
 
@@ -593,80 +614,3 @@ class BuildConfHandler(object):
 
         self._meta.toolchains.custom = customToolchains
         return customToolchains
-
-"""
-Singleton instance of BuildConfHandler for possibility using of already
-calculated data in different modules
-"""
-buildConfHandler = BuildConfHandler(buildconf)
-
-def autoconfigure(method):
-    """
-    Decorator that enables context commands to run *configure* as needed.
-    Alternative version.
-    """
-
-    def areFilesChanged():
-        zmCmn = ConfigSet()
-        try:
-            zmCmn.load(ZENMAKECMNFILE)
-        except EnvironmentError:
-            return True
-
-        _hash = 0
-        for file in zmCmn.monitfiles:
-            try:
-                _hash = Utils.h_list((_hash, Utils.readf(file, 'rb')))
-            except EnvironmentError:
-                return True
-
-        return _hash != zmCmn.monithash
-
-    def areBuildTypesNotConfigured():
-        buildtype = _getBuildTypeFromCLI()
-        for taskName in buildconf.tasks.keys():
-            taskVariant = getTaskVariantName(buildtype, taskName)
-            fname = makeCacheConfFileName(taskVariant)
-            if not os.path.exists(fname):
-                return True
-        return False
-
-    def runconfig(self, env):
-        from waflib import Scripting
-        Scripting.run_command(env.config_cmd or 'configure')
-        Scripting.run_command(self.cmd)
-
-    def execute(self):
-
-        if not autoconfig:
-            return method(self)
-
-        autoconfigure.callCounter += 1
-        if autoconfigure.callCounter > 10:
-            # I some cases due to programming error, user actions or system
-            # problems we can get infinite call of current function. Maybe
-            # later I'll think up better protection but in normal case
-            # it shouldn't happen.
-            raise Exception('Infinite recursion was detected')
-
-        env = ConfigSet()
-        try:
-            env.load(joinpath(Context.out_dir, Options.lockfile))
-        except EnvironmentError:
-            Logs.warn('Configuring the project')
-            return runconfig(self, env)
-
-        if env.run_dir != Context.run_dir:
-            return runconfig(self, env)
-
-        if areFilesChanged():
-            return runconfig(self, env)
-
-        if areBuildTypesNotConfigured():
-            return runconfig(self, env)
-
-        return method(self)
-
-    return execute
-
-autoconfigure.callCounter = 0

@@ -9,11 +9,11 @@
 """
 
 import tests.common as cmn
-import zm.autodict
+from zm import autodict
 
 class TestAutoDict(object):
     def testAll(self):
-        d = zm.autodict.AutoDict()
+        d = autodict.AutoDict()
         d['test'] = 10
         assert d == {'test' : 10}
         assert hasattr(d, 'test')
@@ -26,5 +26,5 @@ class TestAutoDict(object):
         assert not d.test2
         assert not d['test3'].test4
 
-        d2 = zm.autodict.AutoDict(dict(a = 1, b =2))
+        d2 = autodict.AutoDict(dict(a = 1, b =2))
         assert d2 == dict(a = 1, b =2)

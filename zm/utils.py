@@ -12,6 +12,7 @@ import sys
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] >= 3
 
+#pylint: disable=wrong-import-position
 #pylint: disable=invalid-name,undefined-variable,unused-import
 
 # Some python2/3 compatible stuffs
@@ -26,6 +27,22 @@ except ImportError:
     from collections import Mapping as maptype
 
 #pylint: enable=invalid-name,undefined-variable,unused-import
+
+from waflib import Utils as wafutils
+
+readFile        = wafutils.readf
+mkHashOfStrings = wafutils.h_list
+quoteDefineName = wafutils.quote_define_name
+Timer           = wafutils.Timer
+
+def toList(val):
+    """
+    Converts a string argument to a list by splitting it by spaces.
+    Returns the object if not a string
+    """
+    if isinstance(val, stringtypes):
+        return val.split()
+    return val
 
 def unfoldPath(cwd, path):
     """
@@ -72,8 +89,7 @@ def platform():
     """
     Return current system platfom. For MS Windows paltfrom is always 'windows'.
     """
-    from waflib.Utils import unversioned_sys_platform
-    result = unversioned_sys_platform()
+    result = wafutils.unversioned_sys_platform()
     if result.startswith('win32'):
         result = 'windows' # pragma: no cover
     return result
@@ -103,8 +119,7 @@ def loadPyModule(name, dirpath = None, withImport = True):
 
     # In this case we should compile python file manually
     import types
-    from waflib import Utils
-    from waflib.Errors import WafError
+    from zm.error import ZenMakeError
     module = types.ModuleType(name)
     filename = '%s.py' % name
     if not dirpath:
@@ -115,13 +130,13 @@ def loadPyModule(name, dirpath = None, withImport = True):
                 break
 
     if not dirpath:
-        raise WafError('File %r not found' % filename)
+        raise ImportError('File %r not found' % filename)
 
     modulePath = os.path.join(dirpath, filename)
     try:
-        code = Utils.readf(modulePath, m = 'r', encoding = None)
+        code = readFile(modulePath, m = 'r', encoding = None)
     except EnvironmentError:
-        raise WafError('Could not read the file %r' % modulePath)
+        raise ZenMakeError('Could not read the file %r' % modulePath)
 
     sys.path.insert(0, dirpath)
     try:
@@ -131,6 +146,7 @@ def loadPyModule(name, dirpath = None, withImport = True):
     finally:
         sys.path.remove(dirpath)
 
+    module.__file__ = modulePath
     return module
 
 def printSysInfo():

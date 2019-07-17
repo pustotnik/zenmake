@@ -13,9 +13,9 @@ import pytest
 import tests.common as cmn
 from waflib import Utils
 from waflib.Errors import WafError
-import zm.toolchains
+from zm import toolchains
 
-CompilersInfo = zm.toolchains.CompilersInfo
+CompilersInfo = toolchains.CompilersInfo
 
 SUPPORTED_LANGS = ('c', 'c++')
 

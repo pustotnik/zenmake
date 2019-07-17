@@ -16,14 +16,12 @@ import pytest
 from waflib import Build
 from waflib.ConfigSet import ConfigSet
 import tests.common as cmn
-import zm.utils
-import zm.buildconfutil
-import zm.assist as assist
-import zm.cli
+from zm import utils, buildconfutil, assist, cli
+import starter
 
 joinpath = os.path.join
 
-PLATFORM = zm.utils.platform()
+PLATFORM = utils.platform()
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 ZM_BIN = os.path.normpath(joinpath(TESTS_DIR, os.path.pardir, "zenmake"))
 
@@ -45,7 +43,7 @@ class TestProject(object):
         proc = subprocess.Popen(cmdline, stdout = subprocess.PIPE,
                             stderr = subprocess.STDOUT, cwd = self.cwd,
                             env = os.environ.copy(), universal_newlines = True)
-        if zm.utils.PY3:
+        if utils.PY3:
             stdout, stderr = proc.communicate(timeout = timeout)
         else:
             stdout, stderr = proc.communicate()
@@ -71,24 +69,21 @@ class TestProject(object):
         assert 0 == self._runZm(cmdLine)
 
         # checks for target files
-        projectConf = zm.buildconfutil.loadConf('buildconf',
+        projectConf = buildconfutil.loadConf('buildconf',
                                             self.cwd, withImport = False)
-        buildroot = zm.utils.unfoldPath(self.cwd, projectConf.buildroot)
-        buildout = joinpath(buildroot, assist.BUILDOUTNAME)
-        wafcachedir = joinpath(buildout, Build.CACHE_DIR)
 
         confHandler = assist.BuildConfHandler(projectConf)
-        defaults = dict( buildtype = confHandler.defaultBuildType )
-        cliParser = zm.cli.CmdLineParser(cmdLine[1], defaults)
-        cmd = cliParser.parse(cmdLine[2:])
+        cmd, _ = starter.handleCLI(confHandler, cmdLine[1:], True)
         confHandler.handleCmdLineArgs(cmd)
+        confPaths = confHandler.confPaths
         buildtype = confHandler.selectedBuildType
 
         for taskName, taskParams in confHandler.tasks.items():
             taskVariant = assist.getTaskVariantName(buildtype, taskName)
-            cacheConfFileName = joinpath(wafcachedir, taskVariant + assist.ZENMAKECACHESUFFIX)
-            env = ConfigSet(cacheConfFileName)
+            cacheConfFile = assist.makeCacheConfFileName(confPaths.zmcachedir, taskVariant)
+            env = ConfigSet(cacheConfFile)
             target = taskParams.get('target', taskName)
+            fileNamePattern = '%s'
             features = taskParams.get('features', '').split()
             for feature in features:
                 # find pattern via brute force :)
@@ -96,6 +91,7 @@ class TestProject(object):
                 if key not in env:
                     continue
                 fileNamePattern = env[key]
-                targetpath = joinpath(buildout, buildtype, fileNamePattern % target)
-                assert os.path.exists(targetpath)
-                assert os.path.isfile(targetpath)
+
+            targetpath = joinpath(confPaths.buildout, buildtype, fileNamePattern % target)
+            assert os.path.exists(targetpath)
+            assert os.path.isfile(targetpath)

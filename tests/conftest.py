@@ -14,14 +14,14 @@ import starter
 
 @pytest.fixture
 def unsetEnviron(monkeypatch):
-    import zm.toolchains
-    varnames = zm.toolchains.CompilersInfo.allVarsToSetCompiler()
-    varnames.extend(zm.toolchains.CompilersInfo.allFlagVars())
+    from zm import toolchains
+    varnames = toolchains.CompilersInfo.allVarsToSetCompiler()
+    varnames.extend(toolchains.CompilersInfo.allFlagVars())
     for v in varnames:
         #os.environ.pop(v, None)
         monkeypatch.delenv(v, raising = False)
 
 def pytest_report_header(config):
-    import zm.utils
-    zm.utils.printSysInfo()
+    from zm import utils
+    utils.printSysInfo()
     return ""
