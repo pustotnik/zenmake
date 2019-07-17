@@ -246,13 +246,13 @@ def fullclean(bconfPaths, verbose = 1):
     buildroot = bconfPaths.buildroot
     projectroot = bconfPaths.projectroot
 
-    if buildsymlink and os.path.isdir(buildsymlink) and os.path.exists(buildsymlink):
-        loginfo("Removing directory '%s'" % buildsymlink)
-        shutil.rmtree(buildsymlink, ignore_errors = True)
-
-    if buildsymlink and os.path.islink(buildsymlink) and os.path.lexists(buildsymlink):
-        loginfo("Removing symlink '%s'" % buildsymlink)
-        os.remove(buildsymlink)
+    if buildsymlink:
+        if os.path.isdir(buildsymlink) and not os.path.islink(buildsymlink):
+            loginfo("Removing directory '%s'" % buildsymlink)
+            shutil.rmtree(buildsymlink, ignore_errors = True)
+        elif os.path.islink(buildsymlink) and os.path.lexists(buildsymlink):
+            loginfo("Removing symlink '%s'" % buildsymlink)
+            os.remove(buildsymlink)
 
     if os.path.exists(buildroot):
         realbuildroot = os.path.realpath(buildroot)
@@ -265,11 +265,6 @@ def fullclean(bconfPaths, verbose = 1):
 
     from waflib import Options
     lockfile = os.path.join(projectroot, Options.lockfile)
-    if os.path.exists(lockfile):
-        loginfo("Removing lockfile '%s'" % lockfile)
-        os.remove(lockfile)
-
-    lockfile = os.path.join(projectroot, 'waf', Options.lockfile)
     if os.path.exists(lockfile):
         loginfo("Removing lockfile '%s'" % lockfile)
         os.remove(lockfile)
@@ -432,9 +427,6 @@ class BuildConfHandler(object):
         """
         Apply values from command line
         """
-
-        if self.cmdLineHandled:
-            return
 
         if isBuildConfFake(self._conf):
             raise ZenMakeError('Config buildconf.py not found. Check buildconf.py '
