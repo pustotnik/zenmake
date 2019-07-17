@@ -45,4 +45,4 @@ def removeAllTmpDirsForTests():
 atexit.register(removeAllTmpDirsForTests)
 
 SHARED_TMP_DIR = makeTmpDirForTests()
-TEST_PROJECTS_DIR = os.path.join(SHARED_TMP_DIR, 'projects')
+#TEST_PROJECTS_DIR = os.path.join(SHARED_TMP_DIR, 'projects')

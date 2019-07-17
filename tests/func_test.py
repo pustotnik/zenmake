@@ -82,14 +82,18 @@ class TestProject(object):
                 assert os.access(targetpath, os.X_OK)
 
     @pytest.fixture(params = collectProjectDirs(), autouse = True)
-    def setup(self, request, tmpdir):
+    def setup(self, request):
         def teardown():
             pass
 
         request.addfinalizer(teardown)
 
+        tmpdirForTests = os.path.join(cmn.SHARED_TMP_DIR, 'functests')
+
         projectDirName = 'project'
-        projectDir = joinpath(str(tmpdir.realpath()), projectDirName)
+        #projectDir = joinpath(str(tmpdir.realpath()), projectDirName)
+        projectDir = joinpath(tmpdirForTests, projectDirName)
+        shutil.rmtree(projectDir, ignore_errors = True)
         shutil.copytree(joinpath(TEST_PROJECTS_DIR, request.param), projectDir)
 
         self.cwd = projectDir
