@@ -96,11 +96,11 @@ class TestProject(object):
         #projectDirName = request.param
         projectDirName = 'prj'
 
-        #tmpdirForTests = cmn.SHARED_TMP_DIR
+        tmpdirForTests = cmn.SHARED_TMP_DIR
         #tmptestDir = joinpath(tmpdirForTests, testName, projectDirName)
-        #tmptestDir = joinpath(tmpdirForTests, projectDirName)
-        #shutil.rmtree(tmptestDir, ignore_errors = True)
-        tmptestDir = joinpath(str(tmpdir.realpath()), projectDirName)
+        tmptestDir = joinpath(tmpdirForTests, projectDirName)
+        shutil.rmtree(tmptestDir, ignore_errors = True)
+        #tmptestDir = joinpath(str(tmpdir.realpath()), projectDirName)
 
         shutil.copytree(joinpath(TEST_PROJECTS_DIR, request.param), tmptestDir)
 
