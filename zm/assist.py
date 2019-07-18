@@ -325,8 +325,8 @@ class BuildConfPaths(object):
         self.projectroot   = unfoldPath(self.buildconfdir, conf.project['root'])
         self.srcroot       = unfoldPath(self.buildconfdir, conf.srcroot)
 
-        self.wscripttop    = self.buildroot
-        #self.wscripttop    = self.projectroot
+        #self.wscripttop    = self.buildroot
+        self.wscripttop    = self.projectroot
 
         self.wscriptout    = self.buildout
         self.wscriptfile   = joinpath(self.wscripttop, WSCRIPT_NAME)

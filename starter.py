@@ -9,6 +9,7 @@
 
 import sys
 import os
+import atexit
 if sys.hexversion < 0x2070000:
     raise ImportError('Python >= 2.7 is required')
 
@@ -23,6 +24,25 @@ AUX_DIR = joinpath(SCRIPTS_ROOTDIR, 'auxiliary')
 sys.path.insert(1, WAF_DIR)
 # argparse from the https://pypi.org/project/argparse/ supports alieses
 #sys.path.insert(1, AUX_DIR)
+
+#pylint: disable=wrong-import-position
+from waflib import Context
+from zm.constants import WSCRIPT_NAME
+Context.WSCRIPT_FILE = WSCRIPT_NAME
+
+def atExit():
+    """
+    Callback function for atexit
+    """
+
+    from zm import shared
+    if not shared.buildConfHandler:
+        return
+    wscriptfile = shared.buildConfHandler.confPaths.wscriptfile
+    if os.path.isfile(wscriptfile):
+        os.remove(wscriptfile)
+
+atexit.register(atExit)
 
 def prepareDirs(bconfPaths):
     """
@@ -68,7 +88,7 @@ def main():
     os.environ['WAFLOCK'] = '.lock-wafbuild'
     from waflib import Options
     Options.lockfile = '.lock-wafbuild'
-    from waflib import Scripting, Context, Build
+    from waflib import Scripting, Build
 
     from zm import log, buildconfutil, assist, shared
 
@@ -97,9 +117,12 @@ def main():
 
     del sys.argv[1:]
     sys.argv.extend(wafCmdLine)
-    from zm.autoconfigure import autoconfigure
-    Build.BuildContext.execute = autoconfigure(cmd, buildConfHandler,
-                                               Build.BuildContext.execute)
+    from zm.wafwrappers import wrapBldCtxNoLockInTop, wrapBldCtxAutoConf
+    Build.BuildContext.execute = wrapBldCtxAutoConf(cmd, buildConfHandler,
+                                                    Build.BuildContext.execute)
+    for ctxCls in (Build.CleanContext, Build.ListContext):
+        ctxCls.execute = wrapBldCtxNoLockInTop(buildConfHandler, ctxCls.execute)
+
     cwd = bconfPaths.wscriptdir
     Scripting.waf_entry_point(cwd, Context.WAFVERSION, WAF_DIR)
 

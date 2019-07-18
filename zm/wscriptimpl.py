@@ -13,6 +13,7 @@ __all__ = [
     'init',
     'configure',
     'build',
+    'shutdown',
     'APPNAME',
     'VERSION',
 ]
@@ -64,6 +65,10 @@ def configure(conf):
     """
     Implementation for wscript.configure
     """
+
+    # See details here: https://gitlab.com/ita1024/waf/issues/1563
+    conf.env.NO_LOCK_IN_RUN = True
+    conf.env.NO_LOCK_IN_TOP = True
 
     confHandler = shared.buildConfHandler
 
@@ -203,3 +208,10 @@ def build(bld):
     # It's neccesary to revert to origin variant otherwise WAF won't find
     # correct path at the end of building step.
     bld.variant = buildtype
+
+def shutdown(ctx):
+    """
+    Implementation for wscript.shutdown
+    """
+
+    # Do nothing at this moment

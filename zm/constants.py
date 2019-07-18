@@ -13,6 +13,6 @@ WAF_CACHE_DIRNAME = 'c4che'
 WAF_CACHE_NAMESUFFIX = '_cache.py'
 ZENMAKE_CACHE_NAMESUFFIX = '.zenmake.py'
 ZENMAKE_COMMON_FILENAME = '.zenmake-common'
-WSCRIPT_NAME = 'wscript'
+WSCRIPT_NAME = 'zmwscript'
 
 PLATFORM = _platform()

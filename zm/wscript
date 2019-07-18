@@ -8,6 +8,8 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 
  This module is entry WAF wscript file that is copied from zenmake.
+
+ Do not commit this to version control.
 """
 
 from zm.wscriptimpl import *
