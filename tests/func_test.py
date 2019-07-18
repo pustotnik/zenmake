@@ -83,6 +83,7 @@ class TestProject(object):
 
     @pytest.fixture(params = collectProjectDirs(), autouse = True)
     def setup(self, request):
+
         def teardown():
             pass
 
@@ -94,8 +95,10 @@ class TestProject(object):
 
         tmpdirForTests = os.path.join(cmn.SHARED_TMP_DIR, 'functests')
 
-        projectDirName = request.param
-        tmptestDir = joinpath(tmpdirForTests, testName, projectDirName)
+        #projectDirName = request.param
+        projectDirName = 'prj'
+        #tmptestDir = joinpath(tmpdirForTests, testName, projectDirName)
+        tmptestDir = joinpath(tmpdirForTests, projectDirName)
         shutil.rmtree(tmptestDir, ignore_errors = True)
         shutil.copytree(joinpath(TEST_PROJECTS_DIR, request.param), tmptestDir)
 
