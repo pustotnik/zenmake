@@ -6,11 +6,30 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+__all__ = [
+    'top',
+    'out',
+    'options',
+    'init',
+    'configure',
+    'build',
+    'APPNAME',
+    'VERSION',
+]
+
 import os
 from waflib.ConfigSet import ConfigSet
 from zm import log, shared, assist, utils
 
 # pylint: disable=unused-argument
+
+# these variables are mandatory ('/' are converted automatically)
+top = shared.buildConfHandler.confPaths.wscripttop
+out = shared.buildConfHandler.confPaths.wscriptout
+
+# mostly for WAF 'dist' command
+APPNAME = shared.buildConfHandler.projectName
+VERSION = shared.buildConfHandler.projectVersion
 
 def options(opt):
     """
@@ -26,11 +45,20 @@ def options(opt):
 
 def init(ctx):
     """
-    Partial implementation for wscript.init
+    Implementation for wscript.init
     It's called by Waf before all other commands but after 'options'
     """
 
     shared.buildConfHandler.handleCmdLineArgs()
+
+    buildtype = shared.buildConfHandler.selectedBuildType
+
+    #pylint: disable=unused-variable,missing-docstring,too-many-ancestors
+    from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallContext
+    for cls in (BuildContext, CleanContext, InstallContext, UninstallContext):
+        class CtxClass(cls):
+            variant = buildtype
+    #pylint: enable=unused-variable,missing-docstring,too-many-ancestors
 
 def configure(conf):
     """
@@ -117,7 +145,7 @@ def build(bld):
     #   the drive letters (win32 systems)
 
     # Path must be relative
-    srcDir = os.path.relpath(bconfPaths.srcroot, bconfPaths.buildroot)
+    srcDir = os.path.relpath(bconfPaths.srcroot, bconfPaths.wscriptdir)
     # Since ant_glob can traverse both source and build folders, it is a best
     # practice to call this method only from the most specific build node.
     srcDirNode = bld.path.find_dir(srcDir)

@@ -14,7 +14,7 @@ from zm.autodict import AutoDict
 from zm.error import ZenMakeError
 from zm.constants import WAF_CACHE_DIRNAME, WAF_CACHE_NAMESUFFIX, \
                          ZENMAKE_CACHE_NAMESUFFIX, ZENMAKE_COMMON_FILENAME, \
-                         PLATFORM, BUILDOUTNAME
+                         PLATFORM, BUILDOUTNAME, WSCRIPT_NAME
 
 joinpath = os.path.join
 
@@ -256,8 +256,9 @@ def fullclean(bconfPaths, verbose = 1):
 
     if os.path.exists(buildroot):
         realbuildroot = os.path.realpath(buildroot)
-        loginfo("Removing directory '%s'" % realbuildroot)
-        shutil.rmtree(realbuildroot, ignore_errors = True)
+        if os.path.isdir(realbuildroot):
+            loginfo("Removing directory '%s'" % realbuildroot)
+            shutil.rmtree(realbuildroot, ignore_errors = True)
 
         if os.path.islink(buildroot) and os.path.lexists(buildroot):
             loginfo("Removing symlink '%s'" % buildroot)
@@ -265,9 +266,14 @@ def fullclean(bconfPaths, verbose = 1):
 
     from waflib import Options
     lockfile = os.path.join(projectroot, Options.lockfile)
-    if os.path.exists(lockfile):
+    if os.path.isfile(lockfile):
         loginfo("Removing lockfile '%s'" % lockfile)
         os.remove(lockfile)
+
+    wscriptfile = os.path.join(projectroot, WSCRIPT_NAME)
+    if os.path.isfile(wscriptfile):
+        loginfo("Removing wscript file '%s'" % wscriptfile)
+        os.remove(wscriptfile)
 
 def distclean(bconfPaths):
     """
@@ -318,7 +324,13 @@ class BuildConfPaths(object):
         self.buildout      = joinpath(self.buildroot, BUILDOUTNAME)
         self.projectroot   = unfoldPath(self.buildconfdir, conf.project['root'])
         self.srcroot       = unfoldPath(self.buildconfdir, conf.srcroot)
-        self.wscriptfile   = joinpath(self.buildroot, 'wscript')
+
+        self.wscripttop    = self.buildroot
+        #self.wscripttop    = self.projectroot
+
+        self.wscriptout    = self.buildout
+        self.wscriptfile   = joinpath(self.wscripttop, WSCRIPT_NAME)
+        self.wscriptdir    = dirname(self.wscriptfile)
         self.wafcachedir   = joinpath(self.buildout, WAF_CACHE_DIRNAME)
         self.wafcachefile  = joinpath(self.wafcachedir, WAF_CACHE_NAMESUFFIX)
         self.zmcachedir    = self.wafcachedir

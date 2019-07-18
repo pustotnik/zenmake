@@ -6,37 +6,8 @@
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
  license: BSD 3-Clause License, see LICENSE for more details.
+
+ This module is entry WAF wscript file that is copied from zenmake.
 """
 
-from zm import shared, wscriptimpl
-
-_confHandler = shared.buildConfHandler
-
-# these variables are mandatory ('/' are converted automatically)
-top = _confHandler.confPaths.buildroot
-out = _confHandler.confPaths.buildout
-
-# mostly for WAF 'dist' command
-APPNAME = _confHandler.projectName
-VERSION = _confHandler.projectVersion
-
-def options(opt):
-    wscriptimpl.options(opt)
-
-def init(ctx):
-
-    wscriptimpl.init(ctx)
-
-    buildtype = _confHandler.selectedBuildType
-
-    # It's necessary to do it here
-    from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallContext
-    for c in (BuildContext, CleanContext, InstallContext, UninstallContext):
-        class CtxClass(c):
-            variant = buildtype
-
-def configure(conf):
-    wscriptimpl.configure(conf)
-
-def build(bld):
-    wscriptimpl.build(bld)
+from zm.wscriptimpl import *

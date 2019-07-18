@@ -75,12 +75,12 @@ def autoconfigure(clicmd, bconfHandler, method):
         env = ConfigSet()
         bconfPaths = bconfHandler.confPaths
         try:
-            env.load(joinpath(bconfPaths.buildout, Options.lockfile))
+            env.load(joinpath(bconfPaths.wscriptout, Options.lockfile))
         except EnvironmentError:
             log.warn('Configuring the project')
             return runconfig(self, env)
 
-        if env.run_dir != bconfPaths.buildroot:
+        if env.run_dir != bconfPaths.wscriptdir:
             return runconfig(self, env)
 
         if areFilesChanged():

@@ -33,7 +33,7 @@ def capturedOutput():
         sys.stdout, sys.stderr = oldout, olderr
 
 def makeTmpDirForTests():
-    path = tempfile.mkdtemp(prefix = 'zenmake.tests.')
+    path = tempfile.mkdtemp(prefix = 'zm.tests.')
     _tempdirs.append(path)
     return path
 

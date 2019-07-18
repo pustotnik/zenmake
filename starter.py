@@ -100,7 +100,7 @@ def main():
     from zm.autoconfigure import autoconfigure
     Build.BuildContext.execute = autoconfigure(cmd, buildConfHandler,
                                                Build.BuildContext.execute)
-    cwd = bconfPaths.buildroot
+    cwd = bconfPaths.wscriptdir
     Scripting.waf_entry_point(cwd, Context.WAFVERSION, WAF_DIR)
 
     return 0
