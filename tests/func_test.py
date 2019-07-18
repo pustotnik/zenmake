@@ -88,15 +88,18 @@ class TestProject(object):
 
         request.addfinalizer(teardown)
 
+        testName = request.node.originalname
+        if not testName:
+            testName = request.node.name
+
         tmpdirForTests = os.path.join(cmn.SHARED_TMP_DIR, 'functests')
 
-        projectDirName = 'project'
-        #projectDir = joinpath(str(tmpdir.realpath()), projectDirName)
-        projectDir = joinpath(tmpdirForTests, projectDirName)
-        shutil.rmtree(projectDir, ignore_errors = True)
-        shutil.copytree(joinpath(TEST_PROJECTS_DIR, request.param), projectDir)
+        projectDirName = request.param
+        tmptestDir = joinpath(tmpdirForTests, testName, projectDirName)
+        shutil.rmtree(tmptestDir, ignore_errors = True)
+        shutil.copytree(joinpath(TEST_PROJECTS_DIR, request.param), tmptestDir)
 
-        self.cwd = projectDir
+        self.cwd = tmptestDir
         projectConf = buildconfutil.loadConf('buildconf',
                                             self.cwd, withImport = False)
         self.confHandler = assist.BuildConfHandler(projectConf)
