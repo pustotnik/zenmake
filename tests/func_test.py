@@ -175,6 +175,8 @@ class TestProject(object):
         assert self._runZm(cmdLine)[0] == 0
         assert not os.path.exists(self.confPaths.buildroot)
 
+    @pytest.mark.skipif(PLATFORM == 'windows',
+                        reason = 'I have no useful windows installation for tests')
     def testCustomToolchain(self, customtoolchains, unsetEnviron):
 
         cmdLine = [self.pythonbin, ZM_BIN, 'build', '-v']
