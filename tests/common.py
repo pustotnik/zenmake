@@ -18,6 +18,7 @@ try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
+from zm import utils
 import starter
 
 _tempdirs = []
@@ -46,3 +47,7 @@ atexit.register(removeAllTmpDirsForTests)
 
 SHARED_TMP_DIR = makeTmpDirForTests()
 #TEST_PROJECTS_DIR = os.path.join(SHARED_TMP_DIR, 'projects')
+
+PLATFORM = utils.platform()
+TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+TEST_PROJECTS_DIR = os.path.join(TESTS_DIR, 'projects')

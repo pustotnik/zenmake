@@ -21,18 +21,15 @@ import starter
 
 joinpath = os.path.join
 
-PLATFORM = utils.platform()
-TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
-TEST_PROJECTS_DIR = joinpath(TESTS_DIR, 'projects')
-ZM_BIN = os.path.normpath(joinpath(TESTS_DIR, os.path.pardir, "zenmake"))
+ZM_BIN = os.path.normpath(joinpath(cmn.TESTS_DIR, os.path.pardir, "zenmake"))
 
 def collectProjectDirs():
     result = []
-    for dirpath, _, filenames in os.walk(TEST_PROJECTS_DIR):
+    for dirpath, _, filenames in os.walk(cmn.TEST_PROJECTS_DIR):
         if 'buildconf.py' not in filenames:
             continue
-        prjdir = os.path.relpath(dirpath, TEST_PROJECTS_DIR)
-        if prjdir == 'cpp/005-custom-toolchain' and PLATFORM == 'windows':
+        prjdir = os.path.relpath(dirpath, cmn.TEST_PROJECTS_DIR)
+        if prjdir == 'cpp/005-custom-toolchain' and cmn.PLATFORM == 'windows':
             print('We ignore tests for %r on windows' % prjdir)
             continue
         result.append(prjdir)
@@ -101,7 +98,7 @@ class TestProject(object):
         shutil.rmtree(tmptestDir, ignore_errors = True)
         #tmptestDir = joinpath(str(tmpdir.realpath()), projectDirName)
 
-        shutil.copytree(joinpath(TEST_PROJECTS_DIR, request.param), tmptestDir)
+        shutil.copytree(joinpath(cmn.TEST_PROJECTS_DIR, request.param), tmptestDir)
 
         self.cwd = tmptestDir
         projectConf = buildconfutil.loadConf('buildconf',
@@ -175,7 +172,7 @@ class TestProject(object):
         assert self._runZm(cmdLine)[0] == 0
         assert not os.path.exists(self.confPaths.buildroot)
 
-    @pytest.mark.skipif(PLATFORM == 'windows',
+    @pytest.mark.skipif(cmn.PLATFORM == 'windows',
                         reason = 'I have no useful windows installation for tests')
     def testCustomToolchain(self, customtoolchains, unsetEnviron):
 

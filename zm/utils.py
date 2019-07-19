@@ -121,11 +121,11 @@ def loadPyModule(name, dirpath = None, withImport = True):
     import types
     from zm.error import ZenMakeError
     module = types.ModuleType(name)
-    filename = '%s.py' % name
+    filename = name.replace('.', os.path.sep) + '.py'
     if not dirpath:
         # try to find module
         for path in sys.path:
-            if os.path.exists(os.path.join(path, filename)):
+            if os.path.isfile(os.path.join(path, filename)):
                 dirpath = path
                 break
 

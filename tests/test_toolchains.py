@@ -12,7 +12,7 @@ import os
 import pytest
 import tests.common as cmn
 from waflib import Utils
-from waflib.Errors import WafError
+from zm.error import ZenMakeError
 from zm import toolchains
 
 CompilersInfo = toolchains.CompilersInfo
@@ -51,9 +51,9 @@ class TestToolchains(object):
             gottenVar = CompilersInfo.varToSetCompiler(lang)
             assert gottenVar == LANGMAP[lang]
 
-        with pytest.raises(WafError):
+        with pytest.raises(ZenMakeError):
             CompilersInfo.varToSetCompiler('')
-        with pytest.raises(WafError):
+        with pytest.raises(ZenMakeError):
             CompilersInfo.varToSetCompiler('invalid lang')
 
     def testCompilers(self):
@@ -70,7 +70,7 @@ class TestToolchains(object):
             assert list(set(CompilersInfo.compilers(lang))) == \
                                  list(set(compilersDict[platform]))
 
-        with pytest.raises(WafError):
+        with pytest.raises(ZenMakeError):
             CompilersInfo.compilers('')
-        with pytest.raises(WafError):
+        with pytest.raises(ZenMakeError):
             CompilersInfo.compilers('invalid lang')

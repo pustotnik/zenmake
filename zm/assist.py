@@ -13,7 +13,7 @@ from copy import deepcopy
 from waflib.ConfigSet import ConfigSet
 from zm import utils, toolchains, log
 from zm.autodict import AutoDict
-from zm.error import ZenMakeError
+from zm.error import ZenMakeError, ZenMakeLogicError
 from zm.constants import WAF_CACHE_DIRNAME, WAF_CACHE_NAMESUFFIX, \
                          ZENMAKE_CACHE_NAMESUFFIX, ZENMAKE_COMMON_FILENAME, \
                          PLATFORM, BUILDOUTNAME, WSCRIPT_NAME
@@ -301,10 +301,7 @@ def isBuildConfFake(conf):
     """
     return conf.__name__.endswith('fakebuildconf')
 
-def _getBuildTypeFromCLI(clicmd = None):
-    if not clicmd:
-        import zm.cli as cli
-        clicmd = cli.selected
+def _getBuildTypeFromCLI(clicmd):
     if not clicmd or not clicmd.args.buildtype:
         return ''
     return clicmd.args.buildtype
@@ -327,6 +324,7 @@ class BuildConfPaths(object):
         self.projectroot   = unfoldPath(self.buildconfdir, conf.project['root'])
         self.srcroot       = unfoldPath(self.buildconfdir, conf.srcroot)
 
+        # TODO: add as option
         #self.wscripttop    = self.buildroot
         self.wscripttop    = self.projectroot
 
@@ -337,6 +335,9 @@ class BuildConfPaths(object):
         self.wafcachefile  = joinpath(self.wafcachedir, WAF_CACHE_NAMESUFFIX)
         self.zmcachedir    = self.wafcachedir
         self.zmcmnfile     = joinpath(self.buildout, ZENMAKE_COMMON_FILENAME)
+
+    def __eq__(self, other):
+        return vars(self) == vars(other)
 
 class BuildConfHandler(object):
     """
@@ -434,10 +435,10 @@ class BuildConfHandler(object):
 
     def _checkCmdLineHandled(self):
         if not self.cmdLineHandled:
-            raise Exception("Command line args wasn't handled yet. "
-                            "You should call method handleCmdLineArgs.")
+            raise ZenMakeLogicError("Command line args wasn't handled yet. "
+                                    "You should call method handleCmdLineArgs.")
 
-    def handleCmdLineArgs(self, clicmd = None):
+    def handleCmdLineArgs(self, clicmd):
         """
         Apply values from command line
         """
@@ -487,10 +488,9 @@ class BuildConfHandler(object):
 
         buildtype = self._conf.buildtypes.get('default', '')
         if PLATFORM in self._platforms:
-            buildtype = self._platforms[PLATFORM].get('default', '')
-        if buildtype == 'default' or not buildtype:
-            buildtype = ''
-        elif buildtype not in self._meta.buildtypes.allnames:
+            buildtype = self._platforms[PLATFORM].get('default', buildtype)
+
+        if buildtype and buildtype not in self._meta.buildtypes.allnames:
             raise ZenMakeError("Default build type '%s' was not found, "
                                "check your config." % buildtype)
 
@@ -521,7 +521,7 @@ class BuildConfHandler(object):
                 raise ZenMakeError("No valid build types for platform '%s' "
                                    "in config" % PLATFORM)
             for btype in validBuildTypes:
-                if btype not in self._conf.buildtypes:
+                if btype not in self._meta.buildtypes.allnames:
                     raise ZenMakeError("Build type '%s' for platform '%s' "
                                        "was not found, check your config." %
                                        (btype, PLATFORM))

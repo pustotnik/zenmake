@@ -20,7 +20,7 @@ __all__ = [
 
 import os
 from waflib.ConfigSet import ConfigSet
-from zm import log, shared, assist, utils
+from zm import log, shared, cli, assist, utils
 
 # pylint: disable=unused-argument
 
@@ -50,7 +50,7 @@ def init(ctx):
     It's called by Waf before all other commands but after 'options'
     """
 
-    shared.buildConfHandler.handleCmdLineArgs()
+    shared.buildConfHandler.handleCmdLineArgs(cli.selected)
 
     buildtype = shared.buildConfHandler.selectedBuildType
 
@@ -157,7 +157,6 @@ def build(bld):
 
     tasks = bld.env.alltasks[buildtype]
 
-    import zm.cli as cli
     allowedTasks = cli.selected.args.buildtasks
     if not allowedTasks:
         allowedTasks = tasks.keys()
