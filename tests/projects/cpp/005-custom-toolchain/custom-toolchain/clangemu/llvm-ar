@@ -1,4 +1,12 @@
 #!/bin/bash
 
+AR_BIN=`which llvm-ar`
+
+# Fix for 'llvm-ar: command not found' on mac os.
+# I'm not sure that it is valid way but I don't have mac os to find out all solutions.
+if [[ "$AR_BIN" == "" ]]; then
+    AR_BIN=`which ar`
+fi
+
 echo "llvm-ar wrapper for custom toolchain test"
-llvm-ar "$@"
+$AR_BIN "$@"
