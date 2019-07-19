@@ -12,6 +12,10 @@ os:
 
 language: python
 
+compiler:
+  - clang
+  - gcc
+
 # most problematic at first places
 matrix:
   include:
