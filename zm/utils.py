@@ -171,7 +171,8 @@ def printSysInfo():
     compilers = [
         _AutoDict(header = 'GCC:', bin = 'gcc', verargs = ['--version']),
         _AutoDict(header = 'CLANG:', bin = 'clang', verargs = ['--version']),
-        _AutoDict(header = 'MSVC:', bin = 'cl', verargs = []),
+        #TODO: find way to detect msvc
+        #_AutoDict(header = 'MSVC:', bin = 'cl', verargs = []),
     ]
     for compiler in compilers:
         _bin = find_executable(compiler.bin)
@@ -180,7 +181,7 @@ def printSysInfo():
                                           universal_newlines = True)
             ver = ver.split('\n')[0]
         else:
-            ver = 'not found'
+            ver = 'not recognized'
         print('%s: %s' % (compiler.header, ver))
 
     print('==================================================')
