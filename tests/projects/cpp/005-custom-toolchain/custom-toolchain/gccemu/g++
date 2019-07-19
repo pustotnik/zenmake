@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "g++ wrapper for custom toolchain test"
+g++ "$@"

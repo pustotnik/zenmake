@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "clang++ wrapper for custom toolchain test"
+clang++ "$@"

@@ -29,8 +29,13 @@ ZM_BIN = os.path.normpath(joinpath(TESTS_DIR, os.path.pardir, "zenmake"))
 def collectProjectDirs():
     result = []
     for dirpath, _, filenames in os.walk(TEST_PROJECTS_DIR):
-        if 'buildconf.py' in filenames:
-            result.append(os.path.relpath(dirpath, TEST_PROJECTS_DIR))
+        if 'buildconf.py' not in filenames:
+            continue
+        prjdir = os.path.relpath(dirpath, TEST_PROJECTS_DIR)
+        if prjdir == 'cpp/005-custom-toolchain' and PLATFORM == 'windows':
+            print('We ignore tests for %r on windows' % prjdir)
+            continue
+        result.append(prjdir)
     result.sort()
     return result
 
@@ -49,7 +54,7 @@ class TestProject(object):
 
         if proc.returncode != 0:
             print('\n' + stdout)
-        return proc.returncode
+        return proc.returncode, stdout, stderr
 
     def _checkBuildResults(self, cmdLine, resultExists):
         # checks for target files
@@ -81,13 +86,7 @@ class TestProject(object):
             if resultExists and executable:
                 assert os.access(targetpath, os.X_OK)
 
-    @pytest.fixture(params = collectProjectDirs(), autouse = True)
-    def setup(self, request, tmpdir):
-
-        def teardown():
-            pass
-
-        request.addfinalizer(teardown)
+    def _setup(self, request, tmpdir):
 
         testName = request.node.originalname
         if not testName:
@@ -115,50 +114,83 @@ class TestProject(object):
             pythonbin = 'python'
         self.pythonbin = pythonbin
 
-    def testConfigure(self, unsetEnviron):
+    @pytest.fixture(params = collectProjectDirs())
+    def allprojects(self, request, tmpdir):
+
+        def teardown():
+            pass
+
+        request.addfinalizer(teardown)
+        self._setup(request, tmpdir)
+
+    @pytest.fixture(params = ['cpp/005-custom-toolchain'])
+    def customtoolchains(self, request, tmpdir):
+        self._setup(request, tmpdir)
+
+    def testConfigure(self, allprojects, unsetEnviron):
 
         cmdLine = [self.pythonbin, ZM_BIN, 'configure', '-v']
-        assert self._runZm(cmdLine) == 0
+        assert self._runZm(cmdLine)[0] == 0
         self._checkBuildResults(cmdLine, False)
         assert os.path.isfile(self.confPaths.wafcachefile)
         assert os.path.isfile(self.confPaths.zmcmnfile)
 
         cmdLine = [self.pythonbin, ZM_BIN, 'build', '-v']
-        assert self._runZm(cmdLine) == 0
+        assert self._runZm(cmdLine)[0] == 0
         self._checkBuildResults(cmdLine, True)
 
-    def testBuild(self, unsetEnviron):
+    def testBuild(self, allprojects, unsetEnviron):
 
         # simple build
         cmdLine = [self.pythonbin, ZM_BIN, 'build', '-v']
-        assert self._runZm(cmdLine) == 0
+        assert self._runZm(cmdLine)[0] == 0
         self._checkBuildResults(cmdLine, True)
 
-    def testBuildAndClean(self, unsetEnviron):
+    def testBuildAndClean(self, allprojects, unsetEnviron):
 
         # simple build
         cmdLine = [self.pythonbin, ZM_BIN, 'build', '-v']
-        assert self._runZm(cmdLine) == 0
+        assert self._runZm(cmdLine)[0] == 0
         self._checkBuildResults(cmdLine, True)
 
         # clean
         cmdLine = [self.pythonbin, ZM_BIN, 'clean', '-v']
-        assert self._runZm(cmdLine) == 0
+        assert self._runZm(cmdLine)[0] == 0
         assert os.path.isdir(self.confPaths.buildroot)
         assert os.path.isdir(self.confPaths.buildout)
         assert os.path.isfile(self.confPaths.wafcachefile)
         assert os.path.isfile(self.confPaths.zmcmnfile)
         self._checkBuildResults(cmdLine, False)
 
-    def testBuildAndDistclean(self, unsetEnviron):
+    def testBuildAndDistclean(self, allprojects, unsetEnviron):
 
         # simple build
         cmdLine = [self.pythonbin, ZM_BIN, 'build', '-v']
-        assert self._runZm(cmdLine) == 0
+        assert self._runZm(cmdLine)[0] == 0
         self._checkBuildResults(cmdLine, True)
 
         # distclean
         assert os.path.isdir(self.confPaths.buildroot)
         cmdLine = [self.pythonbin, ZM_BIN, 'distclean', '-v']
-        assert self._runZm(cmdLine) == 0
+        assert self._runZm(cmdLine)[0] == 0
         assert not os.path.exists(self.confPaths.buildroot)
+
+    def testCustomToolchain(self, customtoolchains, unsetEnviron):
+
+        cmdLine = [self.pythonbin, ZM_BIN, 'build', '-v']
+        returncode, stdout, stderr =  self._runZm(cmdLine)
+        assert returncode == 0
+        self._checkBuildResults(cmdLine, True)
+
+        cmd, _ = starter.handleCLI(self.confHandler, cmdLine[1:], True)
+        self.confHandler.handleCmdLineArgs(cmd)
+
+        for taskName, taskParams in self.confHandler.tasks.items():
+            toolchain = taskParams.get('toolchain', None)
+            assert toolchain is not None
+            if not toolchain.startswith('custom-'):
+                continue
+            emukind = toolchain[7:]
+            assert emukind
+            checkmsg = '%s wrapper for custom toolchain test' % emukind
+            assert checkmsg in stdout
