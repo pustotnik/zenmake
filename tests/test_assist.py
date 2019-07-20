@@ -10,6 +10,7 @@
 
 import os
 import shutil
+from copy import deepcopy
 import pytest
 from waflib.ConfigSet import ConfigSet
 import tests.common as cmn
@@ -23,7 +24,6 @@ joinpath = os.path.join
 @pytest.fixture
 def testingBuildConf():
     buildconf = AutoDict()
-    #buildconfutil.initDefaults(buildconf)
     buildconf.__file__ = os.path.abspath('buildconf.py')
     buildconf.__name__ = 'buildconf'
     buildconf.buildroot    = 'buildroot'
@@ -285,6 +285,7 @@ class TestBuildConfPaths(object):
         assert bcpaths.wscripttop == bcpaths.projectroot or \
                bcpaths.wscripttop == bcpaths.buildroot
 
+@pytest.mark.usefixtures("unsetEnviron")
 class TestBuildConfHandler(object):
 
     def testInit(self, testingBuildConf):
@@ -402,17 +403,143 @@ class TestBuildConfHandler(object):
         # Hm, all other results of this method is checked in testSupportedBuildTypes
         assert confHandler.cmdLineHandled
 
-    def testTasks(self, testingBuildConf):
+    def testTasks(self, testingBuildConf, monkeypatch):
         buildconf = testingBuildConf
+
+        # CASE: invalid use
         confHandler = assist.BuildConfHandler(buildconf)
         with pytest.raises(ZenMakeLogicError):
             empty = confHandler.tasks
 
         buildconf.buildtypes.mybuildtype = {}
         buildconf.buildtypes.abcbt = {}
-
         clicmd = AutoDict()
         clicmd.args.buildtype = 'mybuildtype'
+
+        # save base fixture
+        buildconf = deepcopy(testingBuildConf)
+
+        # CASE: just empty buildconf.tasks
         confHandler = assist.BuildConfHandler(buildconf)
         confHandler.handleCmdLineArgs(clicmd)
         assert confHandler.tasks == {}
+        # this assert just for in case
+        assert confHandler.selectedBuildType == 'mybuildtype'
+
+        # CASE: just some buildconf.tasks, nothing else
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.tasks.test1.param1 = '1'
+        buildconf.tasks.test2.param2 = '2'
+        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler.handleCmdLineArgs(clicmd)
+        assert confHandler.tasks == buildconf.tasks
+
+        # CASE: some buildconf.tasks and buildconf.buildtypes
+        # with non-empty selected buildtype
+        # buildtype 'mybuildtype' should be selected at this moment
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.tasks.test1.param1 = '111'
+        buildconf.tasks.test2.param2 = '222'
+        buildconf.buildtypes.mybuildtype = { 'cxxflags' : '-O2' }
+
+        expected = deepcopy(buildconf.tasks)
+        for task in expected:
+            expected[task].update(deepcopy(buildconf.buildtypes.mybuildtype))
+        # self checking
+        assert expected.test1.cxxflags == '-O2'
+        assert expected.test2.cxxflags == '-O2'
+
+        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler.handleCmdLineArgs(clicmd)
+        assert confHandler.tasks == expected
+
+        # CASE: some buildconf.tasks and one task has own buildtypes
+        # with non-empty selected buildtype
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.tasks.test1.param1 = 'p1'
+        buildconf.tasks.test2.param2 = 'p2'
+        buildconf.tasks.test2.buildtypes.mybuildtype = { 'cxxflags' : '-Os' }
+
+        expected = deepcopy(buildconf.tasks)
+        del expected.test2['buildtypes']
+        expected.test2.update(deepcopy(buildconf.tasks.test2.buildtypes.mybuildtype))
+        # self checking
+        assert expected.test2.cxxflags == '-Os'
+
+        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler.handleCmdLineArgs(clicmd)
+        assert confHandler.tasks == expected
+
+        # CASE: some buildconf.tasks, buildconf.buildtypes
+        # with non-empty selected buildtype and one task has own buildtypes
+        # with non-empty selected buildtype that overrides value from buildconf.buildtypes
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.tasks.test1.param1 = 'p1'
+        buildconf.tasks.test2.param2 = 'p2'
+        buildconf.buildtypes.mybuildtype = { 'cxxflags' : '-O2' }
+        buildconf.tasks.test2.buildtypes.mybuildtype = { 'cxxflags' : '-O1' }
+
+        expected = deepcopy(buildconf.tasks)
+        for task in expected:
+            expected[task].update(deepcopy(buildconf.buildtypes.mybuildtype))
+        del expected.test2['buildtypes']
+        expected.test2.update(deepcopy(buildconf.tasks.test2.buildtypes.mybuildtype))
+        # self checking
+        assert expected.test1.cxxflags == '-O2'
+        assert expected.test2.cxxflags == '-O1'
+
+        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler.handleCmdLineArgs(clicmd)
+        assert confHandler.tasks == expected
+
+        # CASE: influence of compiler flags from system environment
+        cinfo = toolchains.CompilersInfo
+
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.tasks.test1.param1 = '111'
+        buildconf.tasks.test2.param2 = '222'
+
+        testOldVal = 'val1 val2'
+        testNewVal = 'val11 val22'
+        testNewValAsList = utils.toList(testNewVal)
+        flagVars = cinfo.allFlagVars()
+        for var in flagVars:
+            param = var.lower()
+            buildconf.buildtypes.mybuildtype = { param : testOldVal }
+            expected = deepcopy(buildconf.tasks)
+            for task in expected:
+                expected[task].update({ param : testNewValAsList })
+            # self checking
+            assert expected.test1[param] == testNewValAsList
+            assert expected.test2[param] == testNewValAsList
+            monkeypatch.setenv(var, testNewVal)
+
+            confHandler = assist.BuildConfHandler(buildconf)
+            confHandler.handleCmdLineArgs(clicmd)
+            assert confHandler.tasks == expected
+
+            monkeypatch.delenv(var, raising = False)
+
+        # CASE: influence of compiler var from system environment
+        cinfo = toolchains.CompilersInfo
+        buildconf = deepcopy(testingBuildConf)
+        testOldVal = 'old-compiler'
+        testNewVal = 'new-compiler'
+        toolchainVars = cinfo.allVarsToSetCompiler()
+        for var in toolchainVars:
+            param = var.lower()
+            buildconf.tasks.test1.features = ''
+            buildconf.tasks.test1.toolchain = testOldVal
+            buildconf.tasks.test2.features = param
+            buildconf.tasks.test2.toolchain = testOldVal
+            expected = deepcopy(buildconf.tasks)
+            expected.test1.toolchain = testOldVal
+            expected.test2.toolchain = testNewVal
+
+            monkeypatch.setenv(var, testNewVal)
+
+            confHandler = assist.BuildConfHandler(buildconf)
+            confHandler.handleCmdLineArgs(clicmd)
+            assert confHandler.tasks == expected
+
+            monkeypatch.delenv(var, raising = False)

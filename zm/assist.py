@@ -385,10 +385,11 @@ class BuildConfHandler(object):
 
                 paramName = var.lower()
 
-                current = taskParams.get(paramName, [])
-                current = utils.toList(current)
+                #current = taskParams.get(paramName, [])
+                #current = utils.toList(current)
                 # FIXME: should we add or replace?
-                taskParams[paramName] = current + utils.toList(envVal)
+                #taskParams[paramName] = current + utils.toList(envVal)
+                taskParams[paramName] = utils.toList(envVal)
 
             # handle toolchains
             for var in toolchainVars:
