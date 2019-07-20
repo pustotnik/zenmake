@@ -6,6 +6,8 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+from copy import deepcopy
+
 class AutoDict(dict):
     """
     Usually inheritance from built-in dict type is a bad idea. Especially if you
@@ -29,3 +31,16 @@ class AutoDict(dict):
 
     def __setattr__(self, name, value):
         self[name] = value
+
+    def __copy__(self):
+        return AutoDict(self.copy())
+
+    def __deepcopy__(self, memo):
+        result = AutoDict()
+        memo[id(self)] = result
+        for k, v in self.items():
+            result[deepcopy(k, memo)] = deepcopy(v, memo)
+        # It's not really necessary to copy attrs
+        #for k, v in self.__dict__.items():
+        #    setattr(result, k, deepcopy(v, memo))
+        return result
