@@ -36,7 +36,7 @@ def collectProjectDirs():
     result.sort()
     return result
 
-#@pytest.mark.usefixtures("setupModule")
+@pytest.mark.usefixtures("unsetEnviron")
 class TestProject(object):
 
     def _runZm(self, cmdline):
@@ -124,7 +124,7 @@ class TestProject(object):
     def customtoolchains(self, request, tmpdir):
         self._setup(request, tmpdir)
 
-    def testConfigure(self, allprojects, unsetEnviron):
+    def testConfigure(self, allprojects):
 
         cmdLine = [self.pythonbin, ZM_BIN, 'configure', '-v']
         assert self._runZm(cmdLine)[0] == 0
@@ -136,14 +136,14 @@ class TestProject(object):
         assert self._runZm(cmdLine)[0] == 0
         self._checkBuildResults(cmdLine, True)
 
-    def testBuild(self, allprojects, unsetEnviron):
+    def testBuild(self, allprojects):
 
         # simple build
         cmdLine = [self.pythonbin, ZM_BIN, 'build', '-v']
         assert self._runZm(cmdLine)[0] == 0
         self._checkBuildResults(cmdLine, True)
 
-    def testBuildAndClean(self, allprojects, unsetEnviron):
+    def testBuildAndClean(self, allprojects):
 
         # simple build
         cmdLine = [self.pythonbin, ZM_BIN, 'build', '-v']
@@ -159,7 +159,7 @@ class TestProject(object):
         assert os.path.isfile(self.confPaths.zmcmnfile)
         self._checkBuildResults(cmdLine, False)
 
-    def testBuildAndDistclean(self, allprojects, unsetEnviron):
+    def testBuildAndDistclean(self, allprojects):
 
         # simple build
         cmdLine = [self.pythonbin, ZM_BIN, 'build', '-v']
@@ -174,7 +174,7 @@ class TestProject(object):
 
     @pytest.mark.skipif(cmn.PLATFORM == 'windows',
                         reason = 'I have no useful windows installation for tests')
-    def testCustomToolchain(self, customtoolchains, unsetEnviron):
+    def testCustomToolchain(self, customtoolchains):
 
         cmdLine = [self.pythonbin, ZM_BIN, 'build', '-v']
         returncode, stdout, stderr =  self._runZm(cmdLine)
