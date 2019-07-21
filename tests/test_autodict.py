@@ -15,7 +15,8 @@ from zm import autodict
 class TestAutoDict(object):
 
     def testValues(self):
-        d = autodict.AutoDict()
+        AutoDict = autodict.AutoDict
+        d = AutoDict()
         d['test'] = 10
         assert d == {'test' : 10}
         assert hasattr(d, 'test')
@@ -28,8 +29,15 @@ class TestAutoDict(object):
         assert not d.test2
         assert not d['test3'].test4
 
-        d2 = autodict.AutoDict(dict(a = 1, b =2))
+        d2 = AutoDict(dict(a = 1, b = 2))
         assert d2 == dict(a = 1, b =2)
+
+        d2 = AutoDict(dict(a = 1, b = dict(aa = 3, bb = 4)))
+        assert d2 == dict(a = 1, b = dict(aa = 3, bb = 4))
+
+        d2 = AutoDict()
+        d2.a.b.c = 1
+        assert d2 == dict(a = dict(b = dict(c = 1)))
 
     def testCopy(self):
         AutoDict = autodict.AutoDict
@@ -55,3 +63,16 @@ class TestAutoDict(object):
         d1.b.bb = 33
         assert d1 != d2
         assert d2.b.bb == 3
+
+    def testGetByDots(self):
+        AutoDict = autodict.AutoDict
+
+        d = AutoDict(a = 1)
+        assert d.getByDots('a') == 1
+        assert d.getByDots('a.b') == None
+
+        d = AutoDict(a = dict(b = 2))
+        assert d.getByDots('a') == dict(b = 2)
+        assert d.getByDots('a.b') == 2
+        assert d.getByDots('a.b.c') == None
+        assert d.getByDots('a.b.c.d') == None
