@@ -10,6 +10,7 @@
 
 import os
 import shutil
+import types
 from copy import deepcopy
 import pytest
 from waflib.ConfigSet import ConfigSet
@@ -21,19 +22,41 @@ from zm.constants import *
 
 joinpath = os.path.join
 
+def asRealConf(_buildconf):
+    buildconf = types.ModuleType('buildconf')
+    buildconf.__file__ = os.path.abspath('buildconf.py')
+
+    # For in case I convert all AutoDict objects into dict ones
+    # It ensures that there are no any side effects of AutoDict
+
+    def toDict(_dict):
+        for k, v in _dict.items():
+            if isinstance(v, utils.maptype):
+                toDict(v)
+                _dict[k] = dict(v)
+
+    for k, v in _buildconf.items():
+        if isinstance(v, utils.maptype):
+            v = dict(v)
+            setattr(buildconf, k, v)
+            toDict(v)
+        else:
+            setattr(buildconf, k, v)
+    return buildconf
+
 @pytest.fixture
 def testingBuildConf():
-    buildconf = AutoDict()
+    buildconf = types.ModuleType('buildconf')
     buildconf.__file__ = os.path.abspath('buildconf.py')
-    buildconf.__name__ = 'buildconf'
-    buildconf.buildroot    = 'buildroot'
-    buildconf.buildsymlink = 'buildsymlink'
-    buildconf.project.root = 'prjroot'
-    buildconf.project.name = 'test-project'
-    buildconf.project.version = '1.2.3.4'
-    buildconf.srcroot = 'src'
+    buildconfutil.initDefaults(buildconf)
 
-    return buildconf
+    # AutoDict is more useful in tests
+
+    for k, v in vars(buildconf).items():
+        if isinstance(v, utils.maptype):
+            setattr(buildconf, k, AutoDict(v))
+
+    return AutoDict(vars(buildconf))
 
 class TestAssistFuncs(object):
 
@@ -256,21 +279,22 @@ class TestBuildConfPaths(object):
 
     def testAll(self, testingBuildConf):
         fakeBuildConf = testingBuildConf
-        bcpaths = assist.BuildConfPaths(fakeBuildConf)
+        bcpaths = assist.BuildConfPaths(asRealConf(fakeBuildConf))
 
         dirname    = os.path.dirname
         abspath    = os.path.abspath
+        unfoldPath = utils.unfoldPath
 
         assert bcpaths.buildconffile == abspath(fakeBuildConf.__file__)
         assert bcpaths.buildconfdir  == dirname(bcpaths.buildconffile)
-        assert bcpaths.buildroot     == joinpath(bcpaths.buildconfdir,
+        assert bcpaths.buildroot     == unfoldPath(bcpaths.buildconfdir,
                                                    fakeBuildConf.buildroot)
-        assert bcpaths.buildsymlink  == joinpath(bcpaths.buildconfdir,
+        assert bcpaths.buildsymlink  == unfoldPath(bcpaths.buildconfdir,
                                                    fakeBuildConf.buildsymlink)
         assert bcpaths.buildout      == joinpath(bcpaths.buildroot, BUILDOUTNAME)
-        assert bcpaths.projectroot   == joinpath(bcpaths.buildconfdir,
+        assert bcpaths.projectroot   == unfoldPath(bcpaths.buildconfdir,
                                                    fakeBuildConf.project['root'])
-        assert bcpaths.srcroot       == joinpath(bcpaths.buildconfdir,
+        assert bcpaths.srcroot       == unfoldPath(bcpaths.buildconfdir,
                                                    fakeBuildConf.srcroot)
         assert bcpaths.wscriptout    == bcpaths.buildout
         assert bcpaths.wscriptfile   == joinpath(bcpaths.wscripttop, WSCRIPT_NAME)
@@ -290,9 +314,10 @@ class TestBuildConfHandler(object):
 
     def testInit(self, testingBuildConf):
         buildconf = testingBuildConf
-        confHandler = assist.BuildConfHandler(buildconf)
+        conf = asRealConf(buildconf)
+        confHandler = assist.BuildConfHandler(conf)
         assert not confHandler.cmdLineHandled
-        assert confHandler.conf == buildconf
+        assert confHandler.conf == conf
         assert confHandler.projectName == buildconf.project.name
         assert confHandler.projectVersion == buildconf.project.version
         assert confHandler.confPaths == assist.BuildConfPaths(buildconf)
@@ -300,27 +325,29 @@ class TestBuildConfHandler(object):
     def testDefaultBuildType(self, testingBuildConf):
         buildconf = testingBuildConf
 
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         assert confHandler.defaultBuildType == ''
 
         buildconf.buildtypes.mybuildtype = {}
         buildconf.buildtypes.abc = {}
         buildconf.buildtypes.default = 'mybuildtype'
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         assert confHandler.defaultBuildType == 'mybuildtype'
 
         buildconf.platforms = AutoDict({
             PLATFORM : AutoDict(valid = ['abc'], )
         })
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
+        assert confHandler.defaultBuildType == 'mybuildtype'
+        # to force covering of cache
         assert confHandler.defaultBuildType == 'mybuildtype'
 
         buildconf.platforms[PLATFORM].default = 'abc'
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         assert confHandler.defaultBuildType == 'abc'
 
         buildconf.platforms[PLATFORM].default = 'void'
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         with pytest.raises(ZenMakeError):
             bt = confHandler.defaultBuildType
 
@@ -331,7 +358,7 @@ class TestBuildConfHandler(object):
         buildconf.buildtypes.mybuildtype = {}
         buildconf.buildtypes.default = 'mybuildtype'
 
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         with pytest.raises(ZenMakeLogicError):
             bt = confHandler.selectedBuildType
 
@@ -344,39 +371,42 @@ class TestBuildConfHandler(object):
 
         buildconf.buildtypes.mybuildtype = {}
         buildconf.buildtypes.abcbt = {}
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
+        assert sorted(confHandler.supportedBuildTypes) == sorted([
+            'mybuildtype', 'abcbt'
+        ])
+        # to force covering of cache
         assert sorted(confHandler.supportedBuildTypes) == sorted([
             'mybuildtype', 'abcbt'
         ])
 
         buildconf.tasks.test.buildtypes.extrabtype = {}
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         assert sorted(confHandler.supportedBuildTypes) == sorted([
             'mybuildtype', 'abcbt', 'extrabtype'
         ])
 
         buildconf.platforms[PLATFORM] = AutoDict()
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         with pytest.raises(ZenMakeError):
             empty = confHandler.supportedBuildTypes
 
         buildconf.platforms[PLATFORM].valid = [ 'mybuildtype', 'invalid' ]
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         with pytest.raises(ZenMakeError):
             empty = confHandler.supportedBuildTypes
 
         buildconf.platforms[PLATFORM].valid = [ 'mybuildtype', 'extrabtype' ]
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         assert sorted(confHandler.supportedBuildTypes) == sorted([
             'mybuildtype', 'extrabtype'
         ])
 
         buildconf.buildtypes.default = 'mybuildtype'
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         assert sorted(confHandler.supportedBuildTypes) == sorted([
             'mybuildtype', 'extrabtype'
         ])
-
 
     def testHandleCmdLineArgs(self, testingBuildConf):
 
@@ -393,7 +423,7 @@ class TestBuildConfHandler(object):
         buildconf.buildtypes.mybuildtype = {}
         buildconf.buildtypes.default = 'mybuildtype'
 
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         assert not confHandler.cmdLineHandled
 
         with pytest.raises(ZenMakeError):
@@ -407,7 +437,7 @@ class TestBuildConfHandler(object):
         buildconf = testingBuildConf
 
         # CASE: invalid use
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         with pytest.raises(ZenMakeLogicError):
             empty = confHandler.tasks
 
@@ -420,7 +450,8 @@ class TestBuildConfHandler(object):
         buildconf = deepcopy(testingBuildConf)
 
         # CASE: just empty buildconf.tasks
-        confHandler = assist.BuildConfHandler(buildconf)
+        buildconf = deepcopy(testingBuildConf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         confHandler.handleCmdLineArgs(clicmd)
         assert confHandler.tasks == {}
         # this assert just for in case
@@ -430,8 +461,10 @@ class TestBuildConfHandler(object):
         buildconf = deepcopy(testingBuildConf)
         buildconf.tasks.test1.param1 = '1'
         buildconf.tasks.test2.param2 = '2'
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         confHandler.handleCmdLineArgs(clicmd)
+        assert confHandler.tasks == buildconf.tasks
+        # to force covering of cache
         assert confHandler.tasks == buildconf.tasks
 
         # CASE: some buildconf.tasks and buildconf.buildtypes
@@ -449,7 +482,7 @@ class TestBuildConfHandler(object):
         assert expected.test1.cxxflags == '-O2'
         assert expected.test2.cxxflags == '-O2'
 
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         confHandler.handleCmdLineArgs(clicmd)
         assert confHandler.tasks == expected
 
@@ -466,7 +499,7 @@ class TestBuildConfHandler(object):
         # self checking
         assert expected.test2.cxxflags == '-Os'
 
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         confHandler.handleCmdLineArgs(clicmd)
         assert confHandler.tasks == expected
 
@@ -488,7 +521,7 @@ class TestBuildConfHandler(object):
         assert expected.test1.cxxflags == '-O2'
         assert expected.test2.cxxflags == '-O1'
 
-        confHandler = assist.BuildConfHandler(buildconf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
         confHandler.handleCmdLineArgs(clicmd)
         assert confHandler.tasks == expected
 
@@ -514,7 +547,7 @@ class TestBuildConfHandler(object):
             assert expected.test2[param] == testNewValAsList
             monkeypatch.setenv(var, testNewVal)
 
-            confHandler = assist.BuildConfHandler(buildconf)
+            confHandler = assist.BuildConfHandler(asRealConf(buildconf))
             confHandler.handleCmdLineArgs(clicmd)
             assert confHandler.tasks == expected
 
@@ -538,8 +571,96 @@ class TestBuildConfHandler(object):
 
             monkeypatch.setenv(var, testNewVal)
 
-            confHandler = assist.BuildConfHandler(buildconf)
+            confHandler = assist.BuildConfHandler(asRealConf(buildconf))
             confHandler.handleCmdLineArgs(clicmd)
             assert confHandler.tasks == expected
 
             monkeypatch.delenv(var, raising = False)
+
+    def testToolchainNames(self, testingBuildConf):
+        buildconf = testingBuildConf
+
+        # CASE: invalid use
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
+        with pytest.raises(ZenMakeLogicError):
+            empty = confHandler.toolchainNames
+
+        buildconf.buildtypes['debug-gxx'] = {}
+        clicmd = AutoDict()
+        clicmd.args.buildtype = 'debug-gxx'
+
+        # save base fixture
+        buildconf = deepcopy(testingBuildConf)
+
+        # CASE: just empty toolchains
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.tasks.test1.param1 = '111'
+        buildconf.tasks.test2.param2 = '222'
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
+        confHandler.handleCmdLineArgs(clicmd)
+        # it returns tuple but it can return list so we check by len
+        assert len(confHandler.toolchainNames) == 0
+
+        # CASE: tasks with the same toolchain
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.tasks.test1.toolchain = 'gxx'
+        buildconf.tasks.test2.toolchain = 'gxx'
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
+        confHandler.handleCmdLineArgs(clicmd)
+        assert list(confHandler.toolchainNames) == ['gxx']
+        # to force covering of cache
+        assert list(confHandler.toolchainNames) == ['gxx']
+
+        # CASE: tasks with different toolchains
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.tasks.test1.toolchain = 'gxx'
+        buildconf.tasks.test2.toolchain = 'lgxx'
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
+        confHandler.handleCmdLineArgs(clicmd)
+        assert sorted(confHandler.toolchainNames) == sorted(['gxx', 'lgxx'])
+
+    def testCustomToolchains(self, testingBuildConf, capsys):
+        buildconf = testingBuildConf
+
+        buildconf.buildtypes['debug-gxx'] = {}
+        clicmd = AutoDict()
+        clicmd.args.buildtype = 'debug-gxx'
+
+        # save base fixture
+        buildconf = deepcopy(testingBuildConf)
+
+        # CASE: no custom toolchains
+        buildconf = deepcopy(testingBuildConf)
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
+        assert confHandler.customToolchains == {}
+
+        # CASE: invalid toolchain
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.toolchains = {
+            'something' : {}
+        }
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
+        with pytest.raises(ZenMakeError):
+            empty = confHandler.customToolchains
+
+        # CASE: one custom toolchain with fake path
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.toolchains = {
+            'something' : {
+                'kind': 'auto-c++',
+                'var': joinpath('path', 'to', 'toolchain')
+            },
+        }
+        confHandler = assist.BuildConfHandler(asRealConf(buildconf))
+        confPaths = confHandler.confPaths
+        expected = deepcopy(buildconf.toolchains)
+        expected['something']['vars'] = {
+            'var' : utils.unfoldPath(confPaths.projectroot,
+                                     buildconf.toolchains['something']['var'])
+        }
+        del expected['something']['var']
+        assert confHandler.customToolchains == expected
+        captured = capsys.readouterr()
+        assert "doesn't exists" in captured.err
+        # to force covering of cache
+        assert confHandler.customToolchains == expected

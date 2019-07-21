@@ -613,10 +613,11 @@ class BuildConfHandler(object):
                 raise ZenMakeError("Toolchain '%s': field 'kind' not found" % name)
 
             for k, v in _vars.items():
-                # try to identify path and do nothing in another case
+                # try to identify path and do warning if not
                 path = utils.unfoldPath(self._confpaths.projectroot, v)
-                if os.path.exists(path):
-                    _vars[k] = path
+                if not os.path.exists(path):
+                    log.warn("Path to toolchain '%s' doesn't exists" % path)
+                _vars[k] = path
 
             _customToolchains[name].kind = kind
             _customToolchains[name].vars = _vars
