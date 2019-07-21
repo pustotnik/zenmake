@@ -9,7 +9,7 @@
 import re
 from zm.error import ZenMakeError
 from zm.autodict import AutoDict as _AutoDict
-from zm.utils import loadPyModule, stringtypes
+from zm.utils import loadPyModule, stringtype
 
 _langinfo = {
     # 'env.var' - environment variable to set compiler
@@ -105,7 +105,7 @@ class CompilersInfo(object):
         module = loadPyModule(getterInfo['module'])
         # and call function
         compilers = getattr(module, getterInfo['fun'])()
-        if not isinstance(compilers, stringtypes):
+        if not isinstance(compilers, stringtype):
             # Code of Waf was changed
             raise NotImplementedError()
         compilers = re.split('[ ,]+', compilers)

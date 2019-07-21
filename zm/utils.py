@@ -17,9 +17,9 @@ PY3 = sys.version_info[0] >= 3
 
 # Some python2/3 compatible stuffs
 if PY3:
-    stringtypes = str # pragma: no cover
+    stringtype = str # pragma: no cover
 else:
-    stringtypes = basestring # pragma: no cover
+    stringtype = basestring # pragma: no cover
 
 try:
     from collections.abc import Mapping as maptype
@@ -40,7 +40,7 @@ def toList(val):
     Converts a string argument to a list by splitting it by spaces.
     Returns the object if not a string
     """
-    if isinstance(val, stringtypes):
+    if isinstance(val, stringtype):
         return val.split()
     return val
 

@@ -222,7 +222,7 @@ def handleTaskIncludesParam(taskParams, srcroot):
     # a source of portability problems.
     includes = taskParams.get('includes', [])
     if includes:
-        if isinstance(includes, utils.stringtypes):
+        if isinstance(includes, utils.stringtype):
             includes = includes.split()
         includes = [ x if os.path.isabs(x) else \
             joinpath(srcroot, x) for x in includes ]
@@ -412,7 +412,7 @@ class BuildConfHandler(object):
                 btVal = val
                 btKey = btype
                 while not isinstance(btVal, utils.maptype):
-                    if not isinstance(btVal, utils.stringtypes):
+                    if not isinstance(btVal, utils.stringtype):
                         raise ZenMakeError("Invalid type of buildtype value '%s'"
                                            % type(btVal))
                     btKey = btVal
@@ -603,7 +603,7 @@ class BuildConfHandler(object):
             return self._meta.toolchains.custom
 
         srcToolchains = self._conf.toolchains
-        customToolchains = AutoDict()
+        _customToolchains = AutoDict()
         for name, info in srcToolchains.items():
             _vars = deepcopy(info) # don't change origin
             kind = _vars.pop('kind', None)
@@ -616,8 +616,8 @@ class BuildConfHandler(object):
                 if os.path.exists(path):
                     _vars[k] = path
 
-            customToolchains[name].kind = kind
-            customToolchains[name].vars = _vars
+            _customToolchains[name].kind = kind
+            _customToolchains[name].vars = _vars
 
-        self._meta.toolchains.custom = customToolchains
-        return customToolchains
+        self._meta.toolchains.custom = _customToolchains
+        return _customToolchains
