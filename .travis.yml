@@ -12,6 +12,9 @@ os:
 
 language: python
 
+cache:
+  pip: true
+
 compiler:
   - clang
   - gcc
