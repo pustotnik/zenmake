@@ -16,7 +16,7 @@ import pytest
 from waflib import Build
 from waflib.ConfigSet import ConfigSet
 import tests.common as cmn
-from zm import utils, buildconfutil, assist, cli
+from zm import pyutils, buildconfutil, assist, cli
 import starter
 
 joinpath = os.path.join
@@ -44,7 +44,7 @@ class TestProject(object):
         proc = subprocess.Popen(cmdline, stdout = subprocess.PIPE,
                             stderr = subprocess.STDOUT, cwd = self.cwd,
                             env = os.environ.copy(), universal_newlines = True)
-        if utils.PY3:
+        if pyutils.PY3:
             stdout, stderr = proc.communicate(timeout = timeout)
         else:
             stdout, stderr = proc.communicate()

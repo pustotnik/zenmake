@@ -9,7 +9,8 @@
 import re
 from zm.error import ZenMakeError
 from zm.autodict import AutoDict as _AutoDict
-from zm.utils import loadPyModule, stringtype
+from zm.pyutils import stringtype
+from zm.utils import loadPyModule
 
 _langinfo = {
     # 'env.var' - environment variable to set compiler

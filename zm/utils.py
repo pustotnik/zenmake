@@ -8,25 +8,7 @@
 
 import os
 import sys
-
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] >= 3
-
-#pylint: disable=wrong-import-position
-#pylint: disable=invalid-name,undefined-variable,unused-import
-
-# Some python2/3 compatible stuffs
-if PY3:
-    stringtype = str # pragma: no cover
-else:
-    stringtype = basestring # pragma: no cover
-
-try:
-    from collections.abc import Mapping as maptype
-except ImportError:
-    from collections import Mapping as maptype
-
-#pylint: enable=invalid-name,undefined-variable,unused-import
+from zm import pyutils as _pyutils
 
 from waflib import Utils as wafutils
 
@@ -40,7 +22,7 @@ def toList(val):
     Converts a string argument to a list by splitting it by spaces.
     Returns the object if not a string
     """
-    if isinstance(val, stringtype):
+    if isinstance(val, _pyutils.stringtype):
         return val.split()
     return val
 

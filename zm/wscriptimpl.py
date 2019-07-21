@@ -20,6 +20,7 @@ __all__ = [
 
 import os
 from waflib.ConfigSet import ConfigSet
+from zm.pyutils import maptype
 from zm import log, shared, cli, assist, utils
 
 # pylint: disable=unused-argument
@@ -187,7 +188,7 @@ def build(bld):
 
         src = taskParams.get('source')
         if src:
-            if isinstance(src, utils.maptype):
+            if isinstance(src, maptype):
                 kwargs['source'] = srcDirNode.ant_glob(
                     incl       = src.get('include', ''),
                     excl       = src.get('exclude', ''),

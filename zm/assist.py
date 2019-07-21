@@ -11,7 +11,7 @@
 import os
 from copy import deepcopy
 from waflib.ConfigSet import ConfigSet
-from zm import utils, toolchains, log
+from zm import pyutils, utils, toolchains, log
 from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeLogicError
 from zm.constants import WAF_CACHE_DIRNAME, WAF_CACHE_NAMESUFFIX, \
@@ -222,7 +222,7 @@ def handleTaskIncludesParam(taskParams, srcroot):
     # a source of portability problems.
     includes = taskParams.get('includes', [])
     if includes:
-        if isinstance(includes, utils.stringtype):
+        if isinstance(includes, pyutils.stringtype):
             includes = includes.split()
         includes = [ x if os.path.isabs(x) else \
             joinpath(srcroot, x) for x in includes ]
@@ -413,8 +413,8 @@ class BuildConfHandler(object):
             for btype, val in buildtypes.items():
                 btVal = val
                 btKey = btype
-                while not isinstance(btVal, utils.maptype):
-                    if not isinstance(btVal, utils.stringtype):
+                while not isinstance(btVal, pyutils.maptype):
+                    if not isinstance(btVal, pyutils.stringtype):
                         raise ZenMakeError("Invalid type of buildtype value '%s'"
                                            % type(btVal))
                     btKey = btVal

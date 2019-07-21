@@ -15,7 +15,7 @@ from copy import deepcopy
 import pytest
 from waflib.ConfigSet import ConfigSet
 import tests.common as cmn
-from zm import assist, toolchains, buildconfutil, utils
+from zm import assist, toolchains, buildconfutil, pyutils, utils
 from zm.autodict import AutoDict
 from zm.error import *
 from zm.constants import *
@@ -31,12 +31,12 @@ def asRealConf(_buildconf):
 
     def toDict(_dict):
         for k, v in _dict.items():
-            if isinstance(v, utils.maptype):
+            if isinstance(v, pyutils.maptype):
                 toDict(v)
                 _dict[k] = dict(v)
 
     for k, v in _buildconf.items():
-        if isinstance(v, utils.maptype):
+        if isinstance(v, pyutils.maptype):
             v = dict(v)
             setattr(buildconf, k, v)
             toDict(v)
@@ -53,7 +53,7 @@ def testingBuildConf():
     # AutoDict is more useful in tests
 
     for k, v in vars(buildconf).items():
-        if isinstance(v, utils.maptype):
+        if isinstance(v, pyutils.maptype):
             setattr(buildconf, k, AutoDict(v))
 
     return AutoDict(vars(buildconf))
