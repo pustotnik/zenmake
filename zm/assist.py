@@ -311,6 +311,8 @@ class BuildConfPaths(object):
     Class to calculate different paths depending on buildconf
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, conf):
         dirname    = os.path.dirname
         abspath    = os.path.abspath
