@@ -9,6 +9,7 @@
 import sys
 from collections import namedtuple
 from auxiliary.argparse import argparse
+from zm.pyutils import viewitems
 from zm import log
 from zm.error import ZenMakeLogicError
 from zm.autodict import AutoDict as _AutoDict
@@ -281,7 +282,7 @@ class CmdLineParser(object):
         posargs = [x for x in _posargs if cmd.name in x.commands]
         for arg in posargs:
             kwargs = _AutoDict()
-            for k, v in arg.items():
+            for k, v in viewitems(arg):
                 if v is None or k in _PosArg.NOTARGPARSE_FIELDS:
                     continue
                 kwargs[k] = v
@@ -305,7 +306,7 @@ class CmdLineParser(object):
                 kwargs.help = "run command '%s' before command '%s'" \
                         % (opt.runcmd, cmd.name)
             else:
-                for k, v in opt.items():
+                for k, v in viewitems(opt):
                     if v is None or k in _Option.NOTARGPARSE_FIELDS:
                         continue
                     kwargs[k] = v

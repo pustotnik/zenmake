@@ -9,7 +9,6 @@
 import os
 import sys
 from zm import pyutils as _pyutils
-
 from waflib import Utils as wafutils
 
 readFile        = wafutils.readf
@@ -103,7 +102,7 @@ def loadPyModule(name, dirpath = None, withImport = True):
     import types
     from zm.error import ZenMakeError
     module = types.ModuleType(name)
-    filename = name.replace('.', os.path.sep) + '.py'
+    filename = '%s.py' % name.replace('.', os.path.sep)
     if not dirpath:
         # try to find module
         for path in sys.path:
@@ -153,7 +152,7 @@ def printSysInfo():
     compilers = [
         _AutoDict(header = 'GCC:', bin = 'gcc', verargs = ['--version']),
         _AutoDict(header = 'CLANG:', bin = 'clang', verargs = ['--version']),
-        #TODO: find way to detect msvc
+        #TODO: find a way to detect msvc
         #_AutoDict(header = 'MSVC:', bin = 'cl', verargs = []),
     ]
     for compiler in compilers:

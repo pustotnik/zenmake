@@ -20,7 +20,7 @@ __all__ = [
 
 import os
 from waflib.ConfigSet import ConfigSet
-from zm.pyutils import maptype
+from zm.pyutils import maptype, viewitems
 from zm import log, shared, cli, assist, utils
 
 # pylint: disable=unused-argument
@@ -87,7 +87,7 @@ def configure(conf):
     tasks = confHandler.tasks
     conf.env.alltasks[buildtype] = tasks
 
-    for taskName, taskParams in tasks.items():
+    for taskName, taskParams in viewitems(tasks):
 
         taskParams['name'] = taskName
 
@@ -162,7 +162,7 @@ def build(bld):
     if not allowedTasks:
         allowedTasks = tasks.keys()
 
-    for taskName, taskParams in tasks.items():
+    for taskName, taskParams in viewitems(tasks):
 
         if taskName not in allowedTasks:
             continue

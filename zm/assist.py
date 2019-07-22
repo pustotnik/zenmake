@@ -11,7 +11,8 @@
 import os
 from copy import deepcopy
 from waflib.ConfigSet import ConfigSet
-from zm import pyutils, utils, toolchains, log
+from zm.pyutils import maptype, stringtype, viewitems, viewvalues
+from zm import utils, toolchains, log
 from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeLogicError
 from zm.constants import WAF_CACHE_DIRNAME, WAF_CACHE_NAMESUFFIX, \
@@ -193,7 +194,7 @@ def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
         cfgCtx.setenv(toolname, env = copyFromEnv)
         custom  = buildconfHandler.customToolchains.get(toolname, None)
         if custom is not None:
-            for var, val in custom.vars.items():
+            for var, val in viewitems(custom.vars):
                 cfgCtx.env[var] = val
             toolchain = custom.kind
 
@@ -222,7 +223,7 @@ def handleTaskIncludesParam(taskParams, srcroot):
     # a source of portability problems.
     includes = taskParams.get('includes', [])
     if includes:
-        if isinstance(includes, pyutils.stringtype):
+        if isinstance(includes, stringtype):
             includes = includes.split()
         includes = [ x if os.path.isabs(x) else \
             joinpath(srcroot, x) for x in includes ]
@@ -367,7 +368,7 @@ class BuildConfHandler(object):
         # NOTICE: this method should not have any heavy operations
 
         allBuildTypes = set(self._conf.buildtypes.keys())
-        for taskParams in self._conf.tasks.values():
+        for taskParams in viewvalues(self._conf.tasks):
             taskBuildTypes = taskParams.get('buildtypes', {})
             allBuildTypes.update(taskBuildTypes.keys())
         self._meta.buildtypes.allnames = allBuildTypes
@@ -378,7 +379,7 @@ class BuildConfHandler(object):
         flagVars      = cinfo.allFlagVars()
         toolchainVars = cinfo.allVarsToSetCompiler()
 
-        for taskParams in tasks.values():
+        for taskParams in viewvalues(tasks):
             # handle flags
             for var in flagVars:
                 envVal = os.environ.get(var, None)
@@ -410,11 +411,11 @@ class BuildConfHandler(object):
             for btype in self._meta.buildtypes.allnames:
                 if btype not in buildtypes:
                     buildtypes[btype] = {}
-            for btype, val in buildtypes.items():
+            for btype, val in viewitems(buildtypes):
                 btVal = val
                 btKey = btype
-                while not isinstance(btVal, pyutils.maptype):
-                    if not isinstance(btVal, pyutils.stringtype):
+                while not isinstance(btVal, maptype):
+                    if not isinstance(btVal, stringtype):
                         raise ZenMakeError("Invalid type of buildtype value '%s'"
                                            % type(btVal))
                     btKey = btVal
@@ -552,7 +553,7 @@ class BuildConfHandler(object):
 
         tasks = {}
 
-        for taskName, taskParams in self._conf.tasks.items():
+        for taskName, taskParams in viewitems(self._conf.tasks):
             task = {}
             tasks[taskName] = task
 
@@ -586,7 +587,7 @@ class BuildConfHandler(object):
 
         # gather unique names
         _toolchains = set()
-        for taskParams in self.tasks.values():
+        for taskParams in viewvalues(self.tasks):
             tool = taskParams.get('toolchain', None)
             if tool:
                 _toolchains.add(tool)
@@ -606,13 +607,13 @@ class BuildConfHandler(object):
 
         srcToolchains = self._conf.toolchains
         _customToolchains = AutoDict()
-        for name, info in srcToolchains.items():
+        for name, info in viewitems(srcToolchains):
             _vars = deepcopy(info) # don't change origin
             kind = _vars.pop('kind', None)
             if kind is None:
                 raise ZenMakeError("Toolchain '%s': field 'kind' not found" % name)
 
-            for k, v in _vars.items():
+            for k, v in viewitems(_vars):
                 # try to identify path and do warning if not
                 path = utils.unfoldPath(self._confpaths.projectroot, v)
                 if not os.path.exists(path):
