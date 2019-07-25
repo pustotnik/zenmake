@@ -15,7 +15,7 @@ This is one more building tool that based on WAF (https://waf.io/). Actually it 
 https://news.ycombinator.com/item?id=18789162
 > Cool. One more "new" build system...
 
-Yes, I know, we have already a lot of them. 
+Yes, I know, we have already a lot of them.
 I decided to create this project because I hadn't found build tool for linux which is easy to use, flexible, ready to use, with declarative configuration and suitable for me. I know about lots of build systems. I have read about all modern and popular such systems. And I have tried some of them. As result I have concluded that I had to try to make my own build tool. I have already experience in creation custom build tool based on WAF on my work in the past. So why not? I do it mostly for myself. But I will be glad if my tool be useful for someone else.
 
 Main purpose of this project is to make build tool for most of the simple cases. I mean it is for cases where no need to make very complex configuration for building. But where it's possible this tool will save flexibility. It's not the fastest build system but it has enough good performance. I want a simple, stable build tool that just works.
@@ -34,7 +34,7 @@ It's very old but actual build system. But because it has too many disadvantages
 WAF is a great build system. It has a lot of possibilities. I like it and have some experience with it. But for me it's meta build system. You can build your projects only with WAF and nothing else. But before you should learn a lot about this system. So it is not easy to use.
 
 #### ninja
-Well. I don't know a lot about this system. I know that it used as backend in Meson and CMake. And as I understand this systems definitely is not easy to use and it requires a lot of actions to use. 
+Well. I don't know a lot about this system. I know that it is used as backend in Meson and CMake. And as I understand that this systems definitely is not easy to use and it requires a lot of actions to use.
 
 #### Meson
 It's really not bad build system which uses ninja as a backend to build. I tried to use it. And as result I don't like some features of it:
