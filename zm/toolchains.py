@@ -6,10 +6,11 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-import re
+import itertools
 from zm.error import ZenMakeError
 from zm.autodict import AutoDict as _AutoDict
-from zm.pyutils import stringtype
+from zm.pyutils import maptype
+from zm.constants import PLATFORM
 from zm.utils import loadPyModule
 
 _langinfo = {
@@ -22,7 +23,7 @@ _langinfo = {
         'cfgenv.vars'  : ('CFLAGS', 'CPPFLAGS', 'LINKFLAGS', 'LDFLAGS', 'DEFINES'),
         'compiler.list' : {
             'module' : 'waflib.Tools.compiler_c',
-            'fun'    : 'default_compilers'
+            'var'    : 'c_compiler',
         },
     },
     'c++' : {
@@ -31,7 +32,7 @@ _langinfo = {
         'cfgenv.vars'  : ('CXXFLAGS', 'CPPFLAGS', 'LINKFLAGS', 'LDFLAGS', 'DEFINES'),
         'compiler.list' : {
             'module' : 'waflib.Tools.compiler_cxx',
-            'fun'    : 'default_compilers'
+            'var'    : 'cxx_compiler',
         },
     },
 }
@@ -81,6 +82,14 @@ class CompilersInfo(object):
         return _vars
 
     @staticmethod
+    def allLangs():
+        """
+        Return list of all supported programming languages.
+        """
+
+        return _langinfo.keys()
+
+    @staticmethod
     def allVarsToSetCompiler():
         """
         Return combined list of all environment variables to set compiler.
@@ -89,29 +98,51 @@ class CompilersInfo(object):
         return [x['env.var'] for x in _langinfo.values()]
 
     @staticmethod
-    def compilers(lang):
+    def compilers(lang, platform = PLATFORM):
         """
-        Return compilers set for selected language
+        Return compilers set for selected language for current platform
         """
 
         if not lang or lang not in _langinfo:
-            raise ZenMakeError("Compiler for '%s' is not supported" % lang)
+            raise ZenMakeError("Compiler for language '%s' is not supported" % lang)
 
-        compilers = _cache[lang].get('compilers', [])
+        compilers = _cache[platform][lang].get('compilers', [])
         if compilers:
             return compilers
 
         # load chosen module
         getterInfo = _langinfo[lang]['compiler.list']
         module = loadPyModule(getterInfo['module'])
-        # and call function
-        compilers = getattr(module, getterInfo['fun'])()
-        if not isinstance(compilers, stringtype):
+        # and process var
+        table = getattr(module, getterInfo['var'], None)
+        if table is None or not isinstance(table, maptype):
             # Code of Waf was changed
             raise NotImplementedError()
-        compilers = re.split('[ ,]+', compilers)
 
-        _cache[lang].compilers = compilers
+        if platform == 'all':
+            compilers = list(set(itertools.chain(*table.values())))
+        else:
+            _platform = platform
+            if platform == 'windows':
+                _platform = 'win32'
+            compilers = table.get(_platform, table['default'])
+
+        _cache[platform][lang].compilers = compilers
+        return compilers
+
+    @staticmethod
+    def allCompilers(platform = PLATFORM):
+        """
+        Return list of unique compiler names supported on selected platform
+        """
+
+        compilers = _cache[platform].get('all.compilers', [])
+        if compilers:
+            return compilers
+
+        compilers = [ c for l in _langinfo for c in CompilersInfo.compilers(l, platform) ]
+        compilers = list(set(compilers))
+        _cache[platform]['all.compilers'] = compilers
         return compilers
 
     @staticmethod
