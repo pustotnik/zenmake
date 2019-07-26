@@ -9,14 +9,14 @@
 [![ProjectStatus](https://img.shields.io/pypi/status/zenmake.svg)](https://pypi.org/project/zenmake/)
 
 ## Brief
-This is one more building tool that based on WAF (https://waf.io/). Actually it is not self-sufficient build system. It's superstructure above WAF, wrapper scripts around WAF. You can regard it as some kind of extension for WAF. I don't try to hide that WAF does most the part. It's for C/C++ projects mostly but may be later I will add some other languages. Especially WAF supports a lot of other languages. It is not universal build system and is not applicable for any C/C++ project. But I hope it will be useful. I began this project for building my own C++ projects. Anyone can use this as example of using WAF also.
+This is one more building tool. It is based on WAF (https://waf.io/). So it is not self-sufficient build system. It's superstructure above WAF. You can regard it as some kind of extension for WAF. I don't try to hide that WAF does most the part. It's for C/C++ projects mostly but may be later I will add some other languages. Especially WAF supports a lot of other languages. It is not universal build system and is not applicable for any C/C++ project. But I hope it will be useful. I began this project for building my own C++ projects. Anyone can use this as example of using WAF also.
 
 ## Why?
 https://news.ycombinator.com/item?id=18789162
 > Cool. One more "new" build system...
 
 Yes, I know, we have already a lot of them.
-I decided to create this project because I hadn't found build tool for linux which is easy to use, flexible, ready to use, with declarative configuration and suitable for me. I know about lots of build systems. I have read about all modern and popular such systems. And I have tried some of them. As result I have concluded that I had to try to make my own build tool. I have already experience in creation custom build tool based on WAF on my work in the past. So why not? I do it mostly for myself. But I will be glad if my tool be useful for someone else.
+I decided to create this project because I hadn't found build tool for linux which is easy to use, flexible, ready to use, with declarative configuration and suitable for me. I know about lots of build systems. I have read about all modern and popular such systems. And I have tried some of them. As result I have concluded that I had to try to make my own build tool. I have already experience in creation of custom build tool based on WAF on my work in the past. So why not? I do it mostly for myself. But I will be glad if my tool be useful for someone else.
 
 Main purpose of this project is to make build tool for most of the simple cases. I mean it is for cases where no need to make very complex configuration for building. But where it's possible this tool will save flexibility. It's not the fastest build system but it has enough good performance. I want a simple, stable build tool that just works.
 
