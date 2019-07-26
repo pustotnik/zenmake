@@ -6,9 +6,4 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-buildtypes = {
-    'debug' : {},
-    'default' : 'debug',
-}
-
-tasks = { 'fake' : {} }
+tasks = {}

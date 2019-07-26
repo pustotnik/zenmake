@@ -190,10 +190,10 @@ def build(bld):
         if src:
             if isinstance(src, maptype):
                 kwargs['source'] = srcDirNode.ant_glob(
-                    incl       = src.get('include', ''),
-                    excl       = src.get('exclude', ''),
-                    ignorecase = src.get('ignorecase', False),
-                    generator = True)
+                    incl = src.get('include', ''),
+                    excl = src.get('exclude', ''),
+                    ignorecase = src.get('ignorecase', False)
+                )
             else:
                 src = utils.toList(src)
                 kwargs['source'] = [ srcDirNode.find_node(s) for s in src ]

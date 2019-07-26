@@ -153,10 +153,10 @@ def loadDetectedCompiler(cfgCtx, kind):
     """
 
     # without 'auto-'
-    _kind = kind[5:]
+    lang = kind[5:]
 
-    compilers = toolchains.CompilersInfo.compilers(_kind)
-    envVar    = toolchains.CompilersInfo.varToSetCompiler(_kind)
+    compilers = toolchains.CompilersInfo.compilers(lang)
+    envVar    = toolchains.CompilersInfo.varToSetCompiler(lang)
 
     for compiler in compilers:
         cfgCtx.env.stash()
@@ -174,7 +174,7 @@ def loadDetectedCompiler(cfgCtx, kind):
             cfgCtx.env.revert()
             cfgCtx.end_msg(False)
     else:
-        cfgCtx.fatal('could not configure a %s compiler!' % _kind.upper())
+        cfgCtx.fatal('could not configure a %s compiler!' % lang.upper())
 
 def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
     """

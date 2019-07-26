@@ -48,6 +48,11 @@ if PY3:
     viewvalues = operator.methodcaller('values')
     viewitems  = operator.methodcaller('items')
 
+    def listvalues(d):
+        return list(d.values())
+    def listitems(d):
+        return list(d.items())
+
 else:
     iterkeys   = operator.methodcaller('iterkeys')
     itervalues = operator.methodcaller('itervalues')
@@ -55,3 +60,5 @@ else:
     viewkeys   = operator.methodcaller('viewkeys')
     viewvalues = operator.methodcaller('viewvalues')
     viewitems  = operator.methodcaller('viewitems')
+    listvalues = operator.methodcaller('values')
+    listitems  = operator.methodcaller('items')
