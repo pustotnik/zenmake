@@ -10,6 +10,8 @@
 
 import sys
 import os
+import string
+import random
 import tempfile
 import shutil
 import atexit
@@ -22,6 +24,15 @@ from zm import utils
 import starter
 
 _tempdirs = []
+
+def randomstr(length = 20, withDigits = False):
+    letters = string.ascii_lowercase
+    if withDigits:
+        letters += string.digits
+    return ''.join(random.choice(letters) for i in range(length))
+
+def randomint(minVal = 0, maxVal = 2 ** 32):
+    return random.randint(minVal, maxVal)
 
 @contextmanager
 def capturedOutput():

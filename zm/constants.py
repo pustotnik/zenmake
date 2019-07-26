@@ -16,3 +16,7 @@ ZENMAKE_COMMON_FILENAME = '.zenmake-common'
 WSCRIPT_NAME = 'zmwscript'
 
 PLATFORM = _platform()
+KNOWN_PLATFORMS = (
+    'linux', 'windows', 'darwin', 'freebsd', 'openbsd', 'sunos', 'cygwin',
+    'msys', 'riscos', 'atheos', 'os2', 'os2emx', 'hp-ux', 'hpux', 'aix', 'irix',
+)

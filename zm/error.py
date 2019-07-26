@@ -15,5 +15,14 @@ class ZenMakeError(_WafError):
         self.fullmsg = self.verbose_msg
         delattr(self, 'verbose_msg')
 
-class ZenMakeLogicError(_WafError):
-    """Some logic/prograaming error"""
+class ZenMakeLogicError(ZenMakeError):
+    """Some logic/programming error"""
+
+class ZenMakeConfError(ZenMakeError):
+    """Invalid buildconf error"""
+
+class ZenMakeConfTypeError(ZenMakeConfError):
+    """Invalid buildconf param type error"""
+
+class ZenMakeConfValueError(ZenMakeConfError):
+    """Invalid buildconf param value error"""
