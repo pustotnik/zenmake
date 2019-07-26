@@ -253,14 +253,16 @@ class CmdLineParser(object):
                 opt.default = self._defaults[optName]
                 opt.help += ' [default: %r]' % opt.default
 
-    def _joinCmdNameWithAlieses(self, cmd):
+    @staticmethod
+    def _joinCmdNameWithAlieses(cmd):
         if not cmd.aliases:
             return cmd.name
         return cmd.name + '|' + '|'.join(cmd.aliases)
 
-    def _makeCmdUsageText(self, progName, cmd):
+    @staticmethod
+    def _makeCmdUsageText(progName, cmd):
         template = "%s " + cmd.usageTextTempl
-        return template % (progName, self._joinCmdNameWithAlieses(cmd))
+        return template % (progName, CmdLineParser._joinCmdNameWithAlieses(cmd))
 
     def _showHelp(self, cmdHelps, topic):
         if topic == 'overview':
