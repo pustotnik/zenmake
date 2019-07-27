@@ -15,7 +15,8 @@ from copy import deepcopy
 import pytest
 from waflib.ConfigSet import ConfigSet
 import tests.common as cmn
-from zm import assist, toolchains, buildconfutil, pyutils, utils
+from zm import assist, toolchains, pyutils, utils
+from zm.buildconf import loader as bconfloader
 from zm.autodict import AutoDict
 from zm.error import *
 from zm.constants import *
@@ -48,7 +49,7 @@ def asRealConf(_buildconf):
 def testingBuildConf():
     buildconf = types.ModuleType('buildconf')
     buildconf.__file__ = os.path.abspath('buildconf.py')
-    buildconfutil.initDefaults(buildconf)
+    bconfloader.initDefaults(buildconf)
 
     # AutoDict is more useful in tests
 
@@ -263,7 +264,7 @@ class TestAssistFuncs(object):
         assert not os.path.exists(fakeConfPaths.buildroot)
 
     def testIsBuildConfFake(self):
-        fakeBuildConf = utils.loadPyModule('zm.fakebuildconf', withImport = False)
+        fakeBuildConf = utils.loadPyModule('zm.buildconf.fakeconf', withImport = False)
         assert assist.isBuildConfFake(fakeBuildConf)
 
         # find first real buildconf.py and check
@@ -413,8 +414,8 @@ class TestBuildConfHandler(object):
         clicmd = AutoDict()
         clicmd.args.buildtype = 'mybuildtype'
 
-        fakeBuildConf = utils.loadPyModule('zm.fakebuildconf', withImport = False)
-        buildconfutil.initDefaults(fakeBuildConf)
+        fakeBuildConf = utils.loadPyModule('zm.buildconf.fakeconf', withImport = False)
+        bconfloader.initDefaults(fakeBuildConf)
         confHandler = assist.BuildConfHandler(fakeBuildConf)
         with pytest.raises(ZenMakeError):
             confHandler.handleCmdLineArgs(clicmd)

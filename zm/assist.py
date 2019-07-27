@@ -298,9 +298,9 @@ def distclean(bconfPaths):
 
 def isBuildConfFake(conf):
     """
-    Return True if loaded buildconf is fake module.
+    Return True if loaded buildconf is a fake module.
     """
-    return conf.__name__.endswith('fakebuildconf')
+    return conf.__name__.endswith('fakeconf')
 
 def _getBuildTypeFromCLI(clicmd):
     if not clicmd or not clicmd.args.buildtype:

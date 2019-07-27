@@ -7,9 +7,9 @@
 """
 
 __all__ = [
-    'validateAll',
+    'validate',
     'initDefaults',
-    'loadConf',
+    'load',
 ]
 
 import os
@@ -433,7 +433,7 @@ class Validator(object):
 
         self._validate(_conf, _scheme, conf.__name__)
 
-def validateAll(buildconf):
+def validate(buildconf):
     """
     Validate selected buildconf object
     """
@@ -486,7 +486,7 @@ def initDefaults(buildconf):
     if not hasattr(buildconf, 'srcroot'):
         setattr(buildconf, 'srcroot', buildconf.project['root'])
 
-def loadConf(name = 'buildconf', dirpath = None, withImport = False):
+def load(name = 'buildconf', dirpath = None, withImport = False, check = True):
     """
     Load buildconf
     Params 'dirpath' and 'withImport' are the params for zm.utils.loadPyModule
@@ -498,10 +498,11 @@ def loadConf(name = 'buildconf', dirpath = None, withImport = False):
         module = loadPyModule(name, dirpath = dirpath, withImport = withImport)
         sys.dont_write_bytecode = False # pragma: no cover
     except ImportError:
-        module = loadPyModule('zm.fakebuildconf')
+        module = loadPyModule('zm.buildconf.fakeconf')
 
     try:
-        validateAll(module)
+        if check:
+            validate(module)
         initDefaults(module)
     except ZenMakeConfError as ex:
         if log.verbose() > 1:

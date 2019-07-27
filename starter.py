@@ -90,9 +90,10 @@ def main():
     Options.lockfile = '.lock-wafbuild'
     from waflib import Scripting, Build
 
-    from zm import log, buildconfutil, assist, shared
+    from zm import log, assist, shared
+    from zm.buildconf import loader as bconfloader
 
-    buildconf = buildconfutil.loadConf()
+    buildconf = bconfloader.load()
     buildConfHandler = assist.BuildConfHandler(buildconf)
     shared.buildConfHandler = buildConfHandler
     bconfPaths = buildConfHandler.confPaths

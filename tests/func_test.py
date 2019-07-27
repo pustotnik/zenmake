@@ -16,7 +16,8 @@ import pytest
 from waflib import Build
 from waflib.ConfigSet import ConfigSet
 import tests.common as cmn
-from zm import pyutils, buildconfutil, assist, cli
+from zm import pyutils, assist, cli
+from zm.buildconf import loader as bconfloader
 import starter
 
 joinpath = os.path.join
@@ -101,8 +102,8 @@ class TestProject(object):
         shutil.copytree(joinpath(cmn.TEST_PROJECTS_DIR, request.param), tmptestDir)
 
         self.cwd = tmptestDir
-        projectConf = buildconfutil.loadConf('buildconf',
-                                            self.cwd, withImport = False)
+        projectConf = bconfloader.load('buildconf',
+                                        self.cwd, withImport = False)
         self.confHandler = assist.BuildConfHandler(projectConf)
         self.confPaths = self.confHandler.confPaths
 
