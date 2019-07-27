@@ -9,30 +9,13 @@
 import os
 from waflib import Options, Context, Configure, Scripting
 from waflib.ConfigSet import ConfigSet
-from zm import utils, log, assist
+from zm import log, assist
 
 joinpath = os.path.join
 
 # Force to turn off internal WAF autoconfigure decorator.
 # It's just to rid of needless work and to save working time.
 Configure.autoconfig = False
-
-def _areFilesChanged(bconfPaths):
-    zmCmn = ConfigSet()
-    try:
-        zmcmnfile = bconfPaths.zmcmnfile
-        zmCmn.load(zmcmnfile)
-    except EnvironmentError:
-        return True
-
-    _hash = 0
-    for file in zmCmn.monitfiles:
-        try:
-            _hash = utils.mkHashOfStrings((_hash, utils.readFile(file, 'rb')))
-        except EnvironmentError:
-            return True
-
-    return _hash != zmCmn.monithash
 
 def _areBuildTypesNotConfigured(clicmd, bconfHandler):
     buildconf = bconfHandler.conf
@@ -126,7 +109,7 @@ def wrapBldCtxAutoConf(clicmd, bconfHandler, method):
             runConfigAndCommand(self, env)
             return
 
-        if _areFilesChanged(bconfPaths):
+        if assist.areMonitoredFilesChanged(bconfPaths):
             runConfigAndCommand(self, env)
             return
 

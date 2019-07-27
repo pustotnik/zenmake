@@ -297,3 +297,38 @@ def isBuildConfFake(conf):
     Return True if loaded buildconf is a fake module.
     """
     return conf.__name__.endswith('fakeconf')
+
+def areMonitoredFilesChanged(bconfPaths):
+    """
+    Try to detect if current monitored files are changed.
+    """
+
+    zmCmn = ConfigSet()
+    try:
+        zmcmnfile = bconfPaths.zmcmnfile
+        zmCmn.load(zmcmnfile)
+    except EnvironmentError:
+        return True
+
+    _hash = 0
+    for file in zmCmn.monitfiles:
+        try:
+            _hash = utils.mkHashOfStrings((_hash, utils.readFile(file, 'rb')))
+        except EnvironmentError:
+            return True
+
+    return _hash != zmCmn.monithash
+
+def isBuildConfChanged(conf):
+    """
+    Try to detect if current buildconf file is changed.
+    Returns True if it's changed or file just doesn't exist.
+    """
+
+    from zm.buildconf.paths import BuildConfPaths
+    try:
+        bconfPaths = BuildConfPaths(conf)
+    except AttributeError:
+        return True
+
+    return areMonitoredFilesChanged(bconfPaths)

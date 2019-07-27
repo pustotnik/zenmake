@@ -24,7 +24,13 @@ def validate(buildconf):
     Validate selected buildconf object
     """
 
-    _Validator().validate(buildconf)
+    try:
+        _Validator().validate(buildconf)
+    except ZenMakeConfError as ex:
+        if log.verbose() > 1:
+            log.pprint('RED', ex.fullmsg) # pragma: no cover
+        log.error(str(ex))
+        sys.exit(1)
 
 def initDefaults(buildconf):
     """
@@ -86,14 +92,8 @@ def load(name = 'buildconf', dirpath = None, withImport = False, check = True):
     except ImportError:
         module = loadPyModule('zm.buildconf.fakeconf')
 
-    try:
-        if check:
-            validate(module)
-        initDefaults(module)
-    except ZenMakeConfError as ex:
-        if log.verbose() > 1:
-            log.pprint('RED', ex.fullmsg) # pragma: no cover
-        log.error(str(ex))
-        sys.exit(1)
+    if check:
+        validate(module)
+    initDefaults(module)
 
     return module

@@ -94,7 +94,9 @@ def main():
     from zm.buildconf import loader as bconfloader
     from zm.buildconf.handler import BuildConfHandler
 
-    buildconf = bconfloader.load()
+    buildconf = bconfloader.load(check = False)
+    if assist.isBuildConfChanged(buildconf):
+        bconfloader.validate(buildconf)
     buildConfHandler = BuildConfHandler(buildconf)
     shared.buildConfHandler = buildConfHandler
     bconfPaths = buildConfHandler.confPaths
