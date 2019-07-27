@@ -18,6 +18,7 @@ from waflib.ConfigSet import ConfigSet
 import tests.common as cmn
 from zm import pyutils, assist, cli
 from zm.buildconf import loader as bconfloader
+from zm.buildconf.handler import BuildConfHandler
 import starter
 
 joinpath = os.path.join
@@ -104,7 +105,7 @@ class TestProject(object):
         self.cwd = tmptestDir
         projectConf = bconfloader.load('buildconf',
                                         self.cwd, withImport = False)
-        self.confHandler = assist.BuildConfHandler(projectConf)
+        self.confHandler = BuildConfHandler(projectConf)
         self.confPaths = self.confHandler.confPaths
 
         pythonbin = sys.executable

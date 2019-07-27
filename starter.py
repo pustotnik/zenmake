@@ -92,9 +92,10 @@ def main():
 
     from zm import log, assist, shared
     from zm.buildconf import loader as bconfloader
+    from zm.buildconf.handler import BuildConfHandler
 
     buildconf = bconfloader.load()
-    buildConfHandler = assist.BuildConfHandler(buildconf)
+    buildConfHandler = BuildConfHandler(buildconf)
     shared.buildConfHandler = buildConfHandler
     bconfPaths = buildConfHandler.confPaths
     isBuildConfFake = assist.isBuildConfFake(buildconf)

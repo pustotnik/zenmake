@@ -9,8 +9,12 @@
 """
 
 import os
+import types
 import pytest
 import starter
+from zm import pyutils
+from zm.autodict import AutoDict
+from zm.buildconf import loader as bconfloader
 
 @pytest.fixture
 def unsetEnviron(monkeypatch):
@@ -20,6 +24,20 @@ def unsetEnviron(monkeypatch):
     for v in varnames:
         #os.environ.pop(v, None)
         monkeypatch.delenv(v, raising = False)
+
+@pytest.fixture
+def testingBuildConf():
+    buildconf = types.ModuleType('buildconf')
+    buildconf.__file__ = os.path.abspath('buildconf.py')
+    bconfloader.initDefaults(buildconf)
+
+    # AutoDict is more useful in tests
+
+    for k, v in vars(buildconf).items():
+        if isinstance(v, pyutils.maptype):
+            setattr(buildconf, k, AutoDict(v))
+
+    return AutoDict(vars(buildconf))
 
 def pytest_report_header(config):
     from zm import utils

@@ -10,6 +10,7 @@
 
 import sys
 import os
+import types
 import string
 import random
 import tempfile
@@ -21,6 +22,7 @@ try:
 except ImportError:
     from io import StringIO
 from zm import utils
+from zm import pyutils
 import starter
 
 _tempdirs = []
@@ -62,3 +64,25 @@ SHARED_TMP_DIR = makeTmpDirForTests()
 PLATFORM = utils.platform()
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_PROJECTS_DIR = os.path.join(TESTS_DIR, 'projects')
+
+def asRealConf(_buildconf):
+    buildconf = types.ModuleType('buildconf')
+    buildconf.__file__ = os.path.abspath('buildconf.py')
+
+    # For in case I convert all AutoDict objects into dict ones
+    # It ensures that there are no any side effects of AutoDict
+
+    def toDict(_dict):
+        for k, v in _dict.items():
+            if isinstance(v, pyutils.maptype):
+                toDict(v)
+                _dict[k] = dict(v)
+
+    for k, v in _buildconf.items():
+        if isinstance(v, pyutils.maptype):
+            v = dict(v)
+            setattr(buildconf, k, v)
+            toDict(v)
+        else:
+            setattr(buildconf, k, v)
+    return buildconf
