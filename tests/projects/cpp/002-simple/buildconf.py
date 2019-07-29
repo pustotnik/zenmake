@@ -1,11 +1,4 @@
 
-buildtypes = {
-    'debug' : {
-        'toolchain' : 'auto-c++',
-    },
-    'default' : 'debug',
-}
-
 tasks = {
     'test' : {
         'features' : 'cxx cxxprogram',
@@ -13,3 +6,11 @@ tasks = {
         'includes' : '.',
     },
 }
+
+buildtypes = {
+    'debug' : {
+        'toolchain' : 'auto-c++',
+    },
+    'default' : 'debug',
+}
+

@@ -1,4 +1,29 @@
 
+tasks = {
+    'shlib' : {
+        'features' : 'cxx cxxshlib',
+        'source'   :  dict( include = 'shlib/**/*.cpp' ),
+        'includes' : '.',
+    },
+    'stlib' : {
+        'features' : 'cxx cxxstlib',
+        'source'   :  dict( include = 'stlib/**/*.cpp' ),
+        'includes' : '.',
+    },
+    'shlibmain' : {
+        'features' : 'cxx cxxshlib',
+        'source'   :  dict( include = 'shlibmain/**/*.cpp' ),
+        'includes' : '.',
+        'use'      : 'shlib stlib',
+    },
+    'test' : {
+        'features' : 'cxx cxxprogram',
+        'source'   :  dict( include = 'prog/**/*.cpp' ),
+        'includes' : '.',
+        'use'      : 'shlibmain',
+    },
+}
+
 buildtypes = {
     # -fPIC is necessary to compile static lib
     'debug-gcc' : {
@@ -46,27 +71,3 @@ platforms = {
     },
 }
 
-tasks = {
-    'shlib' : {
-        'features' : 'cxx cxxshlib',
-        'source'   :  dict( include = 'shlib/**/*.cpp' ),
-        'includes' : '.',
-    },
-    'stlib' : {
-        'features' : 'cxx cxxstlib',
-        'source'   :  dict( include = 'stlib/**/*.cpp' ),
-        'includes' : '.',
-    },
-    'shlibmain' : {
-        'features' : 'cxx cxxshlib',
-        'source'   :  dict( include = 'shlibmain/**/*.cpp' ),
-        'includes' : '.',
-        'use'      : 'shlib stlib',
-    },
-    'test' : {
-        'features' : 'cxx cxxprogram',
-        'source'   :  dict( include = 'prog/**/*.cpp' ),
-        'includes' : '.',
-        'use'      : 'shlibmain',
-    },
-}

@@ -176,7 +176,7 @@ def build(bld):
 
         target = taskParams.get('target', taskName)
         kwargs = dict(
-            name     = taskParams.get('name', taskName),
+            name     = taskName,
             target   = assist.makeTargetPath(bld, buildtype, target),
             features = taskParams.get('features', ''),
             lib      = taskParams.get('sys-libs', []),

@@ -1,4 +1,29 @@
 
+tasks = {
+    'shlib' : {
+        'features' : 'cxx cxxshlib',
+        'source'   :  dict( include = 'shlib/**/*.cpp' ),
+        'includes' : '.',
+    },
+    'stlib' : {
+        'features' : 'cxx cxxstlib',
+        'source'   :  dict( include = 'stlib/**/*.cpp' ),
+        'includes' : '.',
+    },
+    'shlibmain' : {
+        'features' : 'cxx cxxshlib',
+        'source'   :  dict( include = 'shlibmain/**/*.cpp' ),
+        'includes' : '.',
+        'use'      : 'shlib stlib',
+    },
+    'test' : {
+        'features' : 'cxx cxxprogram',
+        'source'   :  dict( include = 'prog/**/*.cpp' ),
+        'includes' : '.',
+        'use'      : 'shlibmain',
+    },
+}
+
 toolchains = {
     'custom-g++': {
         'kind'    : 'auto-c++',
@@ -59,27 +84,3 @@ platforms = {
     },
 }
 
-tasks = {
-    'shlib' : {
-        'features' : 'cxx cxxshlib',
-        'source'   :  dict( include = 'shlib/**/*.cpp' ),
-        'includes' : '.',
-    },
-    'stlib' : {
-        'features' : 'cxx cxxstlib',
-        'source'   :  dict( include = 'stlib/**/*.cpp' ),
-        'includes' : '.',
-    },
-    'shlibmain' : {
-        'features' : 'cxx cxxshlib',
-        'source'   :  dict( include = 'shlibmain/**/*.cpp' ),
-        'includes' : '.',
-        'use'      : 'shlib stlib',
-    },
-    'test' : {
-        'features' : 'cxx cxxprogram',
-        'source'   :  dict( include = 'prog/**/*.cpp' ),
-        'includes' : '.',
-        'use'      : 'shlibmain',
-    },
-}

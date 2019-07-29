@@ -1,11 +1,4 @@
 
-buildtypes = {
-    'debug' : {
-        'toolchain' : 'auto-c',
-    },
-    'default' : 'debug',
-}
-
 tasks = {
     'util' : {
         'features' : 'c cshlib',
@@ -19,3 +12,11 @@ tasks = {
         'use'      : 'util',
     },
 }
+
+buildtypes = {
+    'debug' : {
+        'toolchain' : 'auto-c',
+    },
+    'default' : 'debug',
+}
+

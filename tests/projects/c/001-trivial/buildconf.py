@@ -1,4 +1,11 @@
 
+tasks = {
+    'test' : {
+        'features' : 'c cprogram',
+        'source'   : 'test.c',
+    },
+}
+
 buildtypes = {
     'debug' : {
         'toolchain' : 'auto-c',
@@ -6,9 +13,3 @@ buildtypes = {
     'default' : 'debug',
 }
 
-tasks = {
-    'test' : {
-        'features' : 'c cprogram',
-        'source'   : 'test.c',
-    },
-}

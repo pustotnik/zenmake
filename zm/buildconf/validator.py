@@ -39,6 +39,45 @@ class AnyAmountStrsKey(object):
 
 ANYAMOUNTSTRS_KEY = AnyAmountStrsKey()
 
+taskscheme = {
+    'features' :    { 'type': 'str' },
+    'target' :      { 'type': 'str' },
+    'sys-libs' :    { 'type': ('str', 'list-of-strs') },
+    'sys-lib-path': { 'type': ('str', 'list-of-strs') },
+    'rpath' :       { 'type': ('str', 'list-of-strs') },
+    'use' :         { 'type': ('str', 'list-of-strs') },
+    'ver-num' :     { 'type': 'str' },
+    'includes':     { 'type': ('str', 'list-of-strs') },
+    'source' :      {
+        'type': ('str', 'list-of-strs', 'dict'),
+        'dict-vars' : {
+            'include' :    { 'type': 'str' },
+            'exclude' :    { 'type': 'str' },
+            'ignorecase' : { 'type': 'bool' },
+        },
+    },
+    'toolchain' : {
+        'type': 'str',
+        'allowed' : KNOWN_TOOLCHAIN_KINDS,
+    },
+    'cflags' :    { 'type': ('str', 'list-of-strs') },
+    'cxxflags' :  { 'type': ('str', 'list-of-strs') },
+    'cppflags' :  { 'type': ('str', 'list-of-strs') },
+    'linkflags' : { 'type': ('str', 'list-of-strs') },
+    'defines' :   { 'type': ('str', 'list-of-strs') },
+    'conftests' : {
+        'type': 'list',
+        'vars-type' : 'dict',
+        'dict-vars' : {
+            'act' :        { 'type': 'str' },
+            'names' :      { 'type': ('str', 'list-of-strs') },
+            'mandatory' :  { 'type': 'bool' },
+            'autodefine' : { 'type': 'bool' },
+            'file' :       { 'type': 'str' },
+        },
+    },
+}
+
 confscheme = {
     'buildroot' : { 'type': 'str' },
     'buildsymlink' : { 'type': 'str' },
@@ -57,22 +96,18 @@ confscheme = {
             'root' : { 'type': 'str' },
         },
     },
+    'tasks' : {
+        'type' : 'vars-in-dict',
+        'keys-kind' : 'anystr',
+        'vars-type' : 'dict',
+        'vars' : taskscheme,
+    },
     'buildtypes' : {
         'type' : 'dict',
         'vars' : {
             ANYAMOUNTSTRS_KEY : {
                 'type' : 'dict',
-                'vars' : {
-                    'toolchain' : {
-                        'type': 'str',
-                        'allowed' : KNOWN_TOOLCHAIN_KINDS,
-                    },
-                    'cflags' :    { 'type': ('str', 'list-of-strs') },
-                    'cxxflags' :  { 'type': ('str', 'list-of-strs') },
-                    'cppflags' :  { 'type': ('str', 'list-of-strs') },
-                    'linkflags' : { 'type': ('str', 'list-of-strs') },
-                    'defines' :   { 'type': ('str', 'list-of-strs') },
-                },
+                'vars' : taskscheme,
             },
             'default' : { 'type': 'str' },
         },
@@ -100,47 +135,7 @@ confscheme = {
             'default' : { 'type': 'str' },
         },
     },
-    'tasks' : {
-        'type' : 'vars-in-dict',
-        'keys-kind' : 'anystr',
-        'vars-type' : 'dict',
-        'vars' : {
-            'name' :        { 'type': 'str' },
-            'features' :    { 'type': 'str' },
-            'target' :      { 'type': 'str' },
-            'sys-libs' :    { 'type': ('str', 'list-of-strs') },
-            'sys-lib-path': { 'type': ('str', 'list-of-strs') },
-            'rpath' :       { 'type': ('str', 'list-of-strs') },
-            'use' :         { 'type': ('str', 'list-of-strs') },
-            'ver-num' :     { 'type': 'str' },
-            'includes':     { 'type': ('str', 'list-of-strs') },
-            'source' :      {
-                'type': ('str', 'list-of-strs', 'dict'),
-                'dict-vars' : {
-                    'include' :    { 'type': 'str' },
-                    'exclude' :    { 'type': 'str' },
-                    'ignorecase' : { 'type': 'bool' },
-                },
-            },
-            'conftests' : {
-                'type': 'list',
-                'vars-type' : 'dict',
-                'dict-vars' : {
-                    'act' :        { 'type': 'str' },
-                    'names' :      { 'type': ('str', 'list-of-strs') },
-                    'mandatory' :  { 'type': 'bool' },
-                    'autodefine' : { 'type': 'bool' },
-                    'file' :       { 'type': 'str' },
-                },
-            },
-        },
-    },
 }
-
-confscheme['tasks']['vars'].update(
-    confscheme['buildtypes']['vars'][ANYAMOUNTSTRS_KEY]['vars']
-)
-confscheme['tasks']['vars']['buildtypes'] = confscheme['buildtypes']
 
 class Validator(object):
     """
@@ -402,10 +397,13 @@ class Validator(object):
 
         btypesVars = _scheme['buildtypes']['vars']
 
-        # set allowed values for buildtypes.'some name'.toolchain
+        # set allowed values for toolchain in tasks and buildtypes
         btypesNamed = btypesVars[ANYAMOUNTSTRS_KEY]['vars']
         if 'toolchains' in _conf and isinstance(_conf['toolchains'], maptype):
-            btypesNamed['toolchain']['allowed'].extend(_conf['toolchains'].keys())
+            allowed = list(KNOWN_TOOLCHAIN_KINDS)
+            allowed.extend(_conf['toolchains'].keys())
+            _scheme['tasks']['vars']['toolchain']['allowed'] = allowed
+            btypesNamed['toolchain']['allowed'] = allowed
 
         # set allowed values for buildtypes.default
         allowed = []

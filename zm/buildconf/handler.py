@@ -235,17 +235,11 @@ class BuildConfHandler(object):
             task = {}
             tasks[taskName] = task
 
-            # 1. Copy exising params of selected buildtype from 'buildtypes'
-            task.update(self._conf.buildtypes.get(buildtype, {}))
-
-            # 2. Copy/replace existing params from origin task
+            # 1. Copy existing params from origin task
             task.update(taskParams)
-            if 'buildtypes' in task:
-                del task['buildtypes']
-            # 3. Copy/replace exising params of selected buildtype from 'tasks'
-            taskBuildTypes = taskParams.get('buildtypes', {})
-            taskBuildParams = taskBuildTypes.get(buildtype, {})
-            task.update(taskBuildParams)
+
+            # 2. Copy/replace exising params of selected buildtype from 'buildtypes'
+            task.update(self._conf.buildtypes.get(buildtype, {}))
 
         self._handleTasksEnvVars(tasks)
 

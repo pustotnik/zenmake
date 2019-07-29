@@ -176,6 +176,8 @@ class TestBuildConfHandler(object):
         buildconf.tasks.test2.param2 = '2'
         confHandler = BuildConfHandler(asRealConf(buildconf))
         confHandler.handleCmdLineArgs(clicmd)
+        # to force covering of cache
+        confHandler.handleCmdLineArgs(clicmd)
         assert confHandler.tasks == buildconf.tasks
         # to force covering of cache
         assert confHandler.tasks == buildconf.tasks
@@ -199,41 +201,26 @@ class TestBuildConfHandler(object):
         confHandler.handleCmdLineArgs(clicmd)
         assert confHandler.tasks == expected
 
-        # CASE: some buildconf.tasks and one task has own buildtypes
-        # with non-empty selected buildtype
+        # CASE: some buildconf.tasks and buildconf.buildtypes
+        # with non-empty selected buildtype. Both have some same params and
+        # params from buildconf.buildtypes must override params from
+        # buildconf.tasks
         buildconf = deepcopy(testingBuildConf)
         buildconf.tasks.test1.param1 = 'p1'
-        buildconf.tasks.test2.param2 = 'p2'
-        buildconf.tasks.test2.buildtypes.mybuildtype = { 'cxxflags' : '-Os' }
-
-        expected = deepcopy(buildconf.tasks)
-        del expected.test2['buildtypes']
-        expected.test2.update(deepcopy(buildconf.tasks.test2.buildtypes.mybuildtype))
-        # self checking
-        assert expected.test2.cxxflags == '-Os'
-
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        confHandler.handleCmdLineArgs(clicmd)
-        assert confHandler.tasks == expected
-
-        # CASE: some buildconf.tasks, buildconf.buildtypes
-        # with non-empty selected buildtype and one task has own buildtypes
-        # with non-empty selected buildtype that overrides value from buildconf.buildtypes
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.tasks.test1.param1 = 'p1'
-        buildconf.tasks.test2.param2 = 'p2'
-        buildconf.buildtypes.mybuildtype = { 'cxxflags' : '-O2' }
-        buildconf.tasks.test2.buildtypes.mybuildtype = { 'cxxflags' : '-O1' }
-
+        buildconf.tasks.test2.cxxflags = '-Os'
+        buildconf.tasks.test2.toolchain = 'auto-c'
+        buildconf.buildtypes.mybuildtype = {
+            'cxxflags' : '-O2',
+            'toolchain' : 'gcc',
+        }
         expected = deepcopy(buildconf.tasks)
         for task in expected:
             expected[task].update(deepcopy(buildconf.buildtypes.mybuildtype))
-        del expected.test2['buildtypes']
-        expected.test2.update(deepcopy(buildconf.tasks.test2.buildtypes.mybuildtype))
         # self checking
         assert expected.test1.cxxflags == '-O2'
-        assert expected.test2.cxxflags == '-O1'
-
+        assert expected.test2.cxxflags == '-O2'
+        assert expected.test1.toolchain == 'gcc'
+        assert expected.test2.toolchain == 'gcc'
         confHandler = BuildConfHandler(asRealConf(buildconf))
         confHandler.handleCmdLineArgs(clicmd)
         assert confHandler.tasks == expected

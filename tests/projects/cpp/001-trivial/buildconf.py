@@ -1,4 +1,11 @@
 
+tasks = {
+    'test' : {
+        'features' : 'cxx cxxprogram',
+        'source'   : 'test.cpp',
+    },
+}
+
 buildtypes = {
     'debug' : {
         'toolchain' : 'auto-c++',
@@ -6,9 +13,3 @@ buildtypes = {
     'default' : 'debug',
 }
 
-tasks = {
-    'test' : {
-        'features' : 'cxx cxxprogram',
-        'source'   : 'test.cpp',
-    },
-}
