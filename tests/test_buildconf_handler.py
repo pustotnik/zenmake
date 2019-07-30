@@ -50,18 +50,24 @@ class TestBuildConfHandler(object):
         buildconf.platforms = AutoDict({
             PLATFORM : AutoDict(valid = ['abc'], )
         })
+        with pytest.raises(ZenMakeError):
+            confHandler = BuildConfHandler(asRealConf(buildconf))
+            bt = confHandler.defaultBuildType
+        buildconf.platforms = AutoDict({
+            PLATFORM : AutoDict(valid = ['mybuildtype'], )
+        })
         confHandler = BuildConfHandler(asRealConf(buildconf))
         assert confHandler.defaultBuildType == 'mybuildtype'
-        # to force covering of cache
-        assert confHandler.defaultBuildType == 'mybuildtype'
 
-        buildconf.platforms[PLATFORM].default = 'abc'
+        buildconf.platforms = AutoDict({
+            PLATFORM : AutoDict(valid = ['abc'], default = 'abc')
+        })
         confHandler = BuildConfHandler(asRealConf(buildconf))
         assert confHandler.defaultBuildType == 'abc'
 
         buildconf.platforms[PLATFORM].default = 'void'
-        confHandler = BuildConfHandler(asRealConf(buildconf))
         with pytest.raises(ZenMakeError):
+            confHandler = BuildConfHandler(asRealConf(buildconf))
             bt = confHandler.defaultBuildType
 
     def testSelectedBuildType(self, testingBuildConf):
@@ -84,38 +90,51 @@ class TestBuildConfHandler(object):
 
         buildconf.buildtypes.mybuildtype = {}
         buildconf.buildtypes.abcbt = {}
+
+        # save base fixture
+        buildconf = deepcopy(testingBuildConf)
+
+        # CASE: buildtypes in buildconf.buildtypes
+        buildconf = deepcopy(testingBuildConf)
         confHandler = BuildConfHandler(asRealConf(buildconf))
         assert sorted(confHandler.supportedBuildTypes) == sorted([
             'mybuildtype', 'abcbt'
         ])
-        # to force covering of cache
-        assert sorted(confHandler.supportedBuildTypes) == sorted([
-            'mybuildtype', 'abcbt'
-        ])
 
-        buildconf.tasks.test.buildtypes.extrabtype = {}
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        assert sorted(confHandler.supportedBuildTypes) == sorted([
-            'mybuildtype', 'abcbt', 'extrabtype'
-        ])
-
+        # CASE: buildtypes in buildconf.buildtypes and empty value of
+        # buildconf.platforms[PLATFORM]
+        buildconf = deepcopy(testingBuildConf)
         buildconf.platforms[PLATFORM] = AutoDict()
-        confHandler = BuildConfHandler(asRealConf(buildconf))
         with pytest.raises(ZenMakeError):
+            confHandler = BuildConfHandler(asRealConf(buildconf))
             empty = confHandler.supportedBuildTypes
 
-        buildconf.platforms[PLATFORM].valid = [ 'mybuildtype', 'invalid' ]
+        # CASE: buildtypes in buildconf.buildtypes and non-empty value of
+        # buildconf.platforms[PLATFORM] with non-existent value.
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.buildtypes.extrabtype = {}
+        buildconf.platforms[PLATFORM].valid = [ 'mybuildtype', 'non-existent' ]
         confHandler = BuildConfHandler(asRealConf(buildconf))
-        with pytest.raises(ZenMakeError):
-            empty = confHandler.supportedBuildTypes
+        assert sorted(confHandler.supportedBuildTypes) == sorted([
+            'mybuildtype', 'non-existent'
+        ])
 
+        # CASE: buildtypes in buildconf.buildtypes and non-empty value of
+        # buildconf.platforms[PLATFORM] with valid values.
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.buildtypes.extrabtype = {}
         buildconf.platforms[PLATFORM].valid = [ 'mybuildtype', 'extrabtype' ]
         confHandler = BuildConfHandler(asRealConf(buildconf))
         assert sorted(confHandler.supportedBuildTypes) == sorted([
             'mybuildtype', 'extrabtype'
         ])
 
+        # CASE: buildtypes in buildconf.buildtypes and non-empty value of
+        # buildconf.platforms[PLATFORM] with valid values and default build type.
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.buildtypes.extrabtype = {}
         buildconf.buildtypes.default = 'mybuildtype'
+        buildconf.platforms[PLATFORM].valid = [ 'mybuildtype', 'extrabtype' ]
         confHandler = BuildConfHandler(asRealConf(buildconf))
         assert sorted(confHandler.supportedBuildTypes) == sorted([
             'mybuildtype', 'extrabtype'

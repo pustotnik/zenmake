@@ -1,0 +1,83 @@
+
+buildtypes = {
+    # -fPIC is necessary to compile static lib
+    'debug-gcc' : { 'cxxflags' : '-fPIC -O0 -g' },
+    'release-gcc' : { 'cxxflags' : '-fPIC -O2' },
+    'debug-clang' : { 'cxxflags' : '-fPIC -O0 -g' },
+    'release-clang' : { 'cxxflags' : '-fPIC -O2' },
+    'debug-msvc' : { 'cxxflags' : '/Od' },
+    'release-msvc' : { 'cxxflags' : '/O2' },
+    'default' : 'debug-gcc',
+}
+
+platforms = {
+    #'linux' : { 'default' : 'release-gcc' },
+    # Mac OS
+    'darwin' : { 'default' : 'debug-clang' },
+    #'windows' : { 'default' : 'debug-msvc' },
+}
+
+matrix = [
+    {
+        'for' : {}, # for all
+        'set' : {
+          'includes' : '.',
+        }
+    },
+    {
+        'for' : { 'task' : 'shlib shlibmain', },
+        'set' : { 'features' : 'cxx cxxshlib', }
+    },
+    {
+        'for' : { 'task' : 'shlib', },
+        'set' : { 'source' :  { 'include' : 'shlib/**/*.cpp' }, }
+    },
+    {
+        'for' : { 'task' : 'stlib', },
+        'set' : {
+            'features' : 'cxx cxxstlib',
+            'source'   :  dict( include = 'stlib/**/*.cpp' ),
+        }
+    },
+    {
+        'for' : { 'task' : 'shlibmain', },
+        'set' : {
+            'source'   :  dict( include = 'shlibmain/**/*.cpp' ),
+            'use'      : 'shlib stlib',
+        }
+    },
+    {
+        'for' : { 'task' : 'test', },
+        'set' : {
+            'features' : 'cxx cxxprogram',
+            'source'   :  dict( include = 'prog/**/*.cpp' ),
+            'use'      : 'shlibmain',
+        }
+    },
+    {
+        'for' : { 'buildtype' : ['debug-gcc', 'release-gcc'], 'platform' : 'linux', },
+        'set' : {
+            'toolchain' : 'g++',
+            'linkflags' : '-Wl,--as-needed',
+            #'default-buildtype' : 'debug-gcc',
+            'default-buildtype' : 'release-gcc',
+        }
+    },
+    {
+        'for' : { 'buildtype' : 'release-gcc', 'platform' : 'linux', },
+        'set' : { 'cxxflags' : '-fPIC -O3', }
+    },
+    {
+        'for' : { 'buildtype' : ['debug-clang', 'release-clang'], 'platform' : 'linux darwin', },
+        'set' : {
+            'toolchain' : 'clang++',
+        }
+    },
+    {
+        'for' : { 'buildtype' : ['debug-msvc', 'release-msvc'], 'platform' : 'windows', },
+        'set' : {
+            'toolchain' : 'msvc',
+            'default-buildtype' : 'debug-msvc',
+        },
+    },
+]

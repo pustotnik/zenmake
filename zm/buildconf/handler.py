@@ -9,11 +9,12 @@
 """
 
 import os
+from collections import defaultdict
 from copy import deepcopy
-from zm.pyutils import maptype, stringtype, viewitems, viewvalues
+from zm.pyutils import viewitems, viewvalues
 from zm import utils, toolchains, log
 from zm.autodict import AutoDict
-from zm.error import ZenMakeError, ZenMakeLogicError
+from zm.error import ZenMakeError, ZenMakeLogicError, ZenMakeConfError
 from zm.constants import PLATFORM
 
 joinpath = os.path.join
@@ -47,13 +48,9 @@ class BuildConfHandler(object):
 
     def _preprocess(self):
 
-        # NOTICE: this method should not have any heavy operations
-
-        allBuildTypes = set(self._conf.buildtypes.keys())
-        for taskParams in viewvalues(self._conf.tasks):
-            taskBuildTypes = taskParams.get('buildtypes', {})
-            allBuildTypes.update(taskBuildTypes.keys())
-        self._meta.buildtypes.allnames = allBuildTypes
+        self._handleMatrixBuildtypes()
+        self._handleSupportedBuildTypes()
+        self._handleDefaultBuildType()
 
     def _handleTasksEnvVars(self, tasks):
 
@@ -84,40 +81,72 @@ class BuildConfHandler(object):
                 if var.lower() in taskParams.get('features', ''):
                     taskParams['toolchain'] = toolchain
 
-    def _getRealBuildType(self, buildtype):
+    def _handleMatrixBuildtypes(self):
+        destPlatform = PLATFORM
+        matrixBuildTypes = defaultdict(set)
+        for entry in self._conf.matrix:
+            condition = entry.get('for', {})
+            buildtypes = utils.toList(condition.get('buildtype', []))
+            platforms = utils.toList(condition.get('platform', []))
+            if buildtypes:
+                platform = destPlatform if destPlatform in platforms else 'all'
+                matrixBuildTypes[platform].update(buildtypes)
 
-        if 'map' not in self._meta.buildtypes:
-            btMap = dict()
-            buildtypes = dict()
-            buildtypes.update(self._conf.buildtypes)
-            for btype in self._meta.buildtypes.allnames:
-                if btype not in buildtypes:
-                    buildtypes[btype] = {}
-            for btype, val in viewitems(buildtypes):
-                btVal = val
-                btKey = btype
-                while not isinstance(btVal, maptype):
-                    if not isinstance(btVal, stringtype):
-                        raise ZenMakeError("Invalid type of buildtype value '%s'"
-                                           % type(btVal))
-                    btKey = btVal
-                    if btKey not in buildtypes:
-                        raise ZenMakeError("Build type '%s' was not found, check "
-                                           "your config." % btKey)
-                    btVal = buildtypes[btKey]
-                    if btKey == btype and btVal == val:
-                        raise ZenMakeError("Circular reference was found")
+            defaultBuildType = entry.get('set', {}).get('default-buildtype', None)
+            if defaultBuildType is not None:
+                if not platforms or destPlatform in platforms:
+                    matrixBuildTypes['default'] = defaultBuildType
 
-                btMap[btype] = btKey
+        self._meta.matrix.buildtypes = matrixBuildTypes
 
-            self._meta.buildtypes.map = btMap
+    def _handleSupportedBuildTypes(self):
+        """
+        Calculate list of supported build types
+        """
 
-        btype = self._meta.buildtypes.map.get(buildtype, None)
-        if not btype:
-            raise ZenMakeError("Build type '%s' doesn't not exist"
-                               " in buildconf." % buildtype)
+        destPlatform = PLATFORM
 
-        return btype
+        platformBuildTypes = set()
+        matrixBuildTypes = self._meta.matrix.buildtypes
+
+        platformFound = False
+        if destPlatform in self._platforms:
+            platformFound = True
+            platformBuildTypes = self._platforms[destPlatform].get('valid', [])
+            platformBuildTypes = set(platformBuildTypes)
+
+        if destPlatform in matrixBuildTypes:
+            platformFound = True
+            platformBuildTypes.update(matrixBuildTypes[destPlatform])
+
+        if platformFound:
+            supported = platformBuildTypes
+            if not supported:
+                raise ZenMakeConfError("No valid build types for platform '%s' "
+                                       "in config" % destPlatform)
+        else:
+            supported = set(self._conf.buildtypes.keys())
+            supported.update(matrixBuildTypes.get('all', set()))
+
+        if 'default' in supported:
+            supported.remove('default')
+        self._meta.buildtypes.supported = sorted(supported)
+
+    def _handleDefaultBuildType(self):
+        """ Calculate default build type """
+
+        buildtype = self._conf.buildtypes.get('default', '')
+        if PLATFORM in self._platforms:
+            buildtype = self._platforms[PLATFORM].get('default', buildtype)
+        buildtype = self._meta.matrix.buildtypes.get('default', buildtype)
+
+        if buildtype and buildtype not in self.supportedBuildTypes:
+            errmsg = "Invalid config value."
+            errmsg += " Default build type '%s' is not supported." % buildtype
+            errmsg += " Supported values: %s" % str(self.supportedBuildTypes)[1:-1]
+            raise ZenMakeConfError(errmsg)
+
+        self._meta.buildtypes.default = buildtype
 
     def _checkCmdLineHandled(self):
         if not self.cmdLineHandled:
@@ -137,8 +166,7 @@ class BuildConfHandler(object):
                                "(choose from %s)" %
                                (buildtype, str(supportedBuildTypes)[1:-1]))
 
-        self._meta.buildtypes.selected = self._getRealBuildType(buildtype)
-
+        self._meta.buildtypes.selected = buildtype
         self.cmdLineHandled = True
 
     @property
@@ -162,22 +190,14 @@ class BuildConfHandler(object):
         return self._confpaths
 
     @property
+    def supportedBuildTypes(self):
+        """ Get calculated list of supported build types """
+        return self._meta.buildtypes.supported
+
+    @property
     def defaultBuildType(self):
         """ Get calculated default build type """
-
-        if 'default' in self._meta.buildtypes:
-            return self._meta.buildtypes.default
-
-        buildtype = self._conf.buildtypes.get('default', '')
-        if PLATFORM in self._platforms:
-            buildtype = self._platforms[PLATFORM].get('default', buildtype)
-
-        if buildtype and buildtype not in self._meta.buildtypes.allnames:
-            raise ZenMakeError("Default build type '%s' was not found, "
-                               "check your config." % buildtype)
-
-        self._meta.buildtypes.default = buildtype
-        return buildtype
+        return self._meta.buildtypes.default
 
     @property
     def selectedBuildType(self):
@@ -185,37 +205,6 @@ class BuildConfHandler(object):
 
         self._checkCmdLineHandled()
         return self._meta.buildtypes.selected
-
-    @property
-    def supportedBuildTypes(self):
-        """
-        Get calculated list of supported build types
-        """
-
-        if 'supported' in self._meta.buildtypes:
-            return self._meta.buildtypes.supported
-
-        supported = set()
-        # handle 'buildconf.platforms'
-        if PLATFORM in self._platforms:
-            validBuildTypes = self._platforms[PLATFORM].get('valid', [])
-            if not validBuildTypes:
-                raise ZenMakeError("No valid build types for platform '%s' "
-                                   "in config" % PLATFORM)
-            for btype in validBuildTypes:
-                if btype not in self._meta.buildtypes.allnames:
-                    raise ZenMakeError("Build type '%s' for platform '%s' "
-                                       "was not found, check your config." %
-                                       (btype, PLATFORM))
-            supported = set(validBuildTypes)
-        else:
-            supported.update(self._meta.buildtypes.allnames)
-
-        if 'default' in supported:
-            supported.remove('default')
-        self._meta.buildtypes.supported = sorted(supported)
-
-        return self._meta.buildtypes.supported
 
     @property
     def tasks(self):
@@ -229,17 +218,43 @@ class BuildConfHandler(object):
         if buildtype in self._meta.tasks:
             return self._meta.tasks[buildtype]
 
+        # gather all task names
+        allTaskNames = list(self._conf.tasks.keys())
+        for entry in self._conf.matrix:
+            allTaskNames.extend(utils.toList(entry.get('for', {}).get('task', [])))
+        allTaskNames = tuple(set(allTaskNames))
+
         tasks = {}
 
-        for taskName, taskParams in viewitems(self._conf.tasks):
-            task = {}
-            tasks[taskName] = task
+        for taskName in allTaskNames:
 
+            task = tasks.setdefault(taskName, {})
             # 1. Copy existing params from origin task
-            task.update(taskParams)
-
+            task.update(self._conf.tasks.get(taskName, {}))
             # 2. Copy/replace exising params of selected buildtype from 'buildtypes'
             task.update(self._conf.buildtypes.get(buildtype, {}))
+
+        destPlatform = PLATFORM
+        for entry in self._conf.matrix:
+            condition = entry.get('for', {})
+            params = entry.get('set', {})
+            params.pop('default-buildtype', None)
+
+            condTasks = utils.toList(condition.get('task', []))
+            condBuildtypes = utils.toList(condition.get('buildtype', []))
+            condPlatforms = utils.toList(condition.get('platform', []))
+
+            if condBuildtypes and buildtype not in condBuildtypes:
+                continue
+            if condPlatforms and destPlatform not in condPlatforms:
+                continue
+
+            if not condTasks:
+                condTasks = allTaskNames
+
+            for taskName in condTasks:
+                task = tasks.setdefault(taskName, {})
+                task.update(params)
 
         self._handleTasksEnvVars(tasks)
 
@@ -283,7 +298,7 @@ class BuildConfHandler(object):
             _vars = deepcopy(info) # don't change origin
             kind = _vars.pop('kind', None)
             if kind is None:
-                raise ZenMakeError("Toolchain '%s': field 'kind' not found" % name)
+                raise ZenMakeConfError("Toolchain '%s': field 'kind' not found" % name)
 
             for k, v in viewitems(_vars):
                 # try to identify path and do warning if not

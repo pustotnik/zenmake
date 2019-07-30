@@ -178,7 +178,7 @@ def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
     """
 
     if not buildconfHandler.toolchainNames:
-        log.warn("WARN: No toolchains found. Is buildconf correct?")
+        cfgCtx.fatal("No toolchains found. Is buildconf correct?")
 
     toolchainsEnv = {}
     oldEnvName = cfgCtx.variant

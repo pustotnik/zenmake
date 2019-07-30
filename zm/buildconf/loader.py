@@ -69,6 +69,10 @@ def initDefaults(buildconf):
     if not hasattr(buildconf, 'tasks'):
         setattr(buildconf, 'tasks', {})
 
+    # matrix
+    if not hasattr(buildconf, 'matrix'):
+        setattr(buildconf, 'matrix', [])
+
     # global vars
     if not hasattr(buildconf, 'buildroot'):
         setattr(buildconf, 'buildroot',
