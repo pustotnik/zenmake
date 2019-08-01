@@ -135,6 +135,24 @@ confscheme = {
             'default' : { 'type': 'str' },
         },
     },
+    'matrix' : {
+        'type' : 'list',
+        'vars-type' : 'dict',
+        'dict-vars' : {
+            'for' : {
+                'type': 'dict',
+                'vars' : {
+                    'task' : { 'type': ('str', 'list-of-strs') },
+                    'buildtype' : { 'type': ('str', 'list-of-strs') },
+                    'platform' : { 'type': ('str', 'list-of-strs') },
+                },
+            },
+            'set' : {
+                'type' : 'dict',
+                'vars' : taskscheme,
+            },
+        },
+    },
 }
 
 class Validator(object):
