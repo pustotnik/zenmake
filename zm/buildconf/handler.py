@@ -89,8 +89,10 @@ class BuildConfHandler(object):
             buildtypes = utils.toList(condition.get('buildtype', []))
             platforms = utils.toList(condition.get('platform', []))
             if buildtypes:
-                platform = destPlatform if destPlatform in platforms else 'all'
-                matrixBuildTypes[platform].update(buildtypes)
+                if destPlatform in platforms:
+                    matrixBuildTypes[destPlatform].update(buildtypes)
+                elif not platforms:
+                    matrixBuildTypes['all'].update(buildtypes)
 
             defaultBuildType = entry.get('set', {}).get('default-buildtype', None)
             if defaultBuildType is not None:
@@ -106,30 +108,29 @@ class BuildConfHandler(object):
 
         destPlatform = PLATFORM
 
-        platformBuildTypes = set()
+        supported = set()
         matrixBuildTypes = self._meta.matrix.buildtypes
 
         platformFound = False
         if destPlatform in self._platforms:
             platformFound = True
-            platformBuildTypes = self._platforms[destPlatform].get('valid', [])
-            platformBuildTypes = set(platformBuildTypes)
+            supported = self._platforms[destPlatform].get('valid', [])
+            supported = set(supported)
+        else:
+            supported = set(self._conf.buildtypes.keys())
 
         if destPlatform in matrixBuildTypes:
             platformFound = True
-            platformBuildTypes.update(matrixBuildTypes[destPlatform])
+            supported.update(matrixBuildTypes[destPlatform])
 
-        if platformFound:
-            supported = platformBuildTypes
-            if not supported:
-                raise ZenMakeConfError("No valid build types for platform '%s' "
-                                       "in config" % destPlatform)
-        else:
-            supported = set(self._conf.buildtypes.keys())
-            supported.update(matrixBuildTypes.get('all', set()))
+        supported.update(matrixBuildTypes.get('all', set()))
 
         if 'default' in supported:
             supported.remove('default')
+
+        if platformFound and not supported:
+            raise ZenMakeConfError("No valid build types for platform '%s' "
+                                   "in config" % destPlatform)
         self._meta.buildtypes.supported = sorted(supported)
 
     def _handleDefaultBuildType(self):

@@ -11,7 +11,7 @@
 import os
 from copy import deepcopy
 import pytest
-from tests.common import asRealConf
+from tests.common import asRealConf, randomstr
 from zm.buildconf.handler import BuildConfHandler
 from zm.buildconf.paths import BuildConfPaths
 from zm import toolchains, utils
@@ -44,9 +44,15 @@ class TestBuildConfHandler(object):
         buildconf.buildtypes.mybuildtype = {}
         buildconf.buildtypes.abc = {}
         buildconf.buildtypes.default = 'mybuildtype'
+
+        # CASE: buildconf.buildtypes.default
+        buildconf = deepcopy(testingBuildConf)
         confHandler = BuildConfHandler(asRealConf(buildconf))
         assert confHandler.defaultBuildType == 'mybuildtype'
 
+        # CASE: buildconf.buildtypes.default is not valid in
+        # buildconf.platforms
+        buildconf = deepcopy(testingBuildConf)
         buildconf.platforms = AutoDict({
             PLATFORM : AutoDict(valid = ['abc'], )
         })
@@ -59,16 +65,49 @@ class TestBuildConfHandler(object):
         confHandler = BuildConfHandler(asRealConf(buildconf))
         assert confHandler.defaultBuildType == 'mybuildtype'
 
+        # CASE: buildconf.platforms[..].default
+        buildconf = deepcopy(testingBuildConf)
         buildconf.platforms = AutoDict({
             PLATFORM : AutoDict(valid = ['abc'], default = 'abc')
         })
         confHandler = BuildConfHandler(asRealConf(buildconf))
         assert confHandler.defaultBuildType == 'abc'
 
+        # CASE: buildconf.platforms[..].default doesn't exist
+        buildconf = deepcopy(testingBuildConf)
         buildconf.platforms[PLATFORM].default = 'void'
         with pytest.raises(ZenMakeError):
             confHandler = BuildConfHandler(asRealConf(buildconf))
             bt = confHandler.defaultBuildType
+
+        # CASE: global buildconf.matrix[..].default-buildtype
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.matrix = [
+            {
+                'for' : {}, 'set' : { 'default-buildtype' : 'abc' }
+            }
+        ]
+        confHandler = BuildConfHandler(asRealConf(buildconf))
+        assert confHandler.defaultBuildType == 'abc'
+
+        # CASE: platform buildconf.matrix[..].default-buildtype
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.matrix = [
+            {
+                'for' : { 'platform' : PLATFORM },
+                'set' : { 'default-buildtype' : 'abc' }
+            }
+        ]
+        confHandler = BuildConfHandler(asRealConf(buildconf))
+        assert confHandler.defaultBuildType == 'abc'
+        buildconf.matrix = [
+            {
+                'for' : { 'platform' : PLATFORM + randomstr() },
+                'set' : { 'default-buildtype' : 'abc' }
+            }
+        ]
+        confHandler = BuildConfHandler(asRealConf(buildconf))
+        assert confHandler.defaultBuildType == 'mybuildtype'
 
     def testSelectedBuildType(self, testingBuildConf):
         buildconf = testingBuildConf
@@ -85,19 +124,19 @@ class TestBuildConfHandler(object):
         confHandler.handleCmdLineArgs(clicmd)
         assert confHandler.selectedBuildType == clicmd.args.buildtype
 
+    def _checkSupportedBuildTypes(self, buildconf, expected):
+        confHandler = BuildConfHandler(asRealConf(buildconf))
+        assert sorted(confHandler.supportedBuildTypes) == sorted(expected)
+
     def testSupportedBuildTypes(self, testingBuildConf):
         buildconf = testingBuildConf
 
         buildconf.buildtypes.mybuildtype = {}
         buildconf.buildtypes.abcbt = {}
 
-        # save base fixture
-        buildconf = deepcopy(testingBuildConf)
-
         # CASE: buildtypes in buildconf.buildtypes
         buildconf = deepcopy(testingBuildConf)
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        assert sorted(confHandler.supportedBuildTypes) == sorted([
+        self._checkSupportedBuildTypes(buildconf, [
             'mybuildtype', 'abcbt'
         ])
 
@@ -114,8 +153,7 @@ class TestBuildConfHandler(object):
         buildconf = deepcopy(testingBuildConf)
         buildconf.buildtypes.extrabtype = {}
         buildconf.platforms[PLATFORM].valid = [ 'mybuildtype', 'non-existent' ]
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        assert sorted(confHandler.supportedBuildTypes) == sorted([
+        self._checkSupportedBuildTypes(buildconf, [
             'mybuildtype', 'non-existent'
         ])
 
@@ -124,8 +162,7 @@ class TestBuildConfHandler(object):
         buildconf = deepcopy(testingBuildConf)
         buildconf.buildtypes.extrabtype = {}
         buildconf.platforms[PLATFORM].valid = [ 'mybuildtype', 'extrabtype' ]
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        assert sorted(confHandler.supportedBuildTypes) == sorted([
+        self._checkSupportedBuildTypes(buildconf, [
             'mybuildtype', 'extrabtype'
         ])
 
@@ -135,10 +172,95 @@ class TestBuildConfHandler(object):
         buildconf.buildtypes.extrabtype = {}
         buildconf.buildtypes.default = 'mybuildtype'
         buildconf.platforms[PLATFORM].valid = [ 'mybuildtype', 'extrabtype' ]
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        assert sorted(confHandler.supportedBuildTypes) == sorted([
+        self._checkSupportedBuildTypes(buildconf, [
             'mybuildtype', 'extrabtype'
         ])
+
+    def testSupportedBuildTypesMatrix(self, testingBuildConf):
+
+        # CASE: no buildtypes in buildconf.buildtypes and global
+        # buildtypes in matrix
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.matrix = [
+            { 'for' : { 'buildtype' : 'b1 b2' } }
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2' ])
+        buildconf.matrix = [
+            { 'for' : { 'buildtype' : 'b1 b2' } },
+            { 'for' : { 'buildtype' : ['b3', 'b2'] } }
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3' ])
+
+        # CASE: no buildtypes in buildconf.buildtypes and platform
+        # buildtypes in matrix
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.matrix = [
+            { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM } }
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2' ])
+        buildconf.matrix = [
+            { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM + randomstr() } },
+            { 'for' : { 'buildtype' : 'b4 b2', 'platform' : PLATFORM } },
+            { 'for' : { 'buildtype' : 'b5 b6', 'platform' : PLATFORM } }
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b4', 'b2', 'b5', 'b6' ])
+
+        # CASE: no buildtypes in buildconf.buildtypes and global/platform
+        # buildtypes in matrix
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.matrix = [
+            { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM } },
+            { 'for' : { 'buildtype' : 'b3 b2', } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3' ])
+        buildconf.matrix = [
+            { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM + randomstr() } },
+            { 'for' : { 'buildtype' : 'b3 b2', } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b2', 'b3' ])
+
+        # CASE: buildtypes in buildconf.buildtypes and global/platform
+        # buildtypes in matrix
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.buildtypes.gb1 = {}
+        buildconf.matrix = [
+            { 'for' : { 'buildtype' : 'b1 b2' } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'gb1', 'b1', 'b2' ])
+        buildconf.matrix = [
+            { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'gb1', 'b1', 'b2' ])
+        buildconf.matrix = [
+            { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM + randomstr() } },
+            { 'for' : { 'buildtype' : 'b3 b2', } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'gb1', 'b2', 'b3' ])
+
+        # CASE: buildtypes in buildconf.buildtypes, non-empty buildconf.platforms
+        # and global/platform buildtypes in matrix
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.buildtypes.b1 = {}
+        buildconf.buildtypes.b2 = {}
+        buildconf.platforms[PLATFORM].valid = [ 'b1', 'b2' ]
+        buildconf.matrix = [
+            { 'for' : { 'buildtype' : 'b3 b4' } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3', 'b4' ])
+        buildconf.matrix = [
+            { 'for' : { 'buildtype' : 'b3 b4', 'platform' : PLATFORM } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3', 'b4' ])
+        buildconf.matrix = [
+            { 'for' : { 'buildtype' : 'b5 b3', 'platform' : PLATFORM + randomstr() } },
+            { 'for' : { 'buildtype' : 'b4 b3', } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3', 'b4' ])
+        buildconf.matrix = [
+            { 'for' : { 'buildtype' : 'b1' } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2' ])
+
 
     def testHandleCmdLineArgs(self, testingBuildConf):
 
@@ -165,6 +287,13 @@ class TestBuildConfHandler(object):
         # Hm, all other results of this method is checked in testSupportedBuildTypes
         assert confHandler.cmdLineHandled
 
+    def _checkTasks(self, buildconf, clicmd, expected):
+        confHandler = BuildConfHandler(asRealConf(buildconf))
+        confHandler.handleCmdLineArgs(clicmd)
+        assert confHandler.tasks == expected
+        # to force covering of cache
+        assert confHandler.tasks == expected
+
     def testTasks(self, testingBuildConf, monkeypatch):
         buildconf = testingBuildConf
 
@@ -178,9 +307,6 @@ class TestBuildConfHandler(object):
         clicmd = AutoDict()
         clicmd.args.buildtype = 'mybuildtype'
 
-        # save base fixture
-        buildconf = deepcopy(testingBuildConf)
-
         # CASE: just empty buildconf.tasks
         buildconf = deepcopy(testingBuildConf)
         confHandler = BuildConfHandler(asRealConf(buildconf))
@@ -193,13 +319,7 @@ class TestBuildConfHandler(object):
         buildconf = deepcopy(testingBuildConf)
         buildconf.tasks.test1.param1 = '1'
         buildconf.tasks.test2.param2 = '2'
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        confHandler.handleCmdLineArgs(clicmd)
-        # to force covering of cache
-        confHandler.handleCmdLineArgs(clicmd)
-        assert confHandler.tasks == buildconf.tasks
-        # to force covering of cache
-        assert confHandler.tasks == buildconf.tasks
+        self._checkTasks(buildconf, clicmd, buildconf.tasks)
 
         # CASE: some buildconf.tasks and buildconf.buildtypes
         # with non-empty selected buildtype
@@ -216,9 +336,7 @@ class TestBuildConfHandler(object):
         assert expected.test1.cxxflags == '-O2'
         assert expected.test2.cxxflags == '-O2'
 
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        confHandler.handleCmdLineArgs(clicmd)
-        assert confHandler.tasks == expected
+        self._checkTasks(buildconf, clicmd, expected)
 
         # CASE: some buildconf.tasks and buildconf.buildtypes
         # with non-empty selected buildtype. Both have some same params and
@@ -240,9 +358,7 @@ class TestBuildConfHandler(object):
         assert expected.test2.cxxflags == '-O2'
         assert expected.test1.toolchain == 'gcc'
         assert expected.test2.toolchain == 'gcc'
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        confHandler.handleCmdLineArgs(clicmd)
-        assert confHandler.tasks == expected
+        self._checkTasks(buildconf, clicmd, expected)
 
         # CASE: influence of compiler flags from system environment
         cinfo = toolchains.CompilersInfo
@@ -264,12 +380,9 @@ class TestBuildConfHandler(object):
             # self checking
             assert expected.test1[param] == testNewValAsList
             assert expected.test2[param] == testNewValAsList
+
             monkeypatch.setenv(var, testNewVal)
-
-            confHandler = BuildConfHandler(asRealConf(buildconf))
-            confHandler.handleCmdLineArgs(clicmd)
-            assert confHandler.tasks == expected
-
+            self._checkTasks(buildconf, clicmd, expected)
             monkeypatch.delenv(var, raising = False)
 
         # CASE: influence of compiler var from system environment
@@ -289,14 +402,135 @@ class TestBuildConfHandler(object):
             expected.test2.toolchain = testNewVal
 
             monkeypatch.setenv(var, testNewVal)
-
-            confHandler = BuildConfHandler(asRealConf(buildconf))
-            confHandler.handleCmdLineArgs(clicmd)
-            assert confHandler.tasks == expected
-
+            self._checkTasks(buildconf, clicmd, expected)
             monkeypatch.delenv(var, raising = False)
 
+    def testTasksMatrix(self, testingBuildConf, monkeypatch):
+        clicmd = AutoDict()
+        clicmd.args.buildtype = 'mybt'
+        baseMatrix = [
+            { 'for' : { 'buildtype' : 'mybt' }  },
+        ]
+
+        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.matrix = baseMatrix + [
+            { 'for' : { 'task' : 't1' }, 'set' : { 'param1' : '1' } },
+            { 'for' : { 'task' : 't2' }, 'set' : { 'param2' : '2' } },
+        ]
+        expected = { 't1': {'param1': '1'}, 't2': {'param2': '2'} }
+        self._checkTasks(buildconf, clicmd, expected)
+
+        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
+        # No param 'default-buildtype' in resulting tasks
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.matrix = baseMatrix + [
+            { 'for' : { 'task' : 't1' }, 'set' : { 'param1' : '1' } },
+            { 'for' : { 'task' : 't2' }, 'set' : { 'param2' : '2' } },
+            { 'set' : { 'default-buildtype' : 'mybt' } },
+        ]
+        self._checkTasks(buildconf, clicmd, {
+            't1': {'param1': '1'}, 't2': {'param2': '2'}
+        })
+
+        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
+        # with non-empty selected buildtype
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.matrix = baseMatrix + [
+            {
+                'for' : { 'task' : 't1', 'buildtype' : 'b1 b2', },
+                'set' : { 'param1' : '1' }
+            },
+            {
+                'for' : { 'task' : 't2', 'buildtype' : 'mybt', },
+                'set' : { 'param2' : '2' }
+            },
+        ]
+        self._checkTasks(buildconf, clicmd, { 't1': {}, 't2': {'param2': '2'} })
+
+        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
+        # Applying for all tasks
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.matrix = baseMatrix + [
+            { 'set' : { 'p3' : '3' } },
+            { 'for' : { 'task' : 't1' }, 'set' : { 'p1' : '1' } },
+            { 'for' : { 'task' : 't2' }, 'set' : { 'p2' : '2' } },
+        ]
+        self._checkTasks(buildconf, clicmd, {
+            't1': {'p1': '1', 'p3': '3'},
+            't2': {'p2': '2', 'p3': '3'},
+        })
+
+        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
+        # Merging/replacing params in tasks
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.matrix = baseMatrix + [
+            { 'set' : { 'p3' : '3' } },
+            { 'for' : { 'task' : 't1' }, 'set' : { 'p1' : '1', 'p2' : '2' } },
+            { 'for' : { 'task' : 't2' }, 'set' : { 'p2' : '22' } },
+            { 'for' : { 'task' : 't1' }, 'set' : { 'p4' : '4', 'p2' : '-2-' } },
+        ]
+        self._checkTasks(buildconf, clicmd, {
+            't1': {'p1': '1', 'p3': '3', 'p2' : '-2-', 'p4' : '4'},
+            't2': {'p2': '22', 'p3': '3'},
+        })
+
+        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
+        # with non-empty platform
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.matrix = baseMatrix + [
+            {
+                'for' : { 'task' : 't1', },
+                'set' : { 'p1' : '1' }
+            },
+            {
+                'for' : { 'task' : 't2', 'platform' : PLATFORM, },
+                'set' : { 'p2' : '2' }
+            },
+        ]
+        expected = { 't1': {'p1': '1'}, 't2': {'p2': '2'} }
+        self._checkTasks(buildconf, clicmd, expected)
+        buildconf.matrix = baseMatrix + [
+            {
+                'for' : { 'task' : 't1', 'platform' : PLATFORM },
+                'set' : { 'p1' : '1' }
+            },
+            {
+                'for' : { 'task' : 't2', 'platform' : PLATFORM + randomstr(), },
+                'set' : { 'p2' : '2' }
+            },
+        ]
+        expected = { 't1': {'p1': '1'}, 't2': {} }
+        self._checkTasks(buildconf, clicmd, expected)
+
+        # CASE: some tasks in buildconf.tasks, some tasks in buildconf.matrix
+        # complex merging
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.tasks.t1.p1 = '1'
+        buildconf.tasks.t2.p2 = '2'
+        buildconf.tasks.t2.p3 = '2'
+        buildconf.matrix = baseMatrix + [
+            { 'set' : { 'p3' : '3' } },
+            { 'for' : { 'task' : 't3' }, 'set' : { 'p1' : '1', 'p2' : '2' } },
+            { 'for' : { 'task' : 't2' }, 'set' : { 'p1' : '11' } },
+            { 'for' : { 'task' : 't4' }, 'set' : { 'p5' : '1', 'p6' : '2' } },
+        ]
+        self._checkTasks(buildconf, clicmd, {
+            't1': {'p1': '1', 'p3': '3'},
+            't2': {'p1': '11', 'p2': '2', 'p3': '3'},
+            't3': {'p1': '1', 'p2': '2', 'p3': '3'},
+            't4': {'p5': '1', 'p6': '2', 'p3': '3'},
+        })
+
+    def _checkToolchainNames(self, buildconf, clicmd, expected):
+        confHandler = BuildConfHandler(asRealConf(buildconf))
+        confHandler.handleCmdLineArgs(clicmd)
+        assert sorted(confHandler.toolchainNames) == sorted(expected)
+        # to force covering of cache
+        assert sorted(confHandler.toolchainNames) == sorted(expected)
+
     def testToolchainNames(self, testingBuildConf):
+
         buildconf = testingBuildConf
 
         # CASE: invalid use
@@ -307,9 +541,6 @@ class TestBuildConfHandler(object):
         buildconf.buildtypes['debug-gxx'] = {}
         clicmd = AutoDict()
         clicmd.args.buildtype = 'debug-gxx'
-
-        # save base fixture
-        buildconf = deepcopy(testingBuildConf)
 
         # CASE: just empty toolchains
         buildconf = deepcopy(testingBuildConf)
@@ -324,19 +555,45 @@ class TestBuildConfHandler(object):
         buildconf = deepcopy(testingBuildConf)
         buildconf.tasks.test1.toolchain = 'gxx'
         buildconf.tasks.test2.toolchain = 'gxx'
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        confHandler.handleCmdLineArgs(clicmd)
-        assert list(confHandler.toolchainNames) == ['gxx']
-        # to force covering of cache
-        assert list(confHandler.toolchainNames) == ['gxx']
+        self._checkToolchainNames(buildconf, clicmd, ['gxx'])
 
         # CASE: tasks with different toolchains
         buildconf = deepcopy(testingBuildConf)
         buildconf.tasks.test1.toolchain = 'gxx'
         buildconf.tasks.test2.toolchain = 'lgxx'
+        self._checkToolchainNames(buildconf, clicmd, ['gxx', 'lgxx'])
+
+        ### matrix
+
+        # CASE: empty toolchains in matrix
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.matrix = [
+            {
+                'for' : { 'task' : 'test1' },
+                'set' : { 'param1' : '11', 'param2' : '22' }
+            },
+        ]
         confHandler = BuildConfHandler(asRealConf(buildconf))
         confHandler.handleCmdLineArgs(clicmd)
-        assert sorted(confHandler.toolchainNames) == sorted(['gxx', 'lgxx'])
+        # it returns tuple but it can return list so we check by len
+        assert len(confHandler.toolchainNames) == 0
+
+        # CASE: tasks in matrix with the same toolchain
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.matrix = [
+            { 'for' : { 'task' : 'test1' }, 'set' : { 'toolchain' : 'gxx' } },
+            { 'for' : { 'task' : 'test2' }, 'set' : { 'toolchain' : 'gxx' } },
+        ]
+        self._checkToolchainNames(buildconf, clicmd, ['gxx'])
+
+        # CASE: tasks in matrix with the different toolchains
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.matrix = [
+            { 'for' : { 'task' : 'test1' }, 'set' : { 'toolchain' : 'gxx' } },
+            { 'for' : { 'task' : 'test2' }, 'set' : { 'toolchain' : 'lgxx' } },
+        ]
+        self._checkToolchainNames(buildconf, clicmd, ['gxx', 'lgxx'])
+
 
     def testCustomToolchains(self, testingBuildConf, capsys):
         buildconf = testingBuildConf
@@ -344,9 +601,6 @@ class TestBuildConfHandler(object):
         buildconf.buildtypes['debug-gxx'] = {}
         clicmd = AutoDict()
         clicmd.args.buildtype = 'debug-gxx'
-
-        # save base fixture
-        buildconf = deepcopy(testingBuildConf)
 
         # CASE: no custom toolchains
         buildconf = deepcopy(testingBuildConf)
