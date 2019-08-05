@@ -24,14 +24,8 @@ class AnyAmountStrsKey(object):
     def __eq__(self, other):
         if not isinstance(other, AnyAmountStrsKey):
             # don't attempt to compare against unrelated types
-            return NotImplemented
+            return NotImplemented # pragma: no cover
         return True
-
-    def __ne__(self, other):
-        if not isinstance(other, AnyAmountStrsKey):
-            # don't attempt to compare against unrelated types
-            return NotImplemented
-        return False
 
     def __hash__(self):
         # necessary for instances to behave sanely in dicts and sets.
@@ -193,7 +187,7 @@ class Validator(object):
         if value is None:
             if 'default' in kwargs:
                 return kwargs['default']
-            raise KeyError(key)
+            raise KeyError(key) # pragma: no cover
         return value
 
     @staticmethod
@@ -359,7 +353,7 @@ class Validator(object):
             Validator._handleVarsInDictWithKeysAnyStr(confnode, _schemeAttrs,
                                                       fullkey)
         else:
-            raise NotImplementedError
+            raise NotImplementedError # pragma: no cover
 
     @staticmethod
     def _validateUsualItems(conf, items, keyprefix):
@@ -429,6 +423,8 @@ class Validator(object):
             allowed.extend(_conf['buildtypes'].keys())
         if 'tasks' in _conf and isinstance(_conf['tasks'], maptype):
             for task in viewvalues(_conf['tasks']):
+                if not isinstance(task, maptype):
+                    continue
                 buildtypes = task.get('buildtypes', {})
                 allowed.extend(buildtypes.keys())
 
