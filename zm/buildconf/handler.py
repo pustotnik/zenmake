@@ -237,7 +237,11 @@ class BuildConfHandler(object):
 
         destPlatform = PLATFORM
         for entry in self._conf.matrix:
-            condition = entry.get('for', {})
+            condition = entry.get('for', None)
+            if condition is None:
+                log.warn("WARN: In buildconf.matrix found item without 'for'. "
+                         "It's probably a mistake.")
+                condition = {}
             params = entry.get('set', {})
             params.pop('default-buildtype', None)
 

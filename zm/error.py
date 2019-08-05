@@ -19,7 +19,7 @@ class ZenMakeLogicError(ZenMakeError):
     """Some logic/programming error"""
 
 class ZenMakeConfError(ZenMakeError):
-    """Invalid buildconf error"""
+    """Invalid buildconf fle error"""
 
 class ZenMakeConfTypeError(ZenMakeConfError):
     """Invalid buildconf param type error"""

@@ -78,7 +78,7 @@ def platform():
 def loadPyModule(name, dirpath = None, withImport = True):
     """
     Load python module by name.
-    Param 'dirpath' is optional param that used to add/remove path into sys.path.
+    Param 'dirpath' is optional param that is used to add/remove path into sys.path.
     Module is not imported (doesn't exist in sys.modules) if withImport is False.
     With withImport = False you should control where to store returned module object.
     """

@@ -16,6 +16,7 @@ import os
 import sys
 from zm import log
 from zm.error import ZenMakeConfError
+from zm.pyutils import maptype, viewitems
 from zm.utils import loadPyModule
 from zm.buildconf.validator import Validator as _Validator
 
@@ -82,18 +83,74 @@ def initDefaults(buildconf):
     if not hasattr(buildconf, 'srcroot'):
         setattr(buildconf, 'srcroot', buildconf.project['root'])
 
-def load(name = 'buildconf', dirpath = None, withImport = False, check = True):
-    """
-    Load buildconf
-    Params 'dirpath' and 'withImport' are the params for zm.utils.loadPyModule
-    """
+def _loadYaml(filepath):
+    try:
+        import yaml
+    except ImportError:
+        errmsg = "Config file is yaml file but python module yaml"
+        errmsg += " is not found. You should install it to use yaml buildconf file."
+        errmsg += " You can do this for example with pip: pip install pyyaml"
+        raise ZenMakeConfError(errmsg)
 
     try:
+        from yaml import CSafeLoader as SafeLoader
+    except ImportError:
+        from yaml import SafeLoader
+
+    import types
+    buildconf = types.ModuleType('buildconf')
+    buildconf.__file__ = os.path.abspath(filepath)
+    data = {}
+    with open(filepath, 'r') as stream:
+        try:
+            data = yaml.load(stream, SafeLoader)
+        except yaml.YAMLError as ex:
+            raise ZenMakeConfError(ex = ex)
+
+    if not isinstance(data, maptype):
+        raise ZenMakeConfError("File %r has invalid structure" % filepath)
+
+    for k, v in viewitems(data):
+        setattr(buildconf, k, v)
+    return buildconf
+
+def load(name = 'buildconf', dirpath = None, check = True):
+    """
+    Load buildconf.
+    Param 'dirpath' is optional param that is used as directory
+    with buildconf file.
+    """
+
+    isfile = os.path.isfile
+    joinpath = os.path.join
+    filenamePy = '%s.py' % name
+    filenameYaml = '%s.yaml' % name
+    found = None
+    if not dirpath:
+        # try to find config file
+        for path in sys.path:
+            if isfile(joinpath(path, filenamePy)):
+                dirpath = path
+                found = 'py'
+                break
+            if isfile(joinpath(path, filenameYaml)):
+                dirpath = path
+                found = 'yaml'
+                break
+    else:
+        if isfile(joinpath(dirpath, filenamePy)):
+            found = 'py'
+        elif isfile(joinpath(dirpath, filenameYaml)):
+            found = 'yaml'
+
+    if found == 'py':
         # Avoid writing .pyc files
         sys.dont_write_bytecode = True
-        module = loadPyModule(name, dirpath = dirpath, withImport = withImport)
+        module = loadPyModule(name, dirpath = dirpath, withImport = False)
         sys.dont_write_bytecode = False # pragma: no cover
-    except ImportError:
+    elif found == 'yaml':
+        module = _loadYaml(joinpath(dirpath, filenameYaml))
+    else:
         module = loadPyModule('zm.buildconf.fakeconf')
 
     if check:

@@ -93,11 +93,13 @@ before_install:
       choco install python --version $PYTHON_VER
       # I'm not sure that it's necessary
       python -m pip install --upgrade pip
+      python -m pip install pyyaml
       python -m pip install pytest
       python -m pip install pytest-cov
       # for coverage report
       python -m pip install coveralls
     else
+      pip install pyyaml
       pip install pytest
       pip install pytest-cov
       pip install coveralls

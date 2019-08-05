@@ -28,7 +28,7 @@ ZM_BIN = os.path.normpath(joinpath(cmn.TESTS_DIR, os.path.pardir, "zenmake"))
 def collectProjectDirs():
     result = []
     for dirpath, _, filenames in os.walk(cmn.TEST_PROJECTS_DIR):
-        if 'buildconf.py' not in filenames:
+        if 'buildconf.py' not in filenames and 'buildconf.yaml' not in filenames:
             continue
         prjdir = os.path.relpath(dirpath, cmn.TEST_PROJECTS_DIR)
         if prjdir == 'cpp/005-custom-toolchain' and cmn.PLATFORM == 'windows':
@@ -103,8 +103,7 @@ class TestProject(object):
         shutil.copytree(joinpath(cmn.TEST_PROJECTS_DIR, request.param), tmptestDir)
 
         self.cwd = tmptestDir
-        projectConf = bconfloader.load('buildconf',
-                                        self.cwd, withImport = False)
+        projectConf = bconfloader.load('buildconf', self.cwd)
         self.confHandler = BuildConfHandler(projectConf)
         self.confPaths = self.confHandler.confPaths
 

@@ -80,10 +80,18 @@ class TestBuildconfLoader(object):
 
         assert buildconf.buildtypes == buildtypes
 
-    def testLoad(self, capsys, monkeypatch):
+    def testLoad(self, capsys, monkeypatch, tmpdir):
         import sys
         from zm.assist import isBuildConfFake
-        buildconf = bconfloader.load(withImport = False)
+
+        buildconf = bconfloader.load(check = False)
+        buildconf = bconfloader.load(check = True)
+        # It should be fake
+        assert isBuildConfFake(buildconf)
+
+        nonpath = os.path.join(cmn.randomstr(), cmn.randomstr())
+        assert not os.path.exists(nonpath)
+        buildconf = bconfloader.load(dirpath = nonpath)
         # It should be fake
         assert isBuildConfFake(buildconf)
 
@@ -102,5 +110,32 @@ class TestBuildconfLoader(object):
                 prjdir = dirpath
                 break
 
-        buildconf = bconfloader.load(dirpath = prjdir, withImport = False)
+        buildconf = bconfloader.load(dirpath = prjdir)
         assert not isBuildConfFake(buildconf)
+
+        monkeypatch.syspath_prepend(os.path.abspath(prjdir))
+        buildconf = bconfloader.load()
+        assert not isBuildConfFake(buildconf)
+
+        # find first real buildconf.yaml
+        prjdir = None
+        for dirpath, _, filenames in os.walk(cmn.TEST_PROJECTS_DIR):
+            if 'buildconf.yaml' in filenames:
+                prjdir = dirpath
+                break
+
+        buildconf = bconfloader.load(dirpath = prjdir)
+        assert not isBuildConfFake(buildconf)
+
+        monkeypatch.syspath_prepend(os.path.abspath(prjdir))
+        buildconf = bconfloader.load()
+        assert not isBuildConfFake(buildconf)
+
+        testdir = tmpdir.mkdir("load.yaml")
+        yamlconf = testdir.join("buildconf.yaml")
+        yamlconf.write("invalid data = {")
+        with pytest.raises(ZenMakeConfError):
+            buildconf = bconfloader.load(dirpath = str(testdir.realpath()))
+        yamlconf.write("invalid data: {")
+        with pytest.raises(ZenMakeConfError):
+            buildconf = bconfloader.load(dirpath = str(testdir.realpath()))

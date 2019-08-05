@@ -427,7 +427,7 @@ class TestBuildConfHandler(object):
         buildconf.matrix = baseMatrix + [
             { 'for' : { 'task' : 't1' }, 'set' : { 'param1' : '1' } },
             { 'for' : { 'task' : 't2' }, 'set' : { 'param2' : '2' } },
-            { 'set' : { 'default-buildtype' : 'mybt' } },
+            { 'for' : {}, 'set' : { 'default-buildtype' : 'mybt' } },
         ]
         self._checkTasks(buildconf, clicmd, {
             't1': {'param1': '1'}, 't2': {'param2': '2'}
@@ -452,7 +452,7 @@ class TestBuildConfHandler(object):
         # Applying for all tasks
         buildconf = deepcopy(testingBuildConf)
         buildconf.matrix = baseMatrix + [
-            { 'set' : { 'p3' : '3' } },
+            { 'for' : {}, 'set' : { 'p3' : '3' } },
             { 'for' : { 'task' : 't1' }, 'set' : { 'p1' : '1' } },
             { 'for' : { 'task' : 't2' }, 'set' : { 'p2' : '2' } },
         ]
@@ -465,7 +465,7 @@ class TestBuildConfHandler(object):
         # Merging/replacing params in tasks
         buildconf = deepcopy(testingBuildConf)
         buildconf.matrix = baseMatrix + [
-            { 'set' : { 'p3' : '3' } },
+            { 'for' : {}, 'set' : { 'p3' : '3' } },
             { 'for' : { 'task' : 't1' }, 'set' : { 'p1' : '1', 'p2' : '2' } },
             { 'for' : { 'task' : 't2' }, 'set' : { 'p2' : '22' } },
             { 'for' : { 'task' : 't1' }, 'set' : { 'p4' : '4', 'p2' : '-2-' } },
@@ -510,7 +510,7 @@ class TestBuildConfHandler(object):
         buildconf.tasks.t2.p2 = '2'
         buildconf.tasks.t2.p3 = '2'
         buildconf.matrix = baseMatrix + [
-            { 'set' : { 'p3' : '3' } },
+            { 'for' : {}, 'set' : { 'p3' : '3' } },
             { 'for' : { 'task' : 't3' }, 'set' : { 'p1' : '1', 'p2' : '2' } },
             { 'for' : { 'task' : 't2' }, 'set' : { 'p1' : '11' } },
             { 'for' : { 'task' : 't4' }, 'set' : { 'p5' : '1', 'p6' : '2' } },
