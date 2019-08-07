@@ -19,6 +19,7 @@ import tests.common as cmn
 from zm import pyutils, assist, cli
 from zm.buildconf import loader as bconfloader
 from zm.buildconf.handler import BuildConfHandler
+from zm.constants import ZENMAKE_COMMON_FILENAME
 import starter
 
 joinpath = os.path.join
@@ -100,7 +101,14 @@ class TestProject(object):
         shutil.rmtree(tmptestDir, ignore_errors = True)
         #tmptestDir = joinpath(str(tmpdir.realpath()), projectDirName)
 
-        shutil.copytree(joinpath(cmn.TEST_PROJECTS_DIR, request.param), tmptestDir)
+        def copytreeIgnore(src, names):
+            if ZENMAKE_COMMON_FILENAME in names:
+                # don't copy build dirs/files
+                return names
+            return []
+
+        shutil.copytree(joinpath(cmn.TEST_PROJECTS_DIR, request.param),
+                        tmptestDir, ignore = copytreeIgnore)
 
         self.cwd = tmptestDir
         projectConf = bconfloader.load('buildconf', self.cwd)
