@@ -8,13 +8,45 @@
 
 import os
 import sys
+import re
 from zm import pyutils as _pyutils
 from waflib import Utils as wafutils
 
-readFile        = wafutils.readf
-mkHashOfStrings = wafutils.h_list
-quoteDefineName = wafutils.quote_define_name
-Timer           = wafutils.Timer
+WINDOWS_RESERVED_FILENAMES = (
+    'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5',
+    'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5',
+    'LPT6', 'LPT7', 'LPT8', 'LPT9'
+)
+
+def platform():
+    """
+    Return current system platfom. For MS Windows paltfrom is always 'windows'.
+    """
+    result = wafutils.unversioned_sys_platform()
+    if result.startswith('win32'):
+        result = 'windows' # pragma: no cover
+    return result
+
+PLATFORM = platform()
+
+readFile           = wafutils.readf
+mkHashOfStrings    = wafutils.h_list
+normalizeForDefine = wafutils.quote_define_name
+Timer              = wafutils.Timer
+
+def normalizeForFileName(s, spaseAsDash = False):
+    """
+    Convert a string into string suitable for file name
+    """
+    s = str(s).strip()
+    if spaseAsDash:
+        s = s.replace(' ', '-')
+    else:
+        s = s.replace(' ', '_')
+    s = re.sub(r'(?u)[^-\w.]', '', s)
+    if PLATFORM == 'windows' and s.upper() in WINDOWS_RESERVED_FILENAMES:
+        s = '[%s]' % s
+    return s
 
 def toList(val):
     """
@@ -53,7 +85,7 @@ def mksymlink(src, dst, force = True):
         _mksymlink(src, dst)
         return
 
-    if platform() != 'windows':
+    if PLATFORM != 'windows':
         raise NotImplementedError
 
     # special solution for python 2 on windows
@@ -65,15 +97,6 @@ def mksymlink(src, dst, force = True):
     flags = 1 if os.path.isdir(src) else 0
     if csl(dst, src, flags) == 0:
         raise ctypes.WinError()
-
-def platform():
-    """
-    Return current system platfom. For MS Windows paltfrom is always 'windows'.
-    """
-    result = wafutils.unversioned_sys_platform()
-    if result.startswith('win32'):
-        result = 'windows' # pragma: no cover
-    return result
 
 def loadPyModule(name, dirpath = None, withImport = True):
     """

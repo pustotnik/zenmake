@@ -104,7 +104,7 @@ def runConfTests(cfgCtx, buildtype, taskParams):
     """
     Run supported configuration tests/checks
     """
-
+    taskName = taskParams['name']
     confTests = taskParams.get('conftests', [])
     for entity in confTests:
         act = entity.pop('act', None)
@@ -132,16 +132,18 @@ def runConfTests(cfgCtx, buildtype, taskParams):
         elif act == 'check':
             cfgCtx.check(**entity)
         elif act == 'write-config-header':
+            def defaultFileName():
+                return utils.normalizeForFileName(taskName).lower()
             fileName = entity.pop('file', '%s_%s' %
-                                  (taskParams['name'].lower(), 'config.h'))
+                                  (defaultFileName(), 'config.h'))
             fileName = joinpath(buildtype, fileName)
             projectName = cfgCtx.env['PROJECT_NAME'] or ''
-            guardname = utils.quoteDefineName(projectName + '_' + fileName)
+            guardname = utils.normalizeForDefine(projectName + '_' + fileName)
             entity['guard'] = entity.pop('guard', guardname)
             cfgCtx.write_config_header(fileName, **entity)
         else:
             cfgCtx.fatal('unknown act %r for conftests in task %r!' %
-                         (act, taskParams['name']))
+                         (act, taskName))
 
 def loadDetectedCompiler(cfgCtx, kind):
     """

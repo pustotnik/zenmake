@@ -55,3 +55,16 @@ class TestUtils(object):
 
         utils.mksymlink(testfile, symlink, force = True)
         assert os.path.islink(symlink)
+
+    def testToList(self):
+        assert utils.toList('') == list()
+        assert utils.toList('abc') == ['abc']
+        assert utils.toList('a1 a2 b1 b2') == ['a1', 'a2', 'b1', 'b2']
+        assert utils.toList(['a1', 'a2', 'b1']) == ['a1', 'a2', 'b1']
+
+    def testNormalizeForFileName(self):
+        assert utils.normalizeForFileName('abc') == 'abc'
+        assert utils.normalizeForFileName(' abc ') == 'abc'
+        assert utils.normalizeForFileName('a b c') == 'a_b_c'
+        assert utils.normalizeForFileName('a b c', spaseAsDash = True) == 'a-b-c'
+        assert utils.normalizeForFileName(' aBc<>:?*.e ') == 'aBc.e'
