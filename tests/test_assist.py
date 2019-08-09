@@ -129,6 +129,38 @@ class TestAssist(object):
                 assert envkey in env
                 assert env[envkey] == utils.toList(val)
 
+    def testDetectAllTaskFeatures(self):
+        taskParams = {}
+        assert assist.detectAllTaskFeatures(taskParams) == []
+
+        taskParams = { 'features' : '' }
+        assert assist.detectAllTaskFeatures(taskParams) == []
+
+        for ftype in ('stlib', 'shlib', 'program'):
+            for lang in ('c', 'cxx'):
+                fulltype = '%s%s' % (lang, ftype)
+
+                taskParams = { 'features' : fulltype }
+                assert sorted(assist.detectAllTaskFeatures(taskParams)) == sorted([
+                    lang, fulltype
+                ])
+
+                taskParams = { 'features' : [lang, fulltype] }
+                assert sorted(assist.detectAllTaskFeatures(taskParams)) == sorted([
+                    lang, fulltype
+                ])
+
+        taskParams = { 'use-as-test': False, 'features' : '' }
+        assert assist.detectAllTaskFeatures(taskParams) == []
+
+        taskParams = { 'use-as-test': True, 'features' : '' }
+        assert assist.detectAllTaskFeatures(taskParams) == ['test']
+
+        taskParams = { 'use-as-test': True, 'features' : 'cprogram' }
+        assert sorted(assist.detectAllTaskFeatures(taskParams)) == sorted([
+            'c', 'cprogram', 'test'
+        ])
+
     def testHandleTaskIncludesParam(self):
         taskParams = {}
         srcroot = joinpath(os.getcwd(), 'testsrcroot') # just any abs path

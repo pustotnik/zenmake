@@ -210,6 +210,30 @@ def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
 
     return toolchainsEnv
 
+def detectAllTaskFeatures(taskParams):
+    """
+    Detect all features for task
+    """
+    features = utils.toList(taskParams.get('features', []))
+    fmap = {
+        'cprogram' : 'c',
+        'cxxprogram' : 'cxx',
+        'cstlib' : 'c',
+        'cxxstlib' : 'cxx',
+        'cshlib' : 'c',
+        'cxxshlib' : 'cxx',
+    }
+    detected = [ fmap.get(x, '') for x in features ]
+
+    if taskParams.get('use-as-test', False):
+        detected.append('test')
+
+    features.extend(detected)
+    features = set(features)
+    if '' in features:
+        features.remove('')
+    return list(features)
+
 def handleTaskIncludesParam(taskParams, srcroot):
     """
     Get valid 'includes' for build task
