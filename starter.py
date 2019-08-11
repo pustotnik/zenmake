@@ -121,7 +121,7 @@ def main():
 
     del sys.argv[1:]
     sys.argv.extend(wafCmdLine)
-    from zm.wafwrappers import wrapBldCtxNoLockInTop, wrapBldCtxAutoConf
+    from zm.waf.wrappers import wrapBldCtxNoLockInTop, wrapBldCtxAutoConf
     Build.BuildContext.execute = wrapBldCtxAutoConf(cmd, buildConfHandler,
                                                     Build.BuildContext.execute)
     for ctxCls in (Build.CleanContext, Build.ListContext):
