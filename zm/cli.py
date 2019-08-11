@@ -162,6 +162,11 @@ class CmdLineParser(object):
     WAF has own CLI and I could use it but I wanted to have a different CLI.
     """
 
+    __slots__ = (
+        '_defaults', '_options', '_command', '_wafCmdLine', '_cmdNameMap',
+        '_parser', '_commandHelps'
+    )
+
     def __init__(self, progName, defaults):
 
         self._defaults = READY_OPT_DEFAULTS

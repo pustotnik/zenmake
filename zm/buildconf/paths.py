@@ -23,6 +23,13 @@ class BuildConfPaths(object):
 
     # pylint: disable=too-many-instance-attributes
 
+    __slots__ = (
+        'buildconffile', 'buildconfdir', 'buildroot', 'buildsymlink',
+        'buildout', 'projectroot', 'srcroot', 'wscripttop', 'wscriptout',
+        'wscriptfile', 'wscriptdir', 'wafcachedir', 'wafcachefile',
+        'zmcachedir', 'zmcmnfile'
+    )
+
     def __init__(self, conf):
         dirname    = os.path.dirname
         abspath    = os.path.abspath
@@ -49,4 +56,7 @@ class BuildConfPaths(object):
         self.zmcmnfile     = joinpath(self.buildout, ZENMAKE_COMMON_FILENAME)
 
     def __eq__(self, other):
-        return vars(self) == vars(other)
+        for name in self.__slots__:
+            if getattr(self, name, None) != getattr(other, name, None):
+                return False
+        return True

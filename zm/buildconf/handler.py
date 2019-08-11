@@ -29,7 +29,7 @@ class BuildConfHandler(object):
     Class to handle data from buildconf
     """
 
-    __slots__ = ('cmdLineHandled', '_conf', '_platforms', '_meta', '_confpaths')
+    __slots__ = 'cmdLineHandled', '_conf', '_platforms', '_meta', '_confpaths'
 
     def __init__(self, conf):
 

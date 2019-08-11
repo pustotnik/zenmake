@@ -45,7 +45,7 @@ class CompilersInfo(object):
     Class for getting some compiler info for supported compilers
     """
 
-    __slots__ = []
+    __slots__ = ()
 
     @staticmethod
     def allFlagVars():
@@ -95,7 +95,7 @@ class CompilersInfo(object):
         Return combined list of all environment variables to set compiler.
         """
 
-        return [x['env.var'] for x in _langinfo.values()]
+        return [ x['env.var'] for x in _langinfo.values() ]
 
     @staticmethod
     def compilers(lang, platform = PLATFORM):

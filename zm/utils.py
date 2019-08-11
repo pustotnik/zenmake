@@ -45,7 +45,7 @@ def normalizeForFileName(s, spaseAsDash = False):
         s = s.replace(' ', '_')
     s = re.sub(r'(?u)[^-\w.]', '', s)
     if PLATFORM == 'windows' and s.upper() in WINDOWS_RESERVED_FILENAMES:
-        s = '[%s]' % s
+        s = '_%s' % s
     return s
 
 def toList(val):
