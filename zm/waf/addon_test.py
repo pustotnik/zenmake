@@ -250,7 +250,6 @@ class TestContext(BuildContext):
             return
 
         runArgs = params.get('run', {})
-        print(runArgs)
 
         kwargs = dict(
             name   = os.path.relpath(target, bconfPaths.projectroot),
