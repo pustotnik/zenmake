@@ -11,11 +11,24 @@
 import os
 from copy import deepcopy
 from waflib.ConfigSet import ConfigSet
-from zm.pyutils import stringtype, viewitems
+from zm.pyutils import stringtype, maptype, viewitems
 from zm import utils, toolchains, log
 from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, WSCRIPT_NAME
 
 joinpath = os.path.join
+
+_usedWafTaskKeys = set([
+    'name', 'target', 'features', 'source', 'includes', 'lib', 'libpath',
+    'rpath', 'use', 'vnum', 'idx'
+])
+
+def registerUsedWafTaskKeys(keys):
+    ''' Register used Waf task keys '''
+    _usedWafTaskKeys.update(keys)
+
+def getUsedWafTaskKeys():
+    ''' Get used Waf task keys '''
+    return _usedWafTaskKeys
 
 def dumpZenMakeCommonFile(bconfPaths):
     """
@@ -49,9 +62,9 @@ def loadTasksFromCache(cachefile):
         pass
     return result
 
-def makeTargetPath(ctx, dirName, targetName):
+def makeTargetPath(bconfPaths, dirName, targetName):
     """ Compose path for target that is used in build task"""
-    return joinpath(ctx.out_dir, dirName, targetName)
+    return joinpath(bconfPaths.buildout, dirName, targetName)
 
 def makeCacheConfFileName(zmcachedir, name):
     """ Make file name of specific zenmake cache config file"""
@@ -225,9 +238,6 @@ def detectAllTaskFeatures(taskParams):
     }
     detected = [ fmap.get(x, '') for x in features ]
 
-    if taskParams.get('use-as-test', False):
-        detected.append('test')
-
     features.extend(detected)
     features = set(features)
     if '' in features:
@@ -253,6 +263,76 @@ def handleTaskIncludesParam(taskParams, srcroot):
     # header with 'conftests'.
     includes.append('.')
     return includes
+
+def handleTaskSourceParam(taskParams, srcDirNode):
+    """
+    Get valid 'source' for build task
+    """
+
+    src = taskParams.get('source')
+    if not src:
+        return None
+
+    if isinstance(src, maptype):
+        return srcDirNode.ant_glob(
+            incl = src.get('include', ''),
+            excl = src.get('exclude', ''),
+            ignorecase = src.get('ignorecase', False),
+            #FIXME: Waf says: Calling ant_glob on build folders is
+            # dangerous. Such a case can be seen if build
+            # the tests/projects/cpp/002-simple
+            remove = False,
+        )
+
+    src = utils.toList(src)
+    result = []
+    for s in src:
+        node = srcDirNode.find_node(s)
+        if node:
+            result.append(node)
+    return result
+
+def configureTaskParams(confHandler, taskName, taskParams):
+    """
+    Handle every known task param that can be handled at configure stage.
+    It is better for common performance because command 'configure' is used
+    rarely then 'build'.
+    """
+
+    bconfPaths = confHandler.confPaths
+    buildtype = confHandler.selectedBuildType
+
+    features = detectAllTaskFeatures(taskParams)
+
+    normalizeTarget = taskParams.get('normalize-target-name', False)
+    target = taskParams.get('target', taskName)
+    if normalizeTarget:
+        target = utils.normalizeForFileName(target, spaseAsDash = True)
+    target = makeTargetPath(bconfPaths, buildtype, target)
+
+    kwargs = dict(
+        name     = taskName,
+        target   = target,
+        features = features,
+        # We can not handle 'source' at configure stage
+        source   = taskParams.get('source'),
+        lib      = utils.toList(taskParams.get('sys-libs', [])),
+        libpath  = utils.toList(taskParams.get('sys-lib-path', [])),
+        rpath    = utils.toList(taskParams.get('rpath', [])),
+        use      = utils.toList(taskParams.get('use', [])),
+        vnum     = taskParams.get('ver-num', ''),
+        #counter for the object file extension
+        idx      = taskParams.get('object-file-counter', 1),
+    )
+
+    includes = handleTaskIncludesParam(taskParams, bconfPaths.srcroot)
+    if includes:
+        kwargs['includes'] =  includes
+
+    # set of used keys in kwargs must be included in set from getUsedWafTaskKeys()
+    assert set(kwargs.keys()) <= getUsedWafTaskKeys()
+
+    taskParams.update(kwargs)
 
 def fullclean(bconfPaths, verbose = 1):
     """

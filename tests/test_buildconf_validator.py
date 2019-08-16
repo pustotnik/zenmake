@@ -220,6 +220,8 @@ class TestBuildconfValidator(object):
 
     def _checkTaskScheme(self, buildconf, confnode):
 
+        self._validateBoolValues(buildconf, confnode, 'normalize-target-name')
+
         paramNames = (
             'target', 'ver-num',
         )

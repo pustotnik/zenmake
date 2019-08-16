@@ -19,11 +19,8 @@ SCRIPTS_ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
 WAF_DIR = joinpath(SCRIPTS_ROOTDIR, 'waf')
 ZM_DIR = joinpath(SCRIPTS_ROOTDIR, 'zm')
-AUX_DIR = joinpath(SCRIPTS_ROOTDIR, 'auxiliary')
 
 sys.path.insert(1, WAF_DIR)
-# argparse from the https://pypi.org/project/argparse/ supports alieses
-#sys.path.insert(1, AUX_DIR)
 
 #pylint: disable=wrong-import-position
 from waflib import Context
@@ -35,6 +32,7 @@ def atExit():
     Callback function for atexit
     """
 
+    # remove 'wscript' file if it exists
     from zm import shared
     if not shared.buildConfHandler:
         return
@@ -67,13 +65,21 @@ def handleCLI(buildConfHandler, args, buildOnEmpty):
     """
     from zm import cli
 
-    defaults = dict(
-        buildtype = buildConfHandler.defaultBuildType
-    )
+    defaults = {
+        '*' : dict( buildtype = buildConfHandler.defaultBuildType )
+    }
 
     cmd, wafCmdLine = cli.parseAll(args, defaults, buildOnEmpty)
     cli.selected = cmd
     return cmd, wafCmdLine
+
+def isDevVersion():
+    """
+    Detect that this is development version
+    """
+    gitDir = joinpath(SCRIPTS_ROOTDIR, '.git')
+    #TODO: check that it is 'master' branch
+    return os.path.exists(gitDir)
 
 def main():
     """
@@ -88,21 +94,21 @@ def main():
     os.environ['WAFLOCK'] = '.lock-wafbuild'
     from waflib import Options
     Options.lockfile = '.lock-wafbuild'
-    from waflib import Scripting, Build
 
+    # process buildconf and CLI
     from zm import log, assist, shared
-    from zm.buildconf import loader as bconfloader
+    from zm.buildconf import loader as bconfLoader
     from zm.buildconf.handler import BuildConfHandler
 
-    buildconf = bconfloader.load(check = False)
-    if assist.isBuildConfChanged(buildconf):
-        bconfloader.validate(buildconf)
-    buildConfHandler = BuildConfHandler(buildconf)
-    shared.buildConfHandler = buildConfHandler
-    bconfPaths = buildConfHandler.confPaths
+    buildconf = bconfLoader.load(check = False)
+    if assist.isBuildConfChanged(buildconf) or isDevVersion():
+        bconfLoader.validate(buildconf)
+    bconfHandler = BuildConfHandler(buildconf)
+    shared.buildConfHandler = bconfHandler
+    bconfPaths = bconfHandler.confPaths
     isBuildConfFake = assist.isBuildConfFake(buildconf)
 
-    cmd, wafCmdLine = handleCLI(buildConfHandler, sys.argv, not isBuildConfFake)
+    cmd, wafCmdLine = handleCLI(bconfHandler, sys.argv, not isBuildConfFake)
 
     if isBuildConfFake:
         log.error('Config buildconf.py not found. Check buildconf.py '
@@ -119,13 +125,19 @@ def main():
 
     prepareDirs(bconfPaths)
 
+    # Load waf add-ons to support of custom waf features
+    import zm.waf
+    zm.waf.loadAllAddOns()
+
+    # start waf ecosystem
+    from waflib import Scripting, Build
     del sys.argv[1:]
     sys.argv.extend(wafCmdLine)
     from zm.waf.wrappers import wrapBldCtxNoLockInTop, wrapBldCtxAutoConf
-    Build.BuildContext.execute = wrapBldCtxAutoConf(cmd, buildConfHandler,
+    Build.BuildContext.execute = wrapBldCtxAutoConf(cmd, bconfHandler,
                                                     Build.BuildContext.execute)
     for ctxCls in (Build.CleanContext, Build.ListContext):
-        ctxCls.execute = wrapBldCtxNoLockInTop(buildConfHandler, ctxCls.execute)
+        ctxCls.execute = wrapBldCtxNoLockInTop(bconfHandler, ctxCls.execute)
 
     cwd = bconfPaths.wscriptdir
     Scripting.waf_entry_point(cwd, Context.WAFVERSION, WAF_DIR)

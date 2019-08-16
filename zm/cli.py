@@ -8,6 +8,7 @@
 
 import sys
 from collections import namedtuple
+# argparse from the https://pypi.org/project/argparse/ supports alieses
 from auxiliary.argparse import argparse
 from zm.pyutils import viewitems
 from zm import log
@@ -43,7 +44,13 @@ _commands = [
         name = 'build',
         aliases = ['bld'],
         description = 'build project',
-        usageTextTempl = "%s [options] [buildtask [buildtask] ... ]",
+        usageTextTempl = "%s [options] [task [task] ... ]",
+    ),
+    _Command(
+        name = 'test',
+        aliases = [],
+        description = 'build and run tests',
+        usageTextTempl = "%s [options] [task [task] ... ]",
     ),
     _Command(
         name = 'clean',
@@ -65,11 +72,11 @@ class _PosArg(_AutoDict):
 _posargs = [
     # global options that are used before command in cmd line
     _PosArg(
-        name = 'buildtasks',
+        name = 'tasks',
         nargs = '*', # this arg is optional
         default = [],
-        help = 'select build tasks, all tasks if nothing is selected',
-        commands = ['build'],
+        help = 'select tasks from buildconf, all tasks if nothing is selected',
+        commands = ['build', 'test'],
     ),
 ]
 
@@ -107,34 +114,48 @@ _options = [
     ),
     _Option(
         names = ['-b', '--buildtype'],
-        commands = ['configure', 'build', 'clean'],
+        commands = ['configure', 'build', 'clean', 'test'],
         help = 'set the build type',
     ),
     _Option(
         names = ['-g', '--configure'],
-        commands = ['build'],
+        commands = ['build', 'test'],
         runcmd = 'configure',
     ),
     _Option(
         names = ['-c', '--clean'],
-        commands = ['build'],
+        commands = ['build', 'test'],
         runcmd = 'clean',
     ),
     _Option(
         names = ['-d', '--distclean'],
-        commands = ['configure', 'build'],
+        commands = ['configure', 'build', 'test'],
         runcmd = 'distclean',
+    ),
+    _Option(
+        names = ['-t', '--build-tests'],
+        dest = 'buildTests',
+        choices = ('yes', 'no'),
+        commands = ['build', 'test'],
+        help = 'build tests',
+    ),
+    _Option(
+        names = ['-T', '--run-tests'],
+        dest = 'runTests',
+        choices = ('all', 'on-changes', 'none'),
+        commands = ['build', 'test'],
+        help = 'run tests',
     ),
     _Option(
         names = ['-j', '--jobs'],
         type = int,
-        commands = ['build'],
+        commands = ['build', 'test'],
         help = 'amount of parallel jobs',
     ),
     _Option(
         names = ['-p', '--progress'],
         action = "store_true",
-        commands = ['build'],
+        commands = ['build', 'test'],
         help = 'progress bar',
     ),
     _Option(
@@ -151,10 +172,18 @@ _options = [
     ),
 ]
 
-READY_OPT_DEFAULTS = dict(
-    verbose = 0,
-    color = 'auto',
-)
+READY_OPT_DEFAULTS = {
+    '*' : {
+        'verbose': 0,
+        'color': 'auto',
+        'build-tests': 'no',
+        'run-tests' : 'none',
+    },
+    'test' : {
+        'build-tests': 'yes',
+        'run-tests' : 'all',
+    }
+}
 
 class CmdLineParser(object):
     """
@@ -170,7 +199,13 @@ class CmdLineParser(object):
     def __init__(self, progName, defaults):
 
         self._defaults = READY_OPT_DEFAULTS
-        self._defaults.update(defaults)
+        dkeys = set(self._defaults.keys() + defaults.keys())
+        for k in dkeys:
+            if k not in self._defaults:
+                self._defaults[k] = {}
+            if k in defaults:
+                self._defaults[k].update(defaults[k])
+
         self._options = []
         self._command = None
         self._wafCmdLine = []
@@ -252,11 +287,12 @@ class CmdLineParser(object):
         for opt in _options:
             self._options.append(_Option(opt))
 
-        for opt in self._options:
-            optName = opt.names[-1].replace('-', '')
-            if optName in self._defaults:
-                opt.default = self._defaults[optName]
-                opt.help += ' [default: %r]' % opt.default
+    def _getOptionDefault(self, opt, cmd  = None):
+        optName = opt.names[-1].replace('-', '', 2)
+        cmd = '*' if cmd is None else cmd.name
+        defaultsAny = self._defaults['*']
+        defaults = self._defaults.get(cmd, defaultsAny)
+        return defaults.get(optName, defaultsAny.get(optName, None))
 
     @staticmethod
     def _joinCmdNameWithAlieses(cmd):
@@ -317,6 +353,10 @@ class CmdLineParser(object):
                     if v is None or k in _Option.NOTARGPARSE_FIELDS:
                         continue
                     kwargs[k] = v
+                default = self._getOptionDefault(opt, cmd)
+                if default is not None:
+                    kwargs['default'] = default
+                    kwargs['help'] += ' [default: %r]' % kwargs['default']
 
             target.add_argument(*opt.names, **kwargs)
 
@@ -333,9 +373,19 @@ class CmdLineParser(object):
             raise ZenMakeLogicError("Programming error: _command is None") # pragma: no cover
 
         cmdline = [self._command.name]
+
         # self._command.args is AutoDict and it means that it'll create
         # nonexistent keys in it, so we need to make copy
         options = _AutoDict(self._command.args)
+
+        if self._command.name == 'test':
+            # command 'test' should be always in pair with 'build'
+            cmdline.insert(0, 'build')
+        elif self._command.name == 'build':
+            runTests = options.get('run-tests', None)
+            if runTests is not None and runTests != 'none':
+                cmdline.append('test')
+
         if options.configure:
             cmdline.insert(0, 'configure')
         if options.clean:

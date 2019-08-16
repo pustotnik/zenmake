@@ -13,7 +13,6 @@ class ZenMakeError(_WafError):
     def __init__(self, *args, **kwargs):
         super(ZenMakeError, self).__init__(*args, **kwargs)
         self.fullmsg = self.verbose_msg
-        delattr(self, 'verbose_msg')
 
 class ZenMakeLogicError(ZenMakeError):
     """Some logic/programming error"""

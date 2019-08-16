@@ -16,7 +16,7 @@ import pytest
 from waflib import Build
 from waflib.ConfigSet import ConfigSet
 import tests.common as cmn
-from zm import pyutils, assist, cli
+from zm import pyutils, assist, cli, utils
 from zm.buildconf import loader as bconfloader
 from zm.buildconf.handler import BuildConfHandler
 from zm.constants import ZENMAKE_COMMON_FILENAME
@@ -70,7 +70,10 @@ class TestProject(object):
             target = taskParams.get('target', taskName)
             executable = False
             fileNamePattern = '%s'
-            features = taskParams.get('features', '').split()
+            features = utils.toList(taskParams.get('features', ''))
+            if 'test' in features:
+                # ignore test tasks
+                continue
             for feature in features:
                 # find pattern via brute force :)
                 key = feature + '_PATTERN'

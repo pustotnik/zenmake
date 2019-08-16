@@ -55,12 +55,12 @@ class TestAssist(object):
         assert assist.loadTasksFromCache(str(cachefile)) == cachedata.alltasks
 
     def testMakeTargetPath(self):
-        fakeCtx = AutoDict()
-        fakeCtx.out_dir = joinpath('some', 'path')
+        bconfPaths = AutoDict()
+        bconfPaths.buildout = joinpath('some', 'path')
         dirName = 'somedir'
         targetName = 'sometarget'
-        path = assist.makeTargetPath(fakeCtx, dirName, targetName)
-        assert path == joinpath(fakeCtx.out_dir, dirName, targetName)
+        path = assist.makeTargetPath(bconfPaths, dirName, targetName)
+        assert path == joinpath(bconfPaths.buildout, dirName, targetName)
 
     def testMakeCacheConfFileName(self):
         name, zmcachedir = ('somename', 'somedir')
@@ -149,17 +149,6 @@ class TestAssist(object):
                 assert sorted(assist.detectAllTaskFeatures(taskParams)) == sorted([
                     lang, fulltype
                 ])
-
-        taskParams = { 'use-as-test': False, 'features' : '' }
-        assert assist.detectAllTaskFeatures(taskParams) == []
-
-        taskParams = { 'use-as-test': True, 'features' : '' }
-        assert assist.detectAllTaskFeatures(taskParams) == ['test']
-
-        taskParams = { 'use-as-test': True, 'features' : 'cprogram' }
-        assert sorted(assist.detectAllTaskFeatures(taskParams)) == sorted([
-            'c', 'cprogram', 'test'
-        ])
 
     def testHandleTaskIncludesParam(self):
         taskParams = {}

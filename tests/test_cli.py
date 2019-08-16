@@ -18,7 +18,7 @@ class TestCli(object):
 
     @pytest.fixture(autouse = True)
     def setup(self):
-        self.defaults = { 'buildtype': 'somedebug' }
+        self.defaults = { '*' : { 'buildtype': 'somedebug' } }
         self.parser = cli.CmdLineParser('test', self.defaults)
 
     def _parseHelpArgs(self, args, capsys):
@@ -94,15 +94,17 @@ class TestCli(object):
     def testCmdBuild(self):
 
         baseExpectedArgs = {
-            'buildtype' : self.defaults['buildtype'],
+            'buildtype' : self.defaults['*']['buildtype'],
             'jobs' : None,
             'configure': False,
             'color': 'auto',
             'clean': False,
             'progress': False,
             'distclean': False,
-            'buildtasks': [],
+            'tasks': [],
             'verbose': 0,
+            'buildTests': 'no',
+            'runTests': 'none',
         }
 
         CMDNAME = 'build'
@@ -159,12 +161,12 @@ class TestCli(object):
             ),
             dict(
                 args = [CMDNAME, 'sometask'],
-                expectedArgsUpdate = {'buildtasks': ['sometask']},
+                expectedArgsUpdate = {'tasks': ['sometask']},
                 wafArgs = [CMDNAME],
             ),
             dict(
                 args = [CMDNAME, 'sometask', 'anothertask'],
-                expectedArgsUpdate = {'buildtasks': ['sometask', 'anothertask']},
+                expectedArgsUpdate = {'tasks': ['sometask', 'anothertask']},
                 wafArgs = [CMDNAME],
             ),
         ]
@@ -174,7 +176,7 @@ class TestCli(object):
     def testCmdConfigure(self):
 
         baseExpectedArgs = {
-            'buildtype' : self.defaults['buildtype'],
+            'buildtype' : self.defaults['*']['buildtype'],
             'color': 'auto',
             'distclean': False,
             'verbose': 0,
@@ -219,7 +221,7 @@ class TestCli(object):
     def testCmdClean(self):
 
         baseExpectedArgs = {
-            'buildtype' : self.defaults['buildtype'],
+            'buildtype' : self.defaults['*']['buildtype'],
             'color': 'auto',
             'verbose': 0,
         }

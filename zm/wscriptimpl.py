@@ -20,8 +20,10 @@ __all__ = [
 
 import os
 from waflib.ConfigSet import ConfigSet
-from zm.pyutils import maptype, viewitems
-from zm import log, shared, cli, assist, utils
+from waflib.Build import BuildContext
+from zm.pyutils import viewitems
+from zm import log, shared, cli, assist
+from zm.buildconf.validator import KNOWN_TASK_PARAM_NAMES
 
 # pylint: disable=unused-argument
 
@@ -56,11 +58,14 @@ def init(ctx):
     buildtype = shared.buildConfHandler.selectedBuildType
 
     #pylint: disable=unused-variable,missing-docstring,too-many-ancestors
-    from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallContext
+    from waflib.Build import CleanContext, InstallContext, UninstallContext
     for cls in (BuildContext, CleanContext, InstallContext, UninstallContext):
         class CtxClass(cls):
-            variant = buildtype
+            pass
     #pylint: enable=unused-variable,missing-docstring,too-many-ancestors
+
+    # set 'variant' for BuildContext and all classes based on BuildContext
+    setattr(BuildContext, 'variant', buildtype)
 
 def configure(conf):
     """
@@ -73,6 +78,7 @@ def configure(conf):
 
     confHandler = shared.buildConfHandler
 
+    # for assist.runConfTests
     conf.env['PROJECT_NAME'] = confHandler.projectName
 
     # make independent copy of root env
@@ -89,12 +95,10 @@ def configure(conf):
 
     for taskName, taskParams in viewitems(tasks):
 
-        taskParams['name'] = taskName
-
         # make variant for each task: 'buildtype.taskname'
         taskVariant = assist.getTaskVariantName(buildtype, taskName)
         # store it
-        taskParams['task.build.env'] = taskVariant
+        taskParams['task.variant'] = taskVariant
 
         # set up env with toolchain for task
         toolchain = taskParams.get('toolchain', None)
@@ -107,8 +111,13 @@ def configure(conf):
         # set variables
         assist.setTaskEnvVars(conf.env, taskParams)
 
+        # for assist.runConfTests
+        taskParams['name'] = taskName
         # run checkers
         assist.runConfTests(conf, buildtype, taskParams)
+
+        # configure all possible task params
+        assist.configureTaskParams(confHandler, taskName, taskParams)
 
         # Waf always loads all *_cache.py files in directory 'c4che' during
         # build step. So it loads all stored variants even though they
@@ -127,22 +136,27 @@ def configure(conf):
 
     assist.dumpZenMakeCommonFile(confHandler.confPaths)
 
+def validateVariant(ctx):
+    """ Check current variant and return it """
+
+    if ctx.variant is None:
+        ctx.fatal('No variant!')
+
+    buildtype = ctx.variant
+    if buildtype not in ctx.env.alltasks:
+        if ctx.cmd == 'clean':
+            log.info("Buildtype '%s' not found. Nothing to clean" % buildtype)
+            return
+        ctx.fatal("Buildtype '%s' not found! Was step 'configure' missed?"
+                  % buildtype)
+    return buildtype
+
 def build(bld):
     """
     Implementation for wscript.build
     """
 
-    if bld.variant is None:
-        bld.fatal('No variant!')
-
-    buildtype = bld.variant
-    if buildtype not in bld.env.alltasks:
-        if bld.cmd == 'clean':
-            log.info("Buildtype '%s' not found. Nothing to clean" % buildtype)
-            return
-        bld.fatal("Buildtype '%s' not found! Was step 'configure' missed?"
-                  % buildtype)
-
+    buildtype = validateVariant(bld)
     bconfPaths = shared.buildConfHandler.confPaths
 
     # Some comments just to remember some details.
@@ -157,56 +171,37 @@ def build(bld):
     srcDirNode = bld.path.find_dir(srcDir)
 
     tasks = bld.env.alltasks[buildtype]
-
-    allowedTasks = cli.selected.args.buildtasks
-    if not allowedTasks:
-        allowedTasks = tasks.keys()
+    allowedTasks = cli.selected.args.tasks
 
     for taskName, taskParams in viewitems(tasks):
 
-        if taskName not in allowedTasks:
+        if allowedTasks and taskName not in allowedTasks:
             continue
+
+        taskParams = taskParams.copy()
 
         # task env variables are stored in separative env
         # so it's need to switch in
-        bld.variant = taskParams['task.build.env']
+        bld.variant = taskParams.pop('task.variant')
+
         # load environment for this task
         cacheFile = assist.makeCacheConfFileName(bconfPaths.zmcachedir, bld.variant)
         bld.all_envs[bld.variant] = ConfigSet(cacheFile)
 
-        target = taskParams.get('target', taskName)
-        kwargs = dict(
-            name     = taskName,
-            target   = assist.makeTargetPath(bld, buildtype, target),
-            features = taskParams.get('features', ''),
-            lib      = taskParams.get('sys-libs', []),
-            libpath  = taskParams.get('sys-lib-path', []),
-            rpath    = taskParams.get('rpath', []),
-            use      = taskParams.get('use', []),
-            vnum     = taskParams.get('ver-num', ''),
-        )
-
-        src = taskParams.get('source')
+        src = assist.handleTaskSourceParam(taskParams, srcDirNode)
         if src:
-            if isinstance(src, maptype):
-                kwargs['source'] = srcDirNode.ant_glob(
-                    incl = src.get('include', ''),
-                    excl = src.get('exclude', ''),
-                    ignorecase = src.get('ignorecase', False)
-                )
-            else:
-                src = utils.toList(src)
-                kwargs['source'] = [ srcDirNode.find_node(s) for s in src ]
+            taskParams['source'] = src
 
-        includes = assist.handleTaskIncludesParam(taskParams, bconfPaths.srcroot)
-        if includes:
-            kwargs['includes'] =  includes
+        # Remove params that can conflict with waf in theory
+        zmOnlyKeys = (set(KNOWN_TASK_PARAM_NAMES) - assist.getUsedWafTaskKeys())
+        for k in zmOnlyKeys:
+            taskParams.pop(k, None)
 
         # create build task generator
-        bld(**kwargs)
+        bld(**taskParams)
 
     # It's neccesary to revert to origin variant otherwise WAF won't find
-    # correct path at the end of building step.
+    # correct path at the end of the building step.
     bld.variant = buildtype
 
 def shutdown(ctx):

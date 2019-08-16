@@ -12,6 +12,7 @@ if not Logs.log:
     Logs.init_log() # pragma: no cover
 
 enableColors = Logs.enable_colors
+colors = Logs.colors
 
 debug  = Logs.debug
 error  = Logs.error

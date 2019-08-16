@@ -59,6 +59,19 @@ taskscheme = {
     'cppflags' :  { 'type': ('str', 'list-of-strs') },
     'linkflags' : { 'type': ('str', 'list-of-strs') },
     'defines' :   { 'type': ('str', 'list-of-strs') },
+    'run' :       {
+        'type' : 'dict',
+        'vars' : {
+            'cmd' : { 'type': 'str' },
+            'env' : {
+                'type': 'dict',
+                'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
+            },
+            'repeat' : { 'type': 'int' },
+            'timeout' : { 'type': 'int' },
+            'shell' : { 'type': 'bool' },
+        },
+    },
     'conftests' : {
         'type': 'list',
         'vars-type' : 'dict',
@@ -70,6 +83,8 @@ taskscheme = {
             'file' :       { 'type': 'str' },
         },
     },
+    'normalize-target-name' : { 'type': 'bool' },
+    'object-file-counter' : { 'type': 'int' },
 }
 
 confscheme = {
@@ -149,6 +164,8 @@ confscheme = {
     },
 }
 
+KNOWN_TASK_PARAM_NAMES = list(taskscheme.keys())
+
 class Validator(object):
     """
     Validator for structure of buidconf.
@@ -158,6 +175,7 @@ class Validator(object):
 
     _typeHandlerNames = {
         'bool' : '_handleBool',
+        'int'  : '_handleInt',
         'str'  : '_handleStr',
         'dict' : '_handleDict',
         'list' : '_handleList',
@@ -222,6 +240,12 @@ class Validator(object):
     def _handleBool(confnode, _, fullkey):
         if not isinstance(confnode, bool):
             msg = "Param %r should be bool" % fullkey
+            raise ZenMakeConfTypeError(msg)
+
+    @staticmethod
+    def _handleInt(confnode, _, fullkey):
+        if not isinstance(confnode, int):
+            msg = "Param %r should be integer" % fullkey
             raise ZenMakeConfTypeError(msg)
 
     @staticmethod
