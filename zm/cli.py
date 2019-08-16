@@ -199,7 +199,7 @@ class CmdLineParser(object):
     def __init__(self, progName, defaults):
 
         self._defaults = READY_OPT_DEFAULTS
-        dkeys = set(self._defaults.keys() + defaults.keys())
+        dkeys = set(list(self._defaults.keys()) + list(defaults.keys()))
         for k in dkeys:
             if k not in self._defaults:
                 self._defaults[k] = {}
