@@ -13,7 +13,6 @@ from collections import deque
 from waflib.TaskGen import feature, after
 from waflib import Build, Task
 from waflib.Build import BuildContext
-from zm.constants import PLATFORM
 from zm.pyutils import viewitems
 from zm import log, shared, cli, error
 from zm.autodict import AutoDict as _AutoDict
@@ -285,10 +284,9 @@ class TestContext(BuildContext):
 
         cwd = runArgs.get('cwd', None)
         if cwd:
-            if PLATFORM == 'windows':
-                cwd.replace('/', os.path.sep)
             if not os.path.isabs(cwd):
                 cwd = os.path.join(bconfPaths.projectroot, cwd)
+            cwd = ctx.root.make_node(cwd)
         else:
             cwd = ctx.bldnode
         kwargs['cwd'] = cwd
@@ -338,6 +336,11 @@ class TestContext(BuildContext):
             if number is not None:
                 msg = '%s (%d)' % (msg, number + 1)
             log.info(msg, extra = { 'c1': log.colors(task.color) } )
+
+            if not task.cwd.isdir():
+                msg = "Test cannot be run because "
+                msg += "there's no such directory for 'cwd': %r" % task.cwd
+                raise error.ZenMakeError(msg)
 
             task.process()
             if task.hasrun != Task.SUCCESS:

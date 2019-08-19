@@ -122,7 +122,7 @@ class TestAssist(object):
             ])
 
         for taskParams in taskParamsFixture:
-            env = dict()
+            env = ConfigSet()
             assist.setTaskEnvVars(env, taskParams)
             for key, val in taskParams.items():
                 envkey = key.upper()
@@ -151,12 +151,12 @@ class TestAssist(object):
                 ])
 
     def testHandleTaskIncludesParam(self):
-        taskParams = {}
+        taskParams = { 'features' : ['cxx'] }
         srcroot = joinpath(os.getcwd(), 'testsrcroot') # just any abs path
         includes = assist.handleTaskIncludesParam(taskParams, srcroot)
         assert includes == ['.']
 
-        taskParams = { 'includes': 'inc1 inc2' }
+        taskParams = { 'features' : ['c'], 'includes': 'inc1 inc2' }
         includes = assist.handleTaskIncludesParam(taskParams, srcroot)
         assert includes == [
             joinpath(srcroot, taskParams['includes'].split()[0]),
@@ -164,7 +164,7 @@ class TestAssist(object):
             '.'
         ]
 
-        taskParams = { 'includes': ['inc1', 'inc2'] }
+        taskParams = { 'features' : ['cxx'], 'includes': ['inc1', 'inc2'] }
         includes = assist.handleTaskIncludesParam(taskParams, srcroot)
         assert includes == [
             joinpath(srcroot, taskParams['includes'][0]),
@@ -175,7 +175,7 @@ class TestAssist(object):
         abspaths = [
             joinpath(os.getcwd(), '123', 'inc3'),
             joinpath(os.getcwd(), '456', 'inc4')]
-        taskParams = { 'includes': abspaths }
+        taskParams = { 'includes': abspaths, 'features' : ['c'], }
         includes = assist.handleTaskIncludesParam(taskParams, srcroot)
         assert includes == [ abspaths[0], abspaths[1], '.' ]
 

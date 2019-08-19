@@ -111,7 +111,9 @@ def setTaskEnvVars(env, taskParams):
     for var in cfgEnvVars:
         val = taskParams.get(var.lower(), None)
         if val:
-            env[var] = utils.toList(val)
+            # Waf has some usefull predefined env vars for some compilers
+            # so here we add values, not replace.
+            env[var] += utils.toList(val)
 
 def runConfTests(cfgCtx, buildtype, taskParams):
     """
@@ -154,6 +156,12 @@ def runConfTests(cfgCtx, buildtype, taskParams):
             guardname = utils.normalizeForDefine(projectName + '_' + fileName)
             entity['guard'] = entity.pop('guard', guardname)
             cfgCtx.write_config_header(fileName, **entity)
+        elif act == 'check-programs':
+            names = utils.toList(entity.pop('names', []))
+            kwargs = entity
+            kwargs['path_list'] = utils.toList(entity.pop('paths', []))
+            for name in names:
+                cfgCtx.find_program(name, **kwargs)
         else:
             cfgCtx.fatal('unknown act %r for conftests in task %r!' %
                          (act, taskName))
@@ -249,14 +257,19 @@ def handleTaskIncludesParam(taskParams, srcroot):
     Get valid 'includes' for build task
     """
 
+    if 'includes' not in taskParams:
+        features = taskParams['features']
+        needIncludes = any([x for x in features if x in ('c', 'cxx')])
+        if not needIncludes:
+            return None
+
     # From wafbook:
     # Includes paths are given relative to the directory containing the
     # wscript file. Providing absolute paths are best avoided as they are
     # a source of portability problems.
     includes = taskParams.get('includes', [])
     if includes:
-        if isinstance(includes, stringtype):
-            includes = includes.split()
+        includes = utils.toList(includes)
         includes = [ x if os.path.isabs(x) else \
             joinpath(srcroot, x) for x in includes ]
     # The includes='.' add the build directory path. It's needed to use config
@@ -271,7 +284,7 @@ def handleTaskSourceParam(taskParams, srcDirNode):
 
     src = taskParams.get('source')
     if not src:
-        return None
+        return []
 
     if isinstance(src, maptype):
         return srcDirNode.ant_glob(
@@ -284,12 +297,14 @@ def handleTaskSourceParam(taskParams, srcDirNode):
             remove = False,
         )
 
+    # process each source file
     src = utils.toList(src)
     result = []
-    for s in src:
-        node = srcDirNode.find_node(s)
-        if node:
-            result.append(node)
+    for v in src:
+        if isinstance(v, stringtype):
+            v = srcDirNode.find_node(v)
+        if v:
+            result.append(v)
     return result
 
 def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
@@ -302,7 +317,7 @@ def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
     bconfPaths = confHandler.confPaths
     buildtype = confHandler.selectedBuildType
 
-    features = detectAllTaskFeatures(taskParams)
+    taskParams['features'] = features = detectAllTaskFeatures(taskParams)
 
     normalizeTarget = taskParams.get('normalize-target-name', False)
     target = taskParams.get('target', taskName)
@@ -313,17 +328,24 @@ def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
     kwargs = dict(
         name     = taskName,
         target   = targetPath,
-        features = features,
-        # We can not handle 'source' at configure stage
-        source   = taskParams.get('source'),
-        lib      = utils.toList(taskParams.get('sys-libs', [])),
-        libpath  = utils.toList(taskParams.get('sys-lib-path', [])),
-        rpath    = utils.toList(taskParams.get('rpath', [])),
-        use      = utils.toList(taskParams.get('use', [])),
-        vnum     = taskParams.get('ver-num', ''),
         #counter for the object file extension
         idx      = taskParams.get('object-file-counter', 1),
     )
+
+    nameMap = (
+        ('sys-libs','lib'),
+        ('sys-lib-path','libpath'),
+        ('rpath','rpath'),
+        ('use', 'use'),
+    )
+    for param in nameMap:
+        value = taskParams.get(param[0], None)
+        if value is not None:
+            kwargs[param[1]] = utils.toList(value)
+
+    vnum = taskParams.get('ver-num', None)
+    if vnum:
+        kwargs['vnum'] = vnum
 
     includes = handleTaskIncludesParam(taskParams, bconfPaths.srcroot)
     if includes:

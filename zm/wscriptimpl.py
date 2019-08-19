@@ -178,20 +178,18 @@ def build(bld):
         if allowedTasks and taskName not in allowedTasks:
             continue
 
-        bldParams = taskParams.copy()
-
         # task env variables are stored in separative env
         # so it's need to switch in
-        bld.variant = bldParams.pop('$task.variant')
+        bld.variant = taskParams.get('$task.variant')
 
         # load environment for this task
         cacheFile = assist.makeCacheConfFileName(bconfPaths.zmcachedir, bld.variant)
         bld.all_envs[bld.variant] = ConfigSet(cacheFile)
 
-        src = assist.handleTaskSourceParam(taskParams, srcDirNode)
-        if src:
-            bldParams['source'] = src
+        if 'source' in taskParams:
+            taskParams['source'] = assist.handleTaskSourceParam(taskParams, srcDirNode)
 
+        bldParams = taskParams.copy()
         # Remove params that can conflict with waf in theory
         dropKeys = (set(KNOWN_TASK_PARAM_NAMES) - assist.getUsedWafTaskKeys())
         dropKeys.update([k for k in bldParams if k[0] == '$' ])
