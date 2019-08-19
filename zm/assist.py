@@ -292,7 +292,7 @@ def handleTaskSourceParam(taskParams, srcDirNode):
             result.append(node)
     return result
 
-def configureTaskParams(confHandler, taskName, taskParams):
+def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
     """
     Handle every known task param that can be handled at configure stage.
     It is better for common performance because command 'configure' is used
@@ -308,11 +308,11 @@ def configureTaskParams(confHandler, taskName, taskParams):
     target = taskParams.get('target', taskName)
     if normalizeTarget:
         target = utils.normalizeForFileName(target, spaseAsDash = True)
-    target = makeTargetPath(bconfPaths, buildtype, target)
+    targetPath = makeTargetPath(bconfPaths, buildtype, target)
 
     kwargs = dict(
         name     = taskName,
-        target   = target,
+        target   = targetPath,
         features = features,
         # We can not handle 'source' at configure stage
         source   = taskParams.get('source'),
@@ -333,6 +333,21 @@ def configureTaskParams(confHandler, taskName, taskParams):
     assert set(kwargs.keys()) <= getUsedWafTaskKeys()
 
     taskParams.update(kwargs)
+
+    taskVariant = taskParams['$task.variant']
+    taskEnv = cfgCtx.all_envs[taskVariant]
+
+    runnable = False
+    realTarget = targetPath
+    for feature in features:
+        pattern = taskEnv[feature + '_PATTERN']
+        if pattern:
+            realTarget = makeTargetPath(bconfPaths, buildtype, pattern % target)
+        if feature.endswith('program'):
+            runnable = True
+
+    taskParams['$real.target'] = realTarget
+    taskParams['$runnable'] = runnable
 
 def fullclean(bconfPaths, verbose = 1):
     """

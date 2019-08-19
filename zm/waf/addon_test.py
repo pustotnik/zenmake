@@ -5,24 +5,29 @@
  Copyright (c) 2019, Alexander Magola. All rights reserved.
  license: BSD 3-Clause License, see LICENSE for more details.
 
- This module adds support for Waf feature 'test' in tasks
+ This module adds Waf feature 'test' in tasks and provides command 'test'.
 """
 
 import os
-import sys
 from collections import deque
 from waflib.TaskGen import feature, after
 from waflib import Build, Task
 from waflib.Build import BuildContext
 from zm.constants import PLATFORM
-from zm.pyutils import viewitems, viewvalues
+from zm.pyutils import viewitems
 from zm import log, shared, cli, error
 from zm.autodict import AutoDict as _AutoDict
 
 # Command 'test' is always called with the command 'build' in the same
-# process at the moment. So shared variable can be used to send data
+# process. So shared variable can be used to send data
 # from the 'build' to the 'test'.
 _shared = _AutoDict(
+
+    buildTests = False,
+    runTestsOnChanges = False,
+
+    # tasks from buildconf
+    confTasks = None,
 
     #task items to use in 'test' stage
     taskItems = {},
@@ -73,6 +78,9 @@ class TaskItem(object):
 def setup():
     """ Some initialization """
 
+    _shared.runTestsOnChanges = cli.selected.args.runTests == 'on-changes'
+    _shared.buildTests = cli.selected.args.buildTests == 'yes'
+
     import zm.wscriptimpl
 
     def wrap(method):
@@ -98,22 +106,48 @@ def preBuild(bld):
     buildtype = validateVariant(bld)
 
     tasks = bld.env.alltasks[buildtype]
-
+    _shared.confTasks = tasks.copy()
     _shared.testsFound = False
-    for taskParams in viewvalues(tasks):
+    ignoredBuildTasks = []
+    for name, params in viewitems(tasks):
 
-        if 'test' not in taskParams['features']:
+        if 'test' not in params['features']:
             continue
 
+        if not _shared.buildTests:
+            ignoredBuildTasks.append(name)
+
         _shared.testsFound = True
-        taskParams['deep_inputs'] = True
+        params['deep_inputs'] = True
+
+    for k in ignoredBuildTasks:
+        tasks.pop(k, None)
+
+def postBuild(bld):
+    """
+    Gather some info from BuildContext at the end of the 'build' call.
+    It's just for optimisation.
+    """
+
+    _shared.buildHandled = True
 
     runTests = cli.selected.args.runTests
     runTests = _shared.testsFound and runTests != 'none'
-    if runTests:
-        processTasksForRun(tasks)
 
-    _shared.buildHandled = True
+    if not runTests:
+        # Prevent running of command 'test' after the current command by
+        # removing of all values 'test' from list of the current commands.
+        from waflib import Options
+        Options.commands = [ x for x in Options.commands if x != 'test' ]
+        return
+
+    processTasksForRun(_shared.confTasks)
+
+    ctxCache = _shared.ctxCache
+    ctxCache['envs'] = bld.all_envs
+    ctxCache['saved.attrs'] = {}
+    for attr in Build.SAVED_ATTRS:
+        ctxCache['saved.attrs'][attr] = getattr(bld, attr, {})
 
 def processTasksForRun(tasks):
     """
@@ -132,8 +166,8 @@ def processTasksForRun(tasks):
         if 'test' in features:
             _params['test'] = True
 
-        runnable = bool([ x for x in features if x.endswith('program') ])
-        _params['runnable'] = runnable
+        _params['runnable'] = params['$runnable']
+        _params['real.target'] = params['$real.target']
 
         for k in ('name', 'target', 'run', 'use'):
             v = params.get(k, None)
@@ -150,25 +184,6 @@ def processTasksForRun(tasks):
             if other:
                 meta.deps.append(other)
 
-def postBuild(bld):
-    """
-    Gather some info from BuildContext at the end of the 'build' call.
-    It's just for optimisation.
-    """
-
-    if not _shared.testsFound or cli.selected.args.runTests == 'none':
-        # Prevent running of command 'test' after the current command by
-        # removing of all values 'test' from list of the current commands.
-        from waflib import Options
-        Options.commands = [ x for x in Options.commands if x != 'test' ]
-        return
-
-    ctxCache = _shared.ctxCache
-    ctxCache['envs'] = bld.all_envs
-    ctxCache['saved.attrs'] = {}
-    for attr in Build.SAVED_ATTRS:
-        ctxCache['saved.attrs'][attr] = getattr(bld, attr, {})
-
 @feature('*')
 @after('process_rule')
 def watchChanges(self):
@@ -176,8 +191,11 @@ def watchChanges(self):
     Watch changes of tasks
     """
 
-    runTests = cli.selected.args.runTests
-    if runTests != 'on-changes':
+    if not _shared.runTestsOnChanges:
+        return
+
+    # only for command 'build'
+    if self.bld.cmd != 'build':
         return
 
     def wrap(method, taskName):
@@ -200,7 +218,7 @@ def applyFeatureTest(self):
     if self.bld.cmd != 'build':
         return
 
-    if cli.selected.args.buildTests == 'yes':
+    if _shared.buildTests:
         return
 
     # Ignore all build tasks for tests in this case
@@ -249,12 +267,13 @@ class TestContext(BuildContext):
         if not target:
             return
 
+        realTarget = params['real.target']
         runArgs = params.get('run', {})
 
         kwargs = dict(
             name   = os.path.relpath(target, bconfPaths.projectroot),
-            rule   = runArgs.get('cmd', target),
-            target = target,
+            rule   = runArgs.get('cmdline', realTarget),
+            #target = realTarget,
             shell  = runArgs.get('shell', True),
             color  = 'PINK',
         )
@@ -283,19 +302,17 @@ class TestContext(BuildContext):
         tgen.env.env = _env
 
         # add new var to use in 'rule'
-        tgen.env['PROGRAM'] = target
+        tgen.env['PROGRAM'] = realTarget
 
     def _makeTasks(self):
 
         # It's already out of build threads at the moment so no need to
         # worry about thread safing of methods
 
-        runTests = cli.selected.args.runTests
-        runTestsOnChanges = runTests == 'on-changes'
+        runTestsOnChanges = _shared.runTestsOnChanges
 
         taskItems = _shared.taskItems
-        ordered = taskItems.values()
-        ordered.sort()
+        ordered = sorted(taskItems.values())
 
         changedTasks = set(_shared.changedTasks)
 
@@ -328,20 +345,15 @@ class TestContext(BuildContext):
                     msg = 'Test %r failed with exit code %r' % (task.name, task.err_code)
                 else:
                     msg = task.format_error()
-                log.info(msg, extra={'stream':sys.stderr, 'c1': ''})
-                return False
-            return True
+                raise error.ZenMakeError(msg)
 
         repeat = params.get('run', {}).get('repeat', None)
         if repeat:
             repeat = int(repeat)
             for num in range(repeat):
-                if not execute(num):
-                    return False
-
-            return True
-
-        return execute()
+                execute(num)
+        else:
+            execute()
 
     def _runTasks(self):
 
@@ -355,14 +367,11 @@ class TestContext(BuildContext):
                 tasks = tgen.tasks
 
             for task in tasks:
-                if not self._executeTest(task):
-                    return False
-            return True
+                self._executeTest(task)
 
         for group in self.groups:
             for tgen in group:
-                if not handleTaskGen(tgen):
-                    return
+                handleTaskGen(tgen)
 
     def execute(self):
         """
@@ -372,6 +381,8 @@ class TestContext(BuildContext):
         self._prepareExecute()
 
         log.info("Entering directory `%s'", self.variant_dir)
-        self._makeTasks()
-        self._runTasks()
-        log.info("Leaving directory `%s'", self.variant_dir)
+        try:
+            self._makeTasks()
+            self._runTasks()
+        finally:
+            log.info("Leaving directory `%s'", self.variant_dir)

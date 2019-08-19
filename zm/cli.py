@@ -382,7 +382,7 @@ class CmdLineParser(object):
             # command 'test' should be always in pair with 'build'
             cmdline.insert(0, 'build')
         elif self._command.name == 'build':
-            runTests = options.get('run-tests', None)
+            runTests = options.get('runTests', None)
             if runTests is not None and runTests != 'none':
                 cmdline.append('test')
 

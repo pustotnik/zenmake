@@ -98,7 +98,7 @@ def configure(conf):
         # make variant for each task: 'buildtype.taskname'
         taskVariant = assist.getTaskVariantName(buildtype, taskName)
         # store it
-        taskParams['task.variant'] = taskVariant
+        taskParams['$task.variant'] = taskVariant
 
         # set up env with toolchain for task
         toolchain = taskParams.get('toolchain', None)
@@ -117,7 +117,7 @@ def configure(conf):
         assist.runConfTests(conf, buildtype, taskParams)
 
         # configure all possible task params
-        assist.configureTaskParams(confHandler, taskName, taskParams)
+        assist.configureTaskParams(conf, confHandler, taskName, taskParams)
 
         # Waf always loads all *_cache.py files in directory 'c4che' during
         # build step. So it loads all stored variants even though they
@@ -178,11 +178,11 @@ def build(bld):
         if allowedTasks and taskName not in allowedTasks:
             continue
 
-        taskParams = taskParams.copy()
+        bldParams = taskParams.copy()
 
         # task env variables are stored in separative env
         # so it's need to switch in
-        bld.variant = taskParams.pop('task.variant')
+        bld.variant = bldParams.pop('$task.variant')
 
         # load environment for this task
         cacheFile = assist.makeCacheConfFileName(bconfPaths.zmcachedir, bld.variant)
@@ -190,15 +190,16 @@ def build(bld):
 
         src = assist.handleTaskSourceParam(taskParams, srcDirNode)
         if src:
-            taskParams['source'] = src
+            bldParams['source'] = src
 
         # Remove params that can conflict with waf in theory
-        zmOnlyKeys = (set(KNOWN_TASK_PARAM_NAMES) - assist.getUsedWafTaskKeys())
-        for k in zmOnlyKeys:
-            taskParams.pop(k, None)
+        dropKeys = (set(KNOWN_TASK_PARAM_NAMES) - assist.getUsedWafTaskKeys())
+        dropKeys.update([k for k in bldParams if k[0] == '$' ])
+        for k in dropKeys:
+            bldParams.pop(k, None)
 
         # create build task generator
-        bld(**taskParams)
+        bld(**bldParams)
 
     # It's neccesary to revert to origin variant otherwise WAF won't find
     # correct path at the end of the building step.
