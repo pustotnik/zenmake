@@ -46,11 +46,11 @@ buildtypes = {
     },
     'debug-msvc' : {
         'toolchain' : 'msvc',
-        'cxxflags' : '/Od',
+        'cxxflags' : '/Od /EHsc',
     },
     'release-msvc' : {
         'toolchain' : 'msvc',
-        'cxxflags' : '/O2',
+        'cxxflags' : '/O2 /EHsc',
     },
     'default' : 'debug-gcc',
 }

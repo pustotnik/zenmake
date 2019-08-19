@@ -5,8 +5,8 @@ buildtypes:
     release-gcc  : { cxxflags: -fPIC -O2 }
     debug-clang  : { cxxflags: -fPIC -O0 -g }
     release-clang: { cxxflags: -fPIC -O2 }
-    debug-msvc   : { cxxflags: /Od }
-    release-msvc : { cxxflags: /O2 }
+    debug-msvc   : { cxxflags: /Od /EHsc }
+    release-msvc : { cxxflags: /O2 /EHsc }
     default: debug-gcc
 
 platforms:
