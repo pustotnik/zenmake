@@ -63,7 +63,7 @@ class TestProject(object):
         buildtype = self.confHandler.selectedBuildType
 
         for taskName, taskParams in self.confHandler.tasks.items():
-            taskVariant = assist.getTaskVariantName(buildtype, taskName)
+            taskVariant = assist.makeTaskVariantName(buildtype, taskName)
             cacheConfFile = assist.makeCacheConfFileName(
                                             self.confPaths.zmcachedir, taskVariant)
             env = ConfigSet(cacheConfFile)
