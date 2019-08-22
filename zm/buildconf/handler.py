@@ -167,6 +167,7 @@ class BuildConfHandler(object):
                                (buildtype, str(supportedBuildTypes)[1:-1]))
 
         self._meta.buildtypes.selected = buildtype
+        self._meta.buildtype.dir = joinpath(self._confpaths.buildout, buildtype)
         self.cmdLineHandled = True
 
     @property
@@ -205,6 +206,13 @@ class BuildConfHandler(object):
 
         self._checkCmdLineHandled()
         return self._meta.buildtypes.selected
+
+    @property
+    def selectedBuildTypeDir(self):
+        """ Get selected build type directory """
+
+        self._checkCmdLineHandled()
+        return self._meta.buildtype.dir
 
     @property
     def tasks(self):

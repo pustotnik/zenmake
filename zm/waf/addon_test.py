@@ -273,6 +273,7 @@ class TestContext(BuildContext):
             name   = os.path.relpath(target, bconfPaths.projectroot),
             rule   = runArgs.get('cmdline', realTarget),
             #target = realTarget,
+            params = params,
             shell  = runArgs.get('shell', True),
             color  = 'PINK',
         )
@@ -280,7 +281,6 @@ class TestContext(BuildContext):
         timeout = runArgs.get('timeout', None)
         if timeout is not None:
             kwargs['timeout'] = timeout
-            setattr(self, 'timeout', timeout)
 
         cwd = runArgs.get('cwd', None)
         if cwd:
@@ -291,16 +291,15 @@ class TestContext(BuildContext):
             cwd = ctx.bldnode
         kwargs['cwd'] = cwd
 
-        tgen = ctx(**kwargs)
-        setattr(tgen, 'params', params)
-
-        env = runArgs.get('env', {})
-        _env = dict(tgen.env.env or os.environ)
-        _env.update(env)
-        tgen.env.env = _env
+        env = ctx.env.derive()
+        env.env = dict(env.env or os.environ)
+        env.env.update(runArgs.get('env', {}))
+        kwargs['env'] = env
 
         # add new var to use in 'rule'
-        tgen.env['PROGRAM'] = realTarget
+        env['PROGRAM'] = realTarget
+
+        ctx(**kwargs)
 
     def _makeTasks(self):
 

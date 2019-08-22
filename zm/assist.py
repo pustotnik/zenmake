@@ -9,6 +9,7 @@
 """
 
 import os
+import re
 from copy import deepcopy
 from waflib.ConfigSet import ConfigSet
 from zm.pyutils import stringtype, maptype, viewitems
@@ -62,17 +63,14 @@ def loadTasksFromCache(cachefile):
         pass
     return result
 
-def makeTargetPath(bconfPaths, dirName, targetName):
-    """ Compose path for target that is used in build task"""
-    return joinpath(bconfPaths.buildout, dirName, targetName)
-
 def makeCacheConfFileName(zmcachedir, name):
     """ Make file name of specific zenmake cache config file"""
     return joinpath(zmcachedir, name + ZENMAKE_CACHE_NAMESUFFIX)
 
-def getTaskVariantName(buildtype, taskName):
-    """ Get 'variant' for task by fixed template"""
-    return '%s.%s' % (buildtype, taskName)
+def makeTaskVariantName(buildtype, taskName):
+    """ Make 'variant' name for task """
+    name = taskName.strip().replace(' ', '_')
+    return '%s.%s' % (buildtype, re.sub(r'(?u)[^-\w.]', '.', name))
 
 def copyEnv(env):
     """
@@ -315,7 +313,7 @@ def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
     """
 
     bconfPaths = confHandler.confPaths
-    buildtype = confHandler.selectedBuildType
+    btypeDir = confHandler.selectedBuildTypeDir
 
     taskParams['features'] = features = detectAllTaskFeatures(taskParams)
 
@@ -323,7 +321,7 @@ def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
     target = taskParams.get('target', taskName)
     if normalizeTarget:
         target = utils.normalizeForFileName(target, spaseAsDash = True)
-    targetPath = makeTargetPath(bconfPaths, buildtype, target)
+    targetPath = joinpath(btypeDir, target)
 
     kwargs = dict(
         name     = taskName,
@@ -364,7 +362,7 @@ def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
     for feature in features:
         pattern = taskEnv[feature + '_PATTERN']
         if pattern:
-            realTarget = makeTargetPath(bconfPaths, buildtype, pattern % target)
+            realTarget = joinpath(btypeDir, pattern % target)
         if feature.endswith('program'):
             runnable = True
 

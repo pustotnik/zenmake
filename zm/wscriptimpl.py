@@ -96,7 +96,7 @@ def configure(conf):
     for taskName, taskParams in viewitems(tasks):
 
         # make variant for each task: 'buildtype.taskname'
-        taskVariant = assist.getTaskVariantName(buildtype, taskName)
+        taskVariant = assist.makeTaskVariantName(buildtype, taskName)
         # store it
         taskParams['$task.variant'] = taskVariant
 
@@ -115,6 +115,8 @@ def configure(conf):
         taskParams['name'] = taskName
         # run checkers
         assist.runConfTests(conf, buildtype, taskParams)
+        # It's not needed anymore.
+        taskParams.pop('conftests', None)
 
         # configure all possible task params
         assist.configureTaskParams(conf, confHandler, taskName, taskParams)
@@ -195,6 +197,9 @@ def build(bld):
         dropKeys.update([k for k in bldParams if k[0] == '$' ])
         for k in dropKeys:
             bldParams.pop(k, None)
+
+        #special param
+        bldParams['zm-task-params'] = taskParams
 
         # create build task generator
         bld(**bldParams)

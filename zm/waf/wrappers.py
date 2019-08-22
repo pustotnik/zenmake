@@ -22,7 +22,7 @@ def _areBuildTypesNotConfigured(clicmd, bconfHandler):
     buildtype = clicmd.args.buildtype
     zmcachedir = bconfHandler.confPaths.zmcachedir
     for taskName in buildconf.tasks:
-        taskVariant = assist.getTaskVariantName(buildtype, taskName)
+        taskVariant = assist.makeTaskVariantName(buildtype, taskName)
         fname = assist.makeCacheConfFileName(zmcachedir, taskVariant)
         if not os.path.exists(fname):
             return True

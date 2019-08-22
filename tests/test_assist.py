@@ -54,23 +54,28 @@ class TestAssist(object):
         cachedata.store(str(cachefile))
         assert assist.loadTasksFromCache(str(cachefile)) == cachedata.alltasks
 
-    def testMakeTargetPath(self):
-        bconfPaths = AutoDict()
-        bconfPaths.buildout = joinpath('some', 'path')
-        dirName = 'somedir'
-        targetName = 'sometarget'
-        path = assist.makeTargetPath(bconfPaths, dirName, targetName)
-        assert path == joinpath(bconfPaths.buildout, dirName, targetName)
-
     def testMakeCacheConfFileName(self):
         name, zmcachedir = ('somename', 'somedir')
         path = assist.makeCacheConfFileName(zmcachedir, name)
         assert path == joinpath(zmcachedir, name + ZENMAKE_CACHE_NAMESUFFIX)
 
-    def testGetTaskVariantName(self):
-        buildtype, taskName = ('ddd', 'bbb')
-        name = assist.getTaskVariantName(buildtype, taskName)
+    def testMakeTaskVariantName(self):
+        buildtype = 'ddd'
+        taskName = 'bbb'
+        name = assist.makeTaskVariantName(buildtype, taskName)
         assert name == '%s.%s' % (buildtype, taskName)
+
+        taskName = ' bbb '
+        name = assist.makeTaskVariantName(buildtype, taskName)
+        assert name == '%s.%s' % (buildtype, taskName.strip())
+
+        taskName = ' bbb ccc '
+        name = assist.makeTaskVariantName(buildtype, taskName)
+        assert name == '%s.%s' % (buildtype, 'bbb_ccc')
+
+        taskName = ' bbb ^$ccc '
+        name = assist.makeTaskVariantName(buildtype, taskName)
+        assert name == '%s.%s' % (buildtype, 'bbb_..ccc')
 
     def testCopyEnv(self):
         rootenv = ConfigSet()
