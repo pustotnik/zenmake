@@ -52,8 +52,8 @@ class TestBuildconfLoader(object):
         assert buildconf.buildroot == \
                             os.path.join(buildconf.project['root'], 'build')
 
-        assert hasattr(buildconf, 'buildsymlink')
-        assert buildconf.buildsymlink is None
+        assert hasattr(buildconf, 'realbuildroot')
+        assert buildconf.realbuildroot == buildconf.buildroot
 
         assert hasattr(buildconf, 'srcroot')
         assert buildconf.srcroot == buildconf.project['root']

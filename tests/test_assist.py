@@ -195,6 +195,7 @@ class TestAssist(object):
 
         fakeConfPaths = AutoDict()
         fakeConfPaths.buildroot = str(buildroot.realpath())
+        fakeConfPaths.realbuildroot = fakeConfPaths.buildroot
         fakeConfPaths.projectroot = str(projectroot.realpath())
 
         assert os.path.isdir(fakeConfPaths.buildroot)
@@ -203,11 +204,8 @@ class TestAssist(object):
         if PLATFORM != 'windows':
             buildsymlink = tmpdir.join("buildlink")
             buildsymlink.mksymlinkto(buildroot)
-            fakeConfPaths.buildsymlink = str(buildsymlink)
-            assert os.path.exists(fakeConfPaths.buildsymlink)
-            assert os.path.islink(fakeConfPaths.buildsymlink)
-        else:
-            fakeConfPaths.buildsymlink = None
+            fakeConfPaths.buildroot = str(buildsymlink)
+            assert os.path.islink(fakeConfPaths.buildroot)
 
         lockfileName = 'testlockfile'
         lockfile = projectroot.join(lockfileName)
@@ -224,28 +222,27 @@ class TestAssist(object):
         with cmn.capturedOutput(): # just supress any output
             assist.distclean(fakeConfPaths)
 
+        assert not os.path.exists(fakeConfPaths.realbuildroot)
         assert not os.path.exists(fakeConfPaths.buildroot)
         assert os.path.exists(fakeConfPaths.projectroot)
         assert not os.path.exists(str(wscriptfile))
         assert not os.path.exists(str(lockfile))
-        if PLATFORM != 'windows':
-            assert not os.path.exists(fakeConfPaths.buildsymlink)
 
         # rare cases
         buildsymlink = tmpdir.mkdir("buildsymlink")
-        fakeConfPaths.buildsymlink = str(buildsymlink)
-        assert os.path.isdir(fakeConfPaths.buildsymlink)
+        fakeConfPaths.buildroot = str(buildsymlink)
+        assert os.path.isdir(fakeConfPaths.buildroot)
 
         if PLATFORM != 'windows':
             somedir = tmpdir.mkdir("somedir")
-            buildroot = tmpdir.join("buildroot")
-            buildroot.mksymlinkto(somedir)
-            fakeConfPaths.buildroot = str(buildroot)
-            assert os.path.islink(fakeConfPaths.buildroot)
+            realbuildroot = tmpdir.join("buildroot")
+            realbuildroot.mksymlinkto(somedir)
+            fakeConfPaths.realbuildroot = str(realbuildroot)
+            assert os.path.islink(fakeConfPaths.realbuildroot)
 
         with cmn.capturedOutput(): # just supress any output
             assist.distclean(fakeConfPaths)
-        assert not os.path.exists(fakeConfPaths.buildsymlink)
+        assert not os.path.exists(fakeConfPaths.realbuildroot)
         assert not os.path.exists(fakeConfPaths.buildroot)
 
     def testIsBuildConfFake(self):

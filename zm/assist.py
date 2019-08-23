@@ -382,27 +382,23 @@ def fullclean(bconfPaths, verbose = 1):
         if verbose >= 1:
             log.info(msg)
 
-    buildsymlink = bconfPaths.buildsymlink
-    buildroot = bconfPaths.buildroot
-    projectroot = bconfPaths.projectroot
+    realbuildroot = bconfPaths.realbuildroot
+    buildroot     = bconfPaths.buildroot
+    projectroot   = bconfPaths.projectroot
 
-    if buildsymlink:
-        if os.path.isdir(buildsymlink) and not os.path.islink(buildsymlink):
-            loginfo("Removing directory '%s'" % buildsymlink)
-            shutil.rmtree(buildsymlink, ignore_errors = True)
-        elif os.path.islink(buildsymlink) and os.path.lexists(buildsymlink):
-            loginfo("Removing symlink '%s'" % buildsymlink)
-            os.remove(buildsymlink)
+    paths = [realbuildroot, buildroot]
+    for path in list(paths):
+        paths.append(os.path.realpath(path))
+    paths = list(set(paths))
 
-    if os.path.exists(buildroot):
-        realbuildroot = os.path.realpath(buildroot)
-        if os.path.isdir(realbuildroot):
-            loginfo("Removing directory '%s'" % realbuildroot)
-            shutil.rmtree(realbuildroot, ignore_errors = True)
+    for path in paths:
+        if os.path.isdir(path) and not os.path.islink(path):
+            loginfo("Removing directory '%s'" % path)
+            shutil.rmtree(path, ignore_errors = True)
 
-        if os.path.islink(buildroot) and os.path.lexists(buildroot):
-            loginfo("Removing symlink '%s'" % buildroot)
-            os.remove(buildroot)
+        if os.path.islink(path):
+            loginfo("Removing symlink '%s'" % path)
+            os.remove(path)
 
     from waflib import Options
     lockfile = os.path.join(projectroot, Options.lockfile)

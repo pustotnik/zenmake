@@ -24,7 +24,7 @@ class BuildConfPaths(object):
     # pylint: disable=too-many-instance-attributes
 
     __slots__ = (
-        'buildconffile', 'buildconfdir', 'buildroot', 'buildsymlink',
+        'buildconffile', 'buildconfdir', 'buildroot', 'realbuildroot',
         'buildout', 'projectroot', 'srcroot', 'wscripttop', 'wscriptout',
         'wscriptfile', 'wscriptdir', 'wafcachedir', 'wafcachefile',
         'zmcachedir', 'zmcmnfile'
@@ -38,13 +38,17 @@ class BuildConfPaths(object):
         self.buildconffile = abspath(conf.__file__)
         self.buildconfdir  = dirname(self.buildconffile)
         self.buildroot     = unfoldPath(self.buildconfdir, conf.buildroot)
-        self.buildsymlink  = unfoldPath(self.buildconfdir, conf.buildsymlink)
+        self.realbuildroot = unfoldPath(self.buildconfdir, conf.realbuildroot)
         self.buildout      = joinpath(self.buildroot, BUILDOUTNAME)
         self.projectroot   = unfoldPath(self.buildconfdir, conf.project['root'])
         self.srcroot       = unfoldPath(self.buildconfdir, conf.srcroot)
 
+        if not self.realbuildroot:
+            self.realbuildroot = self.buildroot
+
         # TODO: add as option
         #self.wscripttop    = self.buildroot
+        #self.wscripttop    = self.realbuildroot
         self.wscripttop    = self.projectroot
 
         self.wscriptout    = self.buildout

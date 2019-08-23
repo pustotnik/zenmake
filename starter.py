@@ -48,10 +48,12 @@ def prepareDirs(bconfPaths):
     """
     from zm import utils
 
-    if not os.path.exists(bconfPaths.buildroot):
-        os.makedirs(bconfPaths.buildroot)
-    if bconfPaths.buildsymlink and not os.path.exists(bconfPaths.buildsymlink):
-        utils.mksymlink(bconfPaths.buildroot, bconfPaths.buildsymlink)
+    buildroot     = bconfPaths.buildroot
+    realbuildroot = bconfPaths.realbuildroot
+    if not os.path.exists(realbuildroot):
+        os.makedirs(realbuildroot)
+    if buildroot != realbuildroot and not os.path.exists(buildroot):
+        utils.mksymlink(realbuildroot, buildroot)
 
     # We regard ZM_DIR as a directory where file 'wscript' is located.
     # Creating of symlink is cheaper than copying of file but on Windows OS

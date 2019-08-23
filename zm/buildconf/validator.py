@@ -89,7 +89,7 @@ taskscheme = {
 
 confscheme = {
     'buildroot' : { 'type': 'str' },
-    'buildsymlink' : { 'type': 'str' },
+    'realbuildroot' : { 'type': 'str' },
     'srcroot' : { 'type': 'str' },
     'features' : {
         'type' : 'dict',

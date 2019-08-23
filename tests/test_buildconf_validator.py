@@ -269,7 +269,7 @@ class TestBuildconfValidator(object):
 
     def testValidateParamStrs(self):
 
-        for param in ('buildroot', 'buildsymlink', 'srcroot'):
+        for param in ('buildroot', 'realbuildroot', 'srcroot'):
             buildconf = FakeBuildConf()
             setattr(buildconf, param, 11)
             with pytest.raises(ZenMakeConfTypeError):

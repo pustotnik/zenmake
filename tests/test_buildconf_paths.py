@@ -31,8 +31,8 @@ class TestBuildConfPaths(object):
         assert bcpaths.buildconfdir  == dirname(bcpaths.buildconffile)
         assert bcpaths.buildroot     == unfoldPath(bcpaths.buildconfdir,
                                                    fakeBuildConf.buildroot)
-        assert bcpaths.buildsymlink  == unfoldPath(bcpaths.buildconfdir,
-                                                   fakeBuildConf.buildsymlink)
+        assert bcpaths.realbuildroot == unfoldPath(bcpaths.buildconfdir,
+                                                   fakeBuildConf.realbuildroot)
         assert bcpaths.buildout      == joinpath(bcpaths.buildroot, BUILDOUTNAME)
         assert bcpaths.projectroot   == unfoldPath(bcpaths.buildconfdir,
                                                    fakeBuildConf.project['root'])
