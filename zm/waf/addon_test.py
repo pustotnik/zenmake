@@ -13,9 +13,10 @@ from collections import deque
 from waflib.TaskGen import feature, after
 from waflib import Build, Task
 from waflib.Build import BuildContext
-from zm.pyutils import viewitems
+from zm.pyutils import viewitems, viewvalues
 from zm import log, shared, cli, error
 from zm.autodict import AutoDict as _AutoDict
+from zm.waf.addons import precmd, postcmd
 
 # Command 'test' is always called with the command 'build' in the same
 # process. So shared variable can be used to send data
@@ -80,26 +81,42 @@ def setup():
     _shared.runTestsOnChanges = cli.selected.args.runTests == 'on-changes'
     _shared.buildTests = cli.selected.args.buildTests == 'yes'
 
-    import zm.wscriptimpl
+def _isSuitableForRunCmd(taskParams):
+    return taskParams['$runnable'] or taskParams.get('run', None)
 
-    def wrap(method):
-        def execute(bld):
-            # only for command 'build'
-            if bld.cmd != 'build':
-                method(bld)
-                return
+@postcmd('configure', beforeAddOn = ['runcmd'])
+def postConf(_):
+    """ Configure tasks """
 
-            preBuild(bld)
-            method(bld)
-            postBuild(bld)
-        return execute
+    confHandler = shared.buildConfHandler
+    tasks       = confHandler.tasks
 
-    zm.wscriptimpl.build = wrap(zm.wscriptimpl.build)
+    for params in viewvalues(tasks):
+        features = params['features']
 
+        if 'test' not in features:
+            continue
+
+        assert isinstance(features, list)
+        # Adding 'runcmd' in the features here forces add-on 'runcmd' to
+        # handle param 'run' in tasks with 'test'.
+        # Even library can be marked as a test but it can not be executed
+        # and therefore here is selection of tasks to execute by some conditions.
+        if _isSuitableForRunCmd(params):
+            if 'runcmd' not in features:
+                features.append('runcmd')
+
+        params['deep_inputs'] = True
+
+@precmd('build', beforeAddOn = ['runcmd'])
 def preBuild(bld):
     """
     Preprocess zm.wscriptimpl.build
     """
+
+    # only for command 'build'
+    if bld.cmd != 'build':
+        return
 
     from zm.wscriptimpl import validateVariant
     buildtype = validateVariant(bld)
@@ -110,23 +127,33 @@ def preBuild(bld):
     ignoredBuildTasks = []
     for name, params in viewitems(tasks):
 
-        if 'test' not in params['features']:
+        features = params['features']
+        if 'test' not in features:
             continue
+
+        # Remove 'runcmd' after command 'configure'. Even though user set
+        # 'runcmd' for task with feauture 'test' it doesn't matter.
+        # Otherwise all tests will be executed in 'build' command.
+        params['features'] = [ x for x in features if x != 'runcmd' ]
 
         if not _shared.buildTests:
             ignoredBuildTasks.append(name)
 
         _shared.testsFound = True
-        params['deep_inputs'] = True
 
     for k in ignoredBuildTasks:
         tasks.pop(k, None)
 
+@postcmd('build')
 def postBuild(bld):
     """
     Gather some info from BuildContext at the end of the 'build' call.
     It's just for optimisation.
     """
+
+    # only for command 'build'
+    if bld.cmd != 'build':
+        return
 
     _shared.buildHandled = True
 
@@ -135,7 +162,7 @@ def postBuild(bld):
 
     if not runTests:
         # Prevent running of command 'test' after the current command by
-        # removing of all values 'test' from list of the current commands.
+        # removing of all values 'test' from the list of the current commands.
         from waflib import Options
         Options.commands = [ x for x in Options.commands if x != 'test' ]
         return
@@ -158,22 +185,8 @@ def processTasksForRun(tasks):
 
     # Make items
     for name, params in viewitems(tasks):
-        _params = {}
-        features = params['features']
-
-        _params['test'] = False
-        if 'test' in features:
-            _params['test'] = True
-
-        _params['runnable'] = params['$runnable']
-        _params['real.target'] = params['$real.target']
-
-        for k in ('name', 'target', 'run', 'use'):
-            v = params.get(k, None)
-            if v:
-                _params[k] = v
-
-        taskItems[name] = TaskItem(name, _params)
+        params['$istest'] = 'test' in params['features']
+        taskItems[name] = TaskItem(name, params)
 
     # Make deps
     for name, meta in viewitems(taskItems):
@@ -185,7 +198,7 @@ def processTasksForRun(tasks):
 
 @feature('*')
 @after('process_rule')
-def watchChanges(self):
+def watchChanges(tgen):
     """
     Watch changes of tasks
     """
@@ -194,7 +207,7 @@ def watchChanges(self):
         return
 
     # only for command 'build'
-    if self.bld.cmd != 'build':
+    if tgen.bld.cmd != 'build':
         return
 
     def wrap(method, taskName):
@@ -205,26 +218,22 @@ def watchChanges(self):
             _shared.changedTasks.append(taskName)
         return execute
 
-    for task in self.tasks:
-        task.post_run = wrap(task.post_run, self.name)
+    for task in tgen.tasks:
+        task.post_run = wrap(task.post_run, tgen.name)
 
 @feature('test')
 @after('apply_link', 'process_use', 'process_rule')
-def applyFeatureTest(self):
+def applyFeatureTest(tgen):
     """ Some stuff for the feature 'test' """
 
     # only for command 'build'
-    if self.bld.cmd != 'build':
+    if tgen.bld.cmd != 'build':
         return
 
-    if _shared.buildTests:
-        return
-
-    # Ignore all build tasks for tests in this case
-    def alwaysSkip():
-        return Task.SKIP_ME
-    for task in self.tasks:
-        task.runnable_status = alwaysSkip
+    if not _shared.buildTests:
+        # Ignore all build tasks for tests in this case
+        for task in tgen.tasks:
+            task.runnable_status = lambda: Task.SKIP_ME
 
 class TestContext(BuildContext):
     """
@@ -266,44 +275,20 @@ class TestContext(BuildContext):
         if not target:
             return
 
-        realTarget = params['real.target']
-        runArgs = params.get('run', {})
-
+        # make task generator suitable for add-on 'runcmd'.
         kwargs = dict(
-            name   = os.path.relpath(target, bconfPaths.projectroot),
-            rule   = runArgs.get('cmdline', realTarget),
-            #target = realTarget,
-            params = params,
-            shell  = runArgs.get('shell', True),
-            color  = 'PINK',
+            features = ['runcmd'],
+            name     = os.path.relpath(target, bconfPaths.projectroot),
+            color    = 'PINK',
+            run      = params.get('run', {}),
         )
 
-        timeout = runArgs.get('timeout', None)
-        if timeout is not None:
-            kwargs['timeout'] = timeout
-
-        cwd = runArgs.get('cwd', None)
-        if cwd:
-            if not os.path.isabs(cwd):
-                cwd = os.path.join(bconfPaths.projectroot, cwd)
-            cwd = ctx.root.make_node(cwd)
-        else:
-            cwd = ctx.bldnode
-        kwargs['cwd'] = cwd
-
-        env = ctx.env.derive()
-        env.env = dict(env.env or os.environ)
-        env.env.update(runArgs.get('env', {}))
-        kwargs['env'] = env
-
-        # add new var to use in 'rule'
-        env['PROGRAM'] = realTarget
-
+        kwargs['zm-task-params'] = params
         ctx(**kwargs)
 
     def _makeTasks(self):
 
-        # It's already out of build threads at the moment so no need to
+        # It's already out of build threads now so it's not needed to
         # worry about thread safing of methods
 
         runTestsOnChanges = _shared.runTestsOnChanges
@@ -314,10 +299,9 @@ class TestContext(BuildContext):
         changedTasks = set(_shared.changedTasks)
 
         for taskItem in ordered:
-            if not taskItem.params['test']:
+            if not taskItem.params['$istest']:
                 continue
-            if not taskItem.params['runnable']:
-                # Even library can be marked as a test but can not be executed
+            if not _isSuitableForRunCmd(taskItem.params):
                 continue
             if runTestsOnChanges and taskItem.name not in changedTasks:
                 continue
@@ -327,53 +311,52 @@ class TestContext(BuildContext):
         taskItems.clear()
 
     def _executeTest(self, task):
-        tgen = task.generator
-        params = tgen.params
 
-        def execute(number = None):
-            msg  = "Running test: '%s'" % task.name
-            if number is not None:
-                msg = '%s (%d)' % (msg, number + 1)
-            log.info(msg, extra = { 'c1': log.colors(task.color) } )
+        msg  = "Running test: '%s'" % task.name
+        log.info(msg, extra = { 'c1': log.colors(task.color) } )
 
-            if not task.cwd.isdir():
-                msg = "Test cannot be run because "
-                msg += "there's no such directory for 'cwd': %r" % task.cwd
-                raise error.ZenMakeError(msg)
+        if not os.path.isdir(task.cwd):
+            msg = "Test cannot be run because "
+            msg += "there's no such directory for 'cwd': %r" % task.cwd
+            raise error.ZenMakeError(msg)
 
-            task.process()
-            if task.hasrun != Task.SUCCESS:
-                if task.hasrun == Task.CRASHED:
-                    msg = 'Test %r failed with exit code %r' % (task.name, task.err_code)
-                else:
-                    msg = task.format_error()
-                raise error.ZenMakeError(msg)
-
-        repeat = params.get('run', {}).get('repeat', None)
-        if repeat:
-            repeat = int(repeat)
-            for num in range(repeat):
-                execute(num)
-        else:
-            execute()
+        task.process()
+        if task.hasrun != Task.SUCCESS:
+            if task.hasrun == Task.CRASHED:
+                msg = 'Test %r failed with exit code %r' % (task.name, task.err_code)
+            else:
+                msg = task.format_error()
+            raise error.ZenMakeError(msg)
 
     def _runTasks(self):
 
         # TODO: add parallel running
 
-        def handleTaskGen(tgen):
-            if isinstance(tgen, Task.Task):
-                tasks = [tgen]
+        def tgpost(tgen):
+            try:
+                post = tgen.post
+            except AttributeError:
+                pass
             else:
-                tgen.post() # for calls of 'feature' methods, etc.
-                tasks = tgen.tasks
+                post()
 
-            for task in tasks:
-                self._executeTest(task)
-
+        # for calls of 'feature' methods, etc.
         for group in self.groups:
             for tgen in group:
-                handleTaskGen(tgen)
+                tgpost(tgen)
+
+        while True:
+            alltasks = []
+            for group in self.groups:
+                for tgen in group:
+                    tasks = [tgen] if isinstance(tgen, Task.Task) else tgen.tasks
+                    tasks = [ x for x in tasks if not x.hasrun ]
+                    alltasks.extend(tasks)
+            if not alltasks:
+                break
+
+            for task in alltasks:
+                self._executeTest(task)
 
     def execute(self):
         """
