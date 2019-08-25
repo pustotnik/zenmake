@@ -19,6 +19,7 @@ import tests.common as cmn
 from zm import pyutils, assist, cli, utils
 from zm.buildconf import loader as bconfloader
 from zm.buildconf.handler import BuildConfHandler
+from zm.constants import ZENMAKE_COMMON_FILENAME
 import starter
 
 joinpath = os.path.join
@@ -105,10 +106,17 @@ class TestProject(object):
 
         def copytreeIgnore(src, names):
             # don't copy build dir/files
+            if ZENMAKE_COMMON_FILENAME in names:
+                return names
             return ['build']
 
-        shutil.copytree(joinpath(cmn.TEST_PROJECTS_DIR, request.param),
-                        tmptestDir, ignore = copytreeIgnore)
+        currentPrjDir = joinpath(cmn.TEST_PROJECTS_DIR, request.param)
+        prjBuildDir = joinpath(currentPrjDir, 'build')
+        if os.path.exists(prjBuildDir):
+            prjBuildDir = os.path.realpath(prjBuildDir)
+            if os.path.isdir(prjBuildDir):
+                shutil.rmtree(prjBuildDir, ignore_errors = True)
+        shutil.copytree(currentPrjDir, tmptestDir, ignore = copytreeIgnore)
 
         self.cwd = tmptestDir
         projectConf = bconfloader.load('buildconf', self.cwd)
@@ -133,7 +141,7 @@ class TestProject(object):
     def customtoolchains(self, request, tmpdir):
         self._setup(request, tmpdir)
 
-    def testConfigure(self, allprojects):
+    def testConfigureAndBuild(self, allprojects):
 
         cmdLine = [self.pythonbin, ZM_BIN, 'configure', '-v']
         assert self._runZm(cmdLine)[0] == 0
@@ -149,6 +157,17 @@ class TestProject(object):
 
         # simple build
         cmdLine = [self.pythonbin, ZM_BIN, 'build', '-v']
+        assert self._runZm(cmdLine)[0] == 0
+        self._checkBuildResults(cmdLine, True)
+
+    def testBuildAndBuild(self, allprojects):
+
+        # simple build
+        cmdLine = [self.pythonbin, ZM_BIN, 'build', '-v']
+        assert self._runZm(cmdLine)[0] == 0
+        self._checkBuildResults(cmdLine, True)
+
+        # simple rebuild
         assert self._runZm(cmdLine)[0] == 0
         self._checkBuildResults(cmdLine, True)
 
