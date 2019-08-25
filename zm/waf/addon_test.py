@@ -47,6 +47,8 @@ class TaskItem(object):
     Task info to use in 'test' command.
     """
 
+    __slots__ = ('name', 'params', 'deps')
+
     def __init__(self, name, params):
         self.name = name
         self.params = params
@@ -63,9 +65,9 @@ class TaskItem(object):
         return _weight
 
     def __eq__(self, other):
-        return self.name == other.name and self.weight() == other.weight()
+        return (self.weight() == other.weight()) and (self.name == other.name)
     def __ne__(self, other):
-        return self.name != other.name or self.weight() != other.weight()
+        return not self.__eq__(other)
     def __lt__(self, other):
         return self.weight() < other.weight()
     def __le__(self, other):

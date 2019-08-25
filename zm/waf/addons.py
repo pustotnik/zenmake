@@ -14,15 +14,39 @@ __all__ = [
 ]
 
 import os
-from collections import namedtuple, defaultdict
+from collections import namedtuple
 from zm.utils import loadPyModule
-from zm.error import ZenMakeLogicError
 
 _cache = {}
 _hooks = {}
 
 WhenCall = namedtuple('WhenCall', 'pre, post')
-HooksInfo = namedtuple('HooksInfo', 'order, funcs, conds')
+HooksInfo = namedtuple('HooksInfo', 'funcs, sorted')
+
+class FuncMeta(object):
+    ''' Sortable func info for precmd/postcmd decorators '''
+
+    __slots__ = ('beforeAddOn', 'afterAddOn', 'addon', 'func')
+
+    def __init__(self, **kwargs):
+        self.beforeAddOn = set(kwargs.get('beforeAddOn', []))
+        self.afterAddOn = set(kwargs.get('afterAddOn', []))
+        self.addon = kwargs.get('addon', None)
+        self.func = kwargs.get('func', None)
+
+    def __eq__(self, other):
+        return self.func == other.func
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    def __lt__(self, other):
+        return (other.addon in self.beforeAddOn) or \
+               (self.addon in other.afterAddOn)
+    def __le__(self, other):
+        return self.__eq__(other) or self.__lt__(other)
+    def __gt__(self, other):
+        return not self.__lt__(other)
+    def __ge__(self, other):
+        return self.__eq__(other) or self.__gt__(other)
 
 def init():
     """ Module initialization """
@@ -30,9 +54,15 @@ def init():
     import zm.wscriptimpl as wscript
 
     def callHooks(hooksInfo, ctx):
-        for name in hooksInfo.order:
-            for func in hooksInfo.funcs.get(name, []):
-                func(ctx)
+        if not hooksInfo.sorted:
+            hooksInfo.funcs.sort()
+            # namedtuple is immutable for change atrribute instances:
+            # we can change its value but cannot set it otherwise exception
+            # 'AttributeError: can't set attribute' will be gotten.
+            # So I emulate boolean value with 'set'.
+            hooksInfo.sorted.add(1)
+        for funcMeta in hooksInfo.funcs:
+            funcMeta.func(ctx)
 
     def wrap(method):
         def execute(ctx):
@@ -42,83 +72,43 @@ def init():
             callHooks(_hooks[methodName].post, ctx)
         return execute
 
-    addonNames = allAddOnNames()
-    addonNames.append('*') # for unknown modules
     for cmd in ('options', 'init', 'configure', 'build', 'shutdown'):
         _hooks[cmd] = WhenCall(
-            pre  = HooksInfo( order = addonNames, funcs = defaultdict(list),
-                              conds = {} ),
-            post = HooksInfo( order = addonNames, funcs = defaultdict(list),
-                              conds = {} )
+            pre  = HooksInfo( funcs = [], sorted = set() ),
+            post = HooksInfo( funcs = [], sorted = set() )
         )
         setattr(wscript, cmd, wrap(getattr(wscript, cmd)))
 
-def _arrangeHooksOrder(hooksInfo, condAddOns, addonName, before):
-    if not condAddOns:
-        return
-
-    # Current a way to arrange order has one potential problem:
-    # declaring each next pre/post hook method in addon with the same pre/post
-    # condition and command can override previous changed order. It's not a
-    # problem if only one such a hook function exists for each add-on or if
-    # they don't change their order conditions.
-    #TODO: remake algo
-    addonNames = allAddOnNames()
-    order = hooksInfo.order
-    idxByFunc = order.index(addonName)
-    for name in condAddOns:
-        if name not in addonNames:
-            name = '*' # for unknown modules
-        idxCond = order.index(name)
-        doSwap = any((
-            before and idxCond < idxByFunc,
-            not before and idxCond > idxByFunc
-        ))
-
-        if doSwap:
-            order[idxByFunc], order[idxCond] = order[idxCond], order[idxByFunc]
-
-def _checkHooksOrder(hooksInfo, addonName):
-
-    order = hooksInfo.order
-    idxCurrent = order.index(addonName)
-
-    funcs = hooksInfo.funcs[addonName]
-    for func in funcs:
-        conds = hooksInfo.conds[func]
-        beforeAddOns = conds['before']
-        afterAddOns = conds['after']
-
-        for addon in beforeAddOns:
-            idxCond = order.index(addon)
-            if idxCurrent > idxCond:
-                raise ZenMakeLogicError("Invalid using of decorator precmd/postcmd")
-        for addon in afterAddOns:
-            idxCond = order.index(addon)
-            if idxCurrent < idxCond:
-                raise ZenMakeLogicError("Invalid using of decorator precmd/postcmd")
-
 def _hookDecorator(func, hooksInfo, beforeAddOn, afterAddOn):
 
-    addonNames = allAddOnNames()
-    addonName = func.__module__.split('.')[-1][6:]
+    # reset 'sorted' status
+    hooksInfo.sorted.clear()
 
-    if not beforeAddOn:
-        beforeAddOn = []
-    if not afterAddOn:
-        afterAddOn = []
-
-    if addonName not in addonNames:
+    addOnNames = set(allAddOnNames())
+    moduleName = func.__module__.split('.')[-1]
+    if not moduleName.startswith('addon_'):
         addonName = '*' # for unknown modules
-    hooksInfo.funcs[addonName].append(func)
-    hooksInfo.conds[func] = dict(
-        before = beforeAddOn,
-        after  = afterAddOn,
-    )
+    else:
+        addonName = moduleName[6:]
+        if addonName not in addOnNames:
+            addonName = '*'
 
-    _arrangeHooksOrder(hooksInfo, beforeAddOn, addonName, True)
-    _arrangeHooksOrder(hooksInfo, afterAddOn, addonName, False)
-    _checkHooksOrder(hooksInfo, addonName)
+    condAddOns = [beforeAddOn, afterAddOn]
+    for i in (0, 1):
+        if not condAddOns[i]:
+            condAddOns[i] = []
+        if not isinstance(condAddOns[i], list):
+            condAddOns[i] = [condAddOns[i]]
+        for j, name in enumerate(condAddOns[i]):
+            if name not in addOnNames:
+                condAddOns[i][j] = '*'
+
+    hooksInfo.funcs.append(FuncMeta(
+        beforeAddOn = condAddOns[0],
+        afterAddOn  = condAddOns[1],
+        addon = addonName,
+        func = func,
+    ))
 
     return func
 
