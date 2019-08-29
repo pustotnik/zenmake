@@ -66,9 +66,10 @@ def processCmdLine(conf, cwd, shell, cmdArgs):
             if result:
                 launcher = result[0]
                 cmdline = '%s %s' % (launcher, cmdline)
-    elif partsCount > 1:
-        # Waf raise exception in verbose mode if cannot find full path
-        # to executable and on windows cmdline like 'python file.py' doesn't work.
+    elif partsCount > 1 and not shell:
+        # Waf raises exception in verbose mode with 'shell' == False if it
+        # cannot find full path to executable and on windows cmdline
+        # like 'python file.py' doesn't work.
         # So here is trying to find full path for such cases.
         launcher = cmdSplitted[0]
         result = conf.find_program(launcher, **fkw)
@@ -100,7 +101,6 @@ def postConf(conf):
 
         cmdTaskArgs = dict(
             name     = taskName,
-            shell    = cmdArgs.get('shell', False),
             timeout  = cmdArgs.get('timeout', None),
             env      = cmdArgs.get('env', {}),
             repeat   = cmdArgs.get('repeat', 1),
@@ -115,7 +115,8 @@ def postConf(conf):
             cwd = btypeDir
         cmdTaskArgs['cwd'] = cwd
 
-        shell = cmdArgs.get('shell', False)
+        # By default 'shell' is True to rid of some problems with Waf and Windows
+        shell = cmdArgs.get('shell', True)
         cmdline, shell = processCmdLine(conf, cwd, shell, cmdArgs)
         cmdTaskArgs['shell'] = shell
         cmdTaskArgs['cmdline'] = cmdline

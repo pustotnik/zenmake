@@ -18,7 +18,6 @@ tasks = {
         'includes' : '.',
         'run'      : {
             'cmdline' : "echo 'This is runcmd in task \"shlib\"'",
-            'shell'   : True, # mostly for windows
         },
     },
     'stlib' : {
@@ -39,7 +38,6 @@ tasks = {
         'use'      : 'shlibmain',
         'run'      : {
             'cmdline' : "echo 'This is runcmd in task \"complex\"'",
-            'shell'   : True, # mostly for windows
         },
     },
     'stlib.test' : {
@@ -52,7 +50,6 @@ tasks = {
         'run'      : {
             'cmdline' : "echo 'say hello'",
             'repeat'  : 2,
-            'shell'   : True, # mostly for windows
         },
         'use'      : 'shlibmain',
     },
@@ -61,7 +58,6 @@ tasks = {
         'run'      : {
             'cmdline' : iswin32 and "dir /B" or "ls",
             'cwd'     : '.',
-            'shell'   : True,
         },
     },
     'test.py' : {
@@ -70,18 +66,20 @@ tasks = {
             'cmdline' : 'python tests/test.py',
             'cwd'     : '.',
             'env'     : { 'JUST_ENV_VAR' : 'qwerty', },
+            'shell'   : False,
         },
         'use'      : 'shlibmain',
         'conftests'  : [ dict(act = 'check-programs', names = 'python'), ]
     },
     'altscript' : {
-        'run' : { 'cmdline' : '"alt script.py"', 'cwd' : '.', },
+        'run' : { 'cmdline' : '"alt script.py"', 'cwd' : '.', 'shell' : False,},
     },
     'test from script' : {
         'features' : 'test',
         'run'      : {
             'cmdline' : 'python tests/test.py',
             'cwd'     : '.',
+            'shell'   : False,
         },
         'use'      : 'complex',
         'conftests'  : [ dict(act = 'check-programs', names = 'python'), ]
@@ -97,6 +95,7 @@ tasks = {
             'env'     : { 'AZ' : '111', 'BROKEN_TEST' : 'false'},
             'repeat'  : 2,
             'timeout' : 10, # in seconds, Python 3 only
+            'shell'   : False,
         },
     },
     'shlibmain.test' : {
