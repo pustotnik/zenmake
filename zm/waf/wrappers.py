@@ -124,3 +124,13 @@ def wrapBldCtxAutoConf(clicmd, bconfHandler, method):
     return execute
 
 wrapBldCtxAutoConf.callCounter = 0
+
+def setupAll(cmd, bconfHandler):
+    """ Setup all wrappers for Waf """
+
+    from waflib import Build
+
+    Build.BuildContext.execute = wrapBldCtxAutoConf(cmd, bconfHandler,
+                                                    Build.BuildContext.execute)
+    for ctxCls in (Build.CleanContext, Build.ListContext):
+        ctxCls.execute = wrapBldCtxNoLockInTop(bconfHandler, ctxCls.execute)

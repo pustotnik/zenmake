@@ -132,14 +132,11 @@ def main():
     zm.waf.loadAllAddOns()
 
     # start waf ecosystem
-    from waflib import Scripting, Build
+    from waflib import Scripting
     del sys.argv[1:]
     sys.argv.extend(wafCmdLine)
-    from zm.waf.wrappers import wrapBldCtxNoLockInTop, wrapBldCtxAutoConf
-    Build.BuildContext.execute = wrapBldCtxAutoConf(cmd, bconfHandler,
-                                                    Build.BuildContext.execute)
-    for ctxCls in (Build.CleanContext, Build.ListContext):
-        ctxCls.execute = wrapBldCtxNoLockInTop(bconfHandler, ctxCls.execute)
+    from zm.waf import wrappers
+    wrappers.setupAll(cmd, bconfHandler)
 
     cwd = bconfPaths.wscriptdir
     Scripting.waf_entry_point(cwd, Context.WAFVERSION, WAF_DIR)

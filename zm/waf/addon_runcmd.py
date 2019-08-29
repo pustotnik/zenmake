@@ -15,13 +15,13 @@ from waflib.Errors import WafError
 from waflib import Task
 from zm.pyutils import viewitems
 from zm import log, shared, error
-from zm.constants import PLATFORM
+from zm.constants import PLATFORM, EXE_FILE_EXTS
 from zm.waf.addons import postcmd
 
 if PLATFORM == 'windows':
-    CMDFILE_EXTS = ',.exe,.com,.bat,.cmd,.py,.pl'
+    CMDFILE_EXTS = EXE_FILE_EXTS + '.py,.pl'
 else:
-    CMDFILE_EXTS = ',.sh,.pl,.py'
+    CMDFILE_EXTS = EXE_FILE_EXTS
 
 def processCmdLine(conf, cwd, shell, cmdArgs):
     """ Get and process 'cmdline' at 'configure' stage """
