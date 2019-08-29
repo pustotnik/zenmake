@@ -1,11 +1,13 @@
 
 import os
+import sys
 import getpass
 import tempfile
 joinpath  = os.path.join
 
 username = getpass.getuser()     # portable way to get user name
 tmpdir   = tempfile.gettempdir() # portable way to get temp directory
+iswin32  = os.sep == '\\' or sys.platform == 'win32' or os.name == 'nt'
 
 #realbuildroot = joinpath(tmpdir, username, 'projects', 'complex-unittest', 'build')
 
@@ -16,6 +18,7 @@ tasks = {
         'includes' : '.',
         'run'      : {
             'cmdline' : "echo 'This is runcmd in task \"shlib\"'",
+            'shell'   : True, # mostly for windows
         },
     },
     'stlib' : {
@@ -36,7 +39,7 @@ tasks = {
         'use'      : 'shlibmain',
         'run'      : {
             'cmdline' : "echo 'This is runcmd in task \"complex\"'",
-            #'repeat'  : 2,
+            'shell'   : True, # mostly for windows
         },
     },
     'stlib.test' : {
@@ -44,8 +47,37 @@ tasks = {
         'source'   : 'tests/test_stlib.cpp',
         'use'      : 'stlib',
     },
+    'echo' : {
+        'features' : 'runcmd',
+        'run'      : {
+            'cmdline' : "echo 'say hello'",
+            'repeat'  : 2,
+            'shell'   : True, # mostly for windows
+        },
+        'use'      : 'shlibmain',
+    },
+    'ls' : {
+        'features' : 'runcmd',
+        'run'      : {
+            'cmdline' : iswin32 and "dir /B" or "ls",
+            'cwd'     : '.',
+            'shell'   : True,
+        },
+    },
     'test.py' : {
-        #'features' : 'runcmd',
+        'features' : 'runcmd',
+        'run'      : {
+            'cmdline' : 'python tests/test.py',
+            'cwd'     : '.',
+            'env'     : { 'JUST_ENV_VAR' : 'qwerty', },
+        },
+        'use'      : 'shlibmain',
+        'conftests'  : [ dict(act = 'check-programs', names = 'python'), ]
+    },
+    'altscript' : {
+        'run' : { 'cmdline' : '"alt script.py"', 'cwd' : '.', },
+    },
+    'test from script' : {
         'features' : 'test',
         'run'      : {
             'cmdline' : 'python tests/test.py',
@@ -62,10 +94,9 @@ tasks = {
             'cmdline' : '${PROGRAM} a b c',
             #'cwd'     : '.', # can be path relative to current project root path
             #'cwd'     : '.1',
-            'env'     : { 'AZ' : '111', },
+            'env'     : { 'AZ' : '111', 'BROKEN_TEST' : 'false'},
             'repeat'  : 2,
             'timeout' : 10, # in seconds, Python 3 only
-            'shell'   : False,
         },
     },
     'shlibmain.test' : {

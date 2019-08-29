@@ -11,6 +11,7 @@
 import os
 import re
 from copy import deepcopy
+from collections import defaultdict
 from waflib.ConfigSet import ConfigSet
 from zm.pyutils import stringtype, maptype, viewitems
 from zm import utils, toolchains, log
@@ -100,6 +101,12 @@ def deepcopyEnv(env):
         newenv[k] = deepcopy(env[k])
     return newenv
 
+def setConfDirectEnv(cfgCtx, name, env):
+    """ Set env without deriving and other actions """
+
+    cfgCtx.variant = name
+    cfgCtx.all_envs[name] = env
+
 def setTaskEnvVars(env, taskParams):
     """
     Set up some env vars for build task such as compiler flags
@@ -110,59 +117,124 @@ def setTaskEnvVars(env, taskParams):
         val = taskParams.get(var.lower(), None)
         if val:
             # Waf has some usefull predefined env vars for some compilers
-            # so here we add values, not replace.
+            # so here we add values, not replace them.
             env[var] += utils.toList(val)
 
-def runConfTests(cfgCtx, buildtype, taskParams):
+def _confTestCheckPrograms(entity, **kwargs):
+    cfgCtx = kwargs['cfgCtx']
+
+    cfgCtx.setenv('')
+    called = kwargs['called'][id(cfgCtx.env)]
+
+    names = utils.toList(entity.pop('names', []))
+    funcArgs = entity
+    funcArgs['path_list'] = utils.toList(entity.pop('paths', []))
+
+    for name in names:
+        # It doesn't matter here that 'hash' can produce different result
+        # between python runnings.
+        _hash = hash( ('find_program', name, repr(sorted(funcArgs.items())) ) )
+        if _hash not in called:
+            cfgCtx.find_program(name, **funcArgs)
+            called.add(_hash)
+
+def _confTestCheck(entity, **kwargs):
+    cfgCtx = kwargs['cfgCtx']
+    taskParams = kwargs['taskParams']
+
+    cfgCtx.setenv(taskParams['$task.variant'])
+    called = kwargs['called'][id(cfgCtx.env)]
+    funcArgs = entity
+    _hash = hash( ('check', repr(sorted(funcArgs.items())) ) )
+    if _hash not in called:
+        cfgCtx.check(**funcArgs)
+        called.add(_hash)
+
+def _confTestCheckSysLibs(entity, **kwargs):
+    taskParams = kwargs['taskParams']
+
+    sysLibs = utils.toList(taskParams.get('sys-libs', []))
+    funcArgs = entity
+    for lib in sysLibs:
+        funcArgs['lib'] = lib
+        _confTestCheck(funcArgs, **kwargs)
+
+def _confTestCheckHeaders(entity, **kwargs):
+    headers = utils.toList(entity.pop('names', []))
+    funcArgs = entity
+    for header in headers:
+        funcArgs['header_name'] = header
+    _confTestCheck(funcArgs, **kwargs)
+
+def _confTestCheckLibs(entity, **kwargs):
+    libs = utils.toList(entity.pop('names', []))
+    autodefine = entity.pop('autodefine', False)
+    funcArgs = entity
+    for lib in libs:
+        funcArgs['lib'] = lib
+        if autodefine:
+            funcArgs['define_name'] = 'HAVE_LIB_' + lib.upper()
+        _confTestCheck(funcArgs, **kwargs)
+
+def _confTestWriteHeader(entity, **kwargs):
+
+    buildtype  = kwargs['buildtype']
+    cfgCtx     = kwargs['cfgCtx']
+    taskName   = kwargs['taskName']
+    taskParams = kwargs['taskParams']
+
+    cfgCtx.setenv(taskParams['$task.variant'])
+
+    def defaultFileName():
+        return utils.normalizeForFileName(taskName).lower()
+
+    fileName = entity.pop('file', '%s_%s' %
+                          (defaultFileName(), 'config.h'))
+    fileName = joinpath(buildtype, fileName)
+    projectName = cfgCtx.env['PROJECT_NAME'] or ''
+    guardname = utils.normalizeForDefine(projectName + '_' + fileName)
+    entity['guard'] = entity.pop('guard', guardname)
+
+    cfgCtx.write_config_header(fileName, **entity)
+
+_confTestFuncs = {
+    'check-programs'      : _confTestCheckPrograms,
+    'check-sys-libs'      : _confTestCheckSysLibs,
+    'check-headers'       : _confTestCheckHeaders,
+    'check-libs'          : _confTestCheckLibs,
+    'check'               : _confTestCheck,
+    'write-config-header' : _confTestWriteHeader,
+}
+
+def runConfTests(cfgCtx, buildtype, tasks):
     """
     Run supported configuration tests/checks
     """
-    taskName = taskParams['name']
-    confTests = taskParams.get('conftests', [])
-    for entity in confTests:
-        act = entity.pop('act', None)
-        if act == 'check-sys-libs':
-            sysLibs = utils.toList(taskParams.get('sys-libs', []))
-            kwargs = entity
-            for lib in sysLibs:
-                kwargs['lib'] = lib
-                cfgCtx.check(**kwargs)
-        elif act == 'check-headers':
-            headers = utils.toList(entity.pop('names', []))
-            kwargs = entity
-            for header in headers:
-                kwargs['header_name'] = header
-                cfgCtx.check(**kwargs)
-        elif act == 'check-libs':
-            libs = utils.toList(entity.pop('names', []))
-            autodefine = entity.pop('autodefine', False)
-            kwargs = entity
-            for lib in libs:
-                kwargs['lib'] = lib
-                if autodefine:
-                    kwargs['define_name'] = 'HAVE_LIB_' + lib.upper()
-                cfgCtx.check(**kwargs)
-        elif act == 'check':
-            cfgCtx.check(**entity)
-        elif act == 'write-config-header':
-            def defaultFileName():
-                return utils.normalizeForFileName(taskName).lower()
-            fileName = entity.pop('file', '%s_%s' %
-                                  (defaultFileName(), 'config.h'))
-            fileName = joinpath(buildtype, fileName)
-            projectName = cfgCtx.env['PROJECT_NAME'] or ''
-            guardname = utils.normalizeForDefine(projectName + '_' + fileName)
-            entity['guard'] = entity.pop('guard', guardname)
-            cfgCtx.write_config_header(fileName, **entity)
-        elif act == 'check-programs':
-            names = utils.toList(entity.pop('names', []))
-            kwargs = entity
-            kwargs['path_list'] = utils.toList(entity.pop('paths', []))
-            for name in names:
-                cfgCtx.find_program(name, **kwargs)
-        else:
-            cfgCtx.fatal('unknown act %r for conftests in task %r!' %
-                         (act, taskName))
+
+    called = defaultdict(set)
+
+    for taskName, taskParams in viewitems(tasks):
+        confTests = taskParams.get('conftests', [])
+        funcKWArgs = dict(
+            cfgCtx = cfgCtx,
+            buildtype = buildtype,
+            taskName = taskName,
+            taskParams = taskParams,
+            called = called,
+        )
+        for entity in confTests:
+            act = entity.pop('act', None)
+            func = _confTestFuncs.get(act, None)
+            if not func:
+                cfgCtx.fatal('unknown act %r for conftests in task %r!' %
+                             (act, taskName))
+
+            func(entity, **funcKWArgs)
+
+        # It's not needed anymore.
+        taskParams.pop('conftests', None)
+
+    cfgCtx.setenv('')
 
 def loadDetectedCompiler(cfgCtx, kind):
     """
@@ -201,12 +273,12 @@ def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
     if not buildconfHandler.toolchainNames:
         cfgCtx.fatal("No toolchains found. Is buildconf correct?")
 
-    toolchainsEnv = {}
+    toolchainsEnvs = {}
     oldEnvName = cfgCtx.variant
 
     def loadToolchain(toolchain):
         toolname = toolchain
-        if toolname in toolchainsEnv:
+        if toolname in toolchainsEnvs:
             return
         cfgCtx.setenv(toolname, env = copyFromEnv)
         custom  = buildconfHandler.customToolchains.get(toolname, None)
@@ -219,7 +291,7 @@ def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
             loadDetectedCompiler(cfgCtx, toolchain)
         else:
             cfgCtx.load(toolchain)
-        toolchainsEnv[toolname] = cfgCtx.env
+        toolchainsEnvs[toolname] = cfgCtx.env
 
     for toolchain in buildconfHandler.toolchainNames:
         loadToolchain(toolchain)
@@ -227,13 +299,16 @@ def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
     # switch to old env due to calls of 'loadToolchain'
     cfgCtx.setenv(oldEnvName)
 
-    return toolchainsEnv
+    return toolchainsEnvs
 
 def detectAllTaskFeatures(taskParams):
     """
     Detect all features for task
     """
     features = utils.toList(taskParams.get('features', []))
+    if not features and 'run' in taskParams:
+        return ['runcmd']
+
     fmap = {
         'cprogram' : 'c',
         'cxxprogram' : 'cxx',

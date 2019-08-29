@@ -81,9 +81,12 @@ def configure(conf):
     # for assist.runConfTests
     conf.env['PROJECT_NAME'] = confHandler.projectName
 
-    # make independent copy of root env
-    rootEnv   = assist.deepcopyEnv(conf.env)
-    toolchainsEnv = assist.loadToolchains(conf, confHandler, rootEnv)
+    # get root env
+    assert conf.variant == ''
+    rootEnv = conf.env
+
+    # load all toolchains envs
+    toolchainsEnvs = assist.loadToolchains(conf, confHandler, rootEnv)
 
     zmcachedir = confHandler.confPaths.zmcachedir
     wafcachefile = confHandler.confPaths.wafcachefile
@@ -93,30 +96,40 @@ def configure(conf):
     tasks = confHandler.tasks
     conf.env.alltasks[buildtype] = tasks
 
+    # Prepare task envs based on toolchains envs
     for taskName, taskParams in viewitems(tasks):
 
-        # make variant for each task: 'buildtype.taskname'
+        # make variant name for each task: 'buildtype.taskname'
         taskVariant = assist.makeTaskVariantName(buildtype, taskName)
         # store it
         taskParams['$task.variant'] = taskVariant
 
         # set up env with toolchain for task
         toolchain = taskParams.get('toolchain', None)
-        parentEnv = toolchainsEnv.get(toolchain, rootEnv)
-        parentEnv = assist.copyEnv(parentEnv)
+        baseEnv = toolchainsEnvs.get(toolchain, rootEnv)
 
-        # and switch to selected env
-        conf.setenv(taskVariant, env = parentEnv)
+        # and save selected env (conf.setenv makes the new object that is
+        # not desirable here)
+        assist.setConfDirectEnv(conf, taskVariant, baseEnv)
+
+    # run conf checkers
+    assist.runConfTests(conf, buildtype, tasks)
+
+    # Configure tasks
+    for taskName, taskParams in viewitems(tasks):
+
+        taskVariant = taskParams['$task.variant']
+
+        # make deep copy to rid of side effects with different flags
+        # in different tasks
+        taskEnv = assist.deepcopyEnv(conf.all_envs.pop(taskVariant))
+
+        # conf.setenv with unknown name or non-empty env makes deriving or
+        # creates the new object and it is not really needed here
+        assist.setConfDirectEnv(conf, taskVariant, taskEnv)
 
         # set variables
         assist.setTaskEnvVars(conf.env, taskParams)
-
-        # for assist.runConfTests
-        taskParams['name'] = taskName
-        # run checkers
-        assist.runConfTests(conf, buildtype, taskParams)
-        # It's not needed anymore.
-        taskParams.pop('conftests', None)
 
         # configure all possible task params
         assist.configureTaskParams(conf, confHandler, taskName, taskParams)
@@ -129,11 +142,13 @@ def configure(conf):
 
         # It's necessary to delete variant from conf.all_envs otherwise
         # waf will store it in 'c4che'
-        conf.setenv('')
         conf.all_envs.pop(taskVariant, None)
 
+    # reset current env
+    conf.setenv('')
+
     # Remove unneccesary envs
-    for toolchain in toolchainsEnv:
+    for toolchain in toolchainsEnvs:
         conf.all_envs.pop(toolchain, None)
 
     assist.dumpZenMakeCommonFile(confHandler.confPaths)
@@ -148,7 +163,7 @@ def validateVariant(ctx):
     if buildtype not in ctx.env.alltasks:
         if ctx.cmd == 'clean':
             log.info("Buildtype '%s' not found. Nothing to clean" % buildtype)
-            return
+            return None
         ctx.fatal("Buildtype '%s' not found! Was step 'configure' missed?"
                   % buildtype)
     return buildtype
@@ -159,6 +174,8 @@ def build(bld):
     """
 
     buildtype = validateVariant(bld)
+    if not buildtype:
+        return
     bconfPaths = shared.buildConfHandler.confPaths
 
     # Some comments just to remember some details.

@@ -9,12 +9,76 @@
 """
 
 import os
+import shlex
 from waflib.TaskGen import feature, after
 from waflib.Errors import WafError
 from waflib import Task
 from zm.pyutils import viewitems
-from zm import log, shared
+from zm import log, shared, error
+from zm.constants import PLATFORM
 from zm.waf.addons import postcmd
+
+if PLATFORM == 'windows':
+    CMDFILE_EXTS = ',.exe,.com,.bat,.cmd,.py,.pl'
+else:
+    CMDFILE_EXTS = ',.sh,.pl,.py'
+
+def processCmdLine(conf, cwd, shell, cmdArgs):
+    """ Get and process 'cmdline' at 'configure' stage """
+
+    confHandler = shared.buildConfHandler
+    bconfPaths  = confHandler.confPaths
+    btypeDir    = confHandler.selectedBuildTypeDir
+    projectroot = bconfPaths.projectroot
+
+    cmdline = cmdArgs.get('cmdline', '').strip()
+    if not cmdline:
+        return cmdline, shell
+
+    if not shell:
+        if any(s in cmdline for s in ('<', '>', '&&')):
+            shell = True
+
+    cmdSplitted = shlex.split(cmdline)
+
+    if not shell:
+        # Waf can not work correctly with paths with whitespaces when
+        # 'shell' is False.
+        # TODO: try to make solution for 'shell' == False
+        if any(' ' in s for s in cmdSplitted):
+            shell = True
+
+    paths = [cwd, projectroot, btypeDir]
+    paths.extend(os.environ.get('PATH', '').split(os.pathsep))
+    fkw = dict(
+        path_list = paths, quiet = True,
+        exts = CMDFILE_EXTS, mandatory = False
+    )
+
+    partsCount = len(cmdSplitted)
+    cmdExt = os.path.splitext(cmdSplitted[0])[1]
+    if partsCount == 1 and cmdExt:
+        # try to detect interpreter for some cases
+        for ext, launcher in ( ('.py', 'python'), ('.pl', 'perl'),):
+            if cmdExt != ext:
+                continue
+            result = conf.find_program(launcher, **fkw)
+            if result:
+                launcher = result[0]
+                cmdline = '%s %s' % (launcher, cmdline)
+    elif partsCount > 1:
+        # Waf raise exception in verbose mode if cannot find full path
+        # to executable and on windows cmdline like 'python file.py' doesn't work.
+        # So here is trying to find full path for such cases.
+        launcher = cmdSplitted[0]
+        result = conf.find_program(launcher, **fkw)
+        if result:
+            launcher = result[0]
+            cmdSplitted[0] = launcher
+            cmdSplitted = [ x.replace(r'"', r'\"') for x in cmdSplitted]
+            cmdline = ' '.join('"%s"' % s if ' ' in s else s for s in cmdSplitted)
+
+    return cmdline, shell
 
 @postcmd('configure')
 def postConf(conf):
@@ -36,7 +100,7 @@ def postConf(conf):
 
         cmdTaskArgs = dict(
             name     = taskName,
-            shell    = cmdArgs.get('shell', True),
+            shell    = cmdArgs.get('shell', False),
             timeout  = cmdArgs.get('timeout', None),
             env      = cmdArgs.get('env', {}),
             repeat   = cmdArgs.get('repeat', 1),
@@ -51,15 +115,10 @@ def postConf(conf):
             cwd = btypeDir
         cmdTaskArgs['cwd'] = cwd
 
-        cmdTaskArgs['cmdline'] = cmdline = cmdArgs.get('cmdline', None)
-        if cmdline is None:
-            cmdEnvVar = taskName.strip().replace('=', '').upper()
-            paths = [cwd, projectroot, btypeDir]
-            result = conf.find_program(taskName, path_list = paths,
-                                       var = cmdEnvVar, quiet = True,
-                                       mandatory = False)
-            if result:
-                cmdTaskArgs['altcmd'] = result[0]
+        shell = cmdArgs.get('shell', False)
+        cmdline, shell = processCmdLine(conf, cwd, shell, cmdArgs)
+        cmdTaskArgs['shell'] = shell
+        cmdTaskArgs['cmdline'] = cmdline
 
         taskParams['run'] = cmdTaskArgs
 
@@ -107,9 +166,10 @@ def createRunCmdTask(tgen, ruleArgs):
         color = ruleArgs['color'],
     )
 
-    name = 'command for task %r' % tgen.name
+    name = '%s[runcmd]' % tgen.name
     cls = Task.task_factory(name, **classParams)
 
+    setattr(cls, '__str__', lambda _: 'command for task %r' % tgen.name)
     setattr(cls, 'keyword', ruleArgs['cls_keyword'])
     if ruleArgs.get('deep_inputs', False):
         Task.deep_inputs(cls)
@@ -139,7 +199,6 @@ def applyRunCmd(tgen):
     isStandalone = isCmdStandalone(tgen)
 
     cmdline = cmdArgs.pop('cmdline', None)
-    altcmd = cmdArgs.pop('altcmd', None)
     realTarget = zmTaskParams['$real.target']
 
     env = ctx.env.derive()
@@ -154,6 +213,7 @@ def applyRunCmd(tgen):
         env   = env,
         color = getattr(tgen, 'color', 'BLUE'),
         cls_keyword = lambda _: 'Running',
+        cls_str = lambda _: 'command %r' % tgen.name,
     ))
     repeat = ruleArgs.pop('repeat', 1)
 
@@ -162,20 +222,12 @@ def applyRunCmd(tgen):
     if deepInputs:
         ruleArgs['deep_inputs'] = True
 
-    cmdIsRunnable = False
-    if not cmdline:
+    if not cmdline and zmTaskParams['$runnable']:
         cmdline = realTarget
-        if not os.path.isfile(cmdline) and altcmd:
-            cmdline = altcmd
-        cmdIsRunnable = os.path.isfile(cmdline) and \
-                                    os.access(cmdline, os.X_OK)
-    else:
-        cmdIsRunnable = True
 
-    if not cmdIsRunnable:
-        log.warn('Task %r has not runnable command line: %r. Skipping.' \
-                 % (tgen.name, cmdline))
-        return
+    if not cmdline:
+        msg = 'Task %r has not runnable command line: %r.' % (tgen.name, cmdline)
+        raise error.ZenMakeError(msg)
 
     ruleArgs['rule'] = cmdline
 
@@ -193,6 +245,8 @@ def applyRunCmd(tgen):
 
     def wrap(method, task, repeat):
         def execute():
+            if repeat == 1:
+                return method()
             ret = None
             msg  = "Running #"
             number = 0
@@ -204,8 +258,7 @@ def applyRunCmd(tgen):
             return ret
         return execute
 
-    if repeat > 1:
-        runcmdTask = tgen.runcmdTask
-        runcmdTask.run = wrap(runcmdTask.run, runcmdTask, repeat)
+    runcmdTask = tgen.runcmdTask
+    runcmdTask.run = wrap(runcmdTask.run, runcmdTask, repeat)
 
     fixRunCmdDepsOrder(tgen)
