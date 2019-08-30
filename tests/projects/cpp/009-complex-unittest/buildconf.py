@@ -40,11 +40,6 @@ tasks = {
             'cmdline' : "echo 'This is runcmd in task \"complex\"'",
         },
     },
-    'stlib.test' : {
-        'features' : 'cxxprogram test',
-        'source'   : 'tests/test_stlib.cpp',
-        'use'      : 'stlib',
-    },
     'echo' : {
         'features' : 'runcmd',
         'run'      : {
@@ -72,7 +67,13 @@ tasks = {
         'conftests'  : [ dict(act = 'check-programs', names = 'python'), ]
     },
     'altscript' : {
-        'run' : { 'cmdline' : '"alt script.py"', 'cwd' : '.', 'shell' : False,},
+        'run' : { 'cmdline' : '"alt script.py"', 'cwd' : '.' },
+    },
+    #### tasks for build/run tests
+    'stlib-test' : {
+        'features' : 'cxxprogram test',
+        'source'   : 'tests/test_stlib.cpp',
+        'use'      : 'stlib testcmn',
     },
     'test from script' : {
         'features' : 'test',
@@ -84,10 +85,15 @@ tasks = {
         'use'      : 'complex',
         'conftests'  : [ dict(act = 'check-programs', names = 'python'), ]
     },
-    'shlib.test' : {
+    'testcmn' : {
+        'features' : 'cxxshlib test',
+        'source'   :  'tests/common.cpp',
+        'includes' : '.',
+    },
+    'shlib-test' : {
         'features'    : 'cxxprogram test',
         'source'      : 'tests/test_shlib.cpp',
-        'use'         : 'shlib',
+        'use'         : 'shlib testcmn',
         'run'      : {
             'cmdline' : '${PROGRAM} a b c',
             #'cwd'     : '.', # can be path relative to current project root path
@@ -98,10 +104,10 @@ tasks = {
             'shell'   : False,
         },
     },
-    'shlibmain.test' : {
+    'shlibmain-test' : {
         'features'    : 'cxxprogram test',
         'source'      : 'tests/test_shlibmain.cpp',
-        'use'         : 'shlibmain',
+        'use'         : 'shlibmain testcmn',
     },
 }
 

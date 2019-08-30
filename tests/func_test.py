@@ -250,6 +250,8 @@ def gatherEventsFromOutput(output):
     events = {}
     cmdEvents = []
     cmdOutput = []
+    taskRealCount = 0
+    taskMaxCount = 0
     cmdIndexes = defaultdict(dict)
     sep = os.path.sep
 
@@ -266,30 +268,47 @@ def gatherEventsFromOutput(output):
             events[cmdName] = dict(
                 events = cmdEvents,
                 indexes = cmdIndexes,
-                output = cmdOutput
+                output = cmdOutput,
+                taskRealCount = taskRealCount,
+                taskMaxCount = taskMaxCount,
             )
             cmdEvents = []
             cmdOutput = []
+            taskRealCount = 0
+            taskMaxCount = 0
             cmdIndexes = defaultdict(dict)
             continue
 
-        m = re.match(r"^\s*\[\s*\d+/\d+\]\s+Linking\s+.+\%s(lib)?(\w+)" % sep, line)
+        isWafTaskStarting = False
+        m = re.match(r"^\s*\[\s*\d+/(\d+)\s*\]\s+.+", line)
+        if m:
+            taskRealCount += 1
+            taskMaxCount = int(m.group(1))
+            isWafTaskStarting = True
+
+        m = re.match(r"^\s*\[\s*\d+/\d+\s*\]\s+Linking\s+.+\%s(lib)?([\w\-\s]+)" % sep, line)
         if m:
             task = m.group(2)
             cmdEvents.append(['linking', task])
             cmdIndexes['linking'][task] = len(cmdEvents) - 1
             continue
 
-        m = re.match(r"^\s*\[\s*\d+/\d+\]\s+Running\s+command\s+.*?\'([\w\s.\-]+)\'$", line)
+        m = re.match(r"^\s*\[\s*\d+/\d+\s*\]\s+Running\s+command\s+.*?\'([\w\s.\-]+)\'$", line)
         if m:
             task = m.group(1)
             cmdEvents.append(['running', task])
             cmdIndexes['running'][task] = len(cmdEvents) - 1
             continue
 
+        m = re.match(r"\s*Running\s+test:\s+\'([\w\s.\-]+)\'$", line)
+        if m:
+            task = m.group(1)
+            cmdEvents.append(['running', task])
+            cmdIndexes['running'][task] = len(cmdEvents) - 1
+            continue
 
-        terminators = (r"^\s*\[\s*\d+/\d+\]\s+.+", r"^Waf:\s+")
-        if any([ bool(re.match(expr, line)) for expr in terminators ]):
+        terminators = [r"^Waf:\s+"]
+        if isWafTaskStarting or any([ bool(re.match(expr, line)) for expr in terminators ]):
             continue
 
         cmdOutput.append(line)
@@ -359,4 +378,139 @@ class TestFeatureRunCmd(object):
 
 @pytest.mark.usefixtures("unsetEnviron")
 class TestFeatureTest(object):
-    pass
+
+    @pytest.fixture(params = [COMPLEX_UNITTEST_PRJDIR])
+    def projects(self, request, tmpdir):
+        setupTest(self, request, tmpdir)
+
+    def _runAndGather(self, cmdLine, exitSuccess):
+
+        returncode, stdout, stderr = runZm(self.cwd, cmdLine,
+                                           printStdOutOnFailed = False)
+        events = gatherEventsFromOutput(stdout)
+        if exitSuccess:
+            assert returncode == 0
+            assert not stderr
+            assert 'unknown' not in events
+        else:
+            assert returncode != 0
+        self.stdout = stdout
+        self.stderr = stderr
+        return events
+
+    def _checkFeatureBTNoRTNone(self, cmdLine):
+        events = self._runAndGather(cmdLine, True)
+        indexes = events['build']['indexes']
+
+        assert len(indexes['linking']) == 4
+        assert events['build']['taskRealCount'] == 14
+        assert events['build']['taskMaxCount'] == 14
+
+    def _checkFeatureBTYesRTNone(self, cmdLine):
+        events = self._runAndGather(cmdLine, True)
+        indexes = events['build']['indexes']
+
+        assert len(indexes['linking']) == 8
+        assert events['build']['taskRealCount'] == 22
+        assert events['build']['taskMaxCount'] == 22
+
+    def _checkFeatureRTAllVariants(self, cmdLines):
+
+        if cmdLines[0]:
+            events = self._runAndGather(cmdLines[0], False)
+            indexes = events['build']['indexes']
+
+            assert len(indexes['linking']) == 4
+            assert events['build']['taskRealCount'] == 14
+            assert events['build']['taskMaxCount'] == 14
+
+        noFirstStep = not cmdLines[0]
+
+        if cmdLines[1]:
+            events = self._runAndGather(cmdLines[1], True)
+            indexes = events['build']['indexes']
+
+            assert len(indexes['linking']) == 8 if noFirstStep else 4
+            assert events['build']['taskRealCount'] == 22 if noFirstStep else 8
+            assert events['build']['taskMaxCount'] == 22
+
+            indexes = events['test']['indexes']
+            runningTasks = indexes['running']
+            assert len(runningTasks) == 4
+            assert runningTasks['test from script'] > runningTasks['stlib-test']
+            assert runningTasks['test from script'] > runningTasks['shlib-test']
+            assert runningTasks['test from script'] > runningTasks['shlibmain-test']
+            assert runningTasks['shlibmain-test'] > runningTasks['stlib-test']
+            assert runningTasks['shlibmain-test'] > runningTasks['shlib-test']
+
+            output = events['test']['output']
+            checkMsgInOutput('Tests of stlib ...', output, 1)
+            checkMsgInOutput('Tests of shlib ...', output, 2)
+            checkMsgInOutput("env var 'AZ' = 111", output, 2)
+            checkMsgInOutput('Tests of shlibmain ...', output, 1)
+            checkMsgInOutput('test from a python script', output, 1)
+
+        ### on changes
+        if not cmdLines[2]:
+            return
+
+        fpath = joinpath(self.cwd, 'stlib', 'util.cpp')
+        lines = []
+        with open(fpath, 'r') as file:
+            lines = file.readlines()
+            for i, line in enumerate(lines):
+                if not ('cout' in line and 'calcSum' in line):
+                    continue
+                lines.insert(i + 1, 'std::cout << "Test was changed" << std::endl;\n')
+                break;
+
+        with open(fpath, 'w') as file:
+            file.writelines(lines)
+
+        events = self._runAndGather(cmdLines[2], True)
+        indexes = events['test']['indexes']
+        runningTasks = indexes['running']
+
+        assert len(runningTasks) == 2
+        assert 'stlib-test' in runningTasks
+        assert 'shlibmain-test' in runningTasks
+        assert runningTasks['shlibmain-test'] > runningTasks['stlib-test']
+        output = events['test']['output']
+        checkMsgInOutput('Tests of stlib ...', output, 1)
+        checkMsgInOutput('Tests of shlibmain ...', output, 1)
+
+
+    def testCmdBuildBTNoRTNone(self, projects):
+        cmdLine = ['build', '--build-tests', 'no', '--run-tests', 'none']
+        self._checkFeatureBTNoRTNone(cmdLine)
+
+    def testCmdBuildBTYesRTNone(self, projects):
+        cmdLine = ['build', '--build-tests', 'yes', '--run-tests', 'none']
+        self._checkFeatureBTYesRTNone(cmdLine)
+
+    def testCmdBuildRTAllVariants(self, projects):
+
+        self._checkFeatureRTAllVariants([
+            ['build', '--build-tests', 'no', '--run-tests', 'all'],
+            ['build', '--build-tests', 'yes', '--run-tests', 'all'],
+            ['build', '--build-tests', 'yes', '--run-tests', 'on-changes'],
+        ])
+
+    def testCmdTest(self, projects):
+        self._checkFeatureRTAllVariants([ None, ['test'], None ])
+
+    def testCmdTestBTNoRTNone(self, projects):
+        cmdLine = ['test', '--build-tests', 'no', '--run-tests', 'none']
+        self._checkFeatureBTNoRTNone(cmdLine)
+
+    def testCmdTestBTYesRTNone(self, projects):
+        cmdLine = ['test', '--build-tests', 'yes', '--run-tests', 'none']
+        self._checkFeatureBTYesRTNone(cmdLine)
+
+    def testCmdTestRTAllVariants(self, projects):
+
+        self._checkFeatureRTAllVariants([
+            ['test', '--build-tests', 'no', '--run-tests', 'all'],
+            ['test', '--build-tests', 'yes', '--run-tests', 'all'],
+            ['test', '--build-tests', 'yes', '--run-tests', 'on-changes'],
+        ])
