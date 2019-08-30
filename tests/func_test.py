@@ -387,15 +387,19 @@ class TestFeatureTest(object):
 
         returncode, stdout, stderr = runZm(self.cwd, cmdLine,
                                            printStdOutOnFailed = False)
+        self.stdout = stdout
+        self.stderr = stderr
+
         events = gatherEventsFromOutput(stdout)
         if exitSuccess:
+            if returncode != 0:
+                print('\n' + stdout)
             assert returncode == 0
             assert not stderr
             assert 'unknown' not in events
         else:
             assert returncode != 0
-        self.stdout = stdout
-        self.stderr = stderr
+
         return events
 
     def _checkFeatureBTNoRTNone(self, cmdLine):
