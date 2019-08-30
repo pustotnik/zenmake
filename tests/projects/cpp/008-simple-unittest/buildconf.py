@@ -6,6 +6,7 @@ tasks = {
             'include' : '**/*.cpp',
             'exclude' : '**/test*',
         },
+        'rpath' : '.',
     },
     'simple.tests' : {
         'features' : 'cxxprogram test',
@@ -13,6 +14,7 @@ tasks = {
             'include' : '**/*.cpp',
             'exclude' : 'main.cpp',
         },
+        'rpath' : '.',
     },
 }
 

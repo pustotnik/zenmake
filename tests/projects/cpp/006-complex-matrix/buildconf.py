@@ -22,6 +22,7 @@ matrix = [
         'for' : {}, # for all
         'set' : {
           'includes' : '.',
+          'rpath' : '.',
         }
     },
     {

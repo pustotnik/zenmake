@@ -17,7 +17,7 @@ platforms:
 
 matrix:
 - for: {} # for all
-  set: { includes: '.' }
+  set: { includes: '.', rpath : '.', }
 
 - for: { task: shlib shlibmain }
   set: { features: cxxshlib }

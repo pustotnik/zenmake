@@ -158,3 +158,6 @@ platforms = {
     },
 }
 
+matrix = [
+    { 'for' : {}, 'set' : { 'rpath' : '.', } },
+]
