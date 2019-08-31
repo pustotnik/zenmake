@@ -57,12 +57,14 @@ class TaskItem(object):
     def weight(self):
         """ Get 'weight' of item. It can be used to sort. """
 
-        _weight = 1
+        if not self.deps:
+            return 1
+
         for dep in self.deps:
             if id(dep) == id(self):
                 raise error.ZenMakeError('Dependency cycle found in buildconfig!')
-            _weight += dep.weight()
-        return _weight
+
+        return 1 + max([dep.weight() for dep in self.deps])
 
     def __eq__(self, other):
         return (self.weight() == other.weight()) and (self.name == other.name)
