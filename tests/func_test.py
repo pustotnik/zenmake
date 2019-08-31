@@ -45,8 +45,9 @@ def collectProjectDirs():
     result.sort()
     return result
 
-def runZm(cwd, cmdline, env = None, printStdOutOnFailed = True):
+def runZm(self, cmdline, env = None):
 
+    cwd = self.cwd
     cmdLine = [PYTHON_EXE, ZM_BIN] + utils.toList(cmdline)
 
     timeout = 60 * 15
@@ -60,9 +61,22 @@ def runZm(cwd, cmdline, env = None, printStdOutOnFailed = True):
     if pyutils.PY3:
         kw['timeout'] = timeout
     stdout, stderr = proc.communicate(**kw)
-    if proc.returncode != 0 and printStdOutOnFailed:
-        print('\n' + stdout)
+
+    self.zm = dict(
+        stdout = stdout,
+        stderr = stderr,
+        exitcode = proc.returncode,
+    )
     return proc.returncode, stdout, stderr
+
+def printOutputs(self):
+    zmInfo = getattr(self, 'zm', None)
+    if not zmInfo:
+        return
+    for param in ('stdout', 'stderr'):
+        out = zmInfo.get(param, None)
+        if out:
+            print('\n' + out)
 
 def setupTest(self, request, tmpdir):
 
@@ -103,7 +117,7 @@ def setupTest(self, request, tmpdir):
 class TestProject(object):
 
     def _runZm(self, cmdline):
-        return runZm(self.cwd, utils.toList(cmdline) + ['-v'])
+        return runZm(self, utils.toList(cmdline) + ['-v'])
 
     def _checkBuildResults(self, cmdLine, resultExists):
         # checks for target files
@@ -153,7 +167,8 @@ class TestProject(object):
     def allprojects(self, request, tmpdir):
 
         def teardown():
-            pass
+            if request.node.rep_call.failed:
+                printOutputs(self)
 
         request.addfinalizer(teardown)
         setupTest(self, request, tmpdir)
@@ -332,12 +347,18 @@ class TestFeatureRunCmd(object):
 
     @pytest.fixture(params = [COMPLEX_UNITTEST_PRJDIR])
     def projects(self, request, tmpdir):
+
+        def teardown():
+            if request.node.rep_call.failed:
+                printOutputs(self)
+
+        request.addfinalizer(teardown)
         setupTest(self, request, tmpdir)
 
     def testBasis(self, projects):
 
         cmdLine = ['build']
-        returncode, stdout, stderr = runZm(self.cwd, cmdLine)
+        returncode, stdout, _ = runZm(self, cmdLine)
         assert returncode == 0
         events = gatherEventsFromOutput(stdout)
         assert 'unknown' not in events
@@ -372,28 +393,27 @@ class TestFeatureRunCmd(object):
     def testRunFailed(self, projects):
         cmdLine = ['build']
         env = { 'RUN_FAILED': '1' }
-        returncode, _, _ = runZm(self.cwd, cmdLine, env,
-                                 printStdOutOnFailed = False)
-        assert returncode != 0
+        runZm(self, cmdLine, env)
+        assert self.zm['exitcode'] != 0
 
 @pytest.mark.usefixtures("unsetEnviron")
 class TestFeatureTest(object):
 
     @pytest.fixture(params = [COMPLEX_UNITTEST_PRJDIR])
     def projects(self, request, tmpdir):
+
+        def teardown():
+            if request.node.rep_call.failed:
+                printOutputs(self)
+
+        request.addfinalizer(teardown)
         setupTest(self, request, tmpdir)
 
     def _runAndGather(self, cmdLine, exitSuccess):
 
-        returncode, stdout, stderr = runZm(self.cwd, cmdLine,
-                                           printStdOutOnFailed = False)
-        self.stdout = stdout
-        self.stderr = stderr
-
+        returncode, stdout, stderr = runZm(self, cmdLine)
         events = gatherEventsFromOutput(stdout)
         if exitSuccess:
-            if returncode != 0:
-                print('\n' + stdout)
             assert returncode == 0
             assert not stderr
             assert 'unknown' not in events
@@ -482,7 +502,6 @@ class TestFeatureTest(object):
         output = events['test']['output']
         checkMsgInOutput('Tests of stlib ...', output, 1)
         checkMsgInOutput('Tests of shlibmain ...', output, 1)
-
 
     def testCmdBuildBTNoRTNone(self, projects):
         cmdLine = ['build', '--build-tests', 'no', '--run-tests', 'none']
