@@ -19,96 +19,90 @@ CompilersInfo = toolchains.CompilersInfo
 
 SUPPORTED_LANGS = ('c', 'c++')
 
-class TestToolchains(object):
+def testAllFlagVars():
+    gottenVars = CompilersInfo.allFlagVars()
+    # to force covering of cache
+    _gottenVars = CompilersInfo.allFlagVars()
+    assert _gottenVars == gottenVars
+    requiredVars = ['CPPFLAGS', 'CXXFLAGS', 'LDFLAGS', 'CFLAGS']
+    for v in requiredVars:
+        assert v in gottenVars
 
-    def testAllFlagVars(self):
-        gottenVars = CompilersInfo.allFlagVars()
-        # to force covering of cache
-        _gottenVars = CompilersInfo.allFlagVars()
-        assert _gottenVars == gottenVars
-        requiredVars = ['CPPFLAGS', 'CXXFLAGS', 'LDFLAGS', 'CFLAGS']
-        for v in requiredVars:
-            assert v in gottenVars
+def testAllCfgEnvVars():
+    gottenVars = CompilersInfo.allCfgEnvVars()
+    # to force covering of cache
+    _gottenVars = CompilersInfo.allCfgEnvVars()
+    assert _gottenVars == gottenVars
+    requiredVars = [
+        'CPPFLAGS', 'CFLAGS', 'LINKFLAGS', 'CXXFLAGS',
+        'LDFLAGS', 'DEFINES'
+    ]
+    for v in requiredVars:
+        assert v in gottenVars
 
-    def testAllCfgEnvVars(self):
-        gottenVars = CompilersInfo.allCfgEnvVars()
-        # to force covering of cache
-        _gottenVars = CompilersInfo.allCfgEnvVars()
-        assert _gottenVars == gottenVars
-        requiredVars = [
-            'CPPFLAGS', 'CFLAGS', 'LINKFLAGS', 'CXXFLAGS',
-            'LDFLAGS', 'DEFINES'
-        ]
-        for v in requiredVars:
-            assert v in gottenVars
+def testAllLangs():
+    assert sorted(CompilersInfo.allLangs()) == sorted(['c', 'c++'])
 
-    def testAllLangs(self):
-        assert sorted(CompilersInfo.allLangs()) == sorted(['c', 'c++'])
+def testAllVarsToSetCompiler():
+    gottenVars = CompilersInfo.allVarsToSetCompiler()
+    # to force covering of cache
+    _gottenVars = CompilersInfo.allVarsToSetCompiler()
+    assert _gottenVars == gottenVars
+    requiredVars = ['CC', 'CXX']
+    for v in requiredVars:
+        assert v in gottenVars
 
-    def testAllVarsToSetCompiler(self):
-        gottenVars = CompilersInfo.allVarsToSetCompiler()
-        # to force covering of cache
-        _gottenVars = CompilersInfo.allVarsToSetCompiler()
-        assert _gottenVars == gottenVars
-        requiredVars = ['CC', 'CXX']
-        for v in requiredVars:
-            assert v in gottenVars
+def testVarToSetCompiler():
+    LANGMAP = {
+        'c'   : 'CC',
+        'c++' : 'CXX',
+    }
+    for lang in SUPPORTED_LANGS:
+        gottenVar = CompilersInfo.varToSetCompiler(lang)
+        assert gottenVar == LANGMAP[lang]
 
-    def testVarToSetCompiler(self):
-        LANGMAP = {
-            'c'   : 'CC',
-            'c++' : 'CXX',
-        }
-        for lang in SUPPORTED_LANGS:
-            gottenVar = CompilersInfo.varToSetCompiler(lang)
-            assert gottenVar == LANGMAP[lang]
+    with pytest.raises(ZenMakeError):
+        CompilersInfo.varToSetCompiler('')
+    with pytest.raises(ZenMakeError):
+        CompilersInfo.varToSetCompiler('invalid lang')
 
-        with pytest.raises(ZenMakeError):
-            CompilersInfo.varToSetCompiler('')
-        with pytest.raises(ZenMakeError):
-            CompilersInfo.varToSetCompiler('invalid lang')
+def testCompilers():
+    import importlib
 
-    def testCompilers(self):
-        import importlib
+    for lang in SUPPORTED_LANGS:
+        wafLang = lang.replace('+', 'x')
+        module = importlib.import_module('waflib.Tools.compiler_' + wafLang)
+        compilersDict = getattr(module, wafLang + '_compiler')
 
-        for lang in SUPPORTED_LANGS:
-            wafLang = lang.replace('+', 'x')
-            module = importlib.import_module('waflib.Tools.compiler_' + wafLang)
-            compilersDict = getattr(module, wafLang + '_compiler')
-
-            for _platform in ('linux', 'windows', 'darwin'):
-                wafplatform = _platform
-                if _platform == 'windows':
-                    wafplatform = 'win32'
-                compilers = CompilersInfo.compilers(lang, _platform)
-                # to force covering of cache
-                _compilers = CompilersInfo.compilers(lang, _platform)
-                assert _compilers == compilers
-                assert sorted(set(compilers)) == \
-                                 sorted(set(compilersDict[wafplatform]))
-
-            compilers = CompilersInfo.compilers(lang, 'all')
+        for _platform in ('linux', 'windows', 'darwin'):
+            wafplatform = _platform
+            if _platform == 'windows':
+                wafplatform = 'win32'
+            compilers = CompilersInfo.compilers(lang, _platform)
             # to force covering of cache
-            _compilers = CompilersInfo.compilers(lang, 'all')
+            _compilers = CompilersInfo.compilers(lang, _platform)
             assert _compilers == compilers
             assert sorted(set(compilers)) == \
-                            sorted(set(itertools.chain(*compilersDict.values())))
+                                sorted(set(compilersDict[wafplatform]))
 
-        with pytest.raises(ZenMakeError):
-            CompilersInfo.compilers('')
-        with pytest.raises(ZenMakeError):
-            CompilersInfo.compilers('invalid lang')
+        compilers = CompilersInfo.compilers(lang, 'all')
+        # to force covering of cache
+        _compilers = CompilersInfo.compilers(lang, 'all')
+        assert _compilers == compilers
+        assert sorted(set(compilers)) == \
+                        sorted(set(itertools.chain(*compilersDict.values())))
 
-    def testAllCompilers(self):
+    with pytest.raises(ZenMakeError):
+        CompilersInfo.compilers('')
+    with pytest.raises(ZenMakeError):
+        CompilersInfo.compilers('invalid lang')
 
-        for platform in ('linux', 'windows', 'darwin', 'all'):
-            #wafplatform = _platform
-            #if _platform == 'windows':
-            #    wafplatform = 'win32'
+def testAllCompilers():
 
-            expectedCompilers = []
-            for lang in SUPPORTED_LANGS:
-                expectedCompilers.extend(CompilersInfo.compilers(lang, platform))
-            expectedCompilers = list(set(expectedCompilers))
-            assert sorted(CompilersInfo.allCompilers(platform)) == \
-                                            sorted(expectedCompilers)
+    for platform in ('linux', 'windows', 'darwin', 'all'):
+        expectedCompilers = []
+        for lang in SUPPORTED_LANGS:
+            expectedCompilers.extend(CompilersInfo.compilers(lang, platform))
+        expectedCompilers = list(set(expectedCompilers))
+        assert sorted(CompilersInfo.allCompilers(platform)) == \
+                                        sorted(expectedCompilers)

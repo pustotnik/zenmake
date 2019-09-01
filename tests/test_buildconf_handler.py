@@ -23,7 +23,7 @@ from zm.constants import *
 joinpath = os.path.join
 
 @pytest.mark.usefixtures("unsetEnviron")
-class TestBuildConfHandler(object):
+class TestSuite(object):
 
     def testInit(self, testingBuildConf):
         buildconf = testingBuildConf

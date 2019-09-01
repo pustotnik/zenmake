@@ -118,6 +118,9 @@ def configure(conf):
     # Configure tasks
     for taskName, taskParams in viewitems(tasks):
 
+        # It's not needed anymore.
+        taskParams.pop('conftests', None)
+
         taskVariant = taskParams['$task.variant']
 
         # make deep copy to rid of side effects with different flags

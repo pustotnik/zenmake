@@ -14,7 +14,7 @@ import pytest
 import tests.common as cmn
 from zm import cli
 
-class TestCli(object):
+class TestSuite(object):
 
     @pytest.fixture(autouse = True)
     def setup(self):
@@ -103,7 +103,7 @@ class TestCli(object):
             'distclean': False,
             'tasks': [],
             'verbose': 0,
-            'buildTests': 'no',
+            'buildTests': False,
             'runTests': 'none',
         }
 
@@ -150,6 +150,21 @@ class TestCli(object):
                 wafArgs = [CMDNAME],
             ),
             dict(
+                args = [CMDNAME, '--build-tests', 'yes'],
+                expectedArgsUpdate = {'buildTests': True},
+                wafArgs = [CMDNAME],
+            ),
+            dict(
+                args = [CMDNAME, '--run-tests', 'all'],
+                expectedArgsUpdate = {'runTests': 'all'},
+                wafArgs = [CMDNAME, 'test'],
+            ),
+            dict(
+                args = [CMDNAME, '--run-tests', 'on-changes'],
+                expectedArgsUpdate = {'runTests': 'on-changes'},
+                wafArgs = [CMDNAME, 'test'],
+            ),
+            dict(
                 args = [CMDNAME, '--progress'],
                 expectedArgsUpdate = {'progress': True},
                 wafArgs = [CMDNAME, '--progress'],
@@ -168,6 +183,104 @@ class TestCli(object):
                 args = [CMDNAME, 'sometask', 'anothertask'],
                 expectedArgsUpdate = {'tasks': ['sometask', 'anothertask']},
                 wafArgs = [CMDNAME],
+            ),
+        ]
+
+        self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
+
+    def testCmdTest(self):
+
+        baseExpectedArgs = {
+            'buildtype' : self.defaults['*']['buildtype'],
+            'jobs' : None,
+            'configure': False,
+            'color': 'auto',
+            'clean': False,
+            'progress': False,
+            'distclean': False,
+            'tasks': [],
+            'verbose': 0,
+            'buildTests': True,
+            'runTests': 'all',
+        }
+
+        CMDNAME = 'test'
+
+        checks = [
+            dict(
+                args = [CMDNAME],
+                expectedArgsUpdate = {},
+                wafArgs = ['build', CMDNAME],
+            ),
+            dict(
+                args = [CMDNAME, '-b', 'release'],
+                expectedArgsUpdate = {'buildtype': 'release'},
+                wafArgs = ['build', CMDNAME],
+            ),
+            dict(
+                args = [CMDNAME, '--jobs', '22'],
+                expectedArgsUpdate = {'jobs': 22},
+                wafArgs = ['build', CMDNAME, '--jobs=22'],
+            ),
+            dict(
+                args = [CMDNAME, '--verbose'],
+                expectedArgsUpdate = {'verbose': 1},
+                wafArgs = ['build', CMDNAME, '-v'],
+            ),
+            dict(
+                args = [CMDNAME, '-vvv'],
+                expectedArgsUpdate = {'verbose': 3},
+                wafArgs = ['build', CMDNAME, '-vvv'],
+            ),
+            dict(
+                args = [CMDNAME, '--configure'],
+                expectedArgsUpdate = {'configure': True},
+                wafArgs = ['configure', 'build', CMDNAME],
+            ),
+            dict(
+                args = [CMDNAME, '--clean'],
+                expectedArgsUpdate = {'clean': True},
+                wafArgs = ['clean', 'build', CMDNAME],
+            ),
+            dict(
+                args = [CMDNAME, '--distclean'],
+                expectedArgsUpdate = {'distclean': True},
+                wafArgs = ['build', CMDNAME],
+            ),
+            dict(
+                args = [CMDNAME, '--build-tests', 'no'],
+                expectedArgsUpdate = {'buildTests': False},
+                wafArgs = ['build', CMDNAME],
+            ),
+            dict(
+                args = [CMDNAME, '--run-tests', 'none'],
+                expectedArgsUpdate = {'runTests': 'none'},
+                wafArgs = ['build', CMDNAME],
+            ),
+            dict(
+                args = [CMDNAME, '--run-tests', 'on-changes'],
+                expectedArgsUpdate = {'runTests': 'on-changes'},
+                wafArgs = ['build', CMDNAME],
+            ),
+            dict(
+                args = [CMDNAME, '--progress'],
+                expectedArgsUpdate = {'progress': True},
+                wafArgs = ['build', CMDNAME, '--progress'],
+            ),
+            dict(
+                args = [CMDNAME, '--color', 'no'],
+                expectedArgsUpdate = {'color': 'no'},
+                wafArgs = ['build', CMDNAME, '--color=no'],
+            ),
+            dict(
+                args = [CMDNAME, 'sometask'],
+                expectedArgsUpdate = {'tasks': ['sometask']},
+                wafArgs = ['build', CMDNAME],
+            ),
+            dict(
+                args = [CMDNAME, 'sometask', 'anothertask'],
+                expectedArgsUpdate = {'tasks': ['sometask', 'anothertask']},
+                wafArgs = ['build', CMDNAME],
             ),
         ]
 

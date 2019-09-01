@@ -83,7 +83,7 @@ def setup():
     """ Some initialization """
 
     _shared.runTestsOnChanges = cli.selected.args.runTests == 'on-changes'
-    _shared.buildTests = cli.selected.args.buildTests == 'yes'
+    _shared.buildTests = cli.selected.args.buildTests
 
 def _isSuitableForRunCmd(taskParams):
     return taskParams['$runnable'] or taskParams.get('run', None)
@@ -333,8 +333,6 @@ class TestContext(BuildContext):
             raise error.ZenMakeError(msg)
 
     def _runTasks(self):
-
-        # TODO: add parallel running
 
         def tgpost(tgen):
             try:

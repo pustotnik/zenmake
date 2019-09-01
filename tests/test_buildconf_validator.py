@@ -22,7 +22,7 @@ validator = Validator()
 class FakeBuildConf:
     __name__ = 'testconf'
 
-class TestBuildconfValidator(object):
+class TestSuite(object):
 
     def _validateBoolValues(self, buildconf, confnode, param, validVals = []):
         confnode[param] = True

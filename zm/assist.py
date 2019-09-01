@@ -164,7 +164,7 @@ def _confTestCheckHeaders(entity, **kwargs):
     funcArgs = entity
     for header in headers:
         funcArgs['header_name'] = header
-    _confTestCheck(funcArgs, **kwargs)
+        _confTestCheck(funcArgs, **kwargs)
 
 def _confTestCheckLibs(entity, **kwargs):
     libs = utils.toList(entity.pop('names', []))
@@ -223,6 +223,7 @@ def runConfTests(cfgCtx, buildtype, tasks):
             called = called,
         )
         for entity in confTests:
+            entity = entity.copy()
             act = entity.pop('act', None)
             func = _confTestFuncs.get(act, None)
             if not func:
@@ -231,18 +232,12 @@ def runConfTests(cfgCtx, buildtype, tasks):
 
             func(entity, **funcKWArgs)
 
-        # It's not needed anymore.
-        taskParams.pop('conftests', None)
-
     cfgCtx.setenv('')
 
-def loadDetectedCompiler(cfgCtx, kind):
+def _loadDetectedCompiler(cfgCtx, lang):
     """
-    Load auto detected compiler by its kind
+    Load auto detected compiler by its lang
     """
-
-    # without 'auto-'
-    lang = kind[5:]
 
     compilers = toolchains.CompilersInfo.compilers(lang)
     envVar    = toolchains.CompilersInfo.varToSetCompiler(lang)
@@ -288,7 +283,8 @@ def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
             toolchain = custom.kind
 
         if toolchain.startswith('auto-'):
-            loadDetectedCompiler(cfgCtx, toolchain)
+            lang = toolchain[5:]
+            _loadDetectedCompiler(cfgCtx, lang)
         else:
             cfgCtx.load(toolchain)
         toolchainsEnvs[toolname] = cfgCtx.env

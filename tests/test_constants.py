@@ -12,8 +12,9 @@ import tests.common as cmn
 from waflib import Build, Context
 from zm import constants
 
-class TestAutoDict(object):
-    def testAll(self):
-        assert constants.WAF_CACHE_DIRNAME == Build.CACHE_DIR
-        assert constants.WAF_CACHE_NAMESUFFIX == Build.CACHE_SUFFIX
-        assert constants.WSCRIPT_NAME == Context.WSCRIPT_FILE
+def testAll():
+    assert constants.WAF_CACHE_DIRNAME == Build.CACHE_DIR
+    assert constants.WAF_CACHE_NAMESUFFIX == Build.CACHE_SUFFIX
+    assert constants.WSCRIPT_NAME == Context.WSCRIPT_FILE
+    assert set(['linux', 'windows', 'darwin']) <= set(constants.KNOWN_PLATFORMS)
+    assert constants.PLATFORM in constants.KNOWN_PLATFORMS

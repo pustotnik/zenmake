@@ -96,12 +96,14 @@ before_install:
       python -m pip install pyyaml
       python -m pip install pytest
       python -m pip install pytest-cov
+      python -m pip install pytest-mock
       # for coverage report
       python -m pip install coveralls
     else
       pip install pyyaml
       pip install pytest
       pip install pytest-cov
+      pip install pytest-mock
       pip install coveralls
     fi
 

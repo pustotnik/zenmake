@@ -7,7 +7,7 @@
 """
 
 import sys
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 # argparse from the https://pypi.org/project/argparse/ supports alieses
 from auxiliary.argparse import argparse
 from zm.pyutils import viewitems
@@ -198,11 +198,10 @@ class CmdLineParser(object):
 
     def __init__(self, progName, defaults):
 
-        self._defaults = READY_OPT_DEFAULTS
+        self._defaults = defaultdict(dict)
+        self._defaults.update(READY_OPT_DEFAULTS)
         dkeys = set(list(self._defaults.keys()) + list(defaults.keys()))
         for k in dkeys:
-            if k not in self._defaults:
-                self._defaults[k] = {}
             if k in defaults:
                 self._defaults[k].update(defaults[k])
 
@@ -360,6 +359,10 @@ class CmdLineParser(object):
 
             target.add_argument(*opt.names, **kwargs)
 
+    def _postParse(self, parsedArgs):
+        if hasattr(parsedArgs, 'buildTests'):
+            parsedArgs.buildTests = parsedArgs.buildTests == 'yes'
+
     def _fillCmdInfo(self, parsedArgs):
         args = _AutoDict(vars(parsedArgs))
         cmd = self._cmdNameMap[args.pop('command')]
@@ -416,6 +419,7 @@ class CmdLineParser(object):
         # parse
         args = self._parser.parse_args(args)
         cmd = self._cmdNameMap[args.command]
+        self._postParse(args)
 
         if cmd.name == 'help':
             self._fillCmdInfo(args)

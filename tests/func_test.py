@@ -114,7 +114,7 @@ def setupTest(self, request, tmpdir):
 
 
 @pytest.mark.usefixtures("unsetEnviron")
-class TestProject(object):
+class TestBase(object):
 
     def _runZm(self, cmdline):
         return runZm(self, utils.toList(cmdline) + ['-v'])

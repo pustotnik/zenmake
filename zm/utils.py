@@ -85,18 +85,37 @@ def mksymlink(src, dst, force = True):
         _mksymlink(src, dst)
         return
 
-    if PLATFORM != 'windows':
-        raise NotImplementedError
+    raise NotImplementedError
 
-    # special solution for python 2 on windows
-    # see https://stackoverflow.com/questions/6260149/os-symlink-support-in-windows
-    import ctypes
-    csl = ctypes.windll.kernel32.CreateSymbolicLinkW
-    csl.argtypes = (ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint32)
-    csl.restype = ctypes.c_ubyte
-    flags = 1 if os.path.isdir(src) else 0
-    if csl(dst, src, flags) == 0:
-        raise ctypes.WinError()
+def _loadPyModuleWithoutImport(name):
+
+    # In this case we should compile python file manually
+
+    import types
+    from zm.error import ZenMakeError
+    module = types.ModuleType(name)
+    filename = '%s.py' % name.replace('.', os.path.sep)
+
+    # try to find module
+    for path in sys.path:
+        if os.path.isfile(os.path.join(path, filename)):
+            dirpath = path
+            break
+    else:
+        raise ImportError('File %r not found' % filename)
+
+    modulePath = os.path.join(dirpath, filename)
+    try:
+        code = readFile(modulePath, m = 'r', encoding = None)
+    except EnvironmentError:
+        raise ZenMakeError('Could not read the file %r' % modulePath)
+
+    #pylint: disable=exec-used
+    exec(compile(code, modulePath, 'exec'), module.__dict__)
+    #pylint: enable=exec-used
+
+    module.__file__ = modulePath
+    return module
 
 def loadPyModule(name, dirpath = None, withImport = True):
     """
@@ -107,50 +126,20 @@ def loadPyModule(name, dirpath = None, withImport = True):
     """
 
     if withImport:
-        def doImport(name):
+        def loadModule(name):
             # Without non empty fromlist __import__ returns the top-level package
-            return __import__(name, fromlist=[None])
+            return __import__(name, fromlist = [None])
+    else:
+        loadModule = _loadPyModuleWithoutImport
 
-        if dirpath:
-            sys.path.insert(0, dirpath)
-            try:
-                module = doImport(name)
-            finally:
-                sys.path.remove(dirpath)
-        else:
-            module = doImport(name)
-        return module
-
-    # In this case we should compile python file manually
-    import types
-    from zm.error import ZenMakeError
-    module = types.ModuleType(name)
-    filename = '%s.py' % name.replace('.', os.path.sep)
-    if not dirpath:
-        # try to find module
-        for path in sys.path:
-            if os.path.isfile(os.path.join(path, filename)):
-                dirpath = path
-                break
-
-    if not dirpath:
-        raise ImportError('File %r not found' % filename)
-
-    modulePath = os.path.join(dirpath, filename)
-    try:
-        code = readFile(modulePath, m = 'r', encoding = None)
-    except EnvironmentError:
-        raise ZenMakeError('Could not read the file %r' % modulePath)
-
-    sys.path.insert(0, dirpath)
-    try:
-        #pylint: disable=exec-used
-        exec(compile(code, modulePath, 'exec'), module.__dict__)
-        #pylint: enable=exec-used
-    finally:
-        sys.path.remove(dirpath)
-
-    module.__file__ = modulePath
+    if dirpath:
+        sys.path.insert(0, dirpath)
+        try:
+            module = loadModule(name)
+        finally:
+            sys.path.pop(0)
+    else:
+        module = loadModule(name)
     return module
 
 def printSysInfo():
