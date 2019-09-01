@@ -84,7 +84,8 @@ def testLoadPyModule():
         assert type(module) == type(sys)
         assert hasattr(module, '__name__')
         assert hasattr(module, '__file__')
-        assert module.__file__.startswith(joinpath(cwd, 'fakemodule.py'))
+        moduleFile = os.path.abspath(module.__file__).lower()
+        assert moduleFile.startswith(joinpath(cwd, 'fakemodule.py').lower())
         assert hasattr(module, 'something')
         assert module.something == 'qaz'
         if withImport:
