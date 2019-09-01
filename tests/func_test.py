@@ -80,18 +80,21 @@ def printOutputs(self):
 
 def setupTest(self, request, tmpdir):
 
-    testName = request.node.originalname
-    if not testName:
-        testName = request.node.name
+    #testName = request.node.originalname
+    #if not testName:
+    #    testName = request.node.name
 
     #projectDirName = request.param
     projectDirName = 'prj'
 
-    tmpdirForTests = cmn.SHARED_TMP_DIR
-    #tmptestDir = joinpath(tmpdirForTests, testName, projectDirName)
-    tmptestDir = joinpath(tmpdirForTests, projectDirName)
-    shutil.rmtree(tmptestDir, ignore_errors = True)
-    #tmptestDir = joinpath(str(tmpdir.realpath()), projectDirName)
+    if PLATFORM == 'windows':
+        # On windows with pytest it's got too long path
+        projectDirName = '_' # shortest name
+        tmpdirForTests = cmn.SHARED_TMP_DIR
+        tmptestDir = joinpath(tmpdirForTests, projectDirName)
+        shutil.rmtree(tmptestDir, ignore_errors = True)
+    else:
+        tmptestDir = joinpath(str(tmpdir.realpath()), projectDirName)
 
     def copytreeIgnore(src, names):
         # don't copy build dir/files
