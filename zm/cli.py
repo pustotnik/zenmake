@@ -449,7 +449,8 @@ def parseAll(args, defaults, buildOnEmpty):
     Returns selected command as object of ParsedCommand and parser.wafCmdLine
     """
 
-    parser = CmdLineParser(args[0], defaults)
+    progName = 'zenmake'
+    parser = CmdLineParser(progName, defaults)
     cmd = parser.parse(args[1:], buildOnEmpty)
 
     return cmd, parser.wafCmdLine
