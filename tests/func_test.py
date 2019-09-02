@@ -22,7 +22,7 @@ from zm import pyutils, assist, cli, utils
 from zm.buildconf import loader as bconfloader
 from zm.buildconf.handler import BuildConfHandler
 from zm.constants import ZENMAKE_COMMON_FILENAME, PLATFORM
-import starter
+from zm import starter
 
 joinpath = os.path.join
 

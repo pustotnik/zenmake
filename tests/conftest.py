@@ -11,7 +11,7 @@
 import os
 import types
 import pytest
-import starter
+from zm import starter
 from zm import pyutils
 from zm.autodict import AutoDict
 from zm.buildconf import loader as bconfloader

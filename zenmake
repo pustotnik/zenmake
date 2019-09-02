@@ -57,7 +57,7 @@ def main():
         sys.path.insert(0, WORKING_DIR)
 
     try:
-        import starter
+        from zm import starter
     except ImportError:
         print('Cannot import starter.py. Check that ZENMAKE_DIR has a valid path')
         sys.exit(1)

@@ -23,7 +23,7 @@ except ImportError:
     from io import StringIO
 from zm import utils
 from zm import pyutils
-import starter
+from zm import starter
 
 _tempdirs = []
 

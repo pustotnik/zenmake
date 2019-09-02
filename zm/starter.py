@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding=utf-8
 #
 
@@ -16,6 +15,7 @@ if sys.hexversion < 0x2070000:
 joinpath = os.path.join
 
 SCRIPTS_ROOTDIR = os.path.dirname(os.path.abspath(__file__))
+SCRIPTS_ROOTDIR = os.path.abspath(joinpath(SCRIPTS_ROOTDIR, os.path.pardir))
 
 WAF_DIR = joinpath(SCRIPTS_ROOTDIR, 'waf')
 ZM_DIR = joinpath(SCRIPTS_ROOTDIR, 'zm')
