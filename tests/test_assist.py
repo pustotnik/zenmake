@@ -19,6 +19,44 @@ from zm.constants import *
 
 joinpath = os.path.join
 
+def getCfgCtxMock(mocker):
+
+    cfgCtx = mocker.MagicMock(all_envs = {})
+    self = cfgCtx
+    cfgCtx.fatal = mocker.MagicMock(side_effect = WafError)
+
+    def setenv(name, env = None):
+        self.variant = name
+        if name not in self.all_envs or env:
+            if not env:
+                env = ConfigSet()
+            else:
+                env = env.derive()
+            self.all_envs[name] = env
+
+    cfgCtx.setenv = mocker.MagicMock(side_effect = setenv)
+
+    def envProp(val = None):
+        if val is not None:
+            self.all_envs[self.variant] = val
+        return self.all_envs[self.variant]
+
+    type(cfgCtx).env = mocker.PropertyMock(side_effect = envProp)
+
+    def load(toolchain):
+        self = cfgCtx
+        env = self.all_envs[cfgCtx.variant]
+        for lang in ('c', 'c++'):
+            compilers = toolchains.CompilersInfo.compilers(lang)
+            envVar    = toolchains.CompilersInfo.varToSetCompiler(lang)
+            if toolchain in compilers:
+                env[envVar] = ['/usr/bin/%s' % toolchain]
+        env.loaded = 'loaded-' + toolchain
+
+    cfgCtx.load = mocker.MagicMock(side_effect = load)
+
+    return cfgCtx
+
 def testDumpZenMakeCommonFile(tmpdir):
     buildconffile = tmpdir.join("buildconf")
     buildconffile.write("buildconf")
@@ -139,6 +177,9 @@ def testDetectAllTaskFeatures():
 
     taskParams = { 'features' : '' }
     assert assist.detectAllTaskFeatures(taskParams) == []
+
+    taskParams = { 'run' : {} }
+    assert assist.detectAllTaskFeatures(taskParams) == ['runcmd']
 
     for ftype in ('stlib', 'shlib', 'program'):
         for lang in ('c', 'cxx'):
@@ -327,43 +368,10 @@ def testsSetConfDirectEnv():
     assert cfgCtx.variant == name
     assert cfgCtx.all_envs[name] == env
 
-class MockCfgCtx(object):
-    def __init__(self):
-        self.all_envs = {}
-        self.setenv('')
-        self.calls = []
-
-    def setenv(self, name, env = None):
-        self.variant = name
-        if name not in self.all_envs or env:
-            if not env:
-                env = AutoDict()
-            self.all_envs[name] = env
-
-    def getEnv(self):
-        return self.all_envs[self.variant]
-    def setEnv(self, val):
-        self.all_envs[self.variant] = val
-    env = property(getEnv, setEnv)
-
-    def find_program(self, filename, **kw):
-        self.calls.append( dict( func = 'find_program',
-                            args = [filename, kw] ) )
-
-    def write_config_header(self, filename, **kw):
-        self.calls.append( dict( func = 'write_config_header',
-                            args = [filename, kw] ) )
-
-    def check(self, **kw):
-        self.calls.append( dict( func = 'check', args = kw ) )
-
-    def fatal(self, msg, ex = None):
-        raise WafError(msg, ex=ex)
-
-def testRunConfTestsCheckPrograms():
+def testRunConfTestsCheckPrograms(mocker):
 
     buildtype = 'buildtype'
-    cfgCtx = MockCfgCtx()
+    cfgCtx = getCfgCtxMock(mocker)
     tasks = AutoDict()
     tasks.task.conftests = [
         dict(act = 'check-programs', names = 'python2', mandatory = False),
@@ -371,23 +379,19 @@ def testRunConfTestsCheckPrograms():
     ]
 
     assist.runConfTests(cfgCtx, buildtype, tasks)
-    call = cfgCtx.calls[0]
-    assert call['func'] == 'find_program'
-    assert call['args'][0] == 'python2'
-    assert call['args'][1]['mandatory'] == False
-    call = cfgCtx.calls[1]
-    assert call['func'] == 'find_program'
-    assert call['args'][0] == 'python2'
-    assert call['args'][1]['path_list'] == ['1', '2']
-    call = cfgCtx.calls[2]
-    assert call['func'] == 'find_program'
-    assert call['args'][0] == 'python3'
-    assert call['args'][1]['path_list'] == ['1', '2']
 
-def testRunConfTestsCheckSysLibs():
+    calls = [
+        mocker.call('python2', mandatory = False, path_list = mocker.ANY),
+        mocker.call('python2', path_list = ['1', '2']),
+        mocker.call('python3', path_list = ['1', '2']),
+    ]
+
+    assert cfgCtx.find_program.mock_calls == calls
+
+def testRunConfTestsCheckSysLibs(mocker):
 
     buildtype = 'buildtype'
-    cfgCtx = MockCfgCtx()
+    cfgCtx = getCfgCtxMock(mocker)
     tasks = AutoDict()
     tasks.task['sys-libs'] = 'lib1 lib2'
     tasks.task['$task.variant'] = buildtype
@@ -396,19 +400,18 @@ def testRunConfTestsCheckSysLibs():
     ]
 
     assist.runConfTests(cfgCtx, buildtype, tasks)
-    call = cfgCtx.calls[0]
-    assert call['func'] == 'check'
-    assert call['args']['lib'] == 'lib1'
-    assert call['args']['mandatory'] == False
-    call = cfgCtx.calls[1]
-    assert call['func'] == 'check'
-    assert call['args']['lib'] == 'lib2'
-    assert call['args']['mandatory'] == False
 
-def testRunConfTestsCheckHeaders():
+    calls = [
+        mocker.call(lib = 'lib1', mandatory = False),
+        mocker.call(lib = 'lib2', mandatory = False),
+    ]
+
+    assert cfgCtx.check.mock_calls == calls
+
+def testRunConfTestsCheckHeaders(mocker):
 
     buildtype = 'buildtype'
-    cfgCtx = MockCfgCtx()
+    cfgCtx = getCfgCtxMock(mocker)
     tasks = AutoDict()
     tasks.task['$task.variant'] = buildtype
     tasks.task.conftests = [
@@ -416,19 +419,18 @@ def testRunConfTestsCheckHeaders():
     ]
 
     assist.runConfTests(cfgCtx, buildtype, tasks)
-    call = cfgCtx.calls[0]
-    assert call['func'] == 'check'
-    assert call['args']['header_name'] == 'header1'
-    assert call['args']['mandatory'] == False
-    call = cfgCtx.calls[1]
-    assert call['func'] == 'check'
-    assert call['args']['header_name'] == 'header2'
-    assert call['args']['mandatory'] == False
 
-def testRunConfTestsCheckLibs():
+    calls = [
+        mocker.call(header_name = 'header1', mandatory = False),
+        mocker.call(header_name = 'header2', mandatory = False),
+    ]
+
+    assert cfgCtx.check.mock_calls == calls
+
+def testRunConfTestsCheckLibs(mocker):
 
     buildtype = 'buildtype'
-    cfgCtx = MockCfgCtx()
+    cfgCtx = getCfgCtxMock(mocker)
     tasks = AutoDict()
     tasks.task['$task.variant'] = buildtype
     tasks.task.conftests = [
@@ -437,25 +439,19 @@ def testRunConfTestsCheckLibs():
     ]
 
     assist.runConfTests(cfgCtx, buildtype, tasks)
-    call = cfgCtx.calls[0]
-    assert call['func'] == 'check'
-    assert call['args']['lib'] == 'lib1'
-    assert call['args']['mandatory'] == False
-    assert 'define_name' not in call['args']
-    call = cfgCtx.calls[1]
-    assert call['func'] == 'check'
-    assert call['args']['lib'] == 'lib2'
-    assert call['args']['mandatory'] == False
-    assert 'define_name' not in call['args']
-    call = cfgCtx.calls[2]
-    assert call['func'] == 'check'
-    assert call['args']['lib'] == 'lib3'
-    assert call['args']['define_name'] == 'HAVE_LIB_LIB3'
 
-def testRunConfTestsWriteHeader():
+    calls = [
+        mocker.call(lib = 'lib1', mandatory = False),
+        mocker.call(lib = 'lib2', mandatory = False),
+        mocker.call(lib = 'lib3', define_name = 'HAVE_LIB_LIB3'),
+    ]
+
+    assert cfgCtx.check.mock_calls == calls
+
+def testRunConfTestsWriteHeader(mocker):
 
     buildtype = 'buildtype'
-    cfgCtx = MockCfgCtx()
+    cfgCtx = getCfgCtxMock(mocker)
     tasks = AutoDict()
     tasks['some task']['$task.variant'] = buildtype
     tasks['some task'].conftests = [
@@ -465,41 +461,39 @@ def testRunConfTestsWriteHeader():
     ]
 
     assist.runConfTests(cfgCtx, buildtype, tasks)
-    call = cfgCtx.calls[0]
-    assert call['func'] == 'write_config_header'
-    assert call['args'][0] == joinpath(buildtype, 'some_task_config.h')
-    assert call['args'][1]['guard'] == '_buildtype_some_task_config_h'.upper()
-    call = cfgCtx.calls[1]
-    assert call['func'] == 'write_config_header'
-    assert call['args'][0] == joinpath(buildtype, 'file1')
-    assert call['args'][1]['guard'] == '_buildtype_file1'.upper()
-    call = cfgCtx.calls[2]
-    assert call['func'] == 'write_config_header'
-    assert call['args'][0] == joinpath(buildtype, 'file2')
-    assert call['args'][1]['guard'] == 'myguard'
 
-    cfgCtx = MockCfgCtx()
+    calls = [
+        mocker.call(joinpath(buildtype, 'some_task_config.h'),
+                    guard = '_buildtype_some_task_config_h'.upper()),
+        mocker.call(joinpath(buildtype, 'file1'),
+                    guard = '_buildtype_file1'.upper()),
+        mocker.call(joinpath(buildtype, 'file2'),
+                    guard = 'myguard'),
+    ]
+
+    assert cfgCtx.write_config_header.mock_calls == calls
+
+    cfgCtx = getCfgCtxMock(mocker)
     cfgCtx.setenv(buildtype)
     cfgCtx.env['PROJECT_NAME'] = 'test prj'
 
     assist.runConfTests(cfgCtx, buildtype, tasks)
-    call = cfgCtx.calls[0]
-    assert call['func'] == 'write_config_header'
-    assert call['args'][0] == joinpath(buildtype, 'some_task_config.h')
-    assert call['args'][1]['guard'] == 'test_prj_buildtype_some_task_config_h'.upper()
-    call = cfgCtx.calls[1]
-    assert call['func'] == 'write_config_header'
-    assert call['args'][0] == joinpath(buildtype, 'file1')
-    assert call['args'][1]['guard'] == 'test_prj_buildtype_file1'.upper()
-    call = cfgCtx.calls[2]
-    assert call['func'] == 'write_config_header'
-    assert call['args'][0] == joinpath(buildtype, 'file2')
-    assert call['args'][1]['guard'] == 'myguard'
 
-def testRunConfTestsUnknown():
+    calls = [
+        mocker.call(joinpath(buildtype, 'some_task_config.h'),
+                    guard = 'test_prj_buildtype_some_task_config_h'.upper()),
+        mocker.call(joinpath(buildtype, 'file1'),
+                    guard = 'test_prj_buildtype_file1'.upper()),
+        mocker.call(joinpath(buildtype, 'file2'),
+                    guard = 'myguard'),
+    ]
+
+    assert cfgCtx.write_config_header.mock_calls == calls
+
+def testRunConfTestsUnknown(mocker):
 
     buildtype = 'buildtype'
-    cfgCtx = MockCfgCtx()
+    cfgCtx = getCfgCtxMock(mocker)
     tasks = AutoDict()
     tasks.task.conftests = [
         dict(act = 'random act',),
@@ -507,3 +501,58 @@ def testRunConfTestsUnknown():
 
     with pytest.raises(WafError):
         assist.runConfTests(cfgCtx, buildtype, tasks)
+
+def testLoadToolchains(mocker):
+
+    cfgCtx = getCfgCtxMock(mocker)
+    cfgCtx.variant = 'old'
+
+    bconfHandler = AutoDict()
+    env = AutoDict()
+
+    with pytest.raises(WafError):
+        assist.loadToolchains(cfgCtx, bconfHandler, env)
+
+    # load existing tools by name
+    bconfHandler.customToolchains = {}
+    bconfHandler.toolchainNames = ['gcc', 'g++', 'g++']
+    toolchainsEnvs = assist.loadToolchains(cfgCtx, bconfHandler, env)
+    for name in bconfHandler.toolchainNames:
+        assert name in toolchainsEnvs
+        assert toolchainsEnvs[name].loaded == 'loaded-' + name
+    assert cfgCtx.variant == 'old'
+
+    # auto load existing tool by lang
+    bconfHandler.customToolchains = {}
+    bconfHandler.toolchainNames = ['auto-c', 'auto-c++']
+    toolchainsEnvs = assist.loadToolchains(cfgCtx, bconfHandler, env)
+    assert toolchainsEnvs
+    for name in bconfHandler.toolchainNames:
+        assert name in toolchainsEnvs
+        lang = name[5:]
+        envVar = toolchains.CompilersInfo.varToSetCompiler(lang)
+        compilers = toolchains.CompilersInfo.compilers(lang)
+        assert envVar in toolchainsEnvs[name]
+        assert toolchainsEnvs[name][envVar]
+
+    assert cfgCtx.variant == 'old'
+
+    # load custom tool
+    bconfHandler.customToolchains = {
+        'local-g++': AutoDict({
+            'kind' : 'g++',
+            'vars' : { 'CXX' : 'some_path/g++'} ,
+        })
+    }
+    bconfHandler.toolchainNames = ['local-g++', 'g++']
+    toolchainsEnvs = assist.loadToolchains(cfgCtx, bconfHandler, env)
+    assert toolchainsEnvs['g++'].loaded == 'loaded-g++'
+    assert toolchainsEnvs['local-g++'].loaded == 'loaded-g++'
+    assert cfgCtx.variant == 'old'
+
+    # errors
+    cfgCtx.load = mocker.MagicMock(side_effect = WafError)
+    bconfHandler.customToolchains = {}
+    bconfHandler.toolchainNames = ['auto-c', 'auto-c++']
+    with pytest.raises(WafError):
+        assist.loadToolchains(cfgCtx, bconfHandler, env)

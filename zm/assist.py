@@ -274,7 +274,9 @@ def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
     def loadToolchain(toolchain):
         toolname = toolchain
         if toolname in toolchainsEnvs:
+            #don't load again
             return
+
         cfgCtx.setenv(toolname, env = copyFromEnv)
         custom  = buildconfHandler.customToolchains.get(toolname, None)
         if custom is not None:
