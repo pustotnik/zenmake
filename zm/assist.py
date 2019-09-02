@@ -13,6 +13,7 @@ import re
 from copy import deepcopy
 from collections import defaultdict
 from waflib.ConfigSet import ConfigSet
+from waflib import Errors as waferror
 from zm.pyutils import stringtype, maptype, viewitems
 from zm import utils, toolchains, log
 from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, WSCRIPT_NAME
@@ -247,7 +248,7 @@ def _loadDetectedCompiler(cfgCtx, lang):
         cfgCtx.start_msg('Checking for %r' % compiler)
         try:
             cfgCtx.load(compiler)
-        except cfgCtx.errors.ConfigurationError:
+        except waferror.ConfigurationError:
             cfgCtx.env.revert()
             cfgCtx.end_msg(False)
         else:
