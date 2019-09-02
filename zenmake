@@ -36,7 +36,7 @@ import sys
 import os
 
 # It's should be set to specific path to ZenMake if current script is copied to
-# some different path without all other files of ZenMake.
+# some different path without all the other files of ZenMake.
 ZENMAKE_DIR = None
 
 #######################################################################

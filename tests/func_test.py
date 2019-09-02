@@ -26,7 +26,8 @@ from zm import starter
 
 joinpath = os.path.join
 
-ZM_BIN = os.path.normpath(joinpath(cmn.TESTS_DIR, os.path.pardir, "zenmake"))
+#ZM_BIN = os.path.normpath(joinpath(cmn.TESTS_DIR, os.path.pardir, "zenmake"))
+ZM_BIN = os.path.normpath(joinpath(cmn.TESTS_DIR, os.path.pardir))
 PYTHON_EXE = sys.executable if sys.executable else 'python'
 
 CUSTOM_TOOLCHAIN_PRJDIR = joinpath('cpp', '005-custom-toolchain')
@@ -125,7 +126,7 @@ class TestBase(object):
     def _checkBuildResults(self, cmdLine, resultExists):
         # checks for target files
         cmdLine = list(cmdLine)
-        cmdLine.insert(0, ZM_BIN)
+        cmdLine.insert(0, 'zenmake')
         cmd, _ = starter.handleCLI(self.confHandler, cmdLine, True)
         self.confHandler.handleCmdLineArgs(cmd)
         buildtype = self.confHandler.selectedBuildType
@@ -248,7 +249,7 @@ class TestBase(object):
         assert returncode == 0
         self._checkBuildResults(cmdLine, True)
 
-        cmd, _ = starter.handleCLI(self.confHandler, [ZM_BIN] + cmdLine, True)
+        cmd, _ = starter.handleCLI(self.confHandler, ['zenmake'] + cmdLine, True)
         self.confHandler.handleCmdLineArgs(cmd)
 
         for taskName, taskParams in self.confHandler.tasks.items():
