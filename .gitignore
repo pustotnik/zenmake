@@ -53,7 +53,7 @@ venv.bak/
 
 ##################
 .lock-wafbuild
-.vscode
+.vscode/
 .pytest_cache/
 .coverage
 htmlcov/

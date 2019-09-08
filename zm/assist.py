@@ -74,6 +74,27 @@ def makeTaskVariantName(buildtype, taskName):
     name = taskName.strip().replace(' ', '_')
     return '%s.%s' % (buildtype, re.sub(r'(?u)[^-\w.]', '.', name))
 
+WSCRIPT_BODY = '''\
+# coding=utf-8
+
+"""
+ Copyright (c) 2019, Alexander Magola. All rights reserved.
+ license: BSD 3-Clause License, see LICENSE for more details.
+
+ This module is entry WAF wscript file that is copied from zenmake.
+
+ Do not commit this to version control.
+"""
+
+from zm.wscriptimpl import *
+'''
+
+def writeWScriptFile(filepath):
+    """ Write 'wscript' file """
+
+    with open(filepath, 'w') as file:
+        file.write(WSCRIPT_BODY)
+
 def copyEnv(env):
     """
     Make shallow copy of ConfigSet object

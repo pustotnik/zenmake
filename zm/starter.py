@@ -18,7 +18,6 @@ SCRIPTS_ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS_ROOTDIR = os.path.abspath(joinpath(SCRIPTS_ROOTDIR, os.path.pardir))
 
 WAF_DIR = joinpath(SCRIPTS_ROOTDIR, 'waf')
-ZM_DIR = joinpath(SCRIPTS_ROOTDIR, 'zm')
 
 sys.path.insert(1, WAF_DIR)
 
@@ -55,11 +54,8 @@ def prepareDirs(bconfPaths):
     if buildroot != realbuildroot and not os.path.exists(buildroot):
         utils.mksymlink(realbuildroot, buildroot)
 
-    # We regard ZM_DIR as a directory where file 'wscript' is located.
-    # Creating of symlink is cheaper than copying of file but on Windows OS
-    # there are some problems with using of symlinks.
-    from shutil import copyfile
-    copyfile(joinpath(ZM_DIR, 'wscript'), bconfPaths.wscriptfile)
+    from zm import assist
+    assist.writeWScriptFile(bconfPaths.wscriptfile)
 
 def handleCLI(buildConfHandler, args, buildOnEmpty):
     """
@@ -115,7 +111,7 @@ def main():
     if isBuildConfFake:
         log.error('Config buildconf.py not found. Check buildconf.py '
                   'exists in the project directory.')
-        sys.exit(1)
+        return 1
 
     # Special case for 'distclean'
     if cmd.name == 'distclean':

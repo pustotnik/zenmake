@@ -60,9 +60,8 @@ def main():
         from zm import starter
     except ImportError:
         print('Cannot import starter.py. Check that ZENMAKE_DIR has a valid path')
-        sys.exit(1)
+        return 1
 
     return starter.main()
 
-if __name__ == '__main__':
-    sys.exit(main())
+sys.exit(main())
