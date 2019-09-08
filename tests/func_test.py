@@ -26,8 +26,7 @@ from zm import starter
 
 joinpath = os.path.join
 
-#ZM_BIN = os.path.normpath(joinpath(cmn.TESTS_DIR, os.path.pardir, "zenmake"))
-ZM_BIN = os.path.normpath(joinpath(cmn.TESTS_DIR, os.path.pardir))
+ZM_BIN = os.path.normpath(joinpath(cmn.TESTS_DIR, os.path.pardir, 'zenmake'))
 PYTHON_EXE = sys.executable if sys.executable else 'python'
 
 CUSTOM_TOOLCHAIN_PRJDIR = joinpath('cpp', '005-custom-toolchain')
