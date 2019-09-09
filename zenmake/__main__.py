@@ -33,15 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import sys
-import os
 
-ZENMAKE_DIR = os.path.dirname(os.path.abspath(__file__))
-WORKING_DIR = os.path.abspath(os.path.curdir)
-if ZENMAKE_DIR not in sys.path:
-    sys.path.insert(0, ZENMAKE_DIR)
-if ZENMAKE_DIR != WORKING_DIR and WORKING_DIR not in sys.path:
-    sys.path.insert(0, WORKING_DIR)
-
-#pylint: disable=wrong-import-position
-from zm import starter
-sys.exit(starter.main())
+# 'python zenmake' and 'python -m zenmake' produce different values in sys.path
+try:
+    from zenmake.zmrun import main
+except ImportError:
+    from zmrun import main
+sys.exit(main())

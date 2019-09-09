@@ -41,10 +41,9 @@ ZENMAKE_DIR = None
 
 #######################################################################
 
-SCRIPT_FILEPATH = os.path.abspath(__file__)
-WORKING_DIR     = os.path.abspath(os.path.curdir)
 if not ZENMAKE_DIR:
-    ZENMAKE_DIR = os.path.dirname(os.path.realpath(SCRIPT_FILEPATH))
+    ZENMAKE_DIR = os.path.abspath(__file__)
+    ZENMAKE_DIR = os.path.dirname(os.path.realpath(ZENMAKE_DIR))
 
 def main():
     """
@@ -53,8 +52,6 @@ def main():
 
     if ZENMAKE_DIR not in sys.path:
         sys.path.insert(0, ZENMAKE_DIR)
-    if ZENMAKE_DIR != WORKING_DIR and WORKING_DIR not in sys.path:
-        sys.path.insert(0, WORKING_DIR)
 
     try:
         from zm import starter
@@ -62,6 +59,7 @@ def main():
         print('Cannot import starter.py. Check that ZENMAKE_DIR has a valid path')
         return 1
 
-    return starter.main()
+    return starter.run()
 
-sys.exit(main())
+if __name__ == '__main__':
+    sys.exit(main())

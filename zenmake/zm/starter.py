@@ -12,19 +12,13 @@ import atexit
 if sys.hexversion < 0x2070000:
     raise ImportError('Python >= 2.7 is required')
 
-joinpath = os.path.join
-
-SCRIPTS_ROOTDIR = os.path.dirname(os.path.abspath(__file__))
-SCRIPTS_ROOTDIR = os.path.abspath(joinpath(SCRIPTS_ROOTDIR, os.path.pardir))
-
-WAF_DIR = joinpath(SCRIPTS_ROOTDIR, 'waf')
-
-sys.path.insert(1, WAF_DIR)
-
 #pylint: disable=wrong-import-position
 from waflib import Context
+from zm import ZENMAKE_DIR, WAF_DIR
 from zm.constants import WSCRIPT_NAME
 Context.WSCRIPT_FILE = WSCRIPT_NAME
+
+joinpath = os.path.join
 
 def atExit():
     """
@@ -75,13 +69,13 @@ def isDevVersion():
     """
     Detect that this is development version
     """
-    gitDir = joinpath(SCRIPTS_ROOTDIR, '.git')
+    gitDir = joinpath(ZENMAKE_DIR, os.path.pardir, '.git')
     #TODO: check that it is 'master' branch
     return os.path.exists(gitDir)
 
-def main():
+def run():
     """
-    Prepare and start Waf with ZenMake stuffs
+    Prepare and run ZenMake and Waf with ZenMake stuffs
     """
 
     # When set to a non-empty value, the process will not search for a build
@@ -98,7 +92,7 @@ def main():
     from zm.buildconf import loader as bconfLoader
     from zm.buildconf.handler import BuildConfHandler
 
-    buildconf = bconfLoader.load(check = False)
+    buildconf = bconfLoader.load(check = False, dirpath = os.getcwd())
     if assist.isBuildConfChanged(buildconf) or isDevVersion():
         bconfLoader.validate(buildconf)
     bconfHandler = BuildConfHandler(buildconf)
