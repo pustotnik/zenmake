@@ -9,7 +9,8 @@
 [![ProjectStatus](https://img.shields.io/pypi/status/zenmake.svg)](https://pypi.org/project/zenmake/)
 
 ## Brief
-This is one more building tool. It is based on WAF (https://waf.io/). So it is not self-sufficient build system. It's superstructure above WAF. You can regard it as some kind of extension for WAF. I don't try to hide that WAF does most the part. It's for C/C++ projects mostly but may be later I will add some other languages. Especially WAF supports a lot of other languages. It is not universal build system and is not applicable for any C/C++ project. But I hope it will be useful. I began this project for building my own C++ projects. Anyone can use this as example of using WAF also.
+ZenMake - build system based on WAF (https://waf.io/). It's designed to be as simple as possible to use but be flexible.
+It is not self-sufficient build system. It's superstructure above WAF. You can regard it as some kind of extension for WAF. I don't try to hide that WAF does most the part. It's for C/C++ projects mostly but may be later I will add some other languages. Especially WAF supports a lot of other languages. It is not universal build system and is not applicable for any C/C++ project. But I hope it will be useful. I began this project for building my own C++ projects. Anyone can use this as example of using WAF also. It supports building on GNU/Linux, MS Windows and Apple MacOS. It should work on some other platforms (BSD* for example) but it's not tested.
 
 ## Why?
 https://news.ycombinator.com/item?id=18789162
@@ -44,7 +45,7 @@ It's really not bad build system which uses ninja as a backend to build. I tried
 - It doesn't support target files with a wildcard: https://mesonbuild.com/FAQ.html#why-cant-i-specify-target-files-with-a-wildcard
 - They claim that meson is 'as user friendly as possible' but I think it can be more user friendly in some things.
 
-Last feature exists also in CMake. I don't agree with the position of developers of Meson and CMake that specifying target files with a wildcard is a bad thing. For example authors of Meson wrote that it is not fast. Yes, I agree that for big projects with a lot of files it can be slow in some cases. But for all others it can be fast enough. Why didn't they make it as option? I don't know. Variant with external command in meson doesn't work very well and authors of Meson know about it. In WAF I don't have any problems with it.
+Position 'wildcard for target files is bad thing' exists also in CMake. I don't agree with the position of developers of Meson and CMake that specifying target files with a wildcard is a bad thing. For example authors of Meson wrote that it is not fast. Yes, I agree that for big projects with a lot of files it can be slow in some cases. But for all others it can be fast enough. Why didn't they make it as option? I don't know. Variant with external command in meson doesn't work very well and authors of Meson know about it. In WAF I don't have any problems with it.
 
 #### Scons
 Nowadays we have WAF already. Scons is already too old and slow.
