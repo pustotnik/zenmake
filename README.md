@@ -10,7 +10,7 @@
 
 ## Brief
 ZenMake - build system based on WAF (https://waf.io/). It's designed to be as simple as possible to use but be flexible.
-It is not self-sufficient build system. It's superstructure above WAF. You can regard it as some kind of extension for WAF. I don't try to hide that WAF does most the part. It's for C/C++ projects mostly but may be later I will add some other languages. Especially WAF supports a lot of other languages. It is not universal build system and is not applicable for any C/C++ project. But I hope it will be useful. I began this project for building my own C++ projects. Anyone can use this as example of using WAF also. It supports building on GNU/Linux, MS Windows and Apple MacOS. It should work on some other platforms (BSD* for example) but it's not tested.
+It is not self-sufficient build system. It's superstructure above WAF. You can regard it as some kind of extension for WAF. I don't try to hide that WAF does most the part. It's for C/C++ projects now but may be later I will add some other languages. Especially WAF supports a lot of other languages. It is not universal build system and is not applicable for any C/C++ project. But I hope it will be useful. I began this project for building my own C++ projects. Anyone can use this as example of using WAF also. It supports building on GNU/Linux, MS Windows and Apple MacOS. It should work on some other platforms (FreeBSD for example) but it's not tested.
 
 ## Why?
 https://news.ycombinator.com/item?id=18789162
