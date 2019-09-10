@@ -6,7 +6,7 @@ import subprocess
 from distutils.errors import DistutilsOptionError
 from setuptools import setup, find_packages
 from setuptools import Command
-from setuptools.command.egg_info import egg_info
+from setuptools.command.egg_info import egg_info as _egg_info
 #from wheel.bdist_wheel import bdist_wheel
 from zenmake.zm.version import VERSION
 
@@ -15,6 +15,7 @@ os.chdir(here)
 
 DEST_DIR = 'dist'
 DIST_DIR = os.path.join(DEST_DIR, 'dist')
+PYPI_USER = 'pustotnik'
 
 PRJ_NAME = 'zenmake'
 AUTHOR = 'Alexander Magola'
@@ -70,15 +71,15 @@ CMD_OPTS = dict(
     bdist_wheel = dict( universal = 1),
 )
 
-class EggInfoCmd(egg_info):
+class egg_info(_egg_info):
 
     def finalize_options(self):
-        # 'egg_info' doesn't make dir for self.egg_base
+        # original 'egg_info' doesn't make dir for self.egg_base
         if self.egg_base and not os.path.isdir(self.egg_base):
             os.makedirs(self.egg_base)
-        egg_info.finalize_options(self)
+        _egg_info.finalize_options(self)
 
-class CleanCmd(Command):
+class clean(Command):
 
     description = "clean up files from 'setuptools' commands and some extras"
 
@@ -117,14 +118,17 @@ class CleanCmd(Command):
             elif os.path.isfile(path):
                 os.remove(path)
 
-class PublishCmd(Command):
+class publish(Command):
 
     description = "upload to pypi using 'twine'"
 
-    user_options = []
+    user_options = [
+        ('username=', 'u',
+        "username for https://upload.pypi.org/legacy/ [default: %s]" % PYPI_USER),
+    ]
 
     def initialize_options(self):
-        pass
+        self.username = None
 
     def finalize_options(self):
         try:
@@ -132,14 +136,17 @@ class PublishCmd(Command):
         except ImportError:
             raise DistutilsOptionError("Module 'twine' not found. You need to install it.")
 
+        if self.username is None:
+            self.username = PYPI_USER
+
     def run(self):
-        cmd = "%s -m twine upload %s/*" % (sys.executable, DIST_DIR)
+        cmd = "%s -m twine upload -u %s %s/*" % (sys.executable, self.username, DIST_DIR)
         subprocess.call(cmd, shell = True)
 
 cmdclass = {
-    'egg_info' : EggInfoCmd,
-    'clean': CleanCmd,
-    'publish' : PublishCmd,
+    'egg_info' : egg_info,
+    'clean': clean,
+    'publish' : publish,
 }
 
 kwargs = dict(
