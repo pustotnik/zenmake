@@ -15,6 +15,8 @@ __all__ = [
 
 import os
 from collections import namedtuple
+
+from zm.pypkg import PkgPath
 from zm.utils import loadPyModule
 
 _cache = {}
@@ -137,11 +139,10 @@ def allAddOnNames():
     if _cache:
         return _cache.keys()
 
-    names = []
-    for _, _, fnames in os.walk(os.path.dirname(os.path.abspath(__file__))):
-        names = [ x for x in fnames if x.startswith('addon_') and x.endswith('.py') ]
-        names = [ x[6:-3] for x in names ]
-        break
+    pkgPath = PkgPath(os.path.dirname(os.path.abspath(__file__)))
+    fnames = pkgPath.files()
+    names = [ x for x in fnames if x.startswith('addon_') and x.endswith('.py') ]
+    names = [ x[6:-3] for x in names ]
 
     for name in names:
         _cache[name] = None

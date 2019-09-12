@@ -8,9 +8,12 @@
 
 import os
 import sys
+import importlib
 import re
-from zm import pyutils as _pyutils
+
 from waflib import Utils as wafutils
+from zm import pyutils as _pyutils
+from zm.pypkg import PkgPath
 
 WINDOWS_RESERVED_FILENAMES = (
     'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5',
@@ -90,31 +93,56 @@ def mksymlink(src, dst, force = True):
 def _loadPyModuleWithoutImport(name):
 
     # In this case we should compile python file manually
+    # WARN: It has no support for all python module attributes.
 
     import types
     from zm.error import ZenMakeError
+    joinpath = os.path.join
+
     module = types.ModuleType(name)
-    filename = '%s.py' % name.replace('.', os.path.sep)
+    filename = name.replace('.', os.path.sep)
 
     # try to find module
+    isPkg = False
     for path in sys.path:
-        if os.path.isfile(os.path.join(path, filename)):
-            dirpath = path
+        modulePath = joinpath(path, filename)
+        path = PkgPath(modulePath + '.py')
+        if path.isfile():
+            modulePath = path
+            break
+        path = PkgPath(joinpath(modulePath, '__init__.py'))
+        if path.isfile():
+            modulePath = path
+            isPkg = True
             break
     else:
         raise ImportError('File %r not found' % filename)
 
-    modulePath = os.path.join(dirpath, filename)
     try:
-        code = readFile(modulePath, m = 'r', encoding = None)
+        code = modulePath.read()
     except EnvironmentError:
-        raise ZenMakeError('Could not read the file %r' % modulePath)
+        raise ZenMakeError('Could not read the file %r' % str(modulePath))
 
     #pylint: disable=exec-used
-    exec(compile(code, modulePath, 'exec'), module.__dict__)
+    exec(compile(code, modulePath.path, 'exec'), module.__dict__)
     #pylint: enable=exec-used
 
-    module.__file__ = modulePath
+    module.__file__ = modulePath.path
+
+    # From https://docs.python.org/3/reference/import.html:
+    #
+    # The module’s __package__ attribute should be set. Its value must be
+    # a string, but it can be the same value as its __name__. If the attribute
+    # is set to None or is missing, the import system will fill it in with
+    # a more appropriate value. When the module is a package, its __package__
+    # value should be set to its __name__. When the module is not a package,
+    # __package__ should be set to the empty string for top-level modules, or
+    # for submodules, to the parent package’s name.
+    if isPkg:
+        module.__package__ = name
+    else:
+        lastdotpos = name.rfind('.')
+        module.__package__ = '' if lastdotpos < 0 else name[0:lastdotpos]
     return module
 
 def loadPyModule(name, dirpath = None, withImport = True):
@@ -126,9 +154,7 @@ def loadPyModule(name, dirpath = None, withImport = True):
     """
 
     if withImport:
-        def loadModule(name):
-            # Without non empty fromlist __import__ returns the top-level package
-            return __import__(name, fromlist = [None])
+        loadModule = importlib.import_module
     else:
         loadModule = _loadPyModuleWithoutImport
 

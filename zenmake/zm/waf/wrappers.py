@@ -7,9 +7,12 @@
 """
 
 import os
-from waflib import Options, Context, Configure, Scripting
+import sys
+import subprocess
+from waflib import Options, Context, Configure, Scripting, Utils
 from waflib.ConfigSet import ConfigSet
 from zm import log, assist
+from zm.pypkg import PkgPath
 
 joinpath = os.path.join
 
@@ -125,8 +128,28 @@ def wrapBldCtxAutoConf(clicmd, bconfHandler, method):
 
 wrapBldCtxAutoConf.callCounter = 0
 
+def wrapUtilsGetProcess(_):
+    """ Wrap Utils.get_process """
+
+    from zm import WAF_DIR
+    filepath = joinpath(WAF_DIR, 'waflib', 'processor.py')
+    # it must be text
+    code = PkgPath(filepath).readText()
+
+    def execute():
+        try:
+            return Utils.process_pool.pop()
+        except IndexError:
+            cmd = [sys.executable, '-c', code]
+            return subprocess.Popen(cmd, stdout = subprocess.PIPE,
+                                    stdin = subprocess.PIPE, bufsize = 0)
+
+    return execute
+
 def setupAll(cmd, bconfHandler):
     """ Setup all wrappers for Waf """
+
+    Utils.get_process = wrapUtilsGetProcess(Utils.get_process)
 
     from waflib import Build
 
