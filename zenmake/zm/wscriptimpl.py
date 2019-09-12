@@ -19,6 +19,7 @@ __all__ = [
 ]
 
 import os
+
 from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext
 from zm.pyutils import viewitems

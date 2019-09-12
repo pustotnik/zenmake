@@ -7,6 +7,7 @@
 """
 
 import itertools
+
 from zm.error import ZenMakeError
 from zm.autodict import AutoDict as _AutoDict
 from zm.pyutils import maptype

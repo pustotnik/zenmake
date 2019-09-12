@@ -14,6 +14,7 @@ __all__ = [
 
 import os
 import sys
+
 from zm import log
 from zm.error import ZenMakeConfError
 from zm.pyutils import maptype, viewitems

@@ -10,6 +10,7 @@
 
 import os
 import shlex
+
 from waflib.TaskGen import feature, after
 from waflib.Errors import WafError
 from waflib import Task

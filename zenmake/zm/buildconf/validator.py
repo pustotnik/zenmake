@@ -7,6 +7,7 @@
 """
 
 from copy import deepcopy
+
 from zm import toolchains
 from zm.constants import KNOWN_PLATFORMS
 from zm.error import ZenMakeConfError, ZenMakeConfTypeError, ZenMakeConfValueError

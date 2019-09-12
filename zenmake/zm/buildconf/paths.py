@@ -9,6 +9,7 @@
 """
 
 import os
+
 from zm import utils
 from zm.constants import WAF_CACHE_DIRNAME, WAF_CACHE_NAMESUFFIX, \
                          ZENMAKE_COMMON_FILENAME, \

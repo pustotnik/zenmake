@@ -12,6 +12,7 @@ import os
 import re
 from copy import deepcopy
 from collections import defaultdict
+
 from waflib.ConfigSet import ConfigSet
 from waflib import Errors as waferror
 from zm.pyutils import stringtype, maptype, viewitems
