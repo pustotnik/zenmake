@@ -114,6 +114,16 @@ def testMakeTaskVariantName():
     name = assist.makeTaskVariantName(buildtype, taskName)
     assert name == '%s.%s' % (buildtype, 'bbb_..ccc')
 
+def testWriteWScriptFile(tmpdir):
+    wscriptfile = tmpdir.join("wscript")
+    assert not os.path.exists(str(wscriptfile))
+    assist.writeWScriptFile(str(wscriptfile))
+    assert os.path.exists(str(wscriptfile))
+    with open(str(wscriptfile), 'r') as f:
+        lines = f.readlines()
+    found = [ x for x in lines if 'from zm.wscriptimpl import *' in x ]
+    assert found
+
 def testCopyEnv():
     rootenv = ConfigSet()
     rootenv.test1 = 'test1'

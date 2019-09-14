@@ -123,11 +123,11 @@ def _loadPyModuleWithoutImport(name):
     except EnvironmentError:
         raise ZenMakeError('Could not read the file %r' % str(modulePath))
 
+    module.__file__ = modulePath.path
+
     #pylint: disable=exec-used
     exec(compile(code, modulePath.path, 'exec'), module.__dict__)
     #pylint: enable=exec-used
-
-    module.__file__ = modulePath.path
 
     # From https://docs.python.org/3/reference/import.html:
     #

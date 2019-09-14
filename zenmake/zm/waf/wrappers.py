@@ -130,7 +130,9 @@ def wrapBldCtxAutoConf(clicmd, bconfHandler, method):
 wrapBldCtxAutoConf.callCounter = 0
 
 def wrapUtilsGetProcess(_):
-    """ Wrap Utils.get_process """
+    """
+    Wrap Utils.get_process to have possibility of running from a zip package.
+    """
 
     from zm import WAF_DIR
     filepath = joinpath(WAF_DIR, 'waflib', 'processor.py')
@@ -138,12 +140,12 @@ def wrapUtilsGetProcess(_):
     code = PkgPath(filepath).readText()
 
     def execute():
-        try:
+        if Utils.process_pool:
             return Utils.process_pool.pop()
-        except IndexError:
-            cmd = [sys.executable, '-c', code]
-            return subprocess.Popen(cmd, stdout = subprocess.PIPE,
-                                    stdin = subprocess.PIPE, bufsize = 0)
+
+        cmd = [sys.executable, '-c', code]
+        return subprocess.Popen(cmd, stdout = subprocess.PIPE,
+                                stdin = subprocess.PIPE, bufsize = 0)
 
     return execute
 

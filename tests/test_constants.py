@@ -10,7 +10,7 @@
 
 import tests.common as cmn
 from waflib import Build, Context
-from zm import constants
+from zm import constants, starter
 
 def testAll():
     assert constants.WAF_CACHE_DIRNAME == Build.CACHE_DIR

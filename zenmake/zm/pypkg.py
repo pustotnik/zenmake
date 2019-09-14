@@ -33,9 +33,12 @@
 """
 
 import sys
-import os
 import io
+import os
+from os.path import isfile, isdir, exists
 from zipfile import ZipFile, is_zipfile as iszip
+
+from zm.error import ZenMakeLogicError
 
 class ZipPkg(object):
     """
@@ -76,13 +79,15 @@ class ZipPkg(object):
 
     def _prepareCall(self):
         if not self._zipexists:
-            raise FileNotFoundError("We aren't inside of a zip file")
+            raise ZenMakeLogicError("We aren't inside of a zip file")
 
         if self._paths is None:
             self._loadPaths()
 
     def _find(self, path):
         node = self._paths
+        if not path:
+            return node
         for part in path.split(os.path.sep):
             node = node.get(part, None)
             if node is None:
@@ -127,7 +132,7 @@ class ZipPkg(object):
     def open(self, path):
         """ Open a file from zip file in binary mode """
         if not self._zipexists:
-            raise FileNotFoundError("We aren't inside of a zip file")
+            raise ZenMakeLogicError("We aren't inside of a zip file")
         data = self._loader.get_data(path)
         return io.BytesIO(data)
 
@@ -149,12 +154,17 @@ class PkgPath(object):
     can have a zip package file or not.
     """
 
-    def __init__(self, path):
+    def __init__(self, path, zipPkg = None):
+        """
+        path   - path to process
+        zipPkg - object of class ZipPkg, mostly for testing
+        """
         self._path = os.path.abspath(path)
-        self._inZip = _localZipPkg.zipexists and \
-            self._path.startswith(_localZipPkg.zippath)
+        self._zipPkg = _localZipPkg if zipPkg is None else zipPkg
+        self._inZip = self._zipPkg.zipexists and \
+            self._path.startswith(self._zipPkg.zippath)
         if self._inZip:
-            self._zipPath = self._path[len(_localZipPkg.zippath) + 1:]
+            self._zipPath = self._path[len(self._zipPkg.zippath) + 1:]
 
     def __str__(self):
         return self._path
@@ -171,9 +181,9 @@ class PkgPath(object):
         """
 
         if self._inZip:
-            names, _ = _localZipPkg.get(self._zipPath)
+            names, _ = self._zipPkg.get(self._zipPath)
         else:
-            _, names, _ = next(os.walk(self.path), (None, [], None))
+            _, names, _ = next(os.walk(self._path), (None, [], None))
         return names
 
     def files(self):
@@ -183,34 +193,34 @@ class PkgPath(object):
         """
 
         if self._inZip:
-            _, names = _localZipPkg.get(self._zipPath)
+            _, names = self._zipPkg.get(self._zipPath)
         else:
-            _, _, names = next(os.walk(self.path), (None, None, []))
+            _, _, names = next(os.walk(self._path), (None, None, []))
         return names
 
     def exists(self):
         """ Return True if current path exists """
         if self._inZip:
-            return _localZipPkg.exists(self._zipPath)
-        return os.path.exists(self.path)
+            return self._zipPkg.exists(self._zipPath)
+        return exists(self._path)
 
     def isdir(self):
         """ Return True if current path exists and it's a directory """
         if self._inZip:
-            return _localZipPkg.isdir(self._zipPath)
-        return os.path.isdir(self.path)
+            return self._zipPkg.isdir(self._zipPath)
+        return isdir(self._path)
 
     def isfile(self):
         """ Return True if current path exists and it's a file """
         if self._inZip:
-            return _localZipPkg.isfile(self._zipPath)
-        return os.path.isfile(self.path)
+            return self._zipPkg.isfile(self._zipPath)
+        return isfile(self._path)
 
     def open(self):
         """ Open current path as a file in binary mode """
         if self._inZip:
-            return _localZipPkg.open(self._zipPath)
-        return io.open(self.path, 'rb')
+            return self._zipPkg.open(self._zipPath)
+        return io.open(self._path, 'rb')
 
     def openText(self, encoding = 'utf-8'):
         """ Open current path as a file in text mode """

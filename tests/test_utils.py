@@ -13,7 +13,9 @@ import sys
 import shutil
 import pytest
 import tests.common as cmn
-from zm import utils
+from zm import utils, error
+from zm.constants import PLATFORM
+from zm.pypkg import PkgPath
 
 joinpath = os.path.join
 
@@ -36,14 +38,21 @@ def testUnfoldPath():
     assert joinpath(cwd, 'qwerty', relpath) == \
                     utils.unfoldPath(cwd, joinpath('$ABC', relpath))
 
-def testMkSymlink(monkeypatch):
-    destdir = joinpath(cmn.SHARED_TMP_DIR, 'test.util.mksymlink')
-    if os.path.exists(destdir):
-        shutil.rmtree(destdir)
-    os.makedirs(destdir)
+def testMkSymlink(tmpdir, monkeypatch):
+
+    destdir = str(tmpdir.realpath())
     testfile = joinpath(destdir, 'testfile')
     with open(testfile, 'w+') as file:
         file.write("trash")
+
+    if PLATFORM == 'windows':
+        _mksymlink = getattr(os, "symlink", None)
+        if callable(_mksymlink):
+            try:
+                _mksymlink(testfile, joinpath(destdir, 'a'))
+            except OSError:
+                # On windows we can no implemention or no rights to make symlink
+                return
 
     symlink = joinpath(destdir, 'symlink')
     utils.mksymlink(testfile, symlink)
@@ -74,7 +83,7 @@ def testNormalizeForFileName(monkeypatch):
     monkeypatch.setattr(utils, 'PLATFORM', 'windows')
     assert utils.normalizeForFileName('aux') == '_aux'
 
-def testLoadPyModule():
+def testLoadPyModule(mocker):
 
     cwd = os.path.abspath(os.path.dirname(__file__))
     oldSysPath = sys.path
@@ -85,11 +94,18 @@ def testLoadPyModule():
         assert hasattr(module, '__name__')
         assert hasattr(module, '__file__')
         moduleFile = os.path.abspath(module.__file__).lower()
-        assert moduleFile.startswith(joinpath(cwd, 'fakemodule.py').lower())
+        assert hasattr(module, '__package__')
+        name = module.__name__
+        if not withImport:
+            basename = moduleFile.split(os.path.sep)[-1]
+            isPkg = basename.startswith('__init__.py')
+            if isPkg:
+                assert module.__package__ == name
+            else:
+                assert module.__package__ == '.'.join(name.split('.')[:-1])
         assert hasattr(module, 'something')
         assert module.something == 'qaz'
         if withImport:
-            name = module.__name__
             assert name in sys.modules
             assert sys.modules[name] == module
 
@@ -135,5 +151,22 @@ def testLoadPyModule():
         utils.loadPyModule(name, dirpath = 'notexisting', withImport = True)
     module = utils.loadPyModule(name, dirpath = dirpath, withImport = True)
     checkModule(module, True)
+
+    name = 'tests'
+    dirpath = os.path.realpath(joinpath(cwd, os.path.pardir))
+
+    # withImport = False
+    module = utils.loadPyModule(name, dirpath = 'notexisting', withImport = False)
+    checkModule(module, False)
+    module = utils.loadPyModule(name, dirpath = None, withImport = False)
+    checkModule(module, False)
+    module = utils.loadPyModule(name, dirpath = dirpath, withImport = False)
+    checkModule(module, False)
+
+    # errors
+    PkgPath.read = mocker.MagicMock(side_effect = EnvironmentError)
+    with pytest.raises(error.ZenMakeError):
+        utils.loadPyModule(name, dirpath = None, withImport = False)
+
 
     assert oldSysPath == sys.path
