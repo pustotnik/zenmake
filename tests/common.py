@@ -23,6 +23,7 @@ except ImportError:
     from io import StringIO
 from zm import utils
 from zm import pyutils
+from tests import ZENMAKE_DIR
 
 _tempdirs = []
 
@@ -55,15 +56,6 @@ def removeAllTmpDirsForTests():
         shutil.rmtree(path)
     del _tempdirs[:]
 
-atexit.register(removeAllTmpDirsForTests)
-
-SHARED_TMP_DIR = makeTmpDirForTests()
-#TEST_PROJECTS_DIR = os.path.join(SHARED_TMP_DIR, 'projects')
-
-PLATFORM = utils.platform()
-TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
-TEST_PROJECTS_DIR = os.path.join(TESTS_DIR, 'projects')
-
 def asRealConf(_buildconf):
     buildconf = types.ModuleType('buildconf')
     buildconf.__file__ = os.path.abspath('buildconf.py')
@@ -85,3 +77,10 @@ def asRealConf(_buildconf):
         else:
             setattr(buildconf, k, v)
     return buildconf
+
+atexit.register(removeAllTmpDirsForTests)
+
+PLATFORM = utils.platform()
+SHARED_TMP_DIR = makeTmpDirForTests()
+TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+TEST_PROJECTS_DIR = os.path.join(TESTS_DIR, 'projects')

@@ -1,20 +1,27 @@
+#!/usr/bin/env python3
+
 import os
 import sys
 import shutil
 import fnmatch
 import subprocess
+if sys.hexversion < 0x2070000:
+    raise ImportError('Python >= 2.7 is required')
+
 from distutils.errors import DistutilsOptionError
-from setuptools import setup, find_packages
+from distutils.spawn import find_executable as findProg
+from setuptools import setup
 from setuptools import Command
 from setuptools.command.egg_info import egg_info as _egg_info
 #from wheel.bdist_wheel import bdist_wheel
-from zenmake.zm.version import VERSION
 
 here = os.path.dirname(os.path.abspath(__file__))
 os.chdir(here)
 
+SRC_DIR = 'src'
 DEST_DIR = 'dist'
 DIST_DIR = os.path.join(DEST_DIR, 'dist')
+
 PYPI_USER = 'pustotnik'
 
 PRJ_NAME = 'zenmake'
@@ -56,8 +63,10 @@ Topic :: Software Development :: Build Tools
 
 PYTHON_REQUIRES = '>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4'
 RUNTIME_DEPS = ['PyYAML']
-#PKG_DIRS = ['auxiliary', 'waf', 'zm']
 PKG_DIRS = ['zenmake']
+
+sys.path.append(os.path.join(here, SRC_DIR))
+from zenmake.zm.version import VERSION
 
 CMD_OPTS = dict(
     # options for commands
@@ -140,7 +149,10 @@ class publish(Command):
             self.username = PYPI_USER
 
     def run(self):
-        cmd = "%s -m twine upload -u %s %s/*" % (sys.executable, self.username, DIST_DIR)
+        python = findProg('python3')
+        if not python:
+            python = sys.executable
+        cmd = "%s -m twine upload -u %s %s/*" % (python, self.username, DIST_DIR)
         subprocess.call(cmd, shell = True)
 
 cmdclass = {
@@ -159,11 +171,12 @@ kwargs = dict(
     url = REPO_URL,
     author = AUTHOR,
     author_email = AUTHOR_EMAIL,
-    zip_safe = False, # waf cannot run from .zip without unpacking
+    # It can be True, but by default it's False due to performance reason
+    zip_safe = False,
     packages = PKG_DIRS,
     include_package_data = True,    # include everything in source control
     #exclude_package_data = {'': ['README.txt']},
-    #package_dir = {'': 'src'},
+    package_dir = {'': 'src'},
     classifiers = CLASSIFIERS,
     python_requires = PYTHON_REQUIRES,
     install_requires = RUNTIME_DEPS,

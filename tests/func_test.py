@@ -14,6 +14,7 @@ import re
 import subprocess
 import shutil
 from collections import defaultdict
+
 import pytest
 from waflib import Build
 from waflib.ConfigSet import ConfigSet
@@ -25,8 +26,8 @@ from zm.constants import ZENMAKE_COMMON_FILENAME, PLATFORM
 from zm import starter
 
 joinpath = os.path.join
-
-ZM_BIN = os.path.normpath(joinpath(cmn.TESTS_DIR, os.path.pardir, 'zenmake'))
+ZM_BIN = cmn.ZENMAKE_DIR # it's a dir but it contains __main__.py
+#ZM_BIN = os.path.normpath(joinpath(cmn.TESTS_DIR, os.path.pardir, 'zenmake.zip'))
 PYTHON_EXE = sys.executable if sys.executable else 'python'
 
 CUSTOM_TOOLCHAIN_PRJDIR = joinpath('cpp', '005-custom-toolchain')

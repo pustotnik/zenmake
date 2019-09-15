@@ -1,0 +1,4 @@
+include README* LICENSE setup.py
+include src/zenmake/waf/waf-light
+recursive-include src/zenmake *.py
+recursive-include tests *

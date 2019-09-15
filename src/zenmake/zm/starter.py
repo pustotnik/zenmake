@@ -8,6 +8,7 @@
 
 import sys
 import os
+from os import path
 import atexit
 if sys.hexversion < 0x2070000:
     raise ImportError('Python >= 2.7 is required')
@@ -18,7 +19,7 @@ from zm import ZENMAKE_DIR, WAF_DIR
 from zm.constants import WSCRIPT_NAME
 Context.WSCRIPT_FILE = WSCRIPT_NAME
 
-joinpath = os.path.join
+joinpath = path.join
 
 def atExit():
     """
@@ -30,7 +31,7 @@ def atExit():
     if not shared.buildConfHandler:
         return
     wscriptfile = shared.buildConfHandler.confPaths.wscriptfile
-    if os.path.isfile(wscriptfile):
+    if path.isfile(wscriptfile):
         os.remove(wscriptfile)
 
 atexit.register(atExit)
@@ -43,9 +44,9 @@ def prepareDirs(bconfPaths):
 
     buildroot     = bconfPaths.buildroot
     realbuildroot = bconfPaths.realbuildroot
-    if not os.path.exists(realbuildroot):
+    if not path.exists(realbuildroot):
         os.makedirs(realbuildroot)
-    if buildroot != realbuildroot and not os.path.exists(buildroot):
+    if buildroot != realbuildroot and not path.exists(buildroot):
         utils.mksymlink(realbuildroot, buildroot)
 
     from zm import assist
@@ -69,9 +70,9 @@ def isDevVersion():
     """
     Detect that this is development version
     """
-    gitDir = joinpath(ZENMAKE_DIR, os.path.pardir, '.git')
+    gitDir = joinpath(ZENMAKE_DIR, path.pardir, '.git')
     #TODO: check that it is 'master' branch
-    return os.path.exists(gitDir)
+    return path.exists(gitDir)
 
 def run():
     """
