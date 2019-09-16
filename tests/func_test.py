@@ -57,14 +57,14 @@ def getZmExecutables():
     zipAppFile = zipapp.make(tmpdir)
 
     _zmExes['normal'] = [PYTHON_EXE, ZM_BIN]
-    if PLATFORM == 'windows':
-        # On Windows 10 .pyz can be used as is because there is
-        # a launcher (python.exe) that assosiated with this file extension in
-        # the system. But module subprocess can not do it. So it needs to
-        # specify python executable.
-        _zmExes['zipapp'] = [PYTHON_EXE, zipAppFile]
-    else:
-        _zmExes['zipapp'] = [zipAppFile]
+    #if PLATFORM == 'windows':
+    #    # On Windows 10 .pyz can be used as is because there is
+    #    # a launcher (python.exe) that assosiated with this file extension in
+    #    # the system. But module subprocess can not do it. So it needs to
+    #    # specify python executable.
+    #    _zmExes['zipapp'] = [PYTHON_EXE, zipAppFile]
+    #else:
+    #    _zmExes['zipapp'] = [zipAppFile]
     return _zmExes.keys()
 
 def runZm(self, cmdline, env = None):
