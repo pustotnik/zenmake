@@ -6,6 +6,7 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+import sys
 import os
 import io
 import shutil
@@ -19,6 +20,10 @@ from zm.pypkg import ZipPkg
 
 COLOR = log.colors('GREEN')
 ZIPAPP_NAME = APPNAME + '.pyz'
+if PLATFORM == 'windows':
+    SHEBANG_ENC = 'utf-8'
+else:
+    SHEBANG_ENC = sys.getfilesystemencoding()
 
 def _info(msg):
     log.info(msg, extra = { 'c1': COLOR } )
@@ -73,9 +78,12 @@ def make(destDir, verbose = 0):
     zipFullBaseName = os.path.join(tempDir, APPNAME)
     zipFile = shutil.make_archive(zipFullBaseName, 'zip', tempDest, logger = logger)
 
+    interpreter = '/usr/bin/env python'
+    interpreter = interpreter.encode(SHEBANG_ENC)
     # Python 'zipapp' exists in python >= 3.5 but it's not a big problem
     with io.open(zipAppFileName, 'wb') as appFile:
-        appFile.write(b'#!/usr/bin/env python\n')
+        shebang = b'#!' + interpreter + b'\n'
+        appFile.write(shebang)
         with io.open(zipFile, 'rb') as zipFile:
             shutil.copyfileobj(zipFile, appFile)
 
