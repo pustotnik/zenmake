@@ -22,9 +22,9 @@ compiler:
 # most problematic at first places
 matrix:
   include:
-  #- name: Python 2.7 on Linux
-  #  python: 2.7
-  #  env: NAME='Python 2.7 on Linux'
+  - name: Python 2.7 on Linux
+    python: 2.7
+    env: NAME='Python 2.7 on Linux'
   #- name: Python 3.4 on Linux
   #  python: 3.4
   #  env: NAME='Python 3.4 on Linux'
