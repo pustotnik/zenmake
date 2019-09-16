@@ -10,11 +10,20 @@
 
 import os
 import types
+import platform as _platform
 import pytest
 
 from zm import pyutils
 from zm.autodict import AutoDict
 from zm.buildconf import loader as bconfloader
+
+@pytest.fixture(scope = "session", autouse = True)
+def beforeAllTests(request):
+    # Additional check for travis ci
+    if 'PYENV_VERSION' in os.environ:
+        realVersion = _platform.python_version()
+        envVersion = os.environ['PYENV_VERSION']
+        assert realVersion == envVersion
 
 @pytest.fixture
 def unsetEnviron(monkeypatch):
