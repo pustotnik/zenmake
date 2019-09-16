@@ -25,9 +25,9 @@ matrix:
   - name: Python 2.7 on Linux
     python: 2.7
     env: NAME='Python 2.7 on Linux'
-  #- name: Python 3.4 on Linux
-  #  python: 3.4
-  #  env: NAME='Python 3.4 on Linux'
+  - name: Python 3.4 on Linux
+    python: 3.4
+    env: NAME='Python 3.4 on Linux'
   - name: Python 3.7 on Windows
     # https://docs.travis-ci.com/user/reference/windows/
     # https://github.com/cclauss/Travis-CI-Python-on-three-OSes
@@ -37,41 +37,41 @@ matrix:
       - PATH=/c/Python37:/c/Python37/Scripts:$PATH
       - PYTHON_VER=3.7.2
       - NAME='Python 3.7 on Windows'
-  #- name: Python 2.7 on macOS
-  #  os: osx
-  #  language: shell
-  #  env:
-  #    - PYENV_VERSION=2.7.12
-  #    - NAME='Python 2.7 on macOS'
-  #- name: Python 3.4 on macOS
-  #  os: osx
-  #  language: shell
-  #  env:
-  #    - PYENV_VERSION=3.4.8
-  #    - NAME='Python 3.4 on macOS'
-  #- name: PyPy (with python 3.5) on Linux
-  #  # https://docs.travis-ci.com/user/languages/python/#pypy-support
-  #  # https://travis-ci.community/t/confusing-pypy-versions/2505
-  #  # https://travis-ci.community/t/pypy-2-7-on-xenial/889
-  #  python: pypy3.5
-  #  env: NAME='PyPy (with python 3.5) on Linux'
+  - name: Python 2.7 on macOS
+    os: osx
+    language: shell
+    env:
+      - PYENV_VERSION=2.7.12
+      - NAME='Python 2.7 on macOS'
+  - name: Python 3.4 on macOS
+    os: osx
+    language: shell
+    env:
+      - PYENV_VERSION=3.4.8
+      - NAME='Python 3.4 on macOS'
+  - name: PyPy (with python 3.5) on Linux
+    # https://docs.travis-ci.com/user/languages/python/#pypy-support
+    # https://travis-ci.community/t/confusing-pypy-versions/2505
+    # https://travis-ci.community/t/pypy-2-7-on-xenial/889
+    python: pypy3.5
+    env: NAME='PyPy (with python 3.5) on Linux'
 
 ########################################################
-  #- name: Python 3.5 on Linux
-  #  python: 3.5
-  #  env: NAME='Python 3.5 on Linux'
-  #- name: Python 3.6 on Linux
-  #  python: 3.6
-  #  env: NAME='Python 3.6 on Linux'
-  #- name: Python 3.7 on Linux
-  #  python: 3.7
-  #  env: NAME='Python 3.7 on Linux'
-  #- name: Python 3.5 on macOS
-  #  os: osx
-  #  language: shell
-  #  env:
-  #    - PYENV_VERSION=3.5.5
-  #    - NAME='Python 3.5 on macOS'
+  - name: Python 3.5 on Linux
+    python: 3.5
+    env: NAME='Python 3.5 on Linux'
+  - name: Python 3.6 on Linux
+    python: 3.6
+    env: NAME='Python 3.6 on Linux'
+  - name: Python 3.7 on Linux
+    python: 3.7
+    env: NAME='Python 3.7 on Linux'
+  - name: Python 3.5 on macOS
+    os: osx
+    language: shell
+    env:
+      - PYENV_VERSION=3.5.5
+      - NAME='Python 3.5 on macOS'
   - name: Python 3.6 on macOS
     os: osx
     language: shell
@@ -116,18 +116,10 @@ install:
 
 script:
   - |
-    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      python --version
-      python -m pytest --cov zm tests/test_* -v --maxfail=2
-      #python -m pytest --cov zm tests -v --maxfail=2
-    elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      python -m pytest --cov zm tests -v --maxfail=2
-    else
-      pytest --cov zm tests -v --maxfail=2
-    fi
+    python -m pytest --cov zm tests -v --maxfail=2
 
-#after_success:
-#  - coveralls
+after_success:
+  - python -m coveralls
 
 notifications:
   email:
