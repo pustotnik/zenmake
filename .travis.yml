@@ -25,7 +25,7 @@ matrix:
   - name: Python 2.7 on Linux
     python: 2.7
     env: NAME='Python 2.7 on Linux'
-  #- name: Python 3.4 on Linux
+  - name: Python 3.4 on Linux
   #  python: 3.4
   #  env: NAME='Python 3.4 on Linux'
   - name: Python 3.7 on Windows
@@ -78,33 +78,19 @@ matrix:
     env:
       - PYENV_VERSION=3.6.5
       - NAME='Python 3.6 on macOS'
-  #- name: Python 3.7 on macOS
-  #  os: osx
-  #  osx_image: xcode11
-  #  language: shell
-  #  env:
-  #    - PYENV_VERSION=3.7.2
-  #    - NAME='Python 3.7 on macOS'
+  - name: Python 3.7 on macOS
+    os: osx
+    osx_image: xcode11
+    language: shell
+    env:
+      - PYENV_VERSION=3.7.2
+      - NAME='Python 3.7 on macOS'
 
 before_install:
   - |
     if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
       # by default choco installs last version of python
       choco install python --version $PYTHON_VER
-      # I'm not sure that it's necessary
-      python -m pip install --upgrade pip
-      python -m pip install pyyaml
-      python -m pip install pytest
-      python -m pip install pytest-cov
-      python -m pip install pytest-mock
-      # for coverage report
-      python -m pip install coveralls
-    else
-      pip install pyyaml
-      pip install pytest
-      pip install pytest-cov
-      pip install pytest-mock
-      pip install coveralls
     fi
 
 install:
@@ -121,21 +107,44 @@ install:
       # A manual check that the correct version of Python is running.
       python --version
       #set +ex
-    #elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-    #  pip3 install --upgrade pip
+
+      #############
+      python -m pip install --upgrade pip
+      python -m pip install pyyaml
+      python -m pip install pytest
+      python -m pip install pytest-cov
+      python -m pip install pytest-mock
+      python -m pip install coveralls
+
+    elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      # I'm not sure that it's necessary
+      python -m pip install --upgrade pip
+      python -m pip install pyyaml
+      python -m pip install pytest
+      python -m pip install pytest-cov
+      python -m pip install pytest-mock
+      python -m pip install coveralls
+    else
+      # Linux
+      #pip install pyyaml
+      python -m pip install pyyaml
+      pip install pytest
+      pip install pytest-cov
+      pip install pytest-mock
+      pip install coveralls
     fi
 
 script:
   - |
-    if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      python -m pytest --cov zm tests -v --maxfail=2
-    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       python --version
-      export PATH="$(pyenv root)/shims:${PATH}"
-      python --version
+      #export PATH="$(pyenv root)/shims:${PATH}"
+      #python --version
       pytest --cov zm tests/test_* -v --maxfail=2
       python -m pytest --cov zm tests/test_* -v --maxfail=2
       #pytest --cov zm tests -v --maxfail=2
+    elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      python -m pytest --cov zm tests -v --maxfail=2
     else
       pytest --cov zm tests -v --maxfail=2
     fi
