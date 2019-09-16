@@ -28,15 +28,15 @@ matrix:
   #- name: Python 3.4 on Linux
   #  python: 3.4
   #  env: NAME='Python 3.4 on Linux'
-  #- name: Python 3.7 on Windows
-  #  # https://docs.travis-ci.com/user/reference/windows/
-  #  # https://github.com/cclauss/Travis-CI-Python-on-three-OSes
-  #  os: windows
-  #  language: shell
-  #  env:
-  #    - PATH=/c/Python37:/c/Python37/Scripts:$PATH
-  #    - PYTHON_VER=3.7.2
-  #    - NAME='Python 3.7 on Windows'
+  - name: Python 3.7 on Windows
+    # https://docs.travis-ci.com/user/reference/windows/
+    # https://github.com/cclauss/Travis-CI-Python-on-three-OSes
+    os: windows
+    language: shell
+    env:
+      - PATH=/c/Python37:/c/Python37/Scripts:$PATH
+      - PYTHON_VER=3.7.2
+      - NAME='Python 3.7 on Windows'
   #- name: Python 2.7 on macOS
   #  os: osx
   #  language: shell
@@ -126,18 +126,19 @@ install:
     fi
 
 script:
-  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      python -m pytest --cov zm tests -v --maxfail=2;
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      python -m pytest --cov zm tests -v --maxfail=2
     elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       python --version
       export PATH="$(pyenv root)/shims:${PATH}"
       python --version
-      pytest --cov zm tests/test_* -v --maxfail=2;
-      python -m pytest --cov zm tests/test_* -v --maxfail=2;
-      #pytest --cov zm tests -v --maxfail=2;
+      pytest --cov zm tests/test_* -v --maxfail=2
+      python -m pytest --cov zm tests/test_* -v --maxfail=2
+      #pytest --cov zm tests -v --maxfail=2
     else
-      pytest --cov zm tests -v --maxfail=2;
-    fi;
+      pytest --cov zm tests -v --maxfail=2
+    fi
 
 #after_success:
 #  - coveralls
