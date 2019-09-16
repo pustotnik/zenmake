@@ -8,11 +8,12 @@
 
 from zm.utils import platform as _platform
 
+APPNAME = 'zenmake'
 BUILDOUTNAME = 'out'
 WAF_CACHE_DIRNAME = 'c4che'
 WAF_CACHE_NAMESUFFIX = '_cache.py'
-ZENMAKE_CACHE_NAMESUFFIX = '.zenmake.py'
-ZENMAKE_COMMON_FILENAME = '.zenmake-common'
+ZENMAKE_CACHE_NAMESUFFIX = '.%s.py' % APPNAME
+ZENMAKE_COMMON_FILENAME = '.%s-common' % APPNAME
 WSCRIPT_NAME = 'zmwscript'
 
 PLATFORM = _platform()

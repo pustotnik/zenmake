@@ -6,7 +6,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build
-dist/
+/dist
 develop-eggs/
 downloads/
 eggs/
@@ -59,3 +59,5 @@ venv.bak/
 htmlcov/
 *.code-workspace
 *.geany
+/zenmake
+zenmake.zip

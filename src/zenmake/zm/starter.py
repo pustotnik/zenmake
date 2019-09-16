@@ -66,6 +66,30 @@ def handleCLI(buildConfHandler, args, buildOnEmpty):
     cli.selected = cmd
     return cmd, wafCmdLine
 
+def runCmdWithoutBuildConf(cmd):
+    """
+    Run command that doesn't use buildconf and Waf.
+    """
+
+    from zm import log, error
+    verbose = cmd.args.verbose
+
+    try:
+        if cmd.name == 'zipapp':
+            from zm import zipapp
+            zipapp.run(cmd.args)
+            return 0
+    except error.ZenMakeError as ex:
+        if verbose > 1:
+            log.pprint('RED', ex.fullmsg)
+        log.error(ex.msg)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        log.pprint('RED', 'Interrupted')
+        sys.exit(68)
+
+    raise NotImplementedError('Unknown command')
+
 def isDevVersion():
     """
     Detect that this is development version
@@ -102,6 +126,8 @@ def run():
     isBuildConfFake = assist.isBuildConfFake(buildconf)
 
     cmd, wafCmdLine = handleCLI(bconfHandler, sys.argv, not isBuildConfFake)
+    if cmd.name in ('zipapp',):
+        return runCmdWithoutBuildConf(cmd)
 
     if isBuildConfFake:
         log.error('Config buildconf.py not found. Check buildconf.py '

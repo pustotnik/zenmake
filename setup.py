@@ -1,4 +1,9 @@
-#!/usr/bin/env python3
+
+
+"""
+ Copyright (c) 2019, Alexander Magola. All rights reserved.
+ license: BSD 3-Clause License, see LICENSE for more details.
+"""
 
 import os
 import sys
@@ -24,7 +29,6 @@ DIST_DIR = os.path.join(DEST_DIR, 'dist')
 
 PYPI_USER = 'pustotnik'
 
-PRJ_NAME = 'zenmake'
 AUTHOR = 'Alexander Magola'
 AUTHOR_EMAIL = 'pustotnik@gmail.com'
 
@@ -63,10 +67,12 @@ Topic :: Software Development :: Build Tools
 
 PYTHON_REQUIRES = '>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4'
 RUNTIME_DEPS = ['PyYAML']
-PKG_DIRS = ['zenmake']
 
 sys.path.append(os.path.join(here, SRC_DIR))
 from zenmake.zm.version import VERSION
+from zenmake.zm.constants import APPNAME
+
+PKG_DIRS = [APPNAME]
 
 CMD_OPTS = dict(
     # options for commands
@@ -162,7 +168,7 @@ cmdclass = {
 }
 
 kwargs = dict(
-    name = PRJ_NAME,
+    name = APPNAME,
     version = VERSION,
     license = 'BSD',
     description = DESCRIPTION,
@@ -187,7 +193,7 @@ kwargs = dict(
     },
     entry_points = {
         'console_scripts': [
-            'zenmake = zenmake.zmrun:main',
+            '%s = %s.zmrun:main' % (APPNAME, APPNAME),
         ],
     },
     #py_modules = ['__main__'],

@@ -517,8 +517,7 @@ def distclean(bconfPaths):
     verbose = 1
     import zm.cli as cli
     if cli.selected:
-        colors = {'yes' : 2, 'auto' : 1, 'no' : 0}[cli.selected.args.color]
-        log.enableColors(colors)
+        log.enableColorsByCli(cli.selected.args.color)
         verbose = cli.selected.args.verbose
 
     fullclean(bconfPaths, verbose)

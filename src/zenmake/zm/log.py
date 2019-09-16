@@ -11,7 +11,6 @@ from waflib import Logs
 if not Logs.log:
     Logs.init_log() # pragma: no cover
 
-enableColors = Logs.enable_colors
 colors = Logs.colors
 
 debug  = Logs.debug
@@ -19,6 +18,13 @@ error  = Logs.error
 warn   = Logs.warn
 info   = Logs.info
 pprint = Logs.pprint
+
+def enableColorsByCli(colorArg):
+    """
+    Set up log colors by arg from CLI
+    """
+    setup = {'yes' : 2, 'auto' : 1, 'no' : 0}[colorArg]
+    Logs.enable_colors(setup)
 
 def verbose():
     """

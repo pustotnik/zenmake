@@ -19,15 +19,14 @@ import pytest
 from waflib import Build
 from waflib.ConfigSet import ConfigSet
 import tests.common as cmn
-from zm import pyutils, assist, cli, utils
+from zm import starter
+from zm import pyutils, assist, cli, utils, zipapp
 from zm.buildconf import loader as bconfloader
 from zm.buildconf.handler import BuildConfHandler
-from zm.constants import ZENMAKE_COMMON_FILENAME, PLATFORM
-from zm import starter
+from zm.constants import ZENMAKE_COMMON_FILENAME, PLATFORM, APPNAME
 
 joinpath = os.path.join
 ZM_BIN = cmn.ZENMAKE_DIR # it's a dir but it contains __main__.py
-#ZM_BIN = os.path.normpath(joinpath(cmn.TESTS_DIR, os.path.pardir, 'zenmake.zip'))
 PYTHON_EXE = sys.executable if sys.executable else 'python'
 
 CUSTOM_TOOLCHAIN_PRJDIR = joinpath('cpp', '005-custom-toolchain')
@@ -46,10 +45,33 @@ def collectProjectDirs():
     result.sort()
     return result
 
+_zmExes = {}
+
+def getZmExecutables():
+
+    tmpdir = cmn.SHARED_TMP_DIR
+    zipAppFile = joinpath(tmpdir, APPNAME)
+    if _zmExes:
+        return _zmExes.keys()
+
+    zipAppFile = zipapp.make(tmpdir)
+
+    _zmExes['normal'] = [PYTHON_EXE, ZM_BIN]
+    if PLATFORM == 'windows':
+        # On Windows 10 .pyz can be used as is because there is
+        # a launcher (python.exe) that assosiated with this file extension in
+        # the system. But module subprocess can not do it. So it needs to
+        # specify python executable.
+        _zmExes['zipapp'] = [PYTHON_EXE, zipAppFile]
+    else:
+        _zmExes['zipapp'] = [zipAppFile]
+    return _zmExes.keys()
+
 def runZm(self, cmdline, env = None):
 
     cwd = self.cwd
-    cmdLine = [PYTHON_EXE, ZM_BIN] + utils.toList(cmdline)
+    zmExe = self.zmExe if hasattr(self, 'zmExe') else [PYTHON_EXE, ZM_BIN]
+    cmdLine = zmExe + utils.toList(cmdline)
 
     timeout = 60 * 15
     _env = os.environ.copy()
@@ -126,7 +148,7 @@ class TestBase(object):
     def _checkBuildResults(self, cmdLine, resultExists):
         # checks for target files
         cmdLine = list(cmdLine)
-        cmdLine.insert(0, 'zenmake')
+        cmdLine.insert(0, APPNAME)
         cmd, _ = starter.handleCLI(self.confHandler, cmdLine, True)
         self.confHandler.handleCmdLineArgs(cmd)
         buildtype = self.confHandler.selectedBuildType
@@ -166,6 +188,9 @@ class TestBase(object):
             if resultExists and executable:
                 assert os.access(targetpath, os.X_OK)
 
+    @pytest.fixture(params = getZmExecutables(), autouse = True)
+    def allZmExe(self, request):
+        self.zmExe = _zmExes[request.param]
 
     @pytest.fixture(params = collectProjectDirs())
     def allprojects(self, request, tmpdir):
@@ -249,7 +274,7 @@ class TestBase(object):
         assert returncode == 0
         self._checkBuildResults(cmdLine, True)
 
-        cmd, _ = starter.handleCLI(self.confHandler, ['zenmake'] + cmdLine, True)
+        cmd, _ = starter.handleCLI(self.confHandler, [APPNAME] + cmdLine, True)
         self.confHandler.handleCmdLineArgs(cmd)
 
         for taskName, taskParams in self.confHandler.tasks.items():
@@ -349,6 +374,10 @@ def checkMsgInOutput(msg, output, count = None):
 @pytest.mark.usefixtures("unsetEnviron")
 class TestFeatureRunCmd(object):
 
+    @pytest.fixture(params = getZmExecutables(), autouse = True)
+    def allZmExe(self, request):
+        self.zmExe = _zmExes[request.param]
+
     @pytest.fixture(params = [COMPLEX_UNITTEST_PRJDIR])
     def projects(self, request, tmpdir):
 
@@ -402,6 +431,10 @@ class TestFeatureRunCmd(object):
 
 @pytest.mark.usefixtures("unsetEnviron")
 class TestFeatureTest(object):
+
+    @pytest.fixture(params = getZmExecutables(), autouse = True)
+    def allZmExe(self, request):
+        self.zmExe = _zmExes[request.param]
 
     @pytest.fixture(params = [COMPLEX_UNITTEST_PRJDIR])
     def projects(self, request, tmpdir):

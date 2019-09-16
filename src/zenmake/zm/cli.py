@@ -11,6 +11,7 @@ from collections import namedtuple, defaultdict
 
 # argparse from the https://pypi.org/project/argparse/ supports alieses
 from auxiliary.argparse import argparse
+from zm.constants import APPNAME
 from zm.pyutils import viewitems
 from zm import log
 from zm.error import ZenMakeLogicError
@@ -26,13 +27,13 @@ selected = None
 class _Command(_AutoDict):
     def __init__(self, *args, **kwargs):
         super(_Command, self).__init__(*args, **kwargs)
+        self.setdefault('aliases', [])
         self.setdefault('usageTextTempl', "%s [options]")
 
 # Declarative list of commands in CLI
 _commands = [
     _Command(
         name = 'help',
-        aliases =  [],
         description = 'show help for a given topic or a help overview',
         usageTextTempl = "%s [command/topic]",
     ),
@@ -49,7 +50,6 @@ _commands = [
     ),
     _Command(
         name = 'test',
-        aliases = [],
         description = 'build and run tests',
         usageTextTempl = "%s [options] [task [task] ... ]",
     ),
@@ -62,6 +62,10 @@ _commands = [
         name = 'distclean',
         aliases = ['dc'],
         description = 'removes the build directory with everything in it',
+    ),
+    _Command(
+        name = 'zipapp',
+        description = 'make executable zip archive of %s' % APPNAME,
     ),
 ]
 
@@ -160,6 +164,11 @@ _options = [
         help = 'progress bar',
     ),
     _Option(
+        names = ['-d', '--destdir'],
+        commands = ['zipapp'],
+        help = 'destination directory',
+    ),
+    _Option(
         names = ['-v', '--verbose'],
         action = "count",
         commands = [x.name for x in _commands if x.name != 'help'],
@@ -179,6 +188,7 @@ READY_OPT_DEFAULTS = {
         'color': 'auto',
         'build-tests': 'no',
         'run-tests' : 'none',
+        'destdir' : '.',
     },
     'test' : {
         'build-tests': 'yes',
@@ -450,8 +460,7 @@ def parseAll(args, defaults, buildOnEmpty):
     Returns selected command as object of ParsedCommand and parser.wafCmdLine
     """
 
-    progName = 'zenmake'
-    parser = CmdLineParser(progName, defaults)
+    parser = CmdLineParser(APPNAME, defaults)
     cmd = parser.parse(args[1:], buildOnEmpty)
 
     return cmd, parser.wafCmdLine
