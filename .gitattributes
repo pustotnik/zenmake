@@ -1,3 +1,34 @@
+# Files and directories with the attribute export-ignore won’t be added to archive files.
 .gitignore export-ignore
 .gitattributes export-ignore
-* text eol=lf
+
+# Set the default behavior, in case people don't have core.autocrlf set.
+* text=auto
+
+# Source files
+# ============
+*.py     text eol=lf diff=python
+*.sh     text eol=lf
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout.
+*.c      text diff=cpp
+*.cc     text diff=cpp
+*.cxx    text diff=cpp
+*.cpp    text diff=cpp
+*.c++    text diff=cpp
+*.hpp    text diff=cpp
+*.h      text diff=cpp
+*.h++    text diff=cpp
+*.hh     text diff=cpp
+
+# Declare files that will always have CRLF line endings on checkout.
+*.sln    text eol=crlf
+*.vcproj text eol=crlf
+*.bat    text eol=crlf
+
+# Binary files
+# ============
+*.pyc    binary
+*.pyd    binary
+*.pyo    binary
+*.pyz    binary
