@@ -116,7 +116,10 @@ install:
 
 script:
   - |
-    python -m pytest --cov zm tests -v --maxfail=2
+    python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=2
+    if [[ $? -eq 0 ]]; then
+      python -m pytest tests -v -k "zipapp" --maxfail=2
+    fi
 
 after_success:
   - python -m coveralls
