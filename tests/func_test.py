@@ -50,17 +50,20 @@ _zmExes = {}
 def getZmExecutables():
 
     tmpdir = cmn.SHARED_TMP_DIR
-    zipAppFile = joinpath(tmpdir, APPNAME)
+    zipAppFile = joinpath(tmpdir, APPNAME + '.pyz')
     if _zmExes:
         return _zmExes.keys()
 
-    zipAppFile = zipapp.make(tmpdir)
-
     _zmExes['normal'] = [PYTHON_EXE, ZM_BIN]
 
-    # On Windows 10 .pyz can be used as is because there is
+    cmd = _zmExes['normal'] + ['zipapp', '-d', tmpdir]
+    devnull = open(os.devnull, 'w')
+    subprocess.call(cmd, stdout = devnull)
+    assert os.path.isfile(zipAppFile)
+
+    # On Windows 10 files *.pyz can be used as is because there is
     # a launcher (python.exe) that assosiated with this file extension in
-    # the system. But module subprocess can not do it. So it needs to
+    # the system. But python module subprocess cannot do it. So it needs to
     # specify python executable.
     # Also on all platforms to ensure that selected version of python is used
     # we should specify python executable. Otherwise default system python
