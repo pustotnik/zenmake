@@ -67,6 +67,15 @@ _commands = [
         name = 'zipapp',
         description = 'make executable zip archive of %s' % APPNAME,
     ),
+    _Command(
+        name = 'version',
+        aliases = ['ver'],
+        description = 'print version of %s' % APPNAME,
+    ),
+    _Command(
+        name = 'sysinfo',
+        description = 'print some system info useful for diagnostic reasons',
+    ),
 ]
 
 class _PosArg(_AutoDict):
@@ -177,7 +186,8 @@ _options = [
     _Option(
         names = ['--color'],
         choices = ('yes', 'no', 'auto'),
-        commands = [x.name for x in _commands], # for all commands
+        commands = [x.name for x in _commands \
+                            if x.name not in ('version', 'sysinfo')],
         help = 'whether to use colors (yes/no/auto)',
     ),
 ]

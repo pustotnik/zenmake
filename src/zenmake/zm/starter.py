@@ -21,20 +21,11 @@ Context.WSCRIPT_FILE = WSCRIPT_NAME
 
 joinpath = path.join
 
-def atExit():
-    """
-    Callback function for atexit
-    """
-
-    # remove 'wscript' file if it exists
-    from zm import shared
-    if not shared.buildConfHandler:
-        return
-    wscriptfile = shared.buildConfHandler.confPaths.wscriptfile
-    if path.isfile(wscriptfile):
-        os.remove(wscriptfile)
-
-atexit.register(atExit)
+_indyCmd = {
+    'zipapp'  : 'zm.zipapp',
+    'version' : 'zm.version',
+    'sysinfo' : 'zm.sysinfo',
+}
 
 def prepareDirs(bconfPaths):
     """
@@ -66,19 +57,31 @@ def handleCLI(buildConfHandler, args, buildOnEmpty):
     cli.selected = cmd
     return cmd, wafCmdLine
 
-def runCmdWithoutBuildConf(cmd):
+def isDevVersion():
     """
-    Run command that doesn't use buildconf and Waf.
+    Detect that this is development version
+    """
+    gitDir = joinpath(ZENMAKE_DIR, path.pardir, '.git')
+    #TODO: check that it is 'master' branch
+    return path.isdir(gitDir)
+
+def runIndyCmd(cmd):
+    """
+    Run independent command that doesn't use buildconf and Waf.
     """
 
+    from zm.utils import loadPyModule
     from zm import log, error
     verbose = cmd.args.verbose
 
+    if cmd.name not in _indyCmd:
+        raise NotImplementedError('Unknown command')
+
+    moduleName = _indyCmd[cmd.name]
+
     try:
-        if cmd.name == 'zipapp':
-            from zm import zipapp
-            zipapp.run(cmd.args)
-            return 0
+        module = loadPyModule(moduleName, withImport = True)
+        return module.Command().run(cmd.args)
     except error.ZenMakeError as ex:
         if verbose > 1:
             log.pprint('RED', ex.fullmsg)
@@ -87,16 +90,6 @@ def runCmdWithoutBuildConf(cmd):
     except KeyboardInterrupt:
         log.pprint('RED', 'Interrupted')
         sys.exit(68)
-
-    raise NotImplementedError('Unknown command')
-
-def isDevVersion():
-    """
-    Detect that this is development version
-    """
-    gitDir = joinpath(ZENMAKE_DIR, path.pardir, '.git')
-    #TODO: check that it is 'master' branch
-    return path.exists(gitDir)
 
 def run():
     """
@@ -126,8 +119,8 @@ def run():
     isBuildConfFake = assist.isBuildConfFake(buildconf)
 
     cmd, wafCmdLine = handleCLI(bconfHandler, sys.argv, not isBuildConfFake)
-    if cmd.name in ('zipapp',):
-        return runCmdWithoutBuildConf(cmd)
+    if cmd.name in _indyCmd:
+        return runIndyCmd(cmd)
 
     if isBuildConfFake:
         log.error('Config buildconf.py not found. Check buildconf.py '
@@ -159,3 +152,18 @@ def run():
     Scripting.waf_entry_point(cwd, Context.WAFVERSION, WAF_DIR)
 
     return 0
+
+def atExit():
+    """
+    Callback function for atexit
+    """
+
+    # remove 'wscript' file if it exists
+    from zm import shared
+    if not shared.buildConfHandler:
+        return
+    wscriptfile = shared.buildConfHandler.confPaths.wscriptfile
+    if path.isfile(wscriptfile):
+        os.remove(wscriptfile)
+
+atexit.register(atExit)

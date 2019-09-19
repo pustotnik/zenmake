@@ -69,7 +69,7 @@ PYTHON_REQUIRES = '>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4'
 RUNTIME_DEPS = ['PyYAML']
 
 sys.path.append(os.path.join(here, SRC_DIR))
-from zenmake.zm.version import VERSION
+from zenmake.zm import version
 from zenmake.zm.constants import APPNAME
 
 PKG_DIRS = [APPNAME]
@@ -169,7 +169,7 @@ cmdclass = {
 
 kwargs = dict(
     name = APPNAME,
-    version = VERSION,
+    version = version.current(),
     license = 'BSD',
     description = DESCRIPTION,
     long_description = LONG_DESCRIPTION,

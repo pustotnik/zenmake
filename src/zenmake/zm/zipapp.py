@@ -14,22 +14,15 @@ import tempfile
 import atexit
 
 from zm.constants import PLATFORM, APPNAME
-from zm import log, error
+from zm import log, error, cmd
 from zm import ZENMAKE_DIR
 from zm.pypkg import ZipPkg
 
-COLOR = log.colors('GREEN')
 ZIPAPP_NAME = APPNAME + '.pyz'
 if PLATFORM == 'windows':
     SHEBANG_ENC = 'utf-8'
 else:
     SHEBANG_ENC = sys.getfilesystemencoding()
-
-def _info(msg):
-    log.info(msg, extra = { 'c1': COLOR } )
-
-def _warn(msg):
-    log.warn(msg, extra = { 'c1': COLOR } )
 
 # copied from shutil.py
 def _samefile(src, dst):
@@ -90,24 +83,28 @@ def make(destDir, verbose = 0):
     os.chmod(zipAppFileName, 0o755)
     return zipAppFileName
 
-def run(cliArgs):
+class Command(cmd.Command):
     """
-    Run command for making an executable zip file of project
+    Command for making an executable zip file of project.
+    It's implementation of command 'zipapp'.
     """
 
-    log.enableColorsByCli(cliArgs.color)
+    COLOR = 'GREEN'
 
-    destDir = os.path.abspath(cliArgs.destdir)
-    zipAppFileName = os.path.join(destDir, ZIPAPP_NAME)
+    def _run(self, cliArgs):
 
-    _info('Making of the executable zip file %r' % zipAppFileName)
+        destDir = os.path.abspath(cliArgs.destdir)
+        zipAppFileName = os.path.join(destDir, ZIPAPP_NAME)
 
-    if PLATFORM == 'windows':
-        msg = "On Windows command it may need to have special launcher installed"
-        msg += " to run .pyz file or use it like this: python zenmake.pyz"
-        msg += "\nBut when it was being tested on Windows 10 it worked fine as is."
-        _warn(msg)
+        self._info('Making of the executable zip file %r' % zipAppFileName)
 
-    make(destDir, cliArgs.verbose)
+        if PLATFORM == 'windows':
+            msg = "On Windows command it may need to have special launcher installed"
+            msg += " to run .pyz file or use it like this: python zenmake.pyz"
+            msg += "\nBut when it was being tested on Windows 10 it worked fine as is."
+            self._warn(msg)
 
-    _info("'zipapp' finished successfully")
+        make(destDir, cliArgs.verbose)
+
+        self._info("'zipapp' finished successfully")
+        return 0

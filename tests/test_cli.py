@@ -12,6 +12,7 @@ import sys
 from copy import deepcopy
 import pytest
 import tests.common as cmn
+from zm.constants import APPNAME
 from zm import cli
 
 class TestSuite(object):
@@ -62,7 +63,7 @@ class TestSuite(object):
 
             # parser with args from sys.argv
             oldargv = sys.argv
-            sys.argv = ['zenmake'] + check['args']
+            sys.argv = [APPNAME] + check['args']
             cmd = self.parser.parse()
             sys.argv = oldargv
             assertAll(cmd, self.parser.command, self.parser.wafCmdLine)
@@ -398,6 +399,84 @@ class TestSuite(object):
                 args = [CMDNAME, '--color', 'no'],
                 expectedArgsUpdate = {'color': 'no'},
                 wafArgs = [CMDNAME, '--color=no'],
+            ),
+        ]
+
+        self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
+
+    def testCmdZipApp(self):
+
+        baseExpectedArgs = {
+            'destdir' : '.',
+            'color': 'auto',
+            'verbose': 0,
+        }
+
+        CMDNAME = 'zipapp'
+        checks = [
+            dict(
+                args = [CMDNAME],
+                expectedArgsUpdate = {},
+                wafArgs = [],
+            ),
+            dict(
+                args = [CMDNAME, '-d', 'somedir'],
+                expectedArgsUpdate = {'destdir' : 'somedir'},
+                wafArgs = [CMDNAME],
+            ),
+            dict(
+                args = [CMDNAME, '--verbose'],
+                expectedArgsUpdate = {'verbose': 1},
+                wafArgs = [],
+            ),
+            dict(
+                args = [CMDNAME, '--color', 'no'],
+                expectedArgsUpdate = {'color': 'no'},
+                wafArgs = [],
+            ),
+        ]
+
+        self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
+
+    def testCmdVersion(self):
+
+        baseExpectedArgs = {
+            'verbose': 0,
+        }
+
+        CMDNAME = 'version'
+        checks = [
+            dict(
+                args = [CMDNAME],
+                expectedArgsUpdate = {},
+                wafArgs = [CMDNAME],
+            ),
+            dict(
+                args = [CMDNAME, '--verbose'],
+                expectedArgsUpdate = {'verbose': 1},
+                wafArgs = [CMDNAME, '-v'],
+            ),
+        ]
+
+        self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
+
+    def testCmdSysInfo(self):
+
+        baseExpectedArgs = {
+            'verbose': 0,
+        }
+
+        CMDNAME = 'sysinfo'
+        checks = [
+            dict(
+                args = [CMDNAME],
+                expectedArgsUpdate = {},
+                wafArgs = [CMDNAME],
+            ),
+            dict(
+                args = [CMDNAME, '--verbose'],
+                expectedArgsUpdate = {'verbose': 1},
+                wafArgs = [CMDNAME, '-v'],
             ),
         ]
 

@@ -49,8 +49,8 @@ def testingBuildConf():
     return AutoDict(vars(buildconf))
 
 def pytest_report_header(config):
-    from zm import utils
-    utils.printSysInfo()
+    from zm import sysinfo
+    sysinfo.printSysInfo()
     return ""
 
 @pytest.hookimpl(hookwrapper = True, tryfirst = True)
