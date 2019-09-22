@@ -27,6 +27,10 @@ SRC_DIR = 'src'
 DEST_DIR = 'dist'
 DIST_DIR = os.path.join(DEST_DIR, 'dist')
 
+sys.path.append(os.path.join(here, SRC_DIR))
+from zenmake.zm import version
+from zenmake.zm.constants import APPNAME, CAP_APPNAME
+
 PYPI_USER = 'pustotnik'
 
 AUTHOR = 'Alexander Magola'
@@ -36,13 +40,13 @@ REPO_URL   = 'https://gitlab.com/pustotnik/zenmake'
 SRC_URL    = REPO_URL
 ISSUES_URL = 'https://gitlab.com/pustotnik/zenmake/issues'
 
-DESCRIPTION = 'ZenMake - build system based on WAF'
+DESCRIPTION = '%s - build system based on WAF' % CAP_APPNAME
 #with open(os.path.join(here, "README.md"), "r") as fh:
 #    LONG_DESCRIPTION = fh.read()
 LONG_DESCRIPTION = """\
-ZenMake - build system for C/C++ projects based on WAF.
+%s - build system for C/C++ projects based on WAF.
 It's designed to be as simple as possible to use but be flexible.
-"""
+""" % CAP_APPNAME
 
 CLASSIFIERS = """\
 Development Status :: 4 - Beta
@@ -67,10 +71,6 @@ Topic :: Software Development :: Build Tools
 
 PYTHON_REQUIRES = '>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4'
 RUNTIME_DEPS = ['PyYAML']
-
-sys.path.append(os.path.join(here, SRC_DIR))
-from zenmake.zm import version
-from zenmake.zm.constants import APPNAME
 
 PKG_DIRS = [APPNAME]
 

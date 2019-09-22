@@ -11,7 +11,7 @@ from collections import namedtuple, defaultdict
 
 # argparse from the https://pypi.org/project/argparse/ supports alieses
 from auxiliary.argparse import argparse
-from zm.constants import APPNAME
+from zm.constants import APPNAME, CAP_APPNAME
 from zm.pyutils import viewitems
 from zm import log
 from zm.error import ZenMakeLogicError
@@ -249,7 +249,7 @@ class CmdLineParser(object):
         kwargs = dict(
             prog = progName,
             formatter_class = MyHelpFormatter,
-            description = 'ZenMake: build system based on the Waf build system',
+            description = '%s: build system based on the Waf build system' % CAP_APPNAME,
             usage = "%(prog)s <command> [options] [args]",
             add_help = False
         )

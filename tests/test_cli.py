@@ -12,7 +12,7 @@ import sys
 from copy import deepcopy
 import pytest
 import tests.common as cmn
-from zm.constants import APPNAME
+from zm.constants import APPNAME, CAP_APPNAME
 from zm import cli
 
 class TestSuite(object):
@@ -34,7 +34,7 @@ class TestSuite(object):
 
         assert not err
         assert ecode == 0
-        assert 'ZenMake' in out
+        assert CAP_APPNAME in out
         assert 'based on the Waf build system' in out
         assert self.parser.command is not None
         assert self.parser.command.name == 'help'

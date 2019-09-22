@@ -15,7 +15,7 @@ if sys.hexversion < 0x2070000:
 
 #pylint: disable=wrong-import-position
 from waflib import Context
-from zm import ZENMAKE_DIR, WAF_DIR
+from zm import WAF_DIR
 from zm.constants import WSCRIPT_NAME
 Context.WSCRIPT_FILE = WSCRIPT_NAME
 
@@ -61,9 +61,8 @@ def isDevVersion():
     """
     Detect that this is development version
     """
-    gitDir = joinpath(ZENMAKE_DIR, path.pardir, '.git')
-    #TODO: check that it is 'master' branch
-    return path.isdir(gitDir)
+    from zm import version
+    return version.isDev()
 
 def runIndyCmd(cmd):
     """
