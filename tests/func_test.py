@@ -14,6 +14,7 @@ import re
 import subprocess
 import shutil
 from collections import defaultdict
+from zipfile import ZipFile, is_zipfile as iszip
 
 import pytest
 from waflib import Build
@@ -50,7 +51,7 @@ _zmExes = {}
 def getZmExecutables():
 
     tmpdir = cmn.SHARED_TMP_DIR
-    zipAppFile = joinpath(tmpdir, APPNAME + '.pyz')
+    zipAppFile = joinpath(tmpdir, zipapp.ZIPAPP_NAME)
     if _zmExes:
         return _zmExes.keys()
 
@@ -452,14 +453,14 @@ class TestFeatureTest(object):
 
     def _runAndGather(self, cmdLine, exitSuccess):
 
-        returncode, stdout, stderr = runZm(self, cmdLine)
+        exitcode, stdout, stderr = runZm(self, cmdLine)
         events = gatherEventsFromOutput(stdout)
         if exitSuccess:
-            assert returncode == 0
+            assert exitcode == 0
             assert not stderr
             assert 'unknown' not in events
         else:
-            assert returncode != 0
+            assert exitcode != 0
 
         return events
 
@@ -578,3 +579,32 @@ class TestFeatureTest(object):
             ['test', '--build-tests', 'yes', '--run-tests', 'all'],
             ['test', '--build-tests', 'yes', '--run-tests', 'on-changes'],
         ])
+
+class TestIndyCmd(object):
+
+    @pytest.fixture(params = getZmExecutables(), autouse = True)
+    def allZmExe(self, request):
+        self.zmExe = _zmExes[request.param]
+
+    def testZipAppCmd(self, tmpdir):
+        cmdLine = ['zipapp']
+        self.cwd = str(tmpdir.realpath())
+        exitcode, stdout, stderr = runZm(self, cmdLine)
+        assert exitcode == 0
+        zipAppPath = joinpath(self.cwd, zipapp.ZIPAPP_NAME)
+        assert os.path.isfile(zipAppPath)
+        assert iszip(zipAppPath)
+
+    def testVersionCmd(self, tmpdir):
+        cmdLine = ['version']
+        self.cwd = str(tmpdir.realpath())
+        exitcode, stdout, stderr = runZm(self, cmdLine)
+        assert exitcode == 0
+        assert 'version' in stdout
+
+    def testSysInfoCmd(self, tmpdir):
+        cmdLine = ['sysinfo']
+        self.cwd = str(tmpdir.realpath())
+        exitcode, stdout, stderr = runZm(self, cmdLine)
+        assert exitcode == 0
+        assert 'information' in stdout
