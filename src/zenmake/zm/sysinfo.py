@@ -7,7 +7,7 @@
 """
 
 from zm.constants import PLATFORM
-from zm import cmd
+from zm.cmd import Command as _Command
 
 def gatherSysInfo():
     """
@@ -57,7 +57,7 @@ def printSysInfo():
         print(line)
     print('==================================================')
 
-class Command(cmd.Command):
+class Command(_Command):
     """
     Print sys info.
     It's implementation of command 'sysinfo'.

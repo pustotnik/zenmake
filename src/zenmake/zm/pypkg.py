@@ -35,8 +35,8 @@
 import sys
 import io
 import os
-from os.path import isfile, isdir, exists
-from zipfile import ZipFile, is_zipfile as iszip
+from os.path import isfile as _isfile, isdir as _isdir, exists as _exists
+from zipfile import ZipFile, is_zipfile as _iszip
 
 from zm.error import ZenMakeLogicError
 
@@ -53,7 +53,7 @@ class ZipPkg(object):
         if self._loader:
             self._path = getattr(self._loader, 'archive', None)
         # iszip is used to ensure it's really a zip file
-        self._zipexists = self._path is not None and iszip(self._path)
+        self._zipexists = self._path is not None and _iszip(self._path)
         self._paths = None
 
     def _loadPaths(self):
@@ -202,19 +202,19 @@ class PkgPath(object):
         """ Return True if current path exists """
         if self._inZip:
             return self._zipPkg.exists(self._zipPath)
-        return exists(self._path)
+        return _exists(self._path)
 
     def isdir(self):
         """ Return True if current path exists and it's a directory """
         if self._inZip:
             return self._zipPkg.isdir(self._zipPath)
-        return isdir(self._path)
+        return _isdir(self._path)
 
     def isfile(self):
         """ Return True if current path exists and it's a file """
         if self._inZip:
             return self._zipPkg.isfile(self._zipPath)
-        return isfile(self._path)
+        return _isfile(self._path)
 
     def open(self):
         """ Open current path as a file in binary mode """
