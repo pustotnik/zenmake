@@ -32,3 +32,5 @@
 *.pyd    binary
 *.pyo    binary
 *.pyz    binary
+*.kra    binary
+*.png    binary

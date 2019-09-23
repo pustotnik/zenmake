@@ -59,6 +59,7 @@ c4che
 *.dll
 *.obj
 *.log
+*~
 
 .vscode/
 .pytest_cache/
