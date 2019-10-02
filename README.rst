@@ -1,7 +1,7 @@
 ZenMake
 =======
 
-|Licence| |Python| |PythonImpl| |PyPI| |Travis| |coveralls|
+|Licence| |Python| |PythonImpl| |PyPI| |Docs| |Travis| |coveralls|
 |ProjectStatus|
 
 Brief
@@ -144,6 +144,9 @@ TODO: I will add info when tool will be really ready to use.
    :target: https://pypi.org/project/zenmake/
 .. |PyPI| image:: https://img.shields.io/pypi/v/zenmake.svg
    :target: https://pypi.org/project/zenmake/
+.. |Docs| image:: https://readthedocs.org/projects/zenmake/badge/?version=latest
+   :target: https://zenmake.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
 .. |Travis| image:: https://travis-ci.com/pustotnik/zenmake.svg?branch=master
    :target: https://travis-ci.com/pustotnik/zenmake
 .. |coveralls| image:: https://coveralls.io/repos/github/pustotnik/zenmake/badge.svg
