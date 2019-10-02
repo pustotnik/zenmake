@@ -23,10 +23,12 @@ if PY3:
     stringtype = str # pragma: no cover
     texttype = str # pragma: no cover
     binarytype = bytes # pragma: no cover
+    _t = str # pragma: no cover
 else:
     stringtype = basestring # pragma: no cover
     texttype = unicode # pragma: no cover
     binarytype = str # pragma: no cover
+    _t = unicode # pragma: no cover
 
 try:
     from collections.abc import Mapping as maptype

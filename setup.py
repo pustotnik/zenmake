@@ -29,11 +29,10 @@ DIST_DIR = os.path.join(DEST_DIR, 'dist')
 
 sys.path.append(os.path.join(here, SRC_DIR))
 from zenmake.zm import version
-from zenmake.zm.constants import APPNAME, CAP_APPNAME
+from zenmake.zm.constants import APPNAME, CAP_APPNAME, AUTHOR
 
 PYPI_USER = 'pustotnik'
 
-AUTHOR = 'Alexander Magola'
 AUTHOR_EMAIL = 'pustotnik@gmail.com'
 
 REPO_URL   = 'https://gitlab.com/pustotnik/zenmake'

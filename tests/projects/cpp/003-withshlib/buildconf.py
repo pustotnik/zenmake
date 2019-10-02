@@ -1,12 +1,12 @@
 
 tasks = {
     'util' : {
-        'features' : 'cxx cxxshlib',
+        'features' : 'cxxshlib',
         'source'   :  dict( include = 'shlib/**/*.cpp' ),
         'includes' : '.',
     },
-    'test' : {
-        'features' : 'cxx cxxprogram',
+    'program' : {
+        'features' : 'cxxprogram',
         'source'   :  dict( include = 'prog/**/*.cpp' ),
         'includes' : '.',
         'use'      : 'util',

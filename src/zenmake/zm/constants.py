@@ -10,6 +10,8 @@ from zm.utils import platform as _platform
 
 APPNAME = 'zenmake'
 CAP_APPNAME = 'ZenMake'
+AUTHOR = 'Alexander Magola'
+COPYRIGHT_ONE_LINE = '2019, %s' % AUTHOR
 BUILDOUTNAME = 'out'
 WAF_CACHE_DIRNAME = 'c4che'
 WAF_CACHE_NAMESUFFIX = '_cache.py'
