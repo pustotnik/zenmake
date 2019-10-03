@@ -1,4 +1,4 @@
-.. include:: docs/global.rst.inc
+.. _Waf: https://waf.io
 
 ZenMake
 =======
@@ -35,7 +35,11 @@ please see https://zenmake.readthedocs.io
 Project links
 -------------
 
-.. include:: docs/projectlinks.rst
+- Main git repository: https://gitlab.com/pustotnik/zenmake
+- Mirror git repository: https://github.com/pustotnik/zenmake
+- Issue tracker: https://gitlab.com/pustotnik/zenmake/issues
+- Pypi package: https://pypi.org/project/zenmake
+- Documentation: https://zenmake.readthedocs.io
 
 .. |Licence| image:: https://img.shields.io/pypi/l/zenmake.svg
    :target: https://pypi.org/project/zenmake/
