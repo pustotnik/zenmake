@@ -41,12 +41,12 @@ ISSUES_URL = 'https://gitlab.com/pustotnik/zenmake/issues'
 DOCS_URL = 'https://zenmake.readthedocs.io'
 
 DESCRIPTION = '%s - build system based on WAF' % CAP_APPNAME
-#with open(os.path.join(here, "README.md"), "r") as fh:
-#    LONG_DESCRIPTION = fh.read()
-LONG_DESCRIPTION = """\
-%s - build system for C/C++ projects based on WAF.
-It's designed to be as simple as possible to use but be flexible.
-""" % CAP_APPNAME
+with open(os.path.join(here, "README.rst"), "r") as fh:
+    LONG_DESCRIPTION = fh.read()
+#LONG_DESCRIPTION = """\
+#%s - build system for C/C++ projects based on WAF.
+#It's designed to be as simple as possible to use but be flexible.
+#""" % CAP_APPNAME
 
 CLASSIFIERS = """\
 Development Status :: 4 - Beta
@@ -173,7 +173,8 @@ kwargs = dict(
     license = 'BSD',
     description = DESCRIPTION,
     long_description = LONG_DESCRIPTION,
-    long_description_content_type = "text/markdown",
+    #long_description_content_type = "text/markdown",
+    long_description_content_type = "text/x-rst",
     url = REPO_URL,
     author = AUTHOR,
     author_email = AUTHOR_EMAIL,
