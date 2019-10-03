@@ -8,7 +8,8 @@ What is it?
 -----------
 
 ZenMake is a build system based on the meta build system/framework Waf_.
-Main purpose of project is to be as simple as possible to use but be flexible.
+Main purpose of the project is to be as simple as possible to use
+but be flexible.
 
 Details about reasons to create this project you can find :ref:`here<why>`.
 
@@ -44,7 +45,4 @@ add/change something.
 Project links
 -------------
 
- - Main git repository: https://gitlab.com/pustotnik/zenmake
- - Mirror git repository: https://github.com/pustotnik/zenmake
- - Issue tracker: https://gitlab.com/pustotnik/zenmake/issues
- - Pypi package: https://pypi.org/project/zenmake
+.. include:: projectlinks.rst

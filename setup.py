@@ -38,6 +38,7 @@ AUTHOR_EMAIL = 'pustotnik@gmail.com'
 REPO_URL   = 'https://gitlab.com/pustotnik/zenmake'
 SRC_URL    = REPO_URL
 ISSUES_URL = 'https://gitlab.com/pustotnik/zenmake/issues'
+DOCS_URL = 'https://zenmake.readthedocs.io'
 
 DESCRIPTION = '%s - build system based on WAF' % CAP_APPNAME
 #with open(os.path.join(here, "README.md"), "r") as fh:
@@ -188,7 +189,7 @@ kwargs = dict(
     project_urls = {
         'Bug Tracker' : ISSUES_URL,
         'Source Code' : SRC_URL,
-        #'Documentation' : ?,
+        'Documentation' : DOCS_URL,
     },
     entry_points = {
         'console_scripts': [

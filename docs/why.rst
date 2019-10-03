@@ -29,7 +29,7 @@ flexibility. It's not the fastest build system but it has enough good
 performance. I want a simple, stable build tool that just works.
 
 Below I describe what is wrong with some of existing build systems in my
-opinion. I regarded only build systems that can build C/C++ projects.
+opinion. I considered only build systems that can build C/C++ projects.
 
 **CMake**
 

@@ -1,4 +1,5 @@
 .. include:: global.rst.inc
+.. highlight:: bash
 .. _installation:
 
 Installation
@@ -94,7 +95,7 @@ As a zip application
 ------------------------
 Zenmake can be run as executable python zip application. And zenmake can make
 such zipapp itself with command ``zipapp``.
-Using steps from `Via Git <installation_via_git>`_ you can run:
+Using steps from `Via Git <installation_via_git_>`_ you can run:
 
 .. code:: bash
 

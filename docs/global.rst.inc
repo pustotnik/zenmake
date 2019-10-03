@@ -1,4 +1,3 @@
-.. highlight:: bash
 .. _pypipkg: https://pypi.org/project/zenmake
 .. _gitlab: https://gitlab.com/pustotnik/zenmake
 .. _issue_tracker: https://gitlab.com/pustotnik/zenmake/issues
