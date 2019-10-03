@@ -19,13 +19,13 @@ Main features
 - Automatic reconfiguring: no need to run command 'configure'.
 - Possibility to autodetect a compiler. (Thanks to Waf_)
 - Building and running functional/unit tests including possibility to
-    build and run tests only on changes.
+  build and run tests only on changes.
 - Running custom scripts during build phase.
 - Supported platforms: GNU/Linux, MacOS, MS Windows. Also some other
-    platforms like FreeBSD should be supported but they aren't tested.
+  platforms like FreeBSD should be supported but they aren't tested.
 - Supported languages: C, C++
 - Supported compilers: at least gcc, clang and msvc. But actually all
-    compilers that Waf_ supports.
+  compilers that Waf_ supports.
 
 Documentation
 -------------
