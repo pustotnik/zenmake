@@ -101,6 +101,7 @@ def _bumpVersion(ver):
     _runGitCmd("add %s" % verFilePath)
     _runGitCmd("commit -m 'bump version'")
     _runGitCmd("tag -a v%s -m 'version %s'" % (ver, ver))
+    _runGitCmd("push")
     _runGitCmd("push --tags")
 
 def _writeNewDevVersion(baseVer):
