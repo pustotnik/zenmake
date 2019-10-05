@@ -32,7 +32,7 @@ def testInitDefaults():
     assert buildconf.project == {
         'root' : os.curdir,
         'name' : 'NONAME',
-        'version': '0.0.0.0',
+        'version': '0.0.0',
     }
 
     assert hasattr(buildconf, 'toolchains')

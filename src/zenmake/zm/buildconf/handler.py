@@ -69,7 +69,7 @@ class BuildConfHandler(object):
                 paramName = var.lower()
 
                 #current = utils.toList(taskParams.get(paramName, []))
-                # FIXME: should we add or replace?
+                # FIXME: should we add or replace? change docs on behavior change
                 #taskParams[paramName] = current + utils.toList(envVal)
                 taskParams[paramName] = utils.toList(envVal)
 
@@ -144,7 +144,12 @@ class BuildConfHandler(object):
         if buildtype and buildtype not in self.supportedBuildTypes:
             errmsg = "Invalid config value."
             errmsg += " Default build type '%s' is not supported." % buildtype
-            errmsg += " Supported values: %s" % str(self.supportedBuildTypes)[1:-1]
+            supportedValues = str(self.supportedBuildTypes)[1:-1]
+            if not supportedValues:
+                supportedValues = " No supported values. Check buildconf."
+            else:
+                supportedValues = " Supported values: %s" % supportedValues
+            errmsg += supportedValues
             raise ZenMakeConfError(errmsg)
 
         self._meta.buildtypes.default = buildtype
@@ -163,9 +168,13 @@ class BuildConfHandler(object):
 
         supportedBuildTypes = self.supportedBuildTypes
         if buildtype not in supportedBuildTypes:
-            raise ZenMakeError("Invalid choice for build type: '%s', "
-                               "(choose from %s)" %
-                               (buildtype, str(supportedBuildTypes)[1:-1]))
+            supportedBuildTypes = str(supportedBuildTypes)[1:-1]
+            msg = "Invalid choice for build type: '%s'" % buildtype
+            if not supportedBuildTypes:
+                msg += ". No supported buildtypes."
+            else:
+                msg += ", (choose from %s)" % supportedBuildTypes
+            raise ZenMakeError(msg)
 
         self._meta.buildtypes.selected = buildtype
         self._meta.buildtype.dir = joinpath(self._confpaths.buildout, buildtype)

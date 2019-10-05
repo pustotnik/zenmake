@@ -105,14 +105,18 @@ def run():
     Options.lockfile = '.lock-wafbuild'
 
     # process buildconf and CLI
-    from zm import log, assist, shared
+    from zm import log, assist, error, shared
     from zm.buildconf import loader as bconfLoader
     from zm.buildconf.handler import BuildConfHandler
 
-    buildconf = bconfLoader.load(check = False, dirpath = os.getcwd())
-    if assist.isBuildConfChanged(buildconf) or isDevVersion():
-        bconfLoader.validate(buildconf)
-    bconfHandler = BuildConfHandler(buildconf)
+    try:
+        buildconf = bconfLoader.load(check = False, dirpath = os.getcwd())
+        if assist.isBuildConfChanged(buildconf) or isDevVersion():
+            bconfLoader.validate(buildconf)
+        bconfHandler = BuildConfHandler(buildconf)
+    except error.ZenMakeError as ex:
+        log.error(ex.msg)
+        sys.exit(1)
     shared.buildConfHandler = bconfHandler
     bconfPaths = bconfHandler.confPaths
     isBuildConfFake = assist.isBuildConfFake(buildconf)

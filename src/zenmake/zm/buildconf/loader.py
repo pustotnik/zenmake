@@ -53,7 +53,7 @@ def initDefaults(buildconf):
     params = buildconf.project
     params['root'] = params.get('root', os.curdir)
     params['name'] = params.get('name', 'NONAME')
-    params['version'] = params.get('version', '0.0.0.0')
+    params['version'] = params.get('version', '0.0.0')
 
     # toolchains
     if not hasattr(buildconf, 'toolchains'):
@@ -66,6 +66,11 @@ def initDefaults(buildconf):
     # buildtypes
     if not hasattr(buildconf, 'buildtypes'):
         setattr(buildconf, 'buildtypes', {})
+    #if not buildconf.buildtypes:
+    #    buildconf.buildtypes = {
+    #        'debug' : {},
+    #        'default' : 'debug',
+    #    }
 
     # tasks
     if not hasattr(buildconf, 'tasks'):
