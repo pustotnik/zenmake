@@ -6,6 +6,7 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+import os
 import sys
 from collections import namedtuple, defaultdict
 
@@ -195,7 +196,7 @@ _options = [
 READY_OPT_DEFAULTS = {
     '*' : {
         'verbose': 0,
-        'color': 'auto',
+        'color': os.environ.get('NOCOLOR', '') and 'no' or 'auto',
         'build-tests': 'no',
         'run-tests' : 'none',
         'destdir' : '.',
