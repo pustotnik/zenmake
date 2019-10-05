@@ -15,9 +15,9 @@ Main features
 
 - Easy to use and flexible build config as python (.py) or as yaml file.
 - Distribution as zip application or as system package (pip).
-- Automatic build order and dependencies. (Thanks to Waf_)
+- Automatic build order and dependencies. (Thanks to Waf)
 - Automatic reconfiguring: no need to run command 'configure'.
-- Possibility to autodetect a compiler. (Thanks to Waf_)
+- Possibility to autodetect a compiler. (Thanks to Waf)
 - Building and running functional/unit tests including possibility to
   build and run tests only on changes.
 - Running custom scripts during build phase.

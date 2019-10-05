@@ -214,6 +214,7 @@ man_pages = [
      [author], 1)
 ]
 
+man_show_urls = True
 
 # -- Options for Texinfo output ----------------------------------------------
 

@@ -1,5 +1,5 @@
 .. include:: global.rst.inc
-.. highlight:: bash
+.. highlight:: console
 .. _installation:
 
 Installation
@@ -18,9 +18,7 @@ There are different ways to install/use ZenMake:
 
 Via python package (pip)
 ------------------------
-ZenMake has `own python package <pypipkg_>`_. So you can install it as:
-
-.. code:: bash
+ZenMake has `own python package <pypipkg_>`_. So you can install it as::
 
     pip install zenmake
 
@@ -65,24 +63,18 @@ version of zenmake has git tag. Body of zenmake application is located in
 files in repository and remove them if you want. Then you can make symlink
 to ``src/zenmake/zmrun.py``, shell alias or make callable
 .sh script (for Linux/MacOS/..) or .bat (for Windows) to
-run zenmake. Example for Linux (``zmrepo`` is custom directory):
-
-.. code-block:: console
+run zenmake. Example for Linux (``zmrepo`` is custom directory)::
 
     $ mkdir zmrepo
     $ cd zmrepo
     $ git clone https://gitlab.com/pustotnik/zenmake.git .
 
-Next step is optional. Switch to version 0.3.0. Version can be any existing.
+Next step is optional. Switch to version 0.4.0. Version can be any existing::
 
-.. code-block:: console
-
-    $ git checkout v0.3.0
+    $ git checkout v0.4.0
 
 Here you can make symlink/alias/script to run zenmake.
-Variants to run zenmake from current directory:
-
-.. code-block:: console
+Variants to run zenmake from current directory::
 
     $ src/zenmake/zmrun.py
     $ python src/zenmake
@@ -95,9 +87,7 @@ As a zip application
 ------------------------
 Zenmake can be run as executable python zip application. And zenmake can make
 such zipapp itself with command ``zipapp``.
-Using steps from `Via Git <installation_via_git_>`_ you can run:
-
-.. code:: bash
+Using steps from `Via Git <installation_via_git_>`_ you can run::
 
     $ python src/zenmake zipapp
     $ ls *.pyz
