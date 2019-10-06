@@ -188,9 +188,6 @@ def testDetectAllTaskFeatures():
     taskParams = { 'features' : '' }
     assert assist.detectAllTaskFeatures(taskParams) == []
 
-    taskParams = { 'run' : {} }
-    assert assist.detectAllTaskFeatures(taskParams) == ['runcmd']
-
     for ftype in ('stlib', 'shlib', 'program'):
         for lang in ('c', 'cxx'):
             fulltype = '%s%s' % (lang, ftype)

@@ -327,8 +327,6 @@ def detectAllTaskFeatures(taskParams):
     Detect all features for task
     """
     features = utils.toList(taskParams.get('features', []))
-    if not features and 'run' in taskParams:
-        return ['runcmd']
 
     fmap = {
         'cprogram' : 'c',

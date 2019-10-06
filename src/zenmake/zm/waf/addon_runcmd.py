@@ -94,11 +94,16 @@ def postConf(conf):
 
     for taskName, taskParams in viewitems(tasks):
         features = taskParams['features']
+        cmdArgs = taskParams.get('run', None)
 
         if 'runcmd' not in features:
-            continue
+            if cmdArgs is not None:
+                features.append('runcmd')
+            else:
+                continue
 
-        cmdArgs = taskParams.get('run', {})
+        if cmdArgs is None:
+            cmdArgs = {}
 
         cmdTaskArgs = dict(
             name     = taskName,

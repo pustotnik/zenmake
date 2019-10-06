@@ -13,7 +13,7 @@ iswin32  = os.sep == '\\' or sys.platform == 'win32' or os.name == 'nt'
 
 tasks = {
     'shlib' : {
-        'features' : 'cxxshlib runcmd',
+        'features' : 'cxxshlib',
         'source'   :  dict( include = 'shlib/**/*.cpp' ),
         'includes' : '.',
         'run'      : {
@@ -41,7 +41,6 @@ tasks = {
         },
     },
     'echo' : {
-        'features' : 'runcmd',
         'run'      : {
             'cmdline' : "echo 'say hello'",
             'repeat'  : 2,
@@ -49,14 +48,12 @@ tasks = {
         'use'      : 'shlibmain',
     },
     'ls' : {
-        'features' : 'runcmd',
         'run'      : {
             'cmdline' : iswin32 and "dir /B" or "ls",
             'cwd'     : '.',
         },
     },
     'test.py' : {
-        'features' : 'runcmd',
         'run'      : {
             'cmdline' : 'python tests/test.py',
             'cwd'     : '.',
