@@ -64,6 +64,7 @@ taskscheme = {
         'type' : 'dict',
         'vars' : {
             'cmd' : { 'type': 'str' },
+            'cwd' : { 'type': 'str' },
             'env' : {
                 'type': 'dict',
                 'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },

@@ -142,6 +142,19 @@ class TestSuite(object):
                 validator.validate(buildconf)
             self._validateStrValues(buildconf, confnode, param, validVals)
 
+    def _checkParamsAsInt(self, buildconf, confnode, paramNames, validVals = []):
+        for param in paramNames:
+            confnode[param] = cmn.randomstr()
+            with pytest.raises(ZenMakeConfTypeError):
+                validator.validate(buildconf)
+            confnode[param] = [cmn.randomstr()]
+            with pytest.raises(ZenMakeConfTypeError):
+                validator.validate(buildconf)
+            confnode[param] = [cmn.randomint(), cmn.randomint()]
+            with pytest.raises(ZenMakeConfTypeError):
+                validator.validate(buildconf)
+            self._validateIntValues(buildconf, confnode, param, validVals)
+
     def _checkParamsAsListOfStrs(self, buildconf, confnode, paramNames, validVals = []):
         for param in paramNames:
             confnode[param] = {}
@@ -266,6 +279,13 @@ class TestSuite(object):
                                ['names'])
         self._validateBoolValues(buildconf, confnode['conftests'][0], 'mandatory')
         self._validateBoolValues(buildconf, confnode['conftests'][0], 'autodefine')
+
+        self._checkParamAsDict(buildconf, confnode, 'run')
+        confnode['run'] = {}
+        self._checkParamsAsStr(buildconf, confnode['run'], ['cmd', 'cwd'])
+        self._checkParamsAsInt(buildconf, confnode['run'], ['repeat', 'timeout'])
+        self._validateBoolValues(buildconf, confnode['run'], 'shell')
+        self._checkParamAsDict(buildconf, confnode['run'], 'env')
 
     def testValidateParamStrs(self):
 
