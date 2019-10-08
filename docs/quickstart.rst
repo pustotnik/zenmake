@@ -141,5 +141,5 @@ be used:
     Waf: Leaving directory `/tmp/testproject/build/out/release'
     'build' finished successfully (0.449s)
 
-More examples of projects can be found in repository `here <repo_test_projects_>`_.
+More examples of projects can be found in repository `here <repo_demo_projects_>`_.
 

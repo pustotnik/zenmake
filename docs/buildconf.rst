@@ -565,4 +565,4 @@ taskparams
 .. note::
 
     More examples of buildconf files can be found in repository
-    `here <repo_test_projects_>`_.
+    `here <repo_demo_projects_>`_.
