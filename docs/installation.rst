@@ -52,7 +52,7 @@ After installing you can run zenmake just by typing::
 
     zenmake
 
-.. _installation_via_git:
+.. _installation-via-git:
 
 Via git
 ----------
@@ -88,7 +88,7 @@ As a zip application
 ------------------------
 Zenmake can be run as executable python zip application. And zenmake can make
 such zipapp itself with command ``zipapp``.
-Using steps from `Via Git <installation_via_git_>`_ you can run::
+Using steps from `Via Git <installation-via-git_>`_ you can run::
 
     $ python src/zenmake zipapp
     $ ls *.pyz

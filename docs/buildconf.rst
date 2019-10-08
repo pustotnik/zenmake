@@ -29,7 +29,7 @@ Simplified scheme of buildconf:
     platforms_ = { name: parameters }
     matrix_ = [ { for: {...}, set: taskparams_ }, ... ]
 
-.. _buildconf_dict_def:
+.. _buildconf-dict-def:
 
 Where symbols '{}' mean an associative array/dictionary and symbols '[]'
 mean a list. In python '{}' is known as dictionary. In some other languages
@@ -82,7 +82,7 @@ srcroot
 
 project
 """""""
-    A `dict <buildconf_dict_def_>`_ with some parameters for the project.
+    A `dict <buildconf-dict-def_>`_ with some parameters for the project.
     Supported values:
 
     :name: The name of the project. It's 'NONAME' by default.
@@ -93,7 +93,7 @@ project
 
 features
 """"""""
-    A `dict <buildconf_dict_def_>`_ array with some features.
+    A `dict <buildconf-dict-def_>`_ array with some features.
     Supported values:
 
     :autoconfig: Execute the command ``configure`` automatically in
@@ -103,7 +103,7 @@ features
 
 tasks
 """""
-    A `dict <buildconf_dict_def_>`_ with build tasks. Each task has own
+    A `dict <buildconf-dict-def_>`_ with build tasks. Each task has own
     unique name and parameters. Name of task can be used as dependency id for
     other build tasks. Also this name is used as a base for resulting target
     file name if parameter ``target`` is not set in task parameters.
@@ -125,7 +125,7 @@ tasks
 
 buildtypes
 """"""""""
-    A `dict <buildconf_dict_def_>`_ with build types like ``debug``, ``release``,
+    A `dict <buildconf-dict-def_>`_ with build types like ``debug``, ``release``,
     ``debug-gcc`` and so on. Here is also a special value with name ``default``
     that is used to set default build type if nothing is specified. Names of
     these build types are just names, they can be any except ``default``
@@ -153,7 +153,7 @@ buildtypes
 
 toolchains
 """"""""""
-    A `dict <buildconf_dict_def_>`_ with custom toolchains setups. It's useful
+    A `dict <buildconf-dict-def_>`_ with custom toolchains setups. It's useful
     for simple cross builds for example. In common case you don't need it.
     Each value has unique name and parameters. Parameters are also
     dict with names of environment variables and
@@ -180,7 +180,7 @@ toolchains
 
 platforms
 """""""""
-    A `dict <buildconf_dict_def_>`_ with some settings specific to platforms.
+    A `dict <buildconf-dict-def_>`_ with some settings specific to platforms.
     It's important variable if your project should be built on more than one
     platform. Each value must have name of platform with value of 2 parameters:
     ``valid`` and ``default``. Parameter ``valid`` is a list of valid/supported
@@ -214,7 +214,7 @@ platforms
 matrix
 """"""
     This variable describes extra/alternative way to set up build tasks.
-    It's a list of `dicts <buildconf_dict_def_>`_ with two variables:
+    It's a list of `dicts <buildconf-dict-def_>`_ with two variables:
     ``set`` and ``for``. Variable ``for`` describes conditions for parameters
     in variable ``set``. Variable ``for`` is a dict with variables:
 
@@ -266,7 +266,7 @@ matrix
 
 taskparams
 """"""""""
-    It's not variable name. It's a `dict <buildconf_dict_def_>`_ as a some
+    It's not variable name. It's a `dict <buildconf-dict-def_>`_ as a some
     collection of build task parameters for one build task. This collection
     is used in tasks_, buildtypes_ and matrix_.
     And it's core element of the buildconf.
@@ -344,7 +344,7 @@ taskparams
     source
         One or more source files for compiler/toolchain.
         It can be string with path or list of such strings or
-        a `dict <buildconf_dict_def_>`_.
+        a `dict <buildconf-dict-def_>`_.
         Type ``dict`` is used for Waf_ ``ant_glob`` function. Format of patterns
         for ``ant_glob`` you can find on https://waf.io/book/.
         Main details from there:
@@ -423,8 +423,11 @@ taskparams
 
     defines
         One or more defines for C/C++.
+
+    .. _buildconf-taskparams-run:
+
     run
-        A `dict <buildconf_dict_def_>`_ with parameters to run something in
+        A `dict <buildconf-dict-def_>`_ with parameters to run something in
         the task. It' used with task features ``runcmd`` and ``test``.
 
         :cmd:
@@ -488,7 +491,7 @@ taskparams
         specifies some type of configuration test. They are called on
         **configure** step (command **configure**).
 
-        These configuration tests are supported:
+        These configuration tests:
 
             ``act`` = ``check-programs``
                 Check existence of programs from list in the ``names``.
