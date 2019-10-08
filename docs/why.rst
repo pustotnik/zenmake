@@ -100,7 +100,7 @@ Nowadays we have WAF already. Scons is already too old and slow.
 Actually I did't try to use it and I've forgotten about that. But it's
 not build system. It's generator for some other build systems and IDE.
 This is another way to build projects. I don't know how it is useful but
-it has status beta/alfa. I have checked some modules and it looks like
+it has status beta/alpha. I have checked some modules and it looks like
 something is working but something is not. And it looks like something
 too complex inside. Description of project looks good. Perhaps I had to
 try to use it.

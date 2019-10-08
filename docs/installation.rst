@@ -8,7 +8,8 @@ Installation
 **Dependencies**
 
 * Python_ >=2.7 or >=3.4
-* `PyYAML <https://pyyaml.org/>`_ Optional. It's needed only if you use yaml build configs.
+* `PyYAML <https://pyyaml.org/>`_ Optional. It's needed only
+  if you use yaml :ref:`buildconf<buildconf>`.
 
 
 There are different ways to install/use ZenMake:

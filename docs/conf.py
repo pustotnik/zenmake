@@ -49,7 +49,7 @@ extensions = [
     #'sphinx.ext.ifconfig',
     #'sphinx.ext.viewcode',
     #'sphinx.ext.intersphinx',
-    #'sphinxcontrib.spelling',
+    'sphinxcontrib.spelling',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -252,3 +252,8 @@ epub_exclude_files = ['search.html']
 # -- Extension configuration -------------------------------------------------
 
 #intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
+
+spelling_lang = 'en_US'
+spelling_show_suggestions = False
+spelling_word_list_filename = 'spelling_wordlist.txt'
+#spelling_ignore_pypi_package_names = True
