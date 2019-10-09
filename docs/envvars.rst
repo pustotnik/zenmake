@@ -21,7 +21,7 @@ CXX
     to existing compiler. It overrides values from :ref:`build config<buildconf>`
     if present. Example::
 
-        CXX=clang zenmake build -v
+        CXX=clang++ zenmake build -v
 
 CFLAGS
     Set list of compilation flags for C files. It overrides values from
