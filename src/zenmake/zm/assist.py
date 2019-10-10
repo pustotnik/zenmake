@@ -16,7 +16,7 @@ from collections import defaultdict
 from waflib.ConfigSet import ConfigSet
 from waflib import Errors as waferror
 from zm.pyutils import stringtype, maptype, viewitems
-from zm import utils, toolchains, log
+from zm import utils, toolchains, log, version
 from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, WSCRIPT_NAME
 
 joinpath = os.path.join
@@ -36,11 +36,14 @@ def getUsedWafTaskKeys():
 
 def dumpZenMakeCmnConfSet(bconfPaths):
     """
-    Dump ZenMake common ConfigSet file with some things like monitored
-    for changes files.
+    Dump ZenMake common ConfigSet file with some things like files
+    monitored for changes.
     """
 
     zmCmn = ConfigSet()
+
+    zmCmn.zmversion = version.current()
+
     # Firstly I had added WSCRIPT_FILE in this list but then realized that
     # it's not necessary because wscript don't have any project settings
     # in our case.
@@ -578,6 +581,12 @@ def areToolchainEnvVarsAreChanged(zmCmnConfSet):
 
     return False
 
+def isZmVersionChanged(zmCmnConfSet):
+    """
+    Detect that current version of ZenMake was changed from last building .
+    """
+
+    return zmCmnConfSet.zmversion != version.current()
 
 def isBuildConfChanged(conf):
     """

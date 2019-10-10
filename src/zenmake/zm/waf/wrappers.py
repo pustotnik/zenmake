@@ -56,6 +56,9 @@ def _handleNoLockInTop(ctx, envGetter):
     Context.run_dir = env.run_dir
     Context.top_dir = env.top_dir
     Context.out_dir = env.out_dir
+
+    # It's needed to rerun command to apply changes in Context otherwise
+    # Waf won't work correctly.
     Scripting.run_command(ctx.cmd)
     return True
 
@@ -93,15 +96,25 @@ def wrapBldCtxAutoConf(clicmd, bconfHandler, method):
             # it shouldn't happen.
             raise Exception('Infinite recursion was detected')
 
-        # Execute the configuration automatically
-        autoconfig = bconfHandler.conf.features['autoconfig']
+        if wrapBldCtxAutoConf.onlyRunMethod:
+            method(self)
+            # reset flag
+            wrapBldCtxAutoConf.onlyRunMethod = False
+            return
 
         bconfPaths = bconfHandler.confPaths
+
+        # Execute the configuration automatically
+        autoconfig = bconfHandler.conf.features['autoconfig']
 
         if not autoconfig:
             if not _handleNoLockInTop(self, lambda: _loadLockfileEnv(bconfPaths)):
                 method(self)
             return
+
+        # mark for the next recursive call
+        # FIXME: can be more stable solution?
+        wrapBldCtxAutoConf.onlyRunMethod = True
 
         env = _loadLockfileEnv(bconfPaths)
         if not env:
@@ -114,7 +127,7 @@ def wrapBldCtxAutoConf(clicmd, bconfHandler, method):
             return
 
         cmnConfSet = assist.loadZenMakeCmnConfSet(bconfPaths)
-        if not cmnConfSet or \
+        if not cmnConfSet or assist.isZmVersionChanged(cmnConfSet) or \
                     assist.areMonitoredFilesChanged(cmnConfSet) or \
                     assist.areToolchainEnvVarsAreChanged(cmnConfSet):
             runConfigAndCommand(self, env)
@@ -131,6 +144,7 @@ def wrapBldCtxAutoConf(clicmd, bconfHandler, method):
     return execute
 
 wrapBldCtxAutoConf.callCounter = 0
+wrapBldCtxAutoConf.onlyRunMethod = False
 
 def wrapUtilsGetProcess(_):
     """

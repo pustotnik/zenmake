@@ -10,6 +10,7 @@
 
 import sys
 import os
+import io
 import re
 import subprocess
 import shutil
@@ -21,7 +22,7 @@ from waflib import Build
 from waflib.ConfigSet import ConfigSet
 import tests.common as cmn
 from zm import starter
-from zm import pyutils, assist, cli, utils, zipapp
+from zm import pyutils, assist, cli, utils, zipapp, version
 from zm.buildconf import loader as bconfloader
 from zm.buildconf.handler import BuildConfHandler
 from zm.constants import ZENMAKE_CMN_CFGSET_FILENAME, PLATFORM, APPNAME
@@ -118,7 +119,7 @@ def setupTest(self, request, tmpdir):
     projectDirName = 'prj'
 
     if PLATFORM == 'windows':
-        # On windows with pytest it's got too long path
+        # On windows with pytest it gets too long path
         projectDirName = '_' # shortest name
         tmpdirForTests = cmn.SHARED_TMP_DIR
         tmptestDir = joinpath(tmpdirForTests, projectDirName)
@@ -616,25 +617,33 @@ class TestAutoconfig(object):
 
     cinfo = CompilersInfo
 
-    @pytest.fixture(params = getZmExecutables(), autouse = True)
+    @pytest.fixture(params = getZmExecutables())
     def allZmExe(self, request):
         self.zmExe = _zmExes[request.param]
 
     @pytest.fixture(params = [AUTOCONFIG_PRJDIR])
     def project(self, request, tmpdir):
 
+        self.testdir = None
+
         def teardown():
             if request.node.rep_call.failed:
                 printOutputs(self)
+            elif self.testdir:
+                zmdir = joinpath(self.testdir, 'zenmake')
+                if os.path.isdir(zmdir):
+                    shutil.rmtree(zmdir, ignore_errors = True)
 
         request.addfinalizer(teardown)
         setupTest(self, request, tmpdir)
+
+        self.testdir = os.path.abspath(joinpath(self.cwd, os.pardir))
 
     @pytest.fixture(params = cinfo.allFlagVars() + cinfo.allVarsToSetCompiler())
     def toolEnvVar(self, request):
         self.toolEnvVar = request.param
 
-    def testEnvVars(self, project, toolEnvVar):
+    def testEnvVars(self, allZmExe, project, toolEnvVar):
 
         # first run
         cmdLine = ['build']
@@ -649,7 +658,7 @@ class TestAutoconfig(object):
         assert "Setting top to" in stdout
         assert "Setting out to" in stdout
 
-    def testConfChanged(self, project):
+    def testConfChanged(self, allZmExe, project):
 
         # first run
         cmdLine = ['build']
@@ -666,6 +675,34 @@ class TestAutoconfig(object):
         lines.append("somevar = 'qq'\n")
         with open(buildConfFile, 'w') as file:
             file.writelines(lines)
+
+        returncode, stdout, _ = runZm(self, cmdLine)
+        assert returncode == 0
+        assert "Setting top to" in stdout
+        assert "Setting out to" in stdout
+
+        returncode, stdout, _ = runZm(self, cmdLine)
+        assert returncode == 0
+        assert "Setting top to" not in stdout
+        assert "Setting out to" not in stdout
+
+    def testVerChanged(self, project):
+
+        zmdir = joinpath(self.testdir, 'zenmake')
+        shutil.copytree(cmn.ZENMAKE_DIR, zmdir)
+
+        self.zmExe = [PYTHON_EXE, zmdir]
+
+        # first run
+        cmdLine = ['build']
+        returncode, stdout, _ = runZm(self, cmdLine)
+        assert returncode == 0
+
+        # then it should be checked
+        changedVer = version.current() + 'test'
+        filePath = joinpath(zmdir, version.VERSION_FILE_NAME)
+        with io.open(filePath, 'wt') as file:
+            file.write(pyutils.texttype(changedVer))
 
         returncode, stdout, _ = runZm(self, cmdLine)
         assert returncode == 0
