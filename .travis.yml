@@ -122,9 +122,11 @@ script:
     fi
 
 after_success:
-  - python -m coveralls
+  #- python -m coveralls
+  - COVERALLS_PARALLEL=true python -m coveralls
 
 notifications:
+  webhooks: https://coveralls.io/webhook
   email:
     on_success: always # default: change
     on_failure: always # default: always
