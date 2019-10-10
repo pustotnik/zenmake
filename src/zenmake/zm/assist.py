@@ -34,9 +34,9 @@ def getUsedWafTaskKeys():
     ''' Get used Waf task keys '''
     return _usedWafTaskKeys
 
-def dumpZenMakeCommonFile(bconfPaths):
+def dumpZenMakeCmnConfSet(bconfPaths):
     """
-    Dump file ZENMAKE_COMMON_FILENAME with some things like monitored
+    Dump ZenMake common ConfigSet file with some things like monitored
     for changes files.
     """
 
@@ -50,7 +50,28 @@ def dumpZenMakeCommonFile(bconfPaths):
     for file in zmCmn.monitfiles:
         zmCmn.monithash = utils.mkHashOfStrings((zmCmn.monithash,
                                                  utils.readFile(file, 'rb')))
-    zmCmn.store(bconfPaths.zmcmnfile)
+
+    cinfo = toolchains.CompilersInfo
+    envVarNames = cinfo.allFlagVars() + cinfo.allVarsToSetCompiler()
+
+    zmCmn.toolenvs = {}
+    for name in envVarNames:
+        zmCmn.toolenvs[name] = os.environ.get(name, '')
+
+    zmCmn.store(bconfPaths.zmcmnconfset)
+
+def loadZenMakeCmnConfSet(bconfPaths):
+    """
+    Load ZenMake common ConfigSet file. Return None if failed
+    """
+
+    zmCmn = ConfigSet()
+    try:
+        zmCmn.load(bconfPaths.zmcmnconfset)
+    except EnvironmentError:
+        return None
+
+    return zmCmn
 
 def loadTasksFromCache(cachefile):
     """
@@ -528,26 +549,35 @@ def isBuildConfFake(conf):
     """
     return conf.__name__.endswith('fakeconf')
 
-def areMonitoredFilesChanged(bconfPaths):
+def areMonitoredFilesChanged(zmCmnConfSet):
     """
-    Try to detect if current monitored files are changed.
+    Detect that current monitored files are changed.
     """
-
-    zmCmn = ConfigSet()
-    try:
-        zmcmnfile = bconfPaths.zmcmnfile
-        zmCmn.load(zmcmnfile)
-    except EnvironmentError:
-        return True
 
     _hash = 0
-    for file in zmCmn.monitfiles:
+    for file in zmCmnConfSet.monitfiles:
         try:
             _hash = utils.mkHashOfStrings((_hash, utils.readFile(file, 'rb')))
         except EnvironmentError:
             return True
 
-    return _hash != zmCmn.monithash
+    return _hash != zmCmnConfSet.monithash
+
+def areToolchainEnvVarsAreChanged(zmCmnConfSet):
+    """
+    Detect that current toolchain env vars are changed.
+    """
+
+    cinfo = toolchains.CompilersInfo
+    envVarNames = cinfo.allFlagVars() + cinfo.allVarsToSetCompiler()
+
+    lastEnvVars = zmCmnConfSet.toolenvs
+    for name in envVarNames:
+        if lastEnvVars[name] != os.environ.get(name, ''):
+            return True
+
+    return False
+
 
 def isBuildConfChanged(conf):
     """
@@ -561,4 +591,8 @@ def isBuildConfChanged(conf):
     except AttributeError:
         return True
 
-    return areMonitoredFilesChanged(bconfPaths)
+    cmnConfSet = loadZenMakeCmnConfSet(bconfPaths)
+    if not cmnConfSet:
+        return True
+
+    return areMonitoredFilesChanged(cmnConfSet)

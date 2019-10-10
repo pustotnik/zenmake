@@ -27,9 +27,8 @@ def beforeAllTests(request):
 
 @pytest.fixture
 def unsetEnviron(monkeypatch):
-    from zm import toolchains
-    varnames = toolchains.CompilersInfo.allVarsToSetCompiler()
-    varnames.extend(toolchains.CompilersInfo.allFlagVars())
+    from zm.toolchains import CompilersInfo as cinfo
+    varnames = cinfo.allVarsToSetCompiler() + cinfo.allFlagVars()
     for v in varnames:
         #os.environ.pop(v, None)
         monkeypatch.delenv(v, raising = False)

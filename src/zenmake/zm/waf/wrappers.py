@@ -113,7 +113,10 @@ def wrapBldCtxAutoConf(clicmd, bconfHandler, method):
             runConfigAndCommand(self, env)
             return
 
-        if assist.areMonitoredFilesChanged(bconfPaths):
+        cmnConfSet = assist.loadZenMakeCmnConfSet(bconfPaths)
+        if not cmnConfSet or \
+                    assist.areMonitoredFilesChanged(cmnConfSet) or \
+                    assist.areToolchainEnvVarsAreChanged(cmnConfSet):
             runConfigAndCommand(self, env)
             return
 

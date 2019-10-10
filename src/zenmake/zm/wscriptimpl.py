@@ -155,7 +155,7 @@ def configure(conf):
     for toolchain in toolchainsEnvs:
         conf.all_envs.pop(toolchain, None)
 
-    assist.dumpZenMakeCommonFile(confHandler.confPaths)
+    assist.dumpZenMakeCmnConfSet(confHandler.confPaths)
 
 def validateVariant(ctx):
     """ Check current variant and return it """

@@ -24,7 +24,8 @@ from zm import starter
 from zm import pyutils, assist, cli, utils, zipapp
 from zm.buildconf import loader as bconfloader
 from zm.buildconf.handler import BuildConfHandler
-from zm.constants import ZENMAKE_COMMON_FILENAME, PLATFORM, APPNAME
+from zm.constants import ZENMAKE_CMN_CFGSET_FILENAME, PLATFORM, APPNAME
+from zm.toolchains import CompilersInfo
 
 joinpath = os.path.join
 ZM_BIN = cmn.ZENMAKE_DIR # it's a dir but it contains __main__.py
@@ -32,6 +33,7 @@ PYTHON_EXE = sys.executable if sys.executable else 'python'
 
 CUSTOM_TOOLCHAIN_PRJDIR = joinpath('cpp', '005-custom-toolchain')
 COMPLEX_UNITTEST_PRJDIR = joinpath('cpp', '009-complex-unittest')
+AUTOCONFIG_PRJDIR = joinpath('cpp', '002-simple')
 
 def collectProjectDirs():
     result = []
@@ -126,7 +128,7 @@ def setupTest(self, request, tmpdir):
 
     def copytreeIgnore(src, names):
         # don't copy build dir/files
-        if ZENMAKE_COMMON_FILENAME in names:
+        if ZENMAKE_CMN_CFGSET_FILENAME in names:
             return names
         return ['build']
 
@@ -217,7 +219,7 @@ class TestBase(object):
         assert self._runZm(cmdLine)[0] == 0
         self._checkBuildResults(cmdLine, False)
         assert os.path.isfile(self.confPaths.wafcachefile)
-        assert os.path.isfile(self.confPaths.zmcmnfile)
+        assert os.path.isfile(self.confPaths.zmcmnconfset)
 
         cmdLine = ['build']
         assert self._runZm(cmdLine)[0] == 0
@@ -254,7 +256,7 @@ class TestBase(object):
         assert os.path.isdir(self.confPaths.buildroot)
         assert os.path.isdir(self.confPaths.buildout)
         assert os.path.isfile(self.confPaths.wafcachefile)
-        assert os.path.isfile(self.confPaths.zmcmnfile)
+        assert os.path.isfile(self.confPaths.zmcmnconfset)
         self._checkBuildResults(cmdLine, False)
 
     def testBuildAndDistclean(self, allprojects):
@@ -608,3 +610,69 @@ class TestIndyCmd(object):
         exitcode, stdout, stderr = runZm(self, cmdLine)
         assert exitcode == 0
         assert 'information' in stdout
+
+@pytest.mark.usefixtures("unsetEnviron")
+class TestAutoconfig(object):
+
+    cinfo = CompilersInfo
+
+    @pytest.fixture(params = getZmExecutables(), autouse = True)
+    def allZmExe(self, request):
+        self.zmExe = _zmExes[request.param]
+
+    @pytest.fixture(params = [AUTOCONFIG_PRJDIR])
+    def project(self, request, tmpdir):
+
+        def teardown():
+            if request.node.rep_call.failed:
+                printOutputs(self)
+
+        request.addfinalizer(teardown)
+        setupTest(self, request, tmpdir)
+
+    @pytest.fixture(params = cinfo.allFlagVars() + cinfo.allVarsToSetCompiler())
+    def toolEnvVar(self, request):
+        self.toolEnvVar = request.param
+
+    def testEnvVars(self, project, toolEnvVar):
+
+        # first run
+        cmdLine = ['build']
+        returncode, stdout, _ = runZm(self, cmdLine)
+        assert returncode == 0
+
+        # then it should be checked
+
+        # Such a way breaks building but here is testing of reacting, not building.
+        os.environ[self.toolEnvVar] = cmn.randomstr()
+        _, stdout, _ = runZm(self, cmdLine)
+        assert "Setting top to" in stdout
+        assert "Setting out to" in stdout
+
+    def testConfChanged(self, project):
+
+        # first run
+        cmdLine = ['build']
+        returncode, stdout, _ = runZm(self, cmdLine)
+        assert returncode == 0
+
+        # then it should be checked
+
+        buildConfFile = joinpath(self.cwd, 'buildconf.py')
+        assert os.path.isfile(buildConfFile)
+
+        with open(buildConfFile, 'r') as file:
+            lines = file.readlines()
+        lines.append("somevar = 'qq'\n")
+        with open(buildConfFile, 'w') as file:
+            file.writelines(lines)
+
+        returncode, stdout, _ = runZm(self, cmdLine)
+        assert returncode == 0
+        assert "Setting top to" in stdout
+        assert "Setting out to" in stdout
+
+        returncode, stdout, _ = runZm(self, cmdLine)
+        assert returncode == 0
+        assert "Setting top to" not in stdout
+        assert "Setting out to" not in stdout

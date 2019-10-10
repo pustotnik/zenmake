@@ -12,7 +12,7 @@ import os
 
 from zm import utils
 from zm.constants import WAF_CACHE_DIRNAME, WAF_CACHE_NAMESUFFIX, \
-                         ZENMAKE_COMMON_FILENAME, \
+                         ZENMAKE_CMN_CFGSET_FILENAME, \
                          BUILDOUTNAME, WSCRIPT_NAME
 
 joinpath = os.path.join
@@ -28,7 +28,7 @@ class BuildConfPaths(object):
         'buildconffile', 'buildconfdir', 'buildroot', 'realbuildroot',
         'buildout', 'projectroot', 'srcroot', 'wscripttop', 'wscriptout',
         'wscriptfile', 'wscriptdir', 'wafcachedir', 'wafcachefile',
-        'zmcachedir', 'zmcmnfile'
+        'zmcachedir', 'zmcmnconfset'
     )
 
     def __init__(self, conf):
@@ -58,7 +58,7 @@ class BuildConfPaths(object):
         self.wafcachedir   = joinpath(self.buildout, WAF_CACHE_DIRNAME)
         self.wafcachefile  = joinpath(self.wafcachedir, WAF_CACHE_NAMESUFFIX)
         self.zmcachedir    = self.wafcachedir
-        self.zmcmnfile     = joinpath(self.buildout, ZENMAKE_COMMON_FILENAME)
+        self.zmcmnconfset  = joinpath(self.buildout, ZENMAKE_CMN_CFGSET_FILENAME)
 
     def __eq__(self, other):
         for name in self.__slots__:

@@ -99,7 +99,7 @@ class Command(cmd.Command):
         self._info('Making of the executable zip file %r' % zipAppFileName)
 
         if PLATFORM == 'windows':
-            msg = "On Windows command it may need to have special launcher installed"
+            msg = "On Windows it may need to have special launcher installed"
             msg += " to run .pyz file or use it like this: python zenmake.pyz"
             msg += "\nBut when it was being tested on Windows 10 it worked fine as is."
             self._warn(msg)

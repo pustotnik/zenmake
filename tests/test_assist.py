@@ -60,17 +60,17 @@ def getCfgCtxMock(mocker):
 def testDumpZenMakeCommonFile(tmpdir):
     buildconffile = tmpdir.join("buildconf")
     buildconffile.write("buildconf")
-    zmcmnfile = tmpdir.join("zmcmnfile")
+    zmcmnconfset = tmpdir.join("zmcmnconfset")
 
     fakeConfPaths = AutoDict()
     fakeConfPaths.buildconffile = str(buildconffile)
-    fakeConfPaths.zmcmnfile = str(zmcmnfile)
+    fakeConfPaths.zmcmnconfset = str(zmcmnconfset)
 
-    assert not os.path.exists(fakeConfPaths.zmcmnfile)
-    assist.dumpZenMakeCommonFile(fakeConfPaths)
-    assert os.path.isfile(fakeConfPaths.zmcmnfile)
+    assert not os.path.exists(fakeConfPaths.zmcmnconfset)
+    assist.dumpZenMakeCmnConfSet(fakeConfPaths)
+    assert os.path.isfile(fakeConfPaths.zmcmnconfset)
 
-    cfgenv = ConfigSet(fakeConfPaths.zmcmnfile)
+    cfgenv = ConfigSet(fakeConfPaths.zmcmnconfset)
     assert 'monitfiles' in cfgenv
     assert cfgenv.monitfiles == [ fakeConfPaths.buildconffile ]
     assert 'monithash' in cfgenv
