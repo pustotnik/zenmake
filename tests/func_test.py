@@ -699,7 +699,10 @@ class TestAutoconfig(object):
         assert returncode == 0
 
         # then it should be checked
-        changedVer = version.current() + 'test'
+        parsed = version.parseVersion(version.current())
+        gr = parsed.groups()
+        changedVer = '.'.join(gr[:3]) + '-' + cmn.randomstr(10)
+
         filePath = joinpath(zmdir, version.VERSION_FILE_NAME)
         with io.open(filePath, 'wt') as file:
             file.write(pyutils.texttype(changedVer))
