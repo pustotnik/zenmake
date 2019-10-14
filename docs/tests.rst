@@ -42,7 +42,7 @@ order of running of tests.
         'test from script' : {
             'features' : 'test',
             'run'      : {
-                'cmdline' : 'python tests/test.py',
+                'cmd'     : 'python tests/test.py',
                 'cwd'     : '.',
                 'shell'   : False,
             },
@@ -59,7 +59,7 @@ order of running of tests.
             'source'      : 'tests/test_shlib.cpp',
             'use'         : 'shlib testcmn',
             'run'      : {
-                'cmdline' : '${PROGRAM} a b c',
+                'cmd'     : '${PROGRAM} a b c',
                 'env'     : { 'AZ' : '111', 'BROKEN_TEST' : 'false'},
                 'repeat'  : 2,
                 'timeout' : 10, # in seconds, Python 3 only

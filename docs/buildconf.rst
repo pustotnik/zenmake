@@ -435,6 +435,27 @@ taskparams
             For convenience special environment variable ``PROGRAM`` can be
             used. This variable contains the absolute path to resulting
             target file of the current task.
+            For python variant of buildconf it can be python function as well.
+            It this case such a function gets one argument as a python dict
+            with parameters:
+
+            :taskname:
+                Name of current build task
+            :projectroot:
+                Root directory of the project
+            :srcroot:
+                Root directory of the project sources
+            :buildroot:
+                Root directory for building
+            :buildout:
+                Directory for build target(s)
+            :buildtype:
+                Current buildtype
+            :target:
+                Absolute path to resulting target. It may not be existing.
+            :waftask:
+                Object of Waf class Task. It's for advanced use.
+
         :cwd:
             Working directory where to run ``cmd``. By default it's build
             directory for current buildtype. Path can be absolute or
@@ -461,15 +482,15 @@ taskparams
         .. code-block:: python
 
             'echo' : {
-                'run' : { 'cmdline' : "echo 'say hello'" },
+                'run' : { 'cmd' : "echo 'say hello'" },
             },
 
             'test.py' : {
                 'run'      : {
-                    'cmdline' : 'python tests/test.py',
-                    'cwd'     : '.',
-                    'env'     : { 'JUST_ENV_VAR' : 'qwerty', },
-                    'shell'   : False,
+                    'cmd'   : 'python tests/test.py',
+                    'cwd'   : '.',
+                    'env'   : { 'JUST_ENV_VAR' : 'qwerty', },
+                    'shell' : False,
                 },
                 'conftests'  : [ dict(act = 'check-programs', names = 'python'), ]
             },
@@ -478,7 +499,7 @@ taskparams
                 'features' : 'cxxprogram test',
                 # ...
                 'run'      : {
-                    'cmdline' : '${PROGRAM} a b c',
+                    'cmd'     : '${PROGRAM} a b c',
                     'env'     : { 'ENV_VAR1' : '111', 'ENV_VAR2' : 'false'},
                     'repeat'  : 2,
                     'timeout' : 10, # in seconds, Python 3 only
