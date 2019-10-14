@@ -24,13 +24,13 @@ class FakeBuildConf:
 
 class TestSuite(object):
 
-    def _validateBoolValues(self, buildconf, confnode, param, validVals = []):
+    def _validateBoolValues(self, buildconf, confnode, param, validVals = None):
         confnode[param] = True
         validator.validate(buildconf)
         confnode[param] = False
         validator.validate(buildconf)
 
-    def _validateIntValues(self, buildconf, confnode, param, validVals = []):
+    def _validateIntValues(self, buildconf, confnode, param, validVals = None):
         if not validVals:
             confnode[param] = cmn.randomint()
             validator.validate(buildconf)
@@ -46,7 +46,7 @@ class TestSuite(object):
                 confnode[param] = v
                 validator.validate(buildconf)
 
-    def _validateStrValues(self, buildconf, confnode, param, validVals = []):
+    def _validateStrValues(self, buildconf, confnode, param, validVals = None):
         if not validVals:
             confnode[param] = cmn.randomstr()
             validator.validate(buildconf)
@@ -61,7 +61,7 @@ class TestSuite(object):
                 confnode[param] = v
                 validator.validate(buildconf)
 
-    def _validateListOfStrsValues(self, buildconf, confnode, param, validVals = []):
+    def _validateListOfStrsValues(self, buildconf, confnode, param, validVals = None):
         if not validVals:
             confnode[param] = [cmn.randomstr(), cmn.randomstr()]
             validator.validate(buildconf)
@@ -75,7 +75,7 @@ class TestSuite(object):
             confnode[param] = validVals
             validator.validate(buildconf)
 
-    def _validateDictValues(self, buildconf, confnode, param, validVals = {}):
+    def _validateDictValues(self, buildconf, confnode, param, validVals = None):
         if not validVals:
             confnode[param] = { cmn.randomstr() : cmn.randomint() }
             validator.validate(buildconf)
@@ -87,6 +87,18 @@ class TestSuite(object):
                 validateValues = getattr(self, methodName)
                 confnode[param] = {}
                 validateValues(buildconf, confnode[param], k)
+
+    def _validateFuncValues(self, buildconf, confnode, param, validVals = None):
+        if not validVals:
+            def f(): pass
+            confnode[param] = f
+            validator.validate(buildconf)
+            confnode[param] = lambda: 1
+            validator.validate(buildconf)
+        else:
+            for v in validVals:
+                confnode[param] = v
+                validator.validate(buildconf)
 
     def _checkAttrAsDict(self, buildconf, attrName):
         setattr(buildconf, attrName, cmn.randomint())
@@ -129,7 +141,7 @@ class TestSuite(object):
         confnode[paramName] =  {}
         validator.validate(buildconf)
 
-    def _checkParamsAsStr(self, buildconf, confnode, paramNames, validVals = []):
+    def _checkParamsAsStr(self, buildconf, confnode, paramNames, validVals = None):
         for param in paramNames:
             confnode[param] = cmn.randomint()
             with pytest.raises(ZenMakeConfTypeError):
@@ -142,7 +154,7 @@ class TestSuite(object):
                 validator.validate(buildconf)
             self._validateStrValues(buildconf, confnode, param, validVals)
 
-    def _checkParamsAsInt(self, buildconf, confnode, paramNames, validVals = []):
+    def _checkParamsAsInt(self, buildconf, confnode, paramNames, validVals = None):
         for param in paramNames:
             confnode[param] = cmn.randomstr()
             with pytest.raises(ZenMakeConfTypeError):
@@ -155,7 +167,20 @@ class TestSuite(object):
                 validator.validate(buildconf)
             self._validateIntValues(buildconf, confnode, param, validVals)
 
-    def _checkParamsAsListOfStrs(self, buildconf, confnode, paramNames, validVals = []):
+    def _checkParamsAsFunc(self, buildconf, confnode, paramNames):
+        for param in paramNames:
+            confnode[param] = cmn.randomstr()
+            with pytest.raises(ZenMakeConfTypeError):
+                validator.validate(buildconf)
+            confnode[param] = [cmn.randomstr()]
+            with pytest.raises(ZenMakeConfTypeError):
+                validator.validate(buildconf)
+            confnode[param] = [cmn.randomint(), cmn.randomint()]
+            with pytest.raises(ZenMakeConfTypeError):
+                validator.validate(buildconf)
+            self._validateFuncValues(buildconf, confnode, param)
+
+    def _checkParamsAsListOfStrs(self, buildconf, confnode, paramNames, validVals = None):
         for param in paramNames:
             confnode[param] = {}
             with pytest.raises(ZenMakeConfTypeError):
@@ -171,7 +196,7 @@ class TestSuite(object):
                 validator.validate(buildconf)
             self._validateListOfStrsValues(buildconf, confnode, param, validVals)
 
-    def _checkParamsAsStrOrListOfStrs(self, buildconf, confnode, paramNames, validVals = []):
+    def _checkParamsAsStrOrListOfStrs(self, buildconf, confnode, paramNames, validVals = None):
         for param in paramNames:
             confnode[param] = {}
             with pytest.raises(ZenMakeConfTypeError):
@@ -187,10 +212,13 @@ class TestSuite(object):
 
     def _checkParamsAs(self, buildconf, confnode, paramNames, validTypesAndVals):
         validTypes = set(validTypesAndVals.keys())
-        allTypes = set(('int', 'bool', 'str', 'list', 'list-of-strs', 'dict'))
+        allTypes = set(('int', 'bool', 'str', 'list', 'list-of-strs', 'dict', 'func'))
         invalidTypes = allTypes - validTypes
         if 'list' in invalidTypes and  'list-of-strs' in validTypes:
             invalidTypes.remove('list')
+
+        def testfunc():
+            return True
 
         typeValues = {
             'bool' : { 'valid' : [True, False] },
@@ -207,7 +235,8 @@ class TestSuite(object):
                     (cmn.randomint(), cmn.randomstr())
                 ],
             },
-            'dict' : { 'valid' : [ {}, defaultdict(list) ] }
+            'dict' : { 'valid' : [ {}, defaultdict(list) ] },
+            'func' : { 'valid' : [ testfunc ] },
         }
         for param in paramNames:
             for t in invalidTypes:
@@ -282,7 +311,9 @@ class TestSuite(object):
 
         self._checkParamAsDict(buildconf, confnode, 'run')
         confnode['run'] = {}
-        self._checkParamsAsStr(buildconf, confnode['run'], ['cmd', 'cwd'])
+        validTypesAndVals = { 'str' : None, 'func' : None, }
+        self._checkParamsAs(buildconf, confnode['run'], ['cmd'], validTypesAndVals)
+        self._checkParamsAsStr(buildconf, confnode['run'], ['cwd'])
         self._checkParamsAsInt(buildconf, confnode['run'], ['repeat', 'timeout'])
         self._validateBoolValues(buildconf, confnode['run'], 'shell')
         self._checkParamAsDict(buildconf, confnode['run'], 'env')

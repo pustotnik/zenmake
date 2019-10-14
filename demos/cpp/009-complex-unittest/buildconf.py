@@ -11,13 +11,16 @@ iswin32  = os.sep == '\\' or sys.platform == 'win32' or os.name == 'nt'
 
 #realbuildroot = joinpath(tmpdir, username, 'projects', 'complex-unittest', 'build')
 
+def somefunc(args):
+    print("somefunc: buildtype = %r" % args['buildtype'])
+
 tasks = {
     'shlib' : {
         'features' : 'cxxshlib',
         'source'   :  dict( include = 'shlib/**/*.cpp' ),
         'includes' : '.',
         'run'      : {
-            'cmdline' : "echo 'This is runcmd in task \"shlib\"'",
+            'cmd' : "echo 'This is runcmd in task \"shlib\"'",
         },
     },
     'stlib' : {
@@ -37,34 +40,37 @@ tasks = {
         'includes' : '.',
         'use'      : 'shlibmain',
         'run'      : {
-            'cmdline' : "echo 'This is runcmd in task \"complex\"'",
+            'cmd' : "echo 'This is runcmd in task \"complex\"'",
         },
     },
     'echo' : {
         'run'      : {
-            'cmdline' : "echo 'say hello'",
-            'repeat'  : 2,
+            'cmd'    : "echo 'say hello'",
+            'repeat' : 2,
         },
         'use'      : 'shlibmain',
     },
     'ls' : {
         'run'      : {
-            'cmdline' : iswin32 and "dir /B" or "ls",
-            'cwd'     : '.',
+            'cmd' : iswin32 and "dir /B" or "ls",
+            'cwd' : '.',
         },
     },
     'test.py' : {
         'run'      : {
-            'cmdline' : 'python tests/test.py',
-            'cwd'     : '.',
-            'env'     : { 'JUST_ENV_VAR' : 'qwerty', },
-            'shell'   : False,
+            'cmd'   : 'python tests/test.py',
+            'cwd'   : '.',
+            'env'   : { 'JUST_ENV_VAR' : 'qwerty', },
+            'shell' : False,
         },
-        'use'      : 'shlibmain',
-        'conftests'  : [ dict(act = 'check-programs', names = 'python'), ]
+        'use'       : 'shlibmain',
+        'conftests' : [ dict(act = 'check-programs', names = 'python'), ]
     },
     'altscript' : {
-        'run' : { 'cmdline' : '"alt script.py"', 'cwd' : '.' },
+        'run' : { 'cmd' : '"alt script.py"', 'cwd' : '.' },
+    },
+    'pyfunc' : {
+        'run': { 'cmd' : somefunc }
     },
     #### tasks for build/run tests
     'stlib-test' : {
@@ -75,12 +81,12 @@ tasks = {
     'test from script' : {
         'features' : 'test',
         'run'      : {
-            'cmdline' : 'python tests/test.py',
-            'cwd'     : '.',
-            'shell'   : False,
+            'cmd'   : 'python tests/test.py',
+            'cwd'   : '.',
+            'shell' : False,
         },
-        'use'      : 'complex',
-        'conftests'  : [ dict(act = 'check-programs', names = 'python'), ]
+        'use' : 'complex',
+        'conftests' : [ dict(act = 'check-programs', names = 'python'), ]
     },
     'testcmn' : {
         'features' : 'cxxshlib test',
@@ -91,8 +97,8 @@ tasks = {
         'features'    : 'cxxprogram test',
         'source'      : 'tests/test_shlib.cpp',
         'use'         : 'shlib testcmn',
-        'run'      : {
-            'cmdline' : '${PROGRAM} a b c',
+        'run' : {
+            'cmd' : '${PROGRAM} a b c',
             #'cwd'     : '.', # can be path relative to current project root path
             #'cwd'     : '.1',
             'env'     : { 'AZ' : '111', 'BROKEN_TEST' : 'false'},
@@ -102,9 +108,9 @@ tasks = {
         },
     },
     'shlibmain-test' : {
-        'features'    : 'cxxprogram test',
-        'source'      : 'tests/test_shlibmain.cpp',
-        'use'         : 'shlibmain testcmn',
+        'features' : 'cxxprogram test',
+        'source'   : 'tests/test_shlibmain.cpp',
+        'use'      : 'shlibmain testcmn',
     },
 }
 

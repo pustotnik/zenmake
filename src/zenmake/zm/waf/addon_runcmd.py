@@ -24,15 +24,15 @@ if PLATFORM == 'windows':
 else:
     CMDFILE_EXTS = EXE_FILE_EXTS
 
-def processCmdLine(conf, cwd, shell, cmdArgs):
-    """ Get and process 'cmdline' at 'configure' stage """
+def _processCmdLine(conf, cwd, shell, cmdArgs):
+    """ Get and process 'cmd' at 'configure' stage """
 
     confHandler = shared.buildConfHandler
     bconfPaths  = confHandler.confPaths
     btypeDir    = confHandler.selectedBuildTypeDir
     projectroot = bconfPaths.projectroot
 
-    cmdline = cmdArgs.get('cmdline', '').strip()
+    cmdline = cmdArgs.get('cmd', '').strip()
     if not cmdline:
         return cmdline, shell
 
@@ -121,15 +121,23 @@ def postConf(conf):
             cwd = btypeDir
         cmdTaskArgs['cwd'] = cwd
 
-        # By default 'shell' is True to rid of some problems with Waf and Windows
-        shell = cmdArgs.get('shell', True)
-        cmdline, shell = processCmdLine(conf, cwd, shell, cmdArgs)
-        cmdTaskArgs['shell'] = shell
-        cmdTaskArgs['cmdline'] = cmdline
+        cmdTaskArgs['$type'] = ''
+        cmd = cmdArgs.get('cmd', None)
+        if cmd and callable(cmd):
+            # it's needed because Waf cannot save function in file as is
+            cmdTaskArgs['cmd'] = cmd.__name__
+            cmdTaskArgs['shell'] = False
+            cmdTaskArgs['$type'] = 'func'
+        else:
+            # By default 'shell' is True to rid of some problems with Waf and Windows
+            shell = cmdArgs.get('shell', True)
+            cmd, shell = _processCmdLine(conf, cwd, shell, cmdArgs)
+            cmdTaskArgs['shell'] = shell
+            cmdTaskArgs['cmd'] = cmd
 
         taskParams['run'] = cmdTaskArgs
 
-def fixRunCmdDepsOrder(tgen):
+def _fixRunCmdDepsOrder(tgen):
     """ Fix order of running """
 
     ctx = tgen.bld
@@ -158,13 +166,13 @@ def fixRunCmdDepsOrder(tgen):
         if linkTask:
             runcmdTask.set_run_after(linkTask)
 
-def isCmdStandalone(tgen):
+def _isCmdStandalone(tgen):
     """ Detect is current runcmd standalone """
     features = getattr(tgen, 'features', [])
     otherFeatures = set(features) - set(('runcmd', ))
     return not otherFeatures and not hasattr(tgen, 'rule')
 
-def createRunCmdTask(tgen, ruleArgs):
+def _createRunCmdTask(tgen, ruleArgs):
     """ Create new rule task for runcmd """
 
     classParams = dict(
@@ -189,6 +197,31 @@ def createRunCmdTask(tgen, ruleArgs):
 
     return task
 
+def _createRuleWithFunc(funcName):
+
+    confHandler = shared.buildConfHandler
+    bconfPaths  = confHandler.confPaths
+
+    bconf = confHandler.conf
+    func = getattr(bconf, funcName)
+
+    def runFunc(task):
+        tgen = task.generator
+        zmTaskParams = getattr(tgen, 'zm-task-params', {})
+        args = {
+            'taskname'    : tgen.name,
+            'projectroot' : bconfPaths.projectroot,
+            'srcroot'     : bconfPaths.srcroot,
+            'buildroot'   : bconfPaths.buildroot,
+            'buildout'    : bconfPaths.buildout,
+            'buildtype'   : confHandler.selectedBuildType,
+            'target'      : zmTaskParams.get('$real.target', ''),
+            'waftask'     : task,
+        }
+        func(args)
+
+    return runFunc
+
 @feature('runcmd')
 @after('process_rule', 'apply_link')
 def applyRunCmd(tgen):
@@ -203,9 +236,10 @@ def applyRunCmd(tgen):
     if not cmdArgs:
         return
 
-    isStandalone = isCmdStandalone(tgen)
+    isStandalone = _isCmdStandalone(tgen)
 
-    cmdline = cmdArgs.pop('cmdline', None)
+    cmd = cmdArgs.pop('cmd', None)
+    cmdType = cmdArgs.pop('$type', '')
     realTarget = zmTaskParams['$real.target']
 
     env = ctx.env.derive()
@@ -229,14 +263,17 @@ def applyRunCmd(tgen):
     if deepInputs:
         ruleArgs['deep_inputs'] = True
 
-    if not cmdline and zmTaskParams['$runnable']:
-        cmdline = realTarget
+    if not cmd and zmTaskParams['$runnable']:
+        cmd = realTarget
 
-    if not cmdline:
-        msg = 'Task %r has not runnable command line: %r.' % (tgen.name, cmdline)
+    if not cmd:
+        msg = 'Task %r has not runnable command: %r.' % (tgen.name, cmd)
         raise error.ZenMakeError(msg)
 
-    ruleArgs['rule'] = cmdline
+    if cmdType == 'func':
+        ruleArgs['rule'] = _createRuleWithFunc(cmd)
+    else:
+        ruleArgs['rule'] = cmd
 
     if isStandalone:
         for k, v in viewitems(ruleArgs):
@@ -247,7 +284,7 @@ def applyRunCmd(tgen):
         delattr(tgen, 'rule')
         setattr(tgen, 'runcmdTask', tgen.tasks[0])
     else:
-        task = createRunCmdTask(tgen, ruleArgs)
+        task = _createRunCmdTask(tgen, ruleArgs)
         setattr(tgen, 'runcmdTask', task)
 
     def wrap(method, task, repeat):
@@ -268,4 +305,4 @@ def applyRunCmd(tgen):
     runcmdTask = tgen.runcmdTask
     runcmdTask.run = wrap(runcmdTask.run, runcmdTask, repeat)
 
-    fixRunCmdDepsOrder(tgen)
+    _fixRunCmdDepsOrder(tgen)

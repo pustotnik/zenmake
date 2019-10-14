@@ -128,6 +128,9 @@ def configure(conf):
         # in different tasks
         taskEnv = assist.deepcopyEnv(conf.all_envs.pop(taskVariant))
 
+        # it's derived from root env but we don't need it here
+        del taskEnv['alltasks']
+
         # conf.setenv with unknown name or non-empty env makes deriving or
         # creates the new object and it is not really needed here
         assist.setConfDirectEnv(conf, taskVariant, taskEnv)

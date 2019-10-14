@@ -417,6 +417,7 @@ class TestFeatureRunCmd(object):
         checkMsgInOutput(r'This is runcmd in task "complex"', output, 1)
         checkMsgInOutput(r'say hello', output, 2)
         checkMsgInOutput(r'test from a python script', output, 1)
+        checkMsgInOutput(r'somefunc: buildtype =', output, 1)
 
         #check env var (see buildconf)
         checkMsgInOutput(r'JUST_ENV_VAR = qwerty', output, 1)
@@ -472,16 +473,16 @@ class TestFeatureTest(object):
         indexes = events['build']['indexes']
 
         assert len(indexes['linking']) == 4
-        assert events['build']['taskRealCount'] == 14
-        assert events['build']['taskMaxCount'] == 14
+        assert events['build']['taskRealCount'] == 15
+        assert events['build']['taskMaxCount'] == 15
 
     def _checkFeatureBTYesRTNone(self, cmdLine):
         events = self._runAndGather(cmdLine, True)
         indexes = events['build']['indexes']
 
         assert len(indexes['linking']) == 8
-        assert events['build']['taskRealCount'] == 22
-        assert events['build']['taskMaxCount'] == 22
+        assert events['build']['taskRealCount'] == 23
+        assert events['build']['taskMaxCount'] == 23
 
     def _checkFeatureRTAllVariants(self, cmdLines):
 
@@ -490,8 +491,8 @@ class TestFeatureTest(object):
             indexes = events['build']['indexes']
 
             assert len(indexes['linking']) == 4
-            assert events['build']['taskRealCount'] == 14
-            assert events['build']['taskMaxCount'] == 14
+            assert events['build']['taskRealCount'] == 15
+            assert events['build']['taskMaxCount'] == 15
 
         noFirstStep = not cmdLines[0]
 
@@ -500,8 +501,8 @@ class TestFeatureTest(object):
             indexes = events['build']['indexes']
 
             assert len(indexes['linking']) == 8 if noFirstStep else 4
-            assert events['build']['taskRealCount'] == 22 if noFirstStep else 8
-            assert events['build']['taskMaxCount'] == 22
+            assert events['build']['taskRealCount'] == 23 if noFirstStep else 8
+            assert events['build']['taskMaxCount'] == 23
 
             indexes = events['test']['indexes']
             runningTasks = indexes['running']

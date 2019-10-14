@@ -63,7 +63,7 @@ taskscheme = {
     'run' :       {
         'type' : 'dict',
         'vars' : {
-            'cmd' : { 'type': 'str' },
+            'cmd' : { 'type': ('str', 'func') },
             'cwd' : { 'type': 'str' },
             'env' : {
                 'type': 'dict',
@@ -181,6 +181,7 @@ class Validator(object):
         'str'  : '_handleStr',
         'dict' : '_handleDict',
         'list' : '_handleList',
+        'func' : '_handleFunc',
         'complex' : '_handleComplex',
         'vars-in-dict' : '_handleVarsInDict',
         'list-of-strs' : '_handleListOfStrs',
@@ -288,6 +289,12 @@ class Validator(object):
                 raise ZenMakeConfValueError(msg)
             if varsType:
                 handler(elem, schemeAttrs, '%s.[%d]' % (fullkey, i))
+
+    @staticmethod
+    def _handleFunc(confnode, _, fullkey):
+        if not callable(confnode):
+            msg = "Param %r should be function" % fullkey
+            raise ZenMakeConfTypeError(msg)
 
     @staticmethod
     def _handleListOfStrs(confnode, schemeAttrs, fullkey):
