@@ -25,12 +25,12 @@ For this project ``buildconf.py`` can be like that:
 
     tasks = {
         'util' : {
-            'features' : 'cxxshlib',
+            'features' : 'shlib',
             'source'   :  { 'include' : 'shlib/**/*.cpp' },
             'includes' : '.',
         },
         'program' : {
-            'features' : 'cxxprogram',
+            'features' : 'program',
             'source'   :  { 'include' : 'prog/**/*.cpp' },
             'includes' : '.',
             'use'      : 'util',
@@ -55,12 +55,12 @@ Lines  Description
 2,7    Names of build tasks. By default they are used as target names.
        Resulting target names will be made depending on platform. For example,
        on Windows 'program' will result to 'program.exe'.
-3      Mark build task as C++ shared library.
+3      Mark build task as a shared library.
 4      Specify all \*.cpp files in the directory 'shlib' recursively.
 5,10   Specify path for C/C++ headers relative to project root directory.
        Actually here it's not necessary because ZenMake add project root
        directory itself. But it's an example.
-8      Mark build task as C++ executable.
+8      Mark build task as an executable.
 9      Specify all \*.cpp files in the directory 'prog' recursively.
 11     Specify task 'util' as dependency to task 'program'.
 15     Section with build types.
@@ -79,11 +79,11 @@ case can be like that:
 
     tasks:
       util :
-        features : cxxshlib
+        features : shlib
         source   :  { include : 'shlib/**/*.cpp' }
         includes : '.'
       program :
-        features : cxxprogram
+        features : program
         source   :  { include : 'prog/**/*.cpp' }
         includes : '.'
         use      : util

@@ -353,12 +353,18 @@ def detectAllTaskFeatures(taskParams):
     features = utils.toList(taskParams.get('features', []))
 
     fmap = {
-        'cprogram' : 'c',
-        'cxxprogram' : 'cxx',
         'cstlib' : 'c',
-        'cxxstlib' : 'cxx',
         'cshlib' : 'c',
+        'cprogram' : 'c',
+        'cxxstlib' : 'cxx',
         'cxxshlib' : 'cxx',
+        'cxxprogram' : 'cxx',
+        'dstlib' : 'd',
+        'dshlib' : 'd',
+        'dprogram' : 'd',
+        'fcstlib' : 'fc',
+        'fcshlib' : 'fc',
+        'fcprogram' : 'fc',
     }
     detected = [ fmap.get(x, '') for x in features ]
 
@@ -422,6 +428,31 @@ def handleTaskSourceParam(taskParams, srcDirNode):
         if v:
             result.append(v)
     return result
+
+def handleFeaturesAlieses(taskParams):
+    """
+    Detect features for alieses 'stlib', 'shlib', 'program' and 'objects'
+    """
+
+    from waflib.Tools.c_aliases import set_features as setFeatures
+
+    features = taskParams['features']
+
+    found = False
+    alieses = set(('stlib', 'shlib', 'program', 'objects'))
+    for feature in features:
+        if feature not in alieses:
+            continue
+        found = True
+        kwargs = dict( source = taskParams['source'] )
+        setFeatures(kwargs, feature)
+        features.extend(kwargs['features'])
+
+    if not found:
+        return
+
+    features = set(features) - alieses
+    taskParams['features'] = list(features)
 
 def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
     """

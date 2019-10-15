@@ -215,6 +215,8 @@ def build(bld):
         if 'source' in taskParams:
             taskParams['source'] = assist.handleTaskSourceParam(taskParams, srcDirNode)
 
+        assist.handleFeaturesAlieses(taskParams)
+
         bldParams = taskParams.copy()
         # Remove params that can conflict with waf in theory
         dropKeys = (set(KNOWN_TASK_PARAM_NAMES) - assist.getUsedWafTaskKeys())

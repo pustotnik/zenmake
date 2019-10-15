@@ -291,6 +291,18 @@ taskparams
             Means that the task has a C code. Optional.
         :cxx:
             Means that the task has a C++ code. Optional.
+        :stlib:
+            Means that result of the task is a static library. Type of code
+            is detected by file extensions found in
+            `source <buildconf-taskparams-source_>`_.
+        :shlib:
+            Means that result of the task is a shared library. Type of code
+            is detected by file extensions found in
+            `source <buildconf-taskparams-source_>`_.
+        :program:
+            Means that result of the task is an executable file. Type of code
+            is detected by file extensions found in
+            `source <buildconf-taskparams-source_>`_.
         :runcmd:
             Means that the task has parameter ``run`` and should run some
             command. It's optional because ZenMake detects this feature
@@ -340,6 +352,8 @@ taskparams
         Include paths are used by the C/C++ compilers for finding headers.
         Paths should be relative to srcroot_ or absolute but last variant is
         not recommended.
+
+    .. _buildconf-taskparams-source:
 
     source
         One or more source files for compiler/toolchain.
