@@ -115,9 +115,9 @@ class BuildConfHandler(object):
         if destPlatform in self._platforms:
             platformFound = True
             supported = self._platforms[destPlatform].get('valid', [])
-            supported = set(supported)
         else:
-            supported = set(self._conf.buildtypes.keys())
+            supported = self._conf.buildtypes.keys()
+        supported = set(supported)
 
         if destPlatform in matrixBuildTypes:
             platformFound = True
@@ -127,6 +127,9 @@ class BuildConfHandler(object):
 
         if 'default' in supported:
             supported.remove('default')
+
+        if not supported:
+            supported = set([''])
 
         if platformFound and not supported:
             raise ZenMakeConfError("No valid build types for platform '%s' "
@@ -141,7 +144,7 @@ class BuildConfHandler(object):
             buildtype = self._platforms[PLATFORM].get('default', buildtype)
         buildtype = self._meta.matrix.buildtypes.get('default', buildtype)
 
-        if buildtype and buildtype not in self.supportedBuildTypes:
+        if buildtype not in self.supportedBuildTypes:
             errmsg = "Invalid config value."
             errmsg += " Default build type '%s' is not supported." % buildtype
             supportedValues = str(self.supportedBuildTypes)[1:-1]
@@ -173,7 +176,7 @@ class BuildConfHandler(object):
             if not supportedBuildTypes:
                 msg += ". No supported buildtypes."
             else:
-                msg += ", (choose from %s)" % supportedBuildTypes
+                msg += ", (choose from: [%s])" % supportedBuildTypes
             raise ZenMakeError(msg)
 
         self._meta.buildtypes.selected = buildtype

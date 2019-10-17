@@ -12,7 +12,8 @@ import subprocess
 
 from waflib import Options, Context, Configure, Scripting, Utils
 from waflib.ConfigSet import ConfigSet
-from zm import log, assist
+from zm import log, assist, utils
+from zm.pyutils import stringtype
 from zm.pypkg import PkgPath
 
 joinpath = os.path.join
@@ -166,6 +167,26 @@ def wrapUtilsGetProcess(_):
 
     return execute
 
+def getFileExtensions(src):
+    """
+	Returns the file extensions for the list of files given as input
+
+	:param src: files to process
+	:list src: list of string or :py:class:`waflib.Node.Node`
+	:return: list of file extensions
+	:rtype: set of strings
+	"""
+
+    # This implementation gives more optimal result for using in
+    # waflib.Tools.c_aliases.sniff_features
+
+    ret = set()
+    for path in utils.toList(src):
+        if not isinstance(path, stringtype):
+            path = path.name
+        ret.add(path[path.rfind('.') + 1:])
+    return ret
+
 def setupAll(cmd, bconfHandler):
     """ Setup all wrappers for Waf """
 
@@ -177,3 +198,6 @@ def setupAll(cmd, bconfHandler):
                                                     Build.BuildContext.execute)
     for ctxCls in (Build.CleanContext, Build.ListContext):
         ctxCls.execute = wrapBldCtxNoLockInTop(bconfHandler, ctxCls.execute)
+
+    from waflib.Tools import c_aliases
+    c_aliases.get_extensions = getFileExtensions

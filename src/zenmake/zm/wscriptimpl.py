@@ -181,8 +181,6 @@ def build(bld):
     """
 
     buildtype = validateVariant(bld)
-    if not buildtype:
-        return
     bconfPaths = shared.buildConfHandler.confPaths
 
     # Some comments just to remember some details.

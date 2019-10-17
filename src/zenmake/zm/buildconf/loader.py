@@ -66,11 +66,6 @@ def initDefaults(buildconf):
     # buildtypes
     if not hasattr(buildconf, 'buildtypes'):
         setattr(buildconf, 'buildtypes', {})
-    #if not buildconf.buildtypes:
-    #    buildconf.buildtypes = {
-    #        'debug' : {},
-    #        'default' : 'debug',
-    #    }
 
     # tasks
     if not hasattr(buildconf, 'tasks'):

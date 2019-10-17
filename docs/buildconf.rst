@@ -37,10 +37,10 @@ it's called an associative array including YAML (Of course YAML is not
 programming language but it's markup language). For shortness it's called
 a ``dict`` here.
 
-There is only one required configuration variable and it's ``buildtypes``. But
-you don't want to set up only this variable. All other variables are optional
-but have reserved names. Any other names in buildconf are just ignored
-by ZenMake if present and it means they can be used for some custom purposes.
+Not all variables are required in the scheme above but buildconf can not be
+empty. All variables have reserved names. Any other names in buildconf are
+just ignored by ZenMake if present and it means they can be used for
+some custom purposes.
 
 .. note::
 
@@ -59,7 +59,9 @@ buildroot
 """""""""
     A path to the root of a project build directory. By default it is
     directory 'build' in the project root path. Path can be absolute or
-    relative to directory where buildconf file is located.
+    relative to directory where buildconf file is located. It is important
+    to be able to remove the build directory safely, so it should never
+    be given as . or ...
 
 realbuildroot
 """""""""""""
@@ -72,7 +74,8 @@ realbuildroot
     speed of building. Note that on Windows OS process of ZenMake needs to be
     started with enabled "Create symbolic links" privilege and usual user
     doesn't have a such privilege. Path can be absolute or relative to
-    directory where buildconf file is located.
+    directory where buildconf file is located. It is important to be able to
+    remove the build directory safely, so it should never be given as . or ...
 
 srcroot
 """""""
@@ -131,6 +134,10 @@ buildtypes
     these build types are just names, they can be any except ``default``
     but remember that these names are used as directory names. So don't use
     incorrect symbols if you don't want a problem with it.
+
+    This variable can be empty or absent. In this case current buildtype is
+    always just an empty string.
+
     Possible parameters for each build type are described in taskparams_.
     Special value ``default`` must be name of one of the build types.
     Example in YAML format:

@@ -133,6 +133,7 @@ class TestSuite(object):
 
         buildconf.buildtypes.mybuildtype = {}
         buildconf.buildtypes.abcbt = {}
+        buildconf.buildtypes.default = 'mybuildtype'
 
         # CASE: buildtypes in buildconf.buildtypes
         buildconf = deepcopy(testingBuildConf)
@@ -178,6 +179,9 @@ class TestSuite(object):
 
     def testSupportedBuildTypesMatrix(self, testingBuildConf):
 
+        buildconf = testingBuildConf
+        buildconf.buildtypes.default = 'b1'
+
         # CASE: no buildtypes in buildconf.buildtypes and global
         # buildtypes in matrix
         buildconf = deepcopy(testingBuildConf)
@@ -194,6 +198,7 @@ class TestSuite(object):
         # CASE: no buildtypes in buildconf.buildtypes and platform
         # buildtypes in matrix
         buildconf = deepcopy(testingBuildConf)
+        buildconf.buildtypes.default = 'b2'
         buildconf.matrix = [
             { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM } }
         ]
@@ -213,6 +218,7 @@ class TestSuite(object):
             { 'for' : { 'buildtype' : 'b3 b2', } },
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3' ])
+        buildconf.buildtypes.default = 'b2'
         buildconf.matrix = [
             { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM + randomstr() } },
             { 'for' : { 'buildtype' : 'b3 b2', } },
@@ -223,6 +229,7 @@ class TestSuite(object):
         # buildtypes in matrix
         buildconf = deepcopy(testingBuildConf)
         buildconf.buildtypes.gb1 = {}
+        buildconf.buildtypes.default = 'b2'
         buildconf.matrix = [
             { 'for' : { 'buildtype' : 'b1 b2' } },
         ]
@@ -302,6 +309,7 @@ class TestSuite(object):
         with pytest.raises(ZenMakeLogicError):
             empty = confHandler.tasks
 
+        buildconf.buildtypes.default = 'mybuildtype'
         buildconf.buildtypes.mybuildtype = {}
         buildconf.buildtypes.abcbt = {}
         clicmd = AutoDict()
@@ -411,6 +419,7 @@ class TestSuite(object):
         baseMatrix = [
             { 'for' : { 'buildtype' : 'mybt' }  },
         ]
+        testingBuildConf.buildtypes.default = 'mybt'
 
         # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
         buildconf = deepcopy(testingBuildConf)
@@ -539,6 +548,7 @@ class TestSuite(object):
             empty = confHandler.toolchainNames
 
         buildconf.buildtypes['debug-gxx'] = {}
+        buildconf.buildtypes.default = 'debug-gxx'
         clicmd = AutoDict()
         clicmd.args.buildtype = 'debug-gxx'
 
@@ -599,6 +609,7 @@ class TestSuite(object):
         buildconf = testingBuildConf
 
         buildconf.buildtypes['debug-gxx'] = {}
+        buildconf.buildtypes.default = 'debug-gxx'
         clicmd = AutoDict()
         clicmd.args.buildtype = 'debug-gxx'
 

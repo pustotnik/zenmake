@@ -15,6 +15,7 @@ from collections import defaultdict
 
 from waflib.ConfigSet import ConfigSet
 from waflib import Errors as waferror
+from waflib.Tools.c_aliases import set_features as setFeatures
 from zm.pyutils import stringtype, maptype, viewitems
 from zm import utils, toolchains, log, version
 from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, WSCRIPT_NAME
@@ -434,9 +435,10 @@ def handleFeaturesAlieses(taskParams):
     Detect features for alieses 'stlib', 'shlib', 'program' and 'objects'
     """
 
-    from waflib.Tools.c_aliases import set_features as setFeatures
-
     features = taskParams['features']
+    source = taskParams.get('source', None)
+    if source is None:
+        return
 
     found = False
     alieses = set(('stlib', 'shlib', 'program', 'objects'))
@@ -444,7 +446,7 @@ def handleFeaturesAlieses(taskParams):
         if feature not in alieses:
             continue
         found = True
-        kwargs = dict( source = taskParams['source'] )
+        kwargs = dict( source = source )
         setFeatures(kwargs, feature)
         features.extend(kwargs['features'])
 

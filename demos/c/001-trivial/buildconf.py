@@ -1,15 +1,8 @@
 
 tasks = {
     'test' : {
-        'features' : 'c cprogram',
-        'source'   : 'test.c',
-    },
-}
-
-buildtypes = {
-    'debug' : {
+        'features'  : 'program',
+        'source'    : 'test.c',
         'toolchain' : 'auto-c',
     },
-    'default' : 'debug',
 }
-

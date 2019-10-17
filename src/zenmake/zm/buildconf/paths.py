@@ -58,7 +58,7 @@ class BuildConfPaths(object):
         self.wafcachedir   = joinpath(self.buildout, WAF_CACHE_DIRNAME)
         self.wafcachefile  = joinpath(self.wafcachedir, WAF_CACHE_NAMESUFFIX)
         self.zmcachedir    = self.wafcachedir
-        self.zmcmnconfset  = joinpath(self.buildout, ZENMAKE_CMN_CFGSET_FILENAME)
+        self.zmcmnconfset  = joinpath(self.buildroot, ZENMAKE_CMN_CFGSET_FILENAME)
 
     def __eq__(self, other):
         for name in self.__slots__:
