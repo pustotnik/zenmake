@@ -1,7 +1,7 @@
 
 tasks :
   test :
-    features : c cprogram
+    features : cprogram
     source   : test.c util.c
     includes : '.'
 

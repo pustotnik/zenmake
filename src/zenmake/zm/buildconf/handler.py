@@ -16,7 +16,7 @@ from zm.pyutils import viewitems, viewvalues
 from zm import utils, toolchains, log
 from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeLogicError, ZenMakeConfError
-from zm.constants import PLATFORM
+from zm.constants import PLATFORM, TASK_FEATURES_LANGS, TASK_FEATURES_MAP
 
 joinpath = os.path.join
 
@@ -128,26 +128,35 @@ class BuildConfHandler(object):
         if 'default' in supported:
             supported.remove('default')
 
-        if not supported:
-            supported = set([''])
-
         if platformFound and not supported:
             raise ZenMakeConfError("No valid build types for platform '%s' "
                                    "in config" % destPlatform)
+
+        if not supported:
+            # empty buildtype if others aren't detected
+            supported = set([''])
+
         self._meta.buildtypes.supported = sorted(supported)
 
     def _handleDefaultBuildType(self):
         """ Calculate default build type """
 
-        buildtype = self._conf.buildtypes.get('default', '')
+        buildtype = self._conf.buildtypes.get('default', None)
         if PLATFORM in self._platforms:
             buildtype = self._platforms[PLATFORM].get('default', buildtype)
         buildtype = self._meta.matrix.buildtypes.get('default', buildtype)
 
-        if buildtype not in self.supportedBuildTypes:
+        supportedBuildTypes = self.supportedBuildTypes
+        if buildtype is None:
+            if len(supportedBuildTypes) == 1:
+                buildtype = supportedBuildTypes[0]
+            else:
+                buildtype = ''
+
+        if buildtype not in supportedBuildTypes:
             errmsg = "Invalid config value."
             errmsg += " Default build type '%s' is not supported." % buildtype
-            supportedValues = str(self.supportedBuildTypes)[1:-1]
+            supportedValues = str(supportedBuildTypes)[1:-1]
             if not supportedValues:
                 supportedValues = " No supported values. Check buildconf."
             else:
@@ -303,6 +312,17 @@ class BuildConfHandler(object):
             tool = taskParams.get('toolchain', None)
             if tool:
                 _toolchains.add(tool)
+            else:
+                features = utils.toList(taskParams.get('features', []))
+                lang = None
+                for feature in features:
+                    lang = TASK_FEATURES_MAP.get(feature, None)
+                    if not lang and feature in TASK_FEATURES_LANGS:
+                        lang = feature
+                if lang:
+                    tool = 'auto-' + lang.replace('x', '+')
+                    taskParams['toolchain'] = tool
+                    _toolchains.add(tool)
 
         _toolchains = tuple(_toolchains)
         self._meta.toolchains.names = _toolchains

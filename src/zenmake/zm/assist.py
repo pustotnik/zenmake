@@ -18,7 +18,8 @@ from waflib import Errors as waferror
 from waflib.Tools.c_aliases import set_features as setFeatures
 from zm.pyutils import stringtype, maptype, viewitems
 from zm import utils, toolchains, log, version
-from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, WSCRIPT_NAME
+from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, WSCRIPT_NAME, \
+                         TASK_KINDS, TASK_FEATURES_MAP
 
 joinpath = os.path.join
 
@@ -352,22 +353,7 @@ def detectAllTaskFeatures(taskParams):
     Detect all features for task
     """
     features = utils.toList(taskParams.get('features', []))
-
-    fmap = {
-        'cstlib' : 'c',
-        'cshlib' : 'c',
-        'cprogram' : 'c',
-        'cxxstlib' : 'cxx',
-        'cxxshlib' : 'cxx',
-        'cxxprogram' : 'cxx',
-        'dstlib' : 'd',
-        'dshlib' : 'd',
-        'dprogram' : 'd',
-        'fcstlib' : 'fc',
-        'fcshlib' : 'fc',
-        'fcprogram' : 'fc',
-    }
-    detected = [ fmap.get(x, '') for x in features ]
+    detected = [ TASK_FEATURES_MAP.get(x, '') for x in features ]
 
     features.extend(detected)
     features = set(features)
@@ -441,7 +427,7 @@ def handleFeaturesAlieses(taskParams):
         return
 
     found = False
-    alieses = set(('stlib', 'shlib', 'program', 'objects'))
+    alieses = set(TASK_KINDS)
     for feature in features:
         if feature not in alieses:
             continue

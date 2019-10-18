@@ -19,6 +19,24 @@ ZENMAKE_CACHE_NAMESUFFIX = '.%s.py' % APPNAME
 ZENMAKE_CMN_CFGSET_FILENAME = '.%s-common' % APPNAME
 WSCRIPT_NAME = 'zmwscript'
 
+TASK_KINDS = ('stlib', 'shlib', 'program', 'objects')
+TASK_FEATURES_MAP = {
+    'cstlib' : 'c',
+    'cshlib' : 'c',
+    'cprogram' : 'c',
+    'cxxstlib' : 'cxx',
+    'cxxshlib' : 'cxx',
+    'cxxprogram' : 'cxx',
+    'dstlib' : 'd',
+    'dshlib' : 'd',
+    'dprogram' : 'd',
+    'fcstlib' : 'fc',
+    'fcshlib' : 'fc',
+    'fcprogram' : 'fc',
+}
+
+TASK_FEATURES_LANGS = set(TASK_FEATURES_MAP.values())
+
 PLATFORM = _platform()
 KNOWN_PLATFORMS = (
     'linux', 'windows', 'darwin', 'freebsd', 'openbsd', 'sunos', 'cygwin',

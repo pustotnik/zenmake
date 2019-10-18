@@ -1,16 +1,13 @@
 
 tasks = {
     'test' : {
-        'features' : 'cxx cxxprogram',
+        'features' : 'cxxprogram',
         'source'   :  dict( include = '**/*.cpp' ),
         'includes' : '.',
     },
 }
 
 buildtypes = {
-    'debug' : {
-        'toolchain' : 'auto-c++',
-    },
-    'default' : 'debug',
+    'debug' : {}
 }
 

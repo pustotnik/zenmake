@@ -278,6 +278,8 @@ taskparams
     is used in tasks_, buildtypes_ and matrix_.
     And it's core element of the buildconf.
 
+    .. _buildconf-taskparams-features:
+
     features
         It describes type of the build task. Can be one value or list
         of values. Supported values:
@@ -429,6 +431,15 @@ taskparams
 
         | Some known names for C: ``gcc``, ``clang``, ``msvc``, ``icc``.
         | Some known names for C++: ``g++``, ``clang++``, ``msvc``, ``icpc``.
+
+        .. note::
+
+            If no toolchain was given ZenMake tries to set ``auto-*`` itself by
+            values of `features <buildconf-taskparams-features_>`_. But
+            feature with autodetecting of language by file extensions cannot
+            be used for autodetecting of correct ``auto-*``. For example with
+            ``cxxshlib`` ZenMake can set ``auto-c++`` itself but not
+            with ``shlib``.
 
     cflags
         One or more compiler flags for C.
