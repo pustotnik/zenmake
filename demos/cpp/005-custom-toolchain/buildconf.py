@@ -1,25 +1,21 @@
 
 tasks = {
     'shlib' : {
-        'features' : 'cxx cxxshlib',
+        'features' : 'cxxshlib',
         'source'   :  dict( include = 'shlib/**/*.cpp' ),
-        'includes' : '.',
     },
     'stlib' : {
-        'features' : 'cxx cxxstlib',
+        'features' : 'cxxstlib',
         'source'   :  dict( include = 'stlib/**/*.cpp' ),
-        'includes' : '.',
     },
     'shlibmain' : {
-        'features' : 'cxx cxxshlib',
+        'features' : 'cxxshlib',
         'source'   :  dict( include = 'shlibmain/**/*.cpp' ),
-        'includes' : '.',
         'use'      : 'shlib stlib',
     },
     'test' : {
-        'features' : 'cxx cxxprogram',
+        'features' : 'cxxprogram',
         'source'   :  dict( include = 'prog/**/*.cpp' ),
-        'includes' : '.',
         'use'      : 'shlibmain',
     },
 }

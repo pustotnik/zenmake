@@ -1,8 +1,7 @@
 
 tasks = {
     'test' : {
-        'features'  : 'program',
+        'features'  : 'cxxprogram',
         'source'    : 'test.cpp',
-        'toolchain' : 'auto-c++',
     },
 }
