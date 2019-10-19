@@ -362,6 +362,11 @@ taskparams
         Paths should be relative to srcroot_ or absolute but last variant is
         not recommended.
 
+    export-includes
+        If it's True then it exports value of ``includes`` for all buld tasks
+        depending on the current task. Also it can be one or more paths
+        for explicit exporting. By default it's False.
+
     .. _buildconf-taskparams-source:
 
     source
@@ -455,6 +460,11 @@ taskparams
 
     defines
         One or more defines for C/C++.
+
+    export-defines
+        If it's True then it exports value of ``defines`` for all buld tasks
+        depending on the current task. Also it can be one or more defines
+        for explicit exporting. By default it's False.
 
     .. _buildconf-taskparams-run:
 

@@ -3,23 +3,23 @@ tasks = {
     'shlib' : {
         'features' : 'shlib',
         'source'   :  dict( include = 'shlib/**/*.cpp' ),
-        'includes' : '.',
+        'includes' : 'include',
+        'defines'  : ['ABC=1', 'DOIT'],
+        'export-includes' : True,
+        'export-defines' : True,
     },
     'stlib' : {
         'features' : 'stlib',
         'source'   :  dict( include = 'stlib/**/*.cpp' ),
-        'includes' : '.',
     },
     'shlibmain' : {
         'features' : 'shlib',
         'source'   :  dict( include = 'shlibmain/**/*.cpp' ),
-        'includes' : '.',
         'use'      : 'shlib stlib',
     },
     'test' : {
         'features' : 'program',
         'source'   :  dict( include = 'prog/**/*.cpp' ),
-        'includes' : '.',
         'use'      : 'shlibmain',
     },
 }

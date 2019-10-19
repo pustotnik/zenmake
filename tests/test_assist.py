@@ -9,6 +9,7 @@
 """
 
 import os
+from copy import deepcopy
 import pytest
 from waflib.ConfigSet import ConfigSet
 from waflib.Errors import WafError
@@ -204,37 +205,59 @@ def testDetectAllTaskFeatures():
 
 def testHandleTaskIncludesParam():
 
-    taskParams = { 'features' : [] }
-    includes = assist.handleTaskIncludesParam(taskParams, None)
-    assert includes is None
-
     taskParams = { 'features' : ['cxx'] }
+    _taskParams = deepcopy(taskParams)
     srcroot = joinpath(os.getcwd(), 'testsrcroot') # just any abs path
-    includes = assist.handleTaskIncludesParam(taskParams, srcroot)
-    assert includes == ['.']
+    assist.handleTaskIncludesParam(_taskParams, srcroot)
+    assert _taskParams['includes'] == ['.']
 
     taskParams = { 'features' : ['c'], 'includes': 'inc1 inc2' }
-    includes = assist.handleTaskIncludesParam(taskParams, srcroot)
-    assert includes == [
+    _taskParams = deepcopy(taskParams)
+    assist.handleTaskIncludesParam(_taskParams, srcroot)
+    assert _taskParams['includes'] == [
         joinpath(srcroot, taskParams['includes'].split()[0]),
         joinpath(srcroot, taskParams['includes'].split()[1]),
         '.'
     ]
+    assert 'export-includes' not in _taskParams
 
     taskParams = { 'features' : ['cxx'], 'includes': ['inc1', 'inc2'] }
-    includes = assist.handleTaskIncludesParam(taskParams, srcroot)
-    assert includes == [
+    _taskParams = deepcopy(taskParams)
+    assist.handleTaskIncludesParam(_taskParams, srcroot)
+    assert _taskParams['includes'] == [
         joinpath(srcroot, taskParams['includes'][0]),
         joinpath(srcroot, taskParams['includes'][1]),
         '.'
     ]
+    assert 'export-includes' not in _taskParams
 
     abspaths = [
         joinpath(os.getcwd(), '123', 'inc3'),
         joinpath(os.getcwd(), '456', 'inc4')]
     taskParams = { 'includes': abspaths, 'features' : ['c'], }
-    includes = assist.handleTaskIncludesParam(taskParams, srcroot)
-    assert includes == [ abspaths[0], abspaths[1], '.' ]
+    _taskParams = deepcopy(taskParams)
+    assist.handleTaskIncludesParam(_taskParams, srcroot)
+    assert _taskParams['includes'] == [ abspaths[0], abspaths[1], '.' ]
+    assert 'export-includes' not in _taskParams
+
+    taskParams['export-includes'] = False
+    _taskParams = deepcopy(taskParams)
+    assist.handleTaskIncludesParam(_taskParams, srcroot)
+    assert _taskParams['includes'] == [ abspaths[0], abspaths[1], '.' ]
+    assert 'export-includes' not in _taskParams
+
+    taskParams['export-includes'] = True
+    _taskParams = deepcopy(taskParams)
+    assist.handleTaskIncludesParam(_taskParams, srcroot)
+    assert _taskParams['includes'] == [ abspaths[0], abspaths[1], '.' ]
+    assert _taskParams['includes'] == _taskParams['export-includes']
+
+    taskParams['export-includes'] = abspaths
+    _taskParams = deepcopy(taskParams)
+    assist.handleTaskIncludesParam(_taskParams, srcroot)
+    assert _taskParams['includes'] == [ abspaths[0], abspaths[1], '.' ]
+    assert _taskParams['export-includes'] == abspaths
+
 
 def testHandleTaskSourceParam(mocker):
 

@@ -25,7 +25,7 @@ joinpath = os.path.join
 
 _usedWafTaskKeys = set([
     'name', 'target', 'features', 'source', 'includes', 'lib', 'libpath',
-    'rpath', 'use', 'vnum', 'idx'
+    'rpath', 'use', 'vnum', 'idx', 'export_includes', 'export_defines',
 ])
 
 def registerUsedWafTaskKeys(keys):
@@ -363,14 +363,13 @@ def detectAllTaskFeatures(taskParams):
 
 def handleTaskIncludesParam(taskParams, srcroot):
     """
-    Get valid 'includes' for build task
+    Get valid 'includes' and 'export-includes' for build task
     """
 
-    if 'includes' not in taskParams:
-        features = taskParams['features']
-        needIncludes = any([x for x in features if x in ('c', 'cxx')])
-        if not needIncludes:
-            return None
+    def makeIncludes(includes):
+        includes = utils.toList(includes)
+        return [ x if os.path.isabs(x) else \
+                      joinpath(srcroot, x) for x in includes ]
 
     # From wafbook:
     # Includes paths are given relative to the directory containing the
@@ -378,13 +377,38 @@ def handleTaskIncludesParam(taskParams, srcroot):
     # a source of portability problems.
     includes = taskParams.get('includes', [])
     if includes:
-        includes = utils.toList(includes)
-        includes = [ x if os.path.isabs(x) else \
-            joinpath(srcroot, x) for x in includes ]
+        includes = makeIncludes(includes)
+
     # The includes='.' add the build directory path. It's needed to use config
     # header with 'conftests'.
     includes.append('.')
-    return includes
+    taskParams['includes'] = includes
+
+    exportIncludes = taskParams.get('export-includes', None)
+    if not exportIncludes:
+        taskParams.pop('export-includes', None)
+        return
+
+    if isinstance(exportIncludes, bool) and exportIncludes:
+        exportIncludes = includes
+    else:
+        exportIncludes = makeIncludes(exportIncludes)
+    taskParams['export-includes'] = exportIncludes
+
+def handleTaskExportDefinesParam(taskParams):
+    """
+    Get valid 'export-defines' for build task
+    """
+
+    exportDefines = taskParams.get('export-defines', None)
+    if not exportDefines:
+        taskParams.pop('export-defines', None)
+        return
+
+    if isinstance(exportDefines, bool) and exportDefines:
+        exportDefines = taskParams.get('defines', [])
+
+    taskParams['export-defines'] = utils.toList(exportDefines)
 
 def handleTaskSourceParam(taskParams, srcDirNode):
     """
@@ -460,6 +484,9 @@ def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
         target = utils.normalizeForFileName(target, spaseAsDash = True)
     targetPath = joinpath(btypeDir, target)
 
+    handleTaskIncludesParam(taskParams, bconfPaths.srcroot)
+    handleTaskExportDefinesParam(taskParams)
+
     kwargs = dict(
         name     = taskName,
         target   = targetPath,
@@ -467,6 +494,7 @@ def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
         idx      = taskParams.get('object-file-counter', 1),
     )
 
+    # with converting value to list
     nameMap = (
         ('sys-libs','lib'),
         ('sys-lib-path','libpath'),
@@ -478,13 +506,17 @@ def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
         if value is not None:
             kwargs[param[1]] = utils.toList(value)
 
-    vnum = taskParams.get('ver-num', None)
-    if vnum:
-        kwargs['vnum'] = vnum
-
-    includes = handleTaskIncludesParam(taskParams, bconfPaths.srcroot)
-    if includes:
-        kwargs['includes'] =  includes
+    # as is
+    nameMap = (
+        ('includes', 'includes'),
+        ('ver-num','vnum'),
+        ('export-includes', 'export_includes'),
+        ('export-defines', 'export_defines'),
+    )
+    for param in nameMap:
+        value = taskParams.get(param[0], None)
+        if value is not None:
+            kwargs[param[1]] = value
 
     # set of used keys in kwargs must be included in set from getUsedWafTaskKeys()
     assert set(kwargs.keys()) <= getUsedWafTaskKeys()

@@ -60,6 +60,8 @@ taskscheme = {
     'cppflags' :  { 'type': ('str', 'list-of-strs') },
     'linkflags' : { 'type': ('str', 'list-of-strs') },
     'defines' :   { 'type': ('str', 'list-of-strs') },
+    'export-includes': { 'type': ('bool', 'str', 'list-of-strs') },
+    'export-defines':  { 'type': ('bool', 'str', 'list-of-strs') },
     'run' :       {
         'type' : 'dict',
         'vars' : {
