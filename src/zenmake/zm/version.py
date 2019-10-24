@@ -78,6 +78,8 @@ class Command(_Command):
         msg = "{} version {}".format(CAP_APPNAME, current())
         if cliArgs.verbose >= 1:
             import platform as _platform
+            from waflib.Context import WAFVERSION
+            msg += '\nWaf version: %s' % WAFVERSION
             msg += '\nPython version: %s' % _platform.python_version()
             msg += '\nPython implementation: %s' % _platform.python_implementation()
 
