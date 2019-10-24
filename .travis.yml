@@ -66,6 +66,9 @@ matrix:
   - name: Python 3.7 on Linux
     python: 3.7
     env: NAME='Python 3.7 on Linux'
+  - name: Python 3.8 on Linux
+    python: 3.8
+    env: NAME='Python 3.8 on Linux'
   #- name: Python 3.5 on macOS
   #  os: osx
   #  language: shell
