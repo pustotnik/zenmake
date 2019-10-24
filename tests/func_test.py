@@ -60,7 +60,7 @@ def getZmExecutables():
 
     _zmExes['normal'] = [PYTHON_EXE, ZM_BIN]
 
-    cmd = _zmExes['normal'] + ['zipapp', '-d', tmpdir]
+    cmd = _zmExes['normal'] + ['zipapp', '--destdir', tmpdir]
     devnull = open(os.devnull, 'w')
     subprocess.call(cmd, stdout = devnull)
     assert os.path.isfile(zipAppFile)
