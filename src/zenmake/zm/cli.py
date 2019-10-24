@@ -12,7 +12,7 @@ from collections import namedtuple, defaultdict
 
 # argparse from the https://pypi.org/project/argparse/ supports alieses
 from auxiliary.argparse import argparse
-from zm.constants import APPNAME, CAP_APPNAME
+from zm.constants import APPNAME, CAP_APPNAME, PLATFORM
 from zm.pyutils import viewitems
 from zm import log
 from zm.error import ZenMakeLogicError
@@ -63,6 +63,14 @@ _commands = [
         name = 'distclean',
         aliases = ['dc'],
         description = 'removes the build directory with everything in it',
+    ),
+    _Command(
+        name = 'install',
+        description = 'installs the targets on the system',
+    ),
+    _Command(
+        name = 'uninstall',
+        description = 'removes the targets installed',
     ),
     _Command(
         name = 'zipapp',
@@ -129,22 +137,22 @@ _options = [
     ),
     _Option(
         names = ['-b', '--buildtype'],
-        commands = ['configure', 'build', 'clean', 'test'],
+        commands = ['configure', 'build', 'clean', 'test', 'install', 'uninstall'],
         help = 'set the build type',
     ),
     _Option(
         names = ['-g', '--configure'],
-        commands = ['build', 'test'],
+        commands = ['build', 'test', 'install'],
         runcmd = 'configure',
     ),
     _Option(
         names = ['-c', '--clean'],
-        commands = ['build', 'test'],
+        commands = ['build', 'test', 'install'],
         runcmd = 'clean',
     ),
     _Option(
         names = ['-d', '--distclean'],
-        commands = ['configure', 'build', 'test'],
+        commands = ['configure', 'build', 'test', 'install'],
         runcmd = 'distclean',
     ),
     _Option(
@@ -164,19 +172,34 @@ _options = [
     _Option(
         names = ['-j', '--jobs'],
         type = int,
-        commands = ['build', 'test'],
+        commands = ['build', 'test', 'install'],
         help = 'amount of parallel jobs',
     ),
     _Option(
         names = ['-p', '--progress'],
         action = "store_true",
-        commands = ['build', 'test'],
+        commands = ['build', 'test', 'install', 'uninstall'],
         help = 'progress bar',
     ),
     _Option(
-        names = ['-d', '--destdir'],
-        commands = ['zipapp'],
+        names = ['--destdir'],
+        commands = ['zipapp', 'install', 'uninstall'],
         help = 'destination directory',
+    ),
+    _Option(
+        names = ['--prefix'],
+        commands = ['configure', 'build', 'install', 'uninstall'],
+        help = 'installation prefix',
+    ),
+    _Option(
+        names = ['--bindir'],
+        commands = ['configure', 'build', 'install', 'uninstall'],
+        help = 'installation bin directory [ ${PREFIX}/bin ]',
+    ),
+    _Option(
+        names = ['--libdir'],
+        commands = ['configure', 'build', 'install', 'uninstall'],
+        help = 'installation lib directory [ ${PREFIX}/lib[64] ]',
     ),
     _Option(
         names = ['-v', '--verbose'],
@@ -193,18 +216,31 @@ _options = [
     ),
 ]
 
-READY_OPT_DEFAULTS = {
+DEFAULT_PREFIX = '/usr/local/'
+if PLATFORM == 'windows':
+    import tempfile
+    d = tempfile.gettempdir()
+    # windows preserves the case, but gettempdir does not
+    DEFAULT_PREFIX = d[0].upper() + d[1:]
+
+_READY_OPT_DEFAULTS = {
     '*' : {
         'verbose': 0,
         'color': os.environ.get('NOCOLOR', '') and 'no' or 'auto',
         'build-tests': 'no',
         'run-tests' : 'none',
-        'destdir' : '.',
+        'destdir' : os.environ.get('DESTDIR', ''),
+        'prefix' : os.environ.get('PREFIX', '') or DEFAULT_PREFIX,
+        'bindir' : os.environ.get('BINDIR', None),
+        'libdir' : os.environ.get('LIBDIR', None),
     },
     'test' : {
         'build-tests': 'yes',
         'run-tests' : 'all',
-    }
+    },
+    'zipapp' : {
+        'destdir' : os.environ.get('DESTDIR', '.'),
+    },
 }
 
 class CmdLineParser(object):
@@ -221,7 +257,7 @@ class CmdLineParser(object):
     def __init__(self, progName, defaults):
 
         self._defaults = defaultdict(dict)
-        self._defaults.update(READY_OPT_DEFAULTS)
+        self._defaults.update(_READY_OPT_DEFAULTS)
         dkeys = set(list(self._defaults.keys()) + list(defaults.keys()))
         for k in dkeys:
             if k in defaults:
@@ -397,6 +433,8 @@ class CmdLineParser(object):
         if self._command is None:
             raise ZenMakeLogicError("Programming error: _command is None") # pragma: no cover
 
+        # NOTE: The option/command 'distclean' is handled in special way
+
         cmdline = [self._command.name]
 
         # self._command.args is AutoDict and it means that it'll create
@@ -415,17 +453,15 @@ class CmdLineParser(object):
             cmdline.insert(0, 'configure')
         if options.clean:
             cmdline.insert(0, 'clean')
-        # This option/command is handled in special way
-        #if options.distclean:
-        #    cmdline.insert(0, 'distclean')
         if options.progress:
             cmdline.append('--progress')
-        if options.jobs:
-            cmdline.append('--jobs=' + str(options.jobs))
         if options.verbose:
             cmdline.append('-' + options.verbose * 'v')
-        if options.color:
-            cmdline.append('--color=' + options.color)
+        for opt in ('jobs', 'color', 'destdir', 'prefix', 'bindir', 'libdir'):
+            val = options.get(opt)
+            if val:
+                cmdline.append('--%s=%s' % (opt, str(val)))
+
         self._wafCmdLine = cmdline
 
     def parse(self, args = None, buildOnEmpty = False):

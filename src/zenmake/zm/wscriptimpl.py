@@ -21,9 +21,9 @@ __all__ = [
 import os
 
 from waflib.ConfigSet import ConfigSet
-from waflib.Build import BuildContext
+from waflib.Build import BuildContext, InstallContext
 from zm.pyutils import viewitems
-from zm import log, shared, cli, assist
+from zm import log, shared, cli, assist, error
 from zm.buildconf.validator import KNOWN_TASK_PARAM_NAMES
 
 # pylint: disable=unused-argument
@@ -57,13 +57,6 @@ def init(ctx):
     shared.buildConfHandler.handleCmdLineArgs(cli.selected)
 
     buildtype = shared.buildConfHandler.selectedBuildType
-
-    #pylint: disable=unused-variable,missing-docstring,too-many-ancestors
-    from waflib.Build import CleanContext, InstallContext, UninstallContext
-    for cls in (BuildContext, CleanContext, InstallContext, UninstallContext):
-        class CtxClass(cls):
-            pass
-    #pylint: enable=unused-variable,missing-docstring,too-many-ancestors
 
     # set 'variant' for BuildContext and all classes based on BuildContext
     setattr(BuildContext, 'variant', buildtype)
@@ -183,6 +176,8 @@ def build(bld):
     buildtype = validateVariant(bld)
     bconfPaths = shared.buildConfHandler.confPaths
 
+    isInstall = bld.cmd in ('install', 'uninstall')
+
     # Some comments just to remember some details.
     # - ctx.path represents the path to the wscript file being executed
     # - ctx.root is the root of the file system or the folder containing
@@ -209,6 +204,9 @@ def build(bld):
         # load environment for this task
         cacheFile = assist.makeCacheConfFileName(bconfPaths.zmcachedir, bld.variant)
         bld.all_envs[bld.variant] = ConfigSet(cacheFile)
+
+        if isInstall:
+            assist.applyInstallPaths(bld.env, cli.selected)
 
         if 'source' in taskParams:
             taskParams['source'] = assist.handleTaskSourceParam(taskParams, srcDirNode)
@@ -237,4 +235,61 @@ def shutdown(ctx):
     Implementation for wscript.shutdown
     """
 
-    # Do nothing at this moment
+    # Do nothing
+
+class _InstallContext(InstallContext):
+
+    @staticmethod
+    def _wrapInstTaskRun(method):
+
+        from waflib.Build import INSTALL
+
+        def execute(self):
+
+            # Make more user-friendly error report
+
+            isInstall = self.generator.bld.is_install
+            if isInstall:
+                for output in self.outputs:
+                    dirpath = output.parent.abspath()
+                    try:
+                        if isInstall == INSTALL and not os.path.isdir(dirpath):
+                            os.makedirs(dirpath)
+                    except OSError as ex:
+                        raise error.ZenMakeError(str(ex))
+
+                    if os.path.isdir(dirpath) and not os.access(dirpath, os.W_OK):
+                        raise error.ZenMakeError('Permission denied: ' + dirpath)
+
+            method(self)
+
+        return execute
+
+    def execute(self):
+
+        from waflib.Errors import WafError
+        from waflib.Build import inst
+
+        inst.run = _InstallContext._wrapInstTaskRun(inst.run)
+
+        try:
+            super(_InstallContext, self).execute()
+        except WafError as ex:
+
+            # Cut out only error message
+
+            msg = ex.msg.splitlines()[-1]
+            prefix = 'ZenMakeError:'
+            if not msg.startswith(prefix):
+                raise
+            msg = msg[len(prefix):].strip()
+            raise error.ZenMakeError(msg)
+
+class _UninstallContext(_InstallContext):
+
+    cmd = 'uninstall'
+
+    def __init__(self, **kw):
+        super(_UninstallContext, self).__init__(**kw)
+        from waflib.Build import UNINSTALL
+        self.is_install = UNINSTALL

@@ -26,6 +26,7 @@ joinpath = os.path.join
 _usedWafTaskKeys = set([
     'name', 'target', 'features', 'source', 'includes', 'lib', 'libpath',
     'rpath', 'use', 'vnum', 'idx', 'export_includes', 'export_defines',
+    'install_path',
 ])
 
 def registerUsedWafTaskKeys(keys):
@@ -361,6 +362,28 @@ def detectAllTaskFeatures(taskParams):
         features.remove('')
     return list(features)
 
+def applyInstallPaths(env, clicmd):
+    """
+    Apply installation path vars PREFIX, BINDIR, LIBDIR
+    """
+
+    opts = clicmd.args
+    prefix = opts.get('prefix')
+    bindir = opts.get('bindir')
+    libdir = opts.get('libdir')
+
+    if prefix and prefix != env.PREFIX:
+        env.PREFIX = prefix
+        if not bindir:
+            env.BINDIR = '%s/bin' % prefix
+        if not libdir:
+            env.LIBDIR = '%s/lib%s' % (prefix, utils.libDirPostfix())
+
+    if bindir:
+        env.BINDIR = bindir
+    if libdir:
+        env.LIBDIR = libdir
+
 def handleTaskIncludesParam(taskParams, srcroot):
     """
     Get valid 'includes' and 'export-includes' for build task
@@ -502,9 +525,8 @@ def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
         ('use', 'use'),
     )
     for param in nameMap:
-        value = taskParams.get(param[0], None)
-        if value is not None:
-            kwargs[param[1]] = utils.toList(value)
+        if param[0] in taskParams:
+            kwargs[param[1]] = utils.toList(taskParams[param[0]])
 
     # as is
     nameMap = (
@@ -512,11 +534,11 @@ def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
         ('ver-num','vnum'),
         ('export-includes', 'export_includes'),
         ('export-defines', 'export_defines'),
+        ('install-path', 'install_path'),
     )
     for param in nameMap:
-        value = taskParams.get(param[0], None)
-        if value is not None:
-            kwargs[param[1]] = value
+        if param[0] in taskParams:
+            kwargs[param[1]] = taskParams[param[0]]
 
     # set of used keys in kwargs must be included in set from getUsedWafTaskKeys()
     assert set(kwargs.keys()) <= getUsedWafTaskKeys()

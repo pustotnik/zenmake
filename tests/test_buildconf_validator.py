@@ -275,7 +275,6 @@ class TestSuite(object):
         paramNames = (
             'features', 'sys-libs', 'sys-lib-path', 'rpath', 'use', 'includes',
             'cflags', 'cxxflags', 'cppflags', 'linkflags', 'defines',
-            'export-includes', 'export-defines',
         )
         self._checkParamsAsStrOrListOfStrs(buildconf, confnode, paramNames)
 

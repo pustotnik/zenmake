@@ -340,12 +340,23 @@ taskparams
 
     sys-libs
         One or more names of system libraries as dependencies.
+        Example:
+
+        .. code-block:: python
+
+            'sys-libs' : 'm rt'
 
     sys-lib-path
-        Optional one or more paths to find system libraries.
+        One or more paths to find system libraries. Usually you don't need to
+        set it.
+        Example:
+
+        .. code-block:: python
+
+            'sys-lib-path' : '/usr/lib'
 
     rpath
-        Optional one or more paths to hard-code into the binary during
+        One or more paths to hard-code into the binary during
         linking time.
 
     use
@@ -431,8 +442,9 @@ taskparams
     toolchain
         Name of toolchain/compiler to use in the task. It can be any system
         compiler that is supported by Waf or toolchain from custom toolchains_.
-        There are also the special names for autodetecting:
-        ``auto-c`` and ``auto-c++``.
+        There are also the special names for autodetecting in format
+        ``auto-*`` where ``*`` is programming language, for example
+        ``auto-c`` or ``auto-c++``.
 
         | Some known names for C: ``gcc``, ``clang``, ``msvc``, ``icc``.
         | Some known names for C++: ``g++``, ``clang++``, ``msvc``, ``icpc``.
@@ -465,6 +477,19 @@ taskparams
         If it's True then it exports value of ``defines`` for all buld tasks
         depending on the current task. Also it can be one or more defines
         for explicit exporting. By default it's False.
+
+    install-path
+        String representing the installation path for the output files.
+        It's used in commands ``install`` and ``uninstall``.
+        To disable installation, set it to False, None or empty string.
+        If it's absent then general values of ``${PREFIX}``, ``${BINDIR}``
+        and ``${LIBDIR}`` will be used to detect path.
+        You can use variables ``${PREFIX}``, ``${BINDIR}``, ``${LIBDIR}`` here
+        like this:
+
+        .. code-block:: python
+
+            'install-path' : '${PREFIX}/exe'
 
     .. _buildconf-taskparams-run:
 

@@ -42,7 +42,7 @@ LDFLAGS
         LDFLAGS='-Wl,--as-needed' zenmake build -v
 
 JOBS
-    Default value for the amount of parallel jobs. Has no effect when -j is
+    Default value for the amount of parallel jobs. Has no effect when ``-j`` is
     provided on the command line. Example::
 
         JOBS=2 zenmake build
@@ -50,11 +50,11 @@ JOBS
 NUMBER_OF_PROCESSORS
     Default value for the amount of parallel jobs when the JOBS environment
     variable is not provided; it is usually set on windows systems. Has no
-    effect when -j is provided on the command line.
+    effect when ``-j`` is provided on the command line.
 
 NOCOLOR
     When set to a non-empty value, colors in console outputs are disabled.
-    Has no effect when --color is provided on the command line. Example::
+    Has no effect when ``--color`` is provided on the command line. Example::
 
         NOCOLOR=1 zenmake build
 
@@ -64,3 +64,28 @@ NOSYNC
     platforms. Example::
 
         NOSYNC=1 zenmake build
+
+DESTDIR
+    Default installation base directory when ``--destdir`` is not provided on
+    the command line.
+    Example::
+
+        DESTDIR=dest zenmake install
+
+PREFIX
+    Default installation prefix when ``--prefix`` is not provided on the
+    command line. Example::
+
+        PREFIX=/usr/local/ zenmake install
+
+BINDIR
+    Default installation bin directory when ``--bindir`` is not provided on the
+    command line. It ignores value of ``PREFIX`` if set. Example::
+
+        BINDIR=/usr/local/bin zenmake install
+
+LIBDIR
+    Default installation lib directory when ``--libdir`` is not provided on the
+    command line. It ignores value of ``PREFIX`` if set. Example::
+
+        LIBDIR=/usr/local/lib64 zenmake install

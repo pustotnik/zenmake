@@ -62,6 +62,7 @@ taskscheme = {
     'defines' :   { 'type': ('str', 'list-of-strs') },
     'export-includes': { 'type': ('bool', 'str', 'list-of-strs') },
     'export-defines':  { 'type': ('bool', 'str', 'list-of-strs') },
+    'install-path': { 'type': ('bool', 'str') },
     'run' :       {
         'type' : 'dict',
         'vars' : {

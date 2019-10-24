@@ -35,6 +35,8 @@ PLATFORM = platform()
 readFile           = wafutils.readf
 mkHashOfStrings    = wafutils.h_list
 normalizeForDefine = wafutils.quote_define_name
+substVars          = wafutils.subst_vars
+libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
 
 def normalizeForFileName(s, spaseAsDash = False):

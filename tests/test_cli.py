@@ -53,9 +53,8 @@ class TestSuite(object):
                 assert parsercmd == cmd
                 assert cmd.name == cmdname
                 assert cmd.args == expectedArgs
-                for i in range(len(check['wafArgs'])):
-                    wafArg = check['wafArgs'][i]
-                    assert wafArg in wafcmdline[i]
+                if 'wafArgs' in check:
+                    assert sorted(check['wafArgs']) == sorted(wafcmdline)
 
             # parser with explicit args
             cmd = self.parser.parse(check['args'])
@@ -106,84 +105,89 @@ class TestSuite(object):
             'verbose': 0,
             'buildTests': False,
             'runTests': 'none',
+            'bindir' : None,
+            'libdir' : None,
+            'prefix' : cli.DEFAULT_PREFIX,
         }
 
         CMDNAME = 'build'
+        CMNOPTS = ['--color=auto', '--prefix=' + cli.DEFAULT_PREFIX]
+
         checks = [
             dict(
                 args = [CMDNAME],
                 expectedArgsUpdate = {},
-                wafArgs = [CMDNAME],
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '-b', 'release'],
                 expectedArgsUpdate = {'buildtype': 'release'},
-                wafArgs = [CMDNAME],
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--jobs', '22'],
                 expectedArgsUpdate = {'jobs': 22},
-                wafArgs = [CMDNAME, '--jobs=22'],
+                wafArgs = [CMDNAME, '--jobs=22'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--verbose'],
                 expectedArgsUpdate = {'verbose': 1},
-                wafArgs = [CMDNAME, '-v'],
+                wafArgs = [CMDNAME, '-v'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '-vvv'],
                 expectedArgsUpdate = {'verbose': 3},
-                wafArgs = [CMDNAME, '-vvv'],
+                wafArgs = [CMDNAME, '-vvv'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--configure'],
                 expectedArgsUpdate = {'configure': True},
-                wafArgs = ['configure', CMDNAME],
+                wafArgs = ['configure', CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--clean'],
                 expectedArgsUpdate = {'clean': True},
-                wafArgs = ['clean', CMDNAME],
+                wafArgs = ['clean', CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--distclean'],
                 expectedArgsUpdate = {'distclean': True},
-                wafArgs = [CMDNAME],
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--build-tests', 'yes'],
                 expectedArgsUpdate = {'buildTests': True},
-                wafArgs = [CMDNAME],
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--run-tests', 'all'],
                 expectedArgsUpdate = {'runTests': 'all'},
-                wafArgs = [CMDNAME, 'test'],
+                wafArgs = [CMDNAME, 'test'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--run-tests', 'on-changes'],
                 expectedArgsUpdate = {'runTests': 'on-changes'},
-                wafArgs = [CMDNAME, 'test'],
+                wafArgs = [CMDNAME, 'test'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--progress'],
                 expectedArgsUpdate = {'progress': True},
-                wafArgs = [CMDNAME, '--progress'],
+                wafArgs = [CMDNAME, '--progress'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--color', 'no'],
                 expectedArgsUpdate = {'color': 'no'},
-                wafArgs = [CMDNAME, '--color=no'],
+                wafArgs = [CMDNAME, '--color=no'] + CMNOPTS[1:],
             ),
             dict(
                 args = [CMDNAME, 'sometask'],
                 expectedArgsUpdate = {'tasks': ['sometask']},
-                wafArgs = [CMDNAME],
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, 'sometask', 'anothertask'],
                 expectedArgsUpdate = {'tasks': ['sometask', 'anothertask']},
-                wafArgs = [CMDNAME],
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
         ]
 
@@ -206,67 +210,68 @@ class TestSuite(object):
         }
 
         CMDNAME = 'test'
+        CMNOPTS = ['--color=auto',]
 
         checks = [
             dict(
                 args = [CMDNAME],
                 expectedArgsUpdate = {},
-                wafArgs = ['build', CMDNAME],
+                wafArgs = ['build', CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '-b', 'release'],
                 expectedArgsUpdate = {'buildtype': 'release'},
-                wafArgs = ['build', CMDNAME],
+                wafArgs = ['build', CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--jobs', '22'],
                 expectedArgsUpdate = {'jobs': 22},
-                wafArgs = ['build', CMDNAME, '--jobs=22'],
+                wafArgs = ['build', CMDNAME, '--jobs=22'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--verbose'],
                 expectedArgsUpdate = {'verbose': 1},
-                wafArgs = ['build', CMDNAME, '-v'],
+                wafArgs = ['build', CMDNAME, '-v'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '-vvv'],
                 expectedArgsUpdate = {'verbose': 3},
-                wafArgs = ['build', CMDNAME, '-vvv'],
+                wafArgs = ['build', CMDNAME, '-vvv'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--configure'],
                 expectedArgsUpdate = {'configure': True},
-                wafArgs = ['configure', 'build', CMDNAME],
+                wafArgs = ['configure', 'build', CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--clean'],
                 expectedArgsUpdate = {'clean': True},
-                wafArgs = ['clean', 'build', CMDNAME],
+                wafArgs = ['clean', 'build', CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--distclean'],
                 expectedArgsUpdate = {'distclean': True},
-                wafArgs = ['build', CMDNAME],
+                wafArgs = ['build', CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--build-tests', 'no'],
                 expectedArgsUpdate = {'buildTests': False},
-                wafArgs = ['build', CMDNAME],
+                wafArgs = ['build', CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--run-tests', 'none'],
                 expectedArgsUpdate = {'runTests': 'none'},
-                wafArgs = ['build', CMDNAME],
+                wafArgs = ['build', CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--run-tests', 'on-changes'],
                 expectedArgsUpdate = {'runTests': 'on-changes'},
-                wafArgs = ['build', CMDNAME],
+                wafArgs = ['build', CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--progress'],
                 expectedArgsUpdate = {'progress': True},
-                wafArgs = ['build', CMDNAME, '--progress'],
+                wafArgs = ['build', CMDNAME, '--progress'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--color', 'no'],
@@ -276,12 +281,12 @@ class TestSuite(object):
             dict(
                 args = [CMDNAME, 'sometask'],
                 expectedArgsUpdate = {'tasks': ['sometask']},
-                wafArgs = ['build', CMDNAME],
+                wafArgs = ['build', CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, 'sometask', 'anothertask'],
                 expectedArgsUpdate = {'tasks': ['sometask', 'anothertask']},
-                wafArgs = ['build', CMDNAME],
+                wafArgs = ['build', CMDNAME] + CMNOPTS,
             ),
         ]
 
@@ -294,39 +299,44 @@ class TestSuite(object):
             'color': 'auto',
             'distclean': False,
             'verbose': 0,
+            'bindir' : None,
+            'libdir' : None,
+            'prefix' : cli.DEFAULT_PREFIX,
         }
 
         CMDNAME = 'configure'
+        CMNOPTS = ['--color=auto', '--prefix=' + cli.DEFAULT_PREFIX]
+
         checks = [
             dict(
                 args = [CMDNAME],
                 expectedArgsUpdate = {},
-                wafArgs = [CMDNAME],
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '-b', 'release'],
                 expectedArgsUpdate = {'buildtype': 'release'},
-                wafArgs = [CMDNAME],
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--distclean'],
                 expectedArgsUpdate = {'distclean': True},
-                wafArgs = [CMDNAME],
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--verbose'],
                 expectedArgsUpdate = {'verbose': 1},
-                wafArgs = [CMDNAME, '-v'],
+                wafArgs = [CMDNAME, '-v'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '-vvv'],
                 expectedArgsUpdate = {'verbose': 3},
-                wafArgs = [CMDNAME, '-vvv'],
+                wafArgs = [CMDNAME, '-vvv'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--color', 'no'],
                 expectedArgsUpdate = {'color': 'no'},
-                wafArgs = [CMDNAME, '--color=no'],
+                wafArgs = [CMDNAME, '--color=no'] + CMNOPTS[1:],
             ),
         ]
 
@@ -341,26 +351,28 @@ class TestSuite(object):
         }
 
         CMDNAME = 'clean'
+        CMNOPTS = ['--color=auto',]
+
         checks = [
             dict(
                 args = [CMDNAME],
                 expectedArgsUpdate = {},
-                wafArgs = [CMDNAME],
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '-b', 'release'],
                 expectedArgsUpdate = {'buildtype': 'release'},
-                wafArgs = [CMDNAME],
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--verbose'],
                 expectedArgsUpdate = {'verbose': 1},
-                wafArgs = [CMDNAME, '-v'],
+                wafArgs = [CMDNAME, '-v'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '-vvv'],
                 expectedArgsUpdate = {'verbose': 3},
-                wafArgs = [CMDNAME, '-vvv'],
+                wafArgs = [CMDNAME, '-vvv'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--color', 'no'],
@@ -379,21 +391,23 @@ class TestSuite(object):
         }
 
         CMDNAME = 'distclean'
+        CMNOPTS = ['--color=auto',]
+
         checks = [
             dict(
                 args = [CMDNAME],
                 expectedArgsUpdate = {},
-                wafArgs = [CMDNAME],
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--verbose'],
                 expectedArgsUpdate = {'verbose': 1},
-                wafArgs = [CMDNAME, '-v'],
+                wafArgs = [CMDNAME, '-v'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '-vvv'],
                 expectedArgsUpdate = {'verbose': 3},
-                wafArgs = [CMDNAME, '-vvv'],
+                wafArgs = [CMDNAME, '-vvv'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--color', 'no'],
@@ -417,26 +431,87 @@ class TestSuite(object):
             dict(
                 args = [CMDNAME],
                 expectedArgsUpdate = {},
-                wafArgs = [],
             ),
             dict(
-                args = [CMDNAME, '-d', 'somedir'],
+                args = [CMDNAME, '--destdir', 'somedir'],
                 expectedArgsUpdate = {'destdir' : 'somedir'},
-                wafArgs = [CMDNAME],
             ),
             dict(
                 args = [CMDNAME, '--verbose'],
                 expectedArgsUpdate = {'verbose': 1},
-                wafArgs = [],
             ),
             dict(
                 args = [CMDNAME, '--color', 'no'],
                 expectedArgsUpdate = {'color': 'no'},
-                wafArgs = [],
             ),
         ]
 
         self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
+
+    def checkCmdInstall(self, cmd):
+
+        baseExpectedArgs = {
+            'buildtype' : self.defaults['*']['buildtype'],
+            'jobs' : None,
+            'color': 'auto',
+            'configure': False,
+            'clean': False,
+            'progress': False,
+            'distclean': False,
+            'verbose': 0,
+            'destdir' : '',
+            'bindir' : None,
+            'libdir' : None,
+            'prefix' : cli.DEFAULT_PREFIX,
+        }
+
+        if cmd == 'uninstall':
+            for name in ('configure', 'jobs', 'clean', 'distclean'):
+                baseExpectedArgs.pop(name)
+
+        CMDNAME = cmd
+        CMNOPTS = ['--color=auto', '--prefix=' + cli.DEFAULT_PREFIX]
+
+        checks = [
+            dict(
+                args = [CMDNAME],
+                expectedArgsUpdate = {},
+                wafArgs = [CMDNAME] + CMNOPTS,
+            ),
+            dict(
+                args = [CMDNAME, '--destdir', 'somedir'],
+                expectedArgsUpdate = {'destdir' : 'somedir'},
+                wafArgs = [CMDNAME, '--destdir=somedir'] + CMNOPTS,
+            ),
+            dict(
+                args = [CMDNAME, '--bindir', 'somedir'],
+                expectedArgsUpdate = {'bindir' : 'somedir'},
+                wafArgs = [CMDNAME, '--bindir=somedir'] + CMNOPTS,
+            ),
+            dict(
+                args = [CMDNAME, '--libdir', 'somedir'],
+                expectedArgsUpdate = {'libdir' : 'somedir'},
+                wafArgs = [CMDNAME, '--libdir=somedir'] + CMNOPTS,
+            ),
+            dict(
+                args = [CMDNAME, '--verbose'],
+                expectedArgsUpdate = {'verbose': 1},
+                wafArgs = [CMDNAME, '-v'] + CMNOPTS,
+            ),
+            dict(
+                args = [CMDNAME, '--color', 'no'],
+                expectedArgsUpdate = {'color': 'no'},
+                wafArgs = [CMDNAME, '--color=no'] + CMNOPTS[1:],
+            ),
+        ]
+
+        self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
+
+    def testCmdInstall(self):
+        self.checkCmdInstall('install')
+
+    def testCmdUninstall(self):
+        self.checkCmdInstall('uninstall')
 
     def testCmdVersion(self):
 
