@@ -45,7 +45,7 @@ def collectProjectDirs():
         if 'buildconf.py' not in filenames and 'buildconf.yaml' not in filenames:
             continue
         prjdir = os.path.relpath(dirpath, cmn.TEST_PROJECTS_DIR)
-        if prjdir == CUSTOM_TOOLCHAIN_PRJDIR and cmn.PLATFORM == 'windows':
+        if prjdir == CUSTOM_TOOLCHAIN_PRJDIR and PLATFORM == 'windows':
             print('We ignore tests for %r on windows' % prjdir)
             continue
         result.append(prjdir)
@@ -192,6 +192,7 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
     # checks for target files
     processConfHandlerWithCLI(testSuit, cmdLine)
     buildtype = testSuit.confHandler.selectedBuildType
+    isWindows = PLATFORM == 'windows'
 
     for taskName, taskParams in testSuit.confHandler.tasks.items():
 
@@ -211,11 +212,15 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
         targetpath = joinpath(testSuit.confPaths.buildout, buildtype,
                                 fileNamePattern % target)
 
-        assert os.path.exists(targetpath) == resultExists
         assert os.path.isfile(targetpath) == resultExists
         if resultExists and isExe:
             assert os.access(targetpath, os.X_OK)
 
+        isSharedLib = any([x.endswith('shlib') for x in features])
+        if isSharedLib and isWindows:
+            targetpath = joinpath(os.path.dirname(targetpath),
+                                '%s.lib' % target)
+            assert os.path.isfile(targetpath) == resultExists
 
 @pytest.mark.usefixtures("unsetEnviron")
 class TestBase(object):
@@ -300,7 +305,7 @@ class TestBase(object):
         assert self._runZm(cmdLine)[0] == 0
         assert not os.path.exists(self.confPaths.buildroot)
 
-    @pytest.mark.skipif(cmn.PLATFORM == 'windows',
+    @pytest.mark.skipif(PLATFORM == 'windows',
                         reason = 'I have no useful windows installation for tests')
     def testCustomToolchain(self, customtoolchains):
 
@@ -786,6 +791,8 @@ class TestInstall(object):
 
         assert os.path.isdir(check.destdir)
 
+        isWindows = PLATFORM == 'windows'
+
         targets = set()
         processConfHandlerWithCLI(self, cmdLine)
         for taskName, taskParams in self.confHandler.tasks.items():
@@ -806,28 +813,32 @@ class TestInstall(object):
                 continue
 
             fileNamePattern, isExe = getTargetPattern(self, taskName, features)
-            target = fileNamePattern % taskParams.get('target', taskName)
+            target = taskParams.get('target', taskName)
+            targetpath = fileNamePattern % target
 
             if 'install-path' not in taskParams:
-                if isExe:
-                    target = joinpath(check.bindir, target)
-                else:
-                    target = joinpath(check.libdir, target)
+                targetpath = joinpath(check.bindir if isExe else check.libdir, targetpath)
             else:
                 installPath = taskParams.get('install-path', '')
                 if not installPath:
                     continue
 
                 installPath = os.path.normpath(utils.substVars(installPath, env))
-                target = joinpath(installPath, target)
+                targetpath = joinpath(installPath, targetpath)
 
             if check.destdir:
-                target = joinpath(check.destdir, os.path.splitdrive(target)[1].lstrip(os.sep))
-            assert os.path.isfile(target)
+                targetpath = joinpath(check.destdir, os.path.splitdrive(targetpath)[1].lstrip(os.sep))
+            assert os.path.isfile(targetpath)
             if isExe:
-                assert os.access(target, os.X_OK)
+                assert os.access(targetpath, os.X_OK)
 
-            targets.add(target)
+            targets.add(targetpath)
+
+            isSharedLib = any([x.endswith('shlib') for x in features])
+            if isSharedLib and isWindows:
+                targetpath = joinpath(os.path.dirname(targetpath), '%s.lib' % target)
+                assert os.path.isfile(targetpath)
+                targets.add(targetpath)
 
         for root, dirs, files in os.walk(check.destdir):
             for name in files:
@@ -838,6 +849,7 @@ class TestInstall(object):
 
         testdir = str(tmpdir.realpath())
         destdir = joinpath(testdir, 'inst')
+
         cmdLine = ['install', '--destdir', destdir]
         exitcode, _, _ = runZm(self, cmdLine)
         assert exitcode == 0
@@ -864,7 +876,7 @@ class TestInstall(object):
 
         check = AutoDict(
             destdir = destdir,
-            prefix = prefix,
+            prefix = prefix.replace('/', os.sep),
         )
         check.bindir = joinpath(check.prefix, 'bin')
         check.libdir = joinpath(check.prefix, 'lib%s' % utils.libDirPostfix())
@@ -887,9 +899,9 @@ class TestInstall(object):
 
         check = AutoDict(
             destdir = destdir,
-            prefix = prefix,
-            bindir = bindir,
-            libdir = libdir,
+            prefix = prefix.replace('/', os.sep),
+            bindir = bindir.replace('/', os.sep),
+            libdir = libdir.replace('/', os.sep),
         )
 
         self._checkInstallResults(cmdLine, check)

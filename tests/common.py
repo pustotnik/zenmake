@@ -80,7 +80,7 @@ def asRealConf(_buildconf):
 
 atexit.register(removeAllTmpDirsForTests)
 
-PLATFORM = utils.platform()
+#PLATFORM = utils.platform()
 SHARED_TMP_DIR = makeTmpDirForTests()
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_PROJECTS_DIR = os.path.abspath(os.path.join(TESTS_DIR, os.pardir, 'demos'))
