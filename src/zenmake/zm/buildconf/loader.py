@@ -52,8 +52,12 @@ def initDefaults(buildconf):
         setattr(buildconf, 'project', {})
     params = buildconf.project
     params['root'] = params.get('root', os.curdir)
-    params['name'] = params.get('name', 'NONAME')
-    params['version'] = params.get('version', '0.0.0')
+    params['name'] = params.get('name', None)
+    if params['name'] is None:
+        name = os.path.dirname(os.path.abspath(buildconf.__file__))
+        name = os.path.basename(name)
+        params['name'] = name
+    params['version'] = params.get('version', '')
 
     # toolchains
     if not hasattr(buildconf, 'toolchains'):

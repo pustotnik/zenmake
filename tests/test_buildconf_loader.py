@@ -15,8 +15,11 @@ from zm.error import *
 import tests.common as cmn
 from zm.buildconf import loader as bconfloader
 
+file = __file__
+
 class FakeBuildConf:
     __name__ = 'testconf'
+    __file__ = file
 
 def testInitDefaults():
 
@@ -31,8 +34,8 @@ def testInitDefaults():
     assert hasattr(buildconf, 'project')
     assert buildconf.project == {
         'root' : os.curdir,
-        'name' : 'NONAME',
-        'version': '0.0.0',
+        'name' : 'tests', # name of directory with current test
+        'version': '',
     }
 
     assert hasattr(buildconf, 'toolchains')

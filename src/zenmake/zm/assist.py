@@ -558,33 +558,36 @@ def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
         idx      = taskParams.get('object-file-counter', 1),
     )
 
-    # with converting value to list
     nameMap = (
-        ('sys-libs','lib'),
-        ('sys-lib-path','libpath'),
-        ('rpath','rpath'),
-        ('use', 'use'),
+        ('sys-libs','lib', 'tolist'),
+        ('sys-lib-path','libpath', 'tolist'),
+        ('rpath','rpath', 'tolist'),
+        ('use', 'use', 'tolist'),
+        ('includes', 'includes', None),
+        ('ver-num','vnum', None),
+        ('export-includes', 'export_includes', None),
+        ('export-defines', 'export_defines', None),
+        ('install-path', 'install_path', None),
     )
     for param in nameMap:
-        if param[0] in taskParams:
-            kwargs[param[1]] = utils.toList(taskParams[param[0]])
-
-    # as is
-    nameMap = (
-        ('includes', 'includes'),
-        ('ver-num','vnum'),
-        ('export-includes', 'export_includes'),
-        ('export-defines', 'export_defines'),
-        ('install-path', 'install_path'),
-    )
-    for param in nameMap:
-        if param[0] in taskParams:
-            kwargs[param[1]] = taskParams[param[0]]
+        zmKey = param[0]
+        if zmKey in taskParams:
+            wafKey, toList = param[1], param[2] == 'tolist'
+            if toList:
+                kwargs[wafKey] = utils.toList(taskParams[zmKey])
+            else:
+                kwargs[wafKey] = taskParams[zmKey]
+            if zmKey != wafKey:
+                del taskParams[zmKey]
 
     # set of used keys in kwargs must be included in set from getUsedWafTaskKeys()
     assert set(kwargs.keys()) <= getUsedWafTaskKeys()
 
     taskParams.update(kwargs)
+
+    prjver = confHandler.projectVersion
+    if prjver and 'vnum' not in taskParams:
+        taskParams['vnum'] = prjver
 
     taskVariant = taskParams['$task.variant']
     taskEnv = cfgCtx.all_envs[taskVariant]

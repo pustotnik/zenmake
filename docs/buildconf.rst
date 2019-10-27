@@ -88,8 +88,9 @@ project
     A `dict <buildconf-dict-def_>`_ with some parameters for the project.
     Supported values:
 
-    :name: The name of the project. It's 'NONAME' by default.
-    :version: The version of the project. It's '0.0.0' by default.
+    :name: The name of the project. It's name of the project directory by default.
+    :version: The version of the project. It's empty by default.
+              It's used as default value for ``ver-num`` field if not empty.
     :root: A path to the root of the project. It's '.' by default and in most
            cases it shouldn't be changed. Path can be absolute or relative to
            directory where buildconf file is located.
@@ -357,7 +358,7 @@ taskparams
 
     rpath
         One or more paths to hard-code into the binary during
-        linking time.
+        linking time. It's ignored on platforms that do not support it.
 
     use
         This attribute enables the link against libraries (static or shared).
@@ -366,7 +367,8 @@ taskparams
 
     ver-num
         Enforce version numbering on shared libraries. It can be used with
-        \*shlib ``features``.
+        \*shlib ``features`` for example. It's ignored on platforms that do
+        not support it.
 
     includes
         Include paths are used by the C/C++ compilers for finding headers.
