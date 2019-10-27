@@ -18,14 +18,16 @@ from collections import defaultdict
 from zipfile import ZipFile, is_zipfile as iszip
 
 import pytest
-from waflib import Build
+from waflib import Build, Context
 from waflib.ConfigSet import ConfigSet
 import tests.common as cmn
 from zm import starter
 from zm import pyutils, assist, cli, utils, zipapp, version
+from zm.autodict import AutoDict
 from zm.buildconf import loader as bconfloader
 from zm.buildconf.handler import BuildConfHandler
 from zm.constants import ZENMAKE_CMN_CFGSET_FILENAME, PLATFORM, APPNAME
+from zm.constants import TASK_WAF_MAIN_FEATURES
 from zm.toolchains import CompilersInfo
 
 joinpath = os.path.join
@@ -35,6 +37,7 @@ PYTHON_EXE = sys.executable if sys.executable else 'python'
 CUSTOM_TOOLCHAIN_PRJDIR = joinpath('cpp', '005-custom-toolchain')
 COMPLEX_UNITTEST_PRJDIR = joinpath('cpp', '009-complex-unittest')
 AUTOCONFIG_PRJDIR = joinpath('cpp', '002-simple')
+FORINSTALL_PRJDIRS = [joinpath('cpp', '004-complex'), joinpath('cpp', '009-complex-unittest')]
 
 def collectProjectDirs():
     result = []
@@ -146,55 +149,79 @@ def setupTest(self, request, tmpdir):
     self.confHandler = BuildConfHandler(projectConf)
     self.confPaths = self.confHandler.confPaths
 
+def processConfHandlerWithCLI(testSuit, cmdLine):
+    cmdLine = list(cmdLine)
+    cmdLine.insert(0, APPNAME)
+    cmd, _ = starter.handleCLI(testSuit.confHandler, cmdLine, True)
+    testSuit.confHandler.handleCmdLineArgs(cmd)
+
+def getTaskEnv(testSuit, taskName):
+    buildtype = testSuit.confHandler.selectedBuildType
+    taskVariant = assist.makeTaskVariantName(buildtype, taskName)
+    cacheConfFile = assist.makeCacheConfFileName(
+                                    testSuit.confPaths.zmcachedir, taskVariant)
+    env = ConfigSet(cacheConfFile)
+    return env
+
+def getTargetPattern(testSuit, taskName, features):
+    executable = False
+    fileNamePattern = '%s'
+    env = getTaskEnv(testSuit, taskName)
+    for feature in features:
+        # find pattern via brute force :)
+        key = feature + '_PATTERN'
+        if key not in env:
+            continue
+        fileNamePattern = env[key]
+        executable = feature.endswith('program')
+
+    return fileNamePattern, executable
+
+def handleTaskFeatures(testSuit, taskParams):
+    assist.detectConfTaskFeatures(taskParams)
+    if 'source' in taskParams:
+        confPaths = testSuit.confPaths
+        srcDir = os.path.relpath(confPaths.srcroot, confPaths.wscriptdir)
+        ctx = Context.Context(run_dir = testSuit.cwd)
+        srcDirNode = ctx.path.find_dir(srcDir)
+        taskParams['source'] = assist.handleTaskSourceParam(taskParams, srcDirNode)
+    assist.handleFeaturesAlieses(taskParams)
+    assert isinstance(taskParams['features'], list)
+
+def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
+    # checks for target files
+    processConfHandlerWithCLI(testSuit, cmdLine)
+    buildtype = testSuit.confHandler.selectedBuildType
+
+    for taskName, taskParams in testSuit.confHandler.tasks.items():
+
+        handleTaskFeatures(testSuit, taskParams)
+        features = taskParams['features']
+
+        if not withTests and 'test' in features:
+            # ignore test tasks
+            continue
+
+        if not [ x for x in features if x in TASK_WAF_MAIN_FEATURES ]:
+            # check only with features from TASK_WAF_MAIN_FEATURES
+            continue
+
+        fileNamePattern, isExe = getTargetPattern(testSuit, taskName, features)
+        target = taskParams.get('target', taskName)
+        targetpath = joinpath(testSuit.confPaths.buildout, buildtype,
+                                fileNamePattern % target)
+
+        assert os.path.exists(targetpath) == resultExists
+        assert os.path.isfile(targetpath) == resultExists
+        if resultExists and isExe:
+            assert os.access(targetpath, os.X_OK)
+
 
 @pytest.mark.usefixtures("unsetEnviron")
 class TestBase(object):
 
     def _runZm(self, cmdline):
         return runZm(self, utils.toList(cmdline) + ['-v'])
-
-    def _checkBuildResults(self, cmdLine, resultExists):
-        # checks for target files
-        cmdLine = list(cmdLine)
-        cmdLine.insert(0, APPNAME)
-        cmd, _ = starter.handleCLI(self.confHandler, cmdLine, True)
-        self.confHandler.handleCmdLineArgs(cmd)
-        buildtype = self.confHandler.selectedBuildType
-
-        checkingFeatures = set((
-            'cprogram', 'cxxprogram', 'cstlib',
-            'cxxstlib', 'cshlib', 'cxxshlib',
-        ))
-
-        for taskName, taskParams in self.confHandler.tasks.items():
-            taskVariant = assist.makeTaskVariantName(buildtype, taskName)
-            cacheConfFile = assist.makeCacheConfFileName(
-                                            self.confPaths.zmcachedir, taskVariant)
-            env = ConfigSet(cacheConfFile)
-            target = taskParams.get('target', taskName)
-            executable = False
-            fileNamePattern = '%s'
-            features = set(utils.toList(taskParams.get('features', '')))
-            if 'test' in features:
-                # ignore test tasks
-                continue
-            if not [ x for x in features if x in checkingFeatures ]:
-                # check only with features from checkingFeatures
-                continue
-            for feature in features:
-                # find pattern via brute force :)
-                key = feature + '_PATTERN'
-                if key not in env:
-                    continue
-                fileNamePattern = env[key]
-                executable = feature.endswith('program')
-
-            targetpath = joinpath(self.confPaths.buildout, buildtype,
-                                  fileNamePattern % target)
-            assert os.path.exists(targetpath) == resultExists
-            assert os.path.isfile(targetpath) == resultExists
-            if resultExists and executable:
-                assert os.access(targetpath, os.X_OK)
 
     @pytest.fixture(params = getZmExecutables(), autouse = True)
     def allZmExe(self, request):
@@ -218,38 +245,38 @@ class TestBase(object):
 
         cmdLine = ['configure']
         assert self._runZm(cmdLine)[0] == 0
-        self._checkBuildResults(cmdLine, False)
+        checkBuildResults(self, cmdLine, False)
         assert os.path.isfile(self.confPaths.wafcachefile)
         assert os.path.isfile(self.confPaths.zmcmnconfset)
 
         cmdLine = ['build']
         assert self._runZm(cmdLine)[0] == 0
-        self._checkBuildResults(cmdLine, True)
+        checkBuildResults(self, cmdLine, True)
 
     def testBuild(self, allprojects):
 
         # simple build
         cmdLine = ['build']
         assert self._runZm(cmdLine)[0] == 0
-        self._checkBuildResults(cmdLine, True)
+        checkBuildResults(self, cmdLine, True)
 
     def testBuildAndBuild(self, allprojects):
 
         # simple build
         cmdLine = ['build']
         assert self._runZm(cmdLine)[0] == 0
-        self._checkBuildResults(cmdLine, True)
+        checkBuildResults(self, cmdLine, True)
 
         # simple rebuild
         assert self._runZm(cmdLine)[0] == 0
-        self._checkBuildResults(cmdLine, True)
+        checkBuildResults(self, cmdLine, True)
 
     def testBuildAndClean(self, allprojects):
 
         # simple build
         cmdLine = ['build']
         assert self._runZm(cmdLine)[0] == 0
-        self._checkBuildResults(cmdLine, True)
+        checkBuildResults(self, cmdLine, True)
 
         # clean
         cmdLine = ['clean']
@@ -258,14 +285,14 @@ class TestBase(object):
         assert os.path.isdir(self.confPaths.buildout)
         assert os.path.isfile(self.confPaths.wafcachefile)
         assert os.path.isfile(self.confPaths.zmcmnconfset)
-        self._checkBuildResults(cmdLine, False)
+        checkBuildResults(self, cmdLine, False)
 
     def testBuildAndDistclean(self, allprojects):
 
         # simple build
         cmdLine = ['build']
         assert self._runZm(cmdLine)[0] == 0
-        self._checkBuildResults(cmdLine, True)
+        checkBuildResults(self, cmdLine, True)
 
         # distclean
         assert os.path.isdir(self.confPaths.buildroot)
@@ -280,10 +307,7 @@ class TestBase(object):
         cmdLine = ['build']
         returncode, stdout, stderr =  self._runZm(cmdLine)
         assert returncode == 0
-        self._checkBuildResults(cmdLine, True)
-
-        cmd, _ = starter.handleCLI(self.confHandler, [APPNAME] + cmdLine, True)
-        self.confHandler.handleCmdLineArgs(cmd)
+        checkBuildResults(self, cmdLine, True)
 
         for taskName, taskParams in self.confHandler.tasks.items():
             toolchain = taskParams.get('toolchain', None)
@@ -557,6 +581,15 @@ class TestFeatureTest(object):
         cmdLine = ['build', '--build-tests', 'yes', '--run-tests', 'none']
         self._checkFeatureBTYesRTNone(cmdLine)
 
+        # clean
+        cmdLine = ['clean']
+        assert runZm(self, cmdLine)[0] == 0
+        assert os.path.isdir(self.confPaths.buildroot)
+        assert os.path.isdir(self.confPaths.buildout)
+        assert os.path.isfile(self.confPaths.wafcachefile)
+        assert os.path.isfile(self.confPaths.zmcmnconfset)
+        checkBuildResults(self, cmdLine, False, True)
+
     def testCmdBuildRTAllVariants(self, projects):
 
         self._checkFeatureRTAllVariants([
@@ -575,6 +608,15 @@ class TestFeatureTest(object):
     def testCmdTestBTYesRTNone(self, projects):
         cmdLine = ['test', '--build-tests', 'yes', '--run-tests', 'none']
         self._checkFeatureBTYesRTNone(cmdLine)
+
+        # clean
+        cmdLine = ['clean']
+        assert runZm(self, cmdLine)[0] == 0
+        assert os.path.isdir(self.confPaths.buildroot)
+        assert os.path.isdir(self.confPaths.buildout)
+        assert os.path.isfile(self.confPaths.wafcachefile)
+        assert os.path.isfile(self.confPaths.zmcmnconfset)
+        checkBuildResults(self, cmdLine, False, True)
 
     def testCmdTestRTAllVariants(self, projects):
 
@@ -717,3 +759,142 @@ class TestAutoconfig(object):
         assert returncode == 0
         assert "Setting top to" not in stdout
         assert "Setting out to" not in stdout
+
+@pytest.mark.usefixtures("unsetEnviron")
+class TestInstall(object):
+
+    @pytest.fixture(params = getZmExecutables())
+    def allZmExe(self, request):
+        self.zmExe = _zmExes[request.param]
+
+    @pytest.fixture(params = FORINSTALL_PRJDIRS)
+    def project(self, request, tmpdir):
+
+        def teardown():
+            if request.node.rep_call.failed:
+                printOutputs(self)
+
+        request.addfinalizer(teardown)
+        setupTest(self, request, tmpdir)
+
+    def _checkInstallResults(self, cmdLine, check):
+
+        env = ConfigSet()
+        env.PREFIX = check.prefix
+        env.BINDIR = check.bindir
+        env.LIBDIR = check.libdir
+
+        assert os.path.isdir(check.destdir)
+
+        targets = set()
+        processConfHandlerWithCLI(self, cmdLine)
+        for taskName, taskParams in self.confHandler.tasks.items():
+
+            handleTaskFeatures(self, taskParams)
+            features = taskParams['features']
+
+            if 'test' in taskParams['features']:
+                # ignore tests
+                continue
+
+            if not [ x for x in features if x in TASK_WAF_MAIN_FEATURES ]:
+                # check only with features from TASK_WAF_MAIN_FEATURES
+                continue
+
+            isStLib = any([x.endswith('stlib') for x in features])
+            if isStLib: # static libs aren't installed
+                continue
+
+            fileNamePattern, isExe = getTargetPattern(self, taskName, features)
+            target = fileNamePattern % taskParams.get('target', taskName)
+
+            if 'install-path' not in taskParams:
+                if isExe:
+                    target = joinpath(check.bindir, target)
+                else:
+                    target = joinpath(check.libdir, target)
+            else:
+                installPath = taskParams.get('install-path', '')
+                if not installPath:
+                    continue
+
+                installPath = os.path.normpath(utils.substVars(installPath, env))
+                target = joinpath(installPath, target)
+
+            if check.destdir:
+                target = joinpath(check.destdir, os.path.splitdrive(target)[1].lstrip(os.sep))
+            assert os.path.isfile(target)
+            if isExe:
+                assert os.access(target, os.X_OK)
+
+            targets.add(target)
+
+        for root, dirs, files in os.walk(check.destdir):
+            for name in files:
+                path = joinpath(root, name)
+                assert path in targets
+
+    def testInstallUninstall(self, allZmExe, project, tmpdir):
+
+        testdir = str(tmpdir.realpath())
+        destdir = joinpath(testdir, 'inst')
+        cmdLine = ['install', '--destdir', destdir]
+        exitcode, _, _ = runZm(self, cmdLine)
+        assert exitcode == 0
+
+        check = AutoDict(
+            destdir = destdir,
+            prefix = cli.DEFAULT_PREFIX,
+        )
+        check.bindir = joinpath(check.prefix, 'bin')
+        check.libdir = joinpath(check.prefix, 'lib%s' % utils.libDirPostfix())
+
+        self._checkInstallResults(cmdLine, check)
+
+        cmdLine[0] = 'uninstall'
+        exitcode, _, _ = runZm(self, cmdLine)
+        assert exitcode == 0
+        assert not os.path.exists(destdir)
+
+        # custom prefix
+        prefix = '/usr/my'
+        cmdLine = ['install', '--destdir', destdir, '--prefix', prefix]
+        exitcode, _, _ = runZm(self, cmdLine)
+        assert exitcode == 0
+
+        check = AutoDict(
+            destdir = destdir,
+            prefix = prefix,
+        )
+        check.bindir = joinpath(check.prefix, 'bin')
+        check.libdir = joinpath(check.prefix, 'lib%s' % utils.libDirPostfix())
+
+        self._checkInstallResults(cmdLine, check)
+
+        cmdLine[0] = 'uninstall'
+        exitcode, _, _ = runZm(self, cmdLine)
+        assert exitcode == 0
+        assert not os.path.exists(destdir)
+
+        # custom prefix, bindir, libdir
+        prefix = '/usr/my'
+        bindir = '/bb'
+        libdir = '/ll'
+        cmdLine = ['install', '--destdir', destdir, '--prefix', prefix]
+        cmdLine.extend(['--bindir', bindir, '--libdir', libdir])
+        exitcode, _, _ = runZm(self, cmdLine)
+        assert exitcode == 0
+
+        check = AutoDict(
+            destdir = destdir,
+            prefix = prefix,
+            bindir = bindir,
+            libdir = libdir,
+        )
+
+        self._checkInstallResults(cmdLine, check)
+
+        cmdLine[0] = 'uninstall'
+        exitcode, _, _ = runZm(self, cmdLine)
+        assert exitcode == 0
+        assert not os.path.exists(destdir)

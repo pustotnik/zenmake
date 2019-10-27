@@ -176,30 +176,30 @@ def testSetTaskEnvVars():
 
     for taskParams in taskParamsFixture:
         env = ConfigSet()
-        assist.setTaskEnvVars(env, taskParams)
+        assist.setTaskToolchainEnvVars(env, taskParams)
         for key, val in taskParams.items():
             envkey = key.upper()
             assert envkey in env
             assert env[envkey] == utils.toList(val)
 
-def testDetectAllTaskFeatures():
+def testDetectConfTaskFeatures():
     taskParams = {}
-    assert assist.detectAllTaskFeatures(taskParams) == []
+    assert assist.detectConfTaskFeatures(taskParams) == []
 
     taskParams = { 'features' : '' }
-    assert assist.detectAllTaskFeatures(taskParams) == []
+    assert assist.detectConfTaskFeatures(taskParams) == []
 
     for ftype in ('stlib', 'shlib', 'program'):
         for lang in ('c', 'cxx'):
             fulltype = '%s%s' % (lang, ftype)
 
             taskParams = { 'features' : fulltype }
-            assert sorted(assist.detectAllTaskFeatures(taskParams)) == sorted([
+            assert sorted(assist.detectConfTaskFeatures(taskParams)) == sorted([
                 lang, fulltype
             ])
 
             taskParams = { 'features' : [lang, fulltype] }
-            assert sorted(assist.detectAllTaskFeatures(taskParams)) == sorted([
+            assert sorted(assist.detectConfTaskFeatures(taskParams)) == sorted([
                 lang, fulltype
             ])
 

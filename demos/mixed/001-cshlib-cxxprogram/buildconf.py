@@ -1,22 +1,17 @@
 
 tasks = {
     'util' : {
-        'features'  : 'c cshlib',
+        'features'  : 'cshlib',
         'source'    :  dict( include = 'shlib/**/*.c' ),
         'includes'  : '.',
-        'toolchain' : 'auto-c',
+        #'toolchain' : 'auto-c',
     },
     'test' : {
-        'features'  : 'cxx cxxprogram',
+        'features'  : 'cxxprogram',
         'source'    :  dict( include = 'prog/**/*.cpp' ),
         'includes'  : '.',
         'use'       : 'util',
-        'toolchain' : 'auto-c++',
+        #'toolchain' : 'auto-c++',
     },
-}
-
-buildtypes = {
-    'debug' : {},
-    'default' : 'debug',
 }
 

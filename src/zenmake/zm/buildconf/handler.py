@@ -16,7 +16,7 @@ from zm.pyutils import viewitems, viewvalues
 from zm import utils, toolchains, log
 from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeLogicError, ZenMakeConfError
-from zm.constants import PLATFORM, TASK_FEATURES_LANGS, TASK_FEATURES_MAP
+from zm.constants import PLATFORM, TASK_FEATURES_LANGS, TASK_WAF_FEATURES_MAP
 
 joinpath = os.path.join
 
@@ -316,7 +316,7 @@ class BuildConfHandler(object):
                 features = utils.toList(taskParams.get('features', []))
                 lang = None
                 for feature in features:
-                    lang = TASK_FEATURES_MAP.get(feature, None)
+                    lang = TASK_WAF_FEATURES_MAP.get(feature, None)
                     if not lang and feature in TASK_FEATURES_LANGS:
                         lang = feature
                 if lang:

@@ -19,7 +19,7 @@ from waflib.Tools.c_aliases import set_features as setFeatures
 from zm.pyutils import stringtype, maptype, viewitems
 from zm import utils, toolchains, log, version
 from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, WSCRIPT_NAME, \
-                         TASK_KINDS, TASK_FEATURES_MAP
+                         TASK_WAF_ALIESES, TASK_WAF_FEATURES_MAP
 
 joinpath = os.path.join
 
@@ -151,13 +151,73 @@ def deepcopyEnv(env):
         newenv[k] = deepcopy(env[k])
     return newenv
 
+def delFromEnv(env, key):
+    """
+    Delete value from ConfigSet env.
+    Operator 'del' doesn't work as expected with ConfigSet, see ConfigSet.__delitem__
+    """
+
+    try:
+        while True:
+            env.table.pop(key, None)
+            env = env.parent
+    except AttributeError:
+        pass
+
 def setConfDirectEnv(cfgCtx, name, env):
     """ Set env without deriving and other actions """
 
     cfgCtx.variant = name
     cfgCtx.all_envs[name] = env
 
-def setTaskEnvVars(env, taskParams):
+def makeTaskEnv(cfgCtx, taskVariant):
+    """
+    Create env for task from root env with cleanup
+    """
+
+    # make deep copy to rid of side effects with different flags
+    # in different tasks
+    taskEnv = deepcopyEnv(cfgCtx.all_envs.pop(taskVariant))
+
+    # it's derived from root env but we don't need it here
+    delFromEnv(taskEnv, 'alltasks')
+
+    # It' needed to delete these vars to use same vars from root env on build
+    for var in ('PREFIX', 'BINDIR', 'LIBDIR'):
+        delFromEnv(taskEnv, var)
+
+    return taskEnv
+
+def applyInstallPaths(env, clicmd):
+    """
+    Apply installation path vars PREFIX, BINDIR, LIBDIR
+    """
+
+    opts = clicmd.args
+    prefix = opts.get('prefix')
+    bindir = opts.get('bindir')
+    libdir = opts.get('libdir')
+
+    if prefix and prefix != env.PREFIX:
+        env.PREFIX = prefix
+        if not bindir:
+            env.BINDIR = '%s/bin' % prefix
+        if not libdir:
+            env.LIBDIR = '%s/lib%s' % (prefix, utils.libDirPostfix())
+
+    if bindir:
+        env.BINDIR = bindir
+    if libdir:
+        env.LIBDIR = libdir
+
+    for var in ('PREFIX', 'BINDIR', 'LIBDIR'):
+        if var not in env:
+            continue
+        val = env[var]
+        if not os.path.isabs(val):
+            env[var] = '/' + val
+
+def setTaskToolchainEnvVars(env, taskParams):
     """
     Set up some env vars for build task such as compiler flags
     """
@@ -349,40 +409,20 @@ def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
 
     return toolchainsEnvs
 
-def detectAllTaskFeatures(taskParams):
+def detectConfTaskFeatures(taskParams):
     """
     Detect all features for task
     """
     features = utils.toList(taskParams.get('features', []))
-    detected = [ TASK_FEATURES_MAP.get(x, '') for x in features ]
+    detected = [ TASK_WAF_FEATURES_MAP.get(x, '') for x in features ]
 
     features.extend(detected)
     features = set(features)
     if '' in features:
         features.remove('')
-    return list(features)
-
-def applyInstallPaths(env, clicmd):
-    """
-    Apply installation path vars PREFIX, BINDIR, LIBDIR
-    """
-
-    opts = clicmd.args
-    prefix = opts.get('prefix')
-    bindir = opts.get('bindir')
-    libdir = opts.get('libdir')
-
-    if prefix and prefix != env.PREFIX:
-        env.PREFIX = prefix
-        if not bindir:
-            env.BINDIR = '%s/bin' % prefix
-        if not libdir:
-            env.LIBDIR = '%s/lib%s' % (prefix, utils.libDirPostfix())
-
-    if bindir:
-        env.BINDIR = bindir
-    if libdir:
-        env.LIBDIR = libdir
+    features = list(features)
+    taskParams['features'] = features
+    return features
 
 def handleTaskIncludesParam(taskParams, srcroot):
     """
@@ -468,13 +508,14 @@ def handleFeaturesAlieses(taskParams):
     Detect features for alieses 'stlib', 'shlib', 'program' and 'objects'
     """
 
-    features = taskParams['features']
+    features = utils.toList(taskParams.get('features', []))
     source = taskParams.get('source', None)
     if source is None:
+        taskParams['features'] = features
         return
 
     found = False
-    alieses = set(TASK_KINDS)
+    alieses = set(TASK_WAF_ALIESES)
     for feature in features:
         if feature not in alieses:
             continue
@@ -499,7 +540,7 @@ def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
     bconfPaths = confHandler.confPaths
     btypeDir = confHandler.selectedBuildTypeDir
 
-    taskParams['features'] = features = detectAllTaskFeatures(taskParams)
+    features = detectConfTaskFeatures(taskParams)
 
     normalizeTarget = taskParams.get('normalize-target-name', False)
     target = taskParams.get('target', taskName)

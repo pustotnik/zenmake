@@ -83,8 +83,12 @@ class TaskItem(object):
 def setup():
     """ Some initialization """
 
-    _shared.runTestsOnChanges = cli.selected.args.runTests == 'on-changes'
-    _shared.buildTests = cli.selected.args.buildTests
+    cliArgs = cli.selected.args
+    _shared.runTestsOnChanges = False
+    if 'runTests' in cliArgs:
+        _shared.runTestsOnChanges = cliArgs.runTests == 'on-changes'
+    if 'buildTests' in cliArgs:
+        _shared.buildTests = cliArgs.buildTests
 
 def _isSuitableForRunCmd(taskParams):
     return taskParams['$runnable'] or taskParams.get('run', None)
@@ -119,10 +123,6 @@ def preBuild(bld):
     Preprocess zm.wscriptimpl.build
     """
 
-    # only for command 'build'
-    if bld.cmd != 'build':
-        return
-
     from zm.wscriptimpl import validateVariant
     buildtype = validateVariant(bld)
 
@@ -156,14 +156,12 @@ def postBuild(bld):
     It's just for optimisation.
     """
 
-    # only for command 'build'
-    if bld.cmd != 'build':
-        return
-
     _shared.buildHandled = True
 
-    runTests = cli.selected.args.runTests
-    runTests = _shared.testsFound and runTests != 'none'
+    runTests = False
+    if 'runTests' in cli.selected.args:
+        runTests = cli.selected.args.runTests
+        runTests = _shared.testsFound and runTests and runTests != 'none'
 
     if not runTests:
         # Prevent running of command 'test' after the current command by
@@ -211,10 +209,6 @@ def watchChanges(tgen):
     if not _shared.runTestsOnChanges:
         return
 
-    # only for command 'build'
-    if tgen.bld.cmd != 'build':
-        return
-
     def wrap(method, taskName):
         def execute():
             method()
@@ -230,10 +224,6 @@ def watchChanges(tgen):
 @after('apply_link', 'process_use', 'process_rule')
 def applyFeatureTest(tgen):
     """ Some stuff for the feature 'test' """
-
-    # only for command 'build'
-    if tgen.bld.cmd != 'build':
-        return
 
     if not _shared.buildTests:
         # Ignore all build tasks for tests in this case

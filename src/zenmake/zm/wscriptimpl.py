@@ -72,6 +72,9 @@ def configure(conf):
 
     confHandler = shared.buildConfHandler
 
+    # set/fix vars PREFIX, BINDIR, LIBDIR
+    assist.applyInstallPaths(conf.env, cli.selected)
+
     # for assist.runConfTests
     conf.env['PROJECT_NAME'] = confHandler.projectName
 
@@ -117,19 +120,15 @@ def configure(conf):
 
         taskVariant = taskParams['$task.variant']
 
-        # make deep copy to rid of side effects with different flags
-        # in different tasks
-        taskEnv = assist.deepcopyEnv(conf.all_envs.pop(taskVariant))
-
-        # it's derived from root env but we don't need it here
-        del taskEnv['alltasks']
+        # Create env for task from root env with cleanup
+        taskEnv = assist.makeTaskEnv(conf, taskVariant)
 
         # conf.setenv with unknown name or non-empty env makes deriving or
         # creates the new object and it is not really needed here
         assist.setConfDirectEnv(conf, taskVariant, taskEnv)
 
-        # set variables
-        assist.setTaskEnvVars(conf.env, taskParams)
+        # set toolchain env variables
+        assist.setTaskToolchainEnvVars(conf.env, taskParams)
 
         # configure all possible task params
         assist.configureTaskParams(conf, confHandler, taskName, taskParams)
@@ -177,6 +176,10 @@ def build(bld):
     bconfPaths = shared.buildConfHandler.confPaths
 
     isInstall = bld.cmd in ('install', 'uninstall')
+    if isInstall:
+        assist.applyInstallPaths(bld.env, cli.selected)
+
+    rootEnv = bld.env
 
     # Some comments just to remember some details.
     # - ctx.path represents the path to the wscript file being executed
@@ -203,10 +206,8 @@ def build(bld):
 
         # load environment for this task
         cacheFile = assist.makeCacheConfFileName(bconfPaths.zmcachedir, bld.variant)
-        bld.all_envs[bld.variant] = ConfigSet(cacheFile)
-
-        if isInstall:
-            assist.applyInstallPaths(bld.env, cli.selected)
+        bld.env = ConfigSet(cacheFile)
+        bld.env.parent = rootEnv
 
         if 'source' in taskParams:
             taskParams['source'] = assist.handleTaskSourceParam(taskParams, srcDirNode)
@@ -243,6 +244,7 @@ class _InstallContext(InstallContext):
     def _wrapInstTaskRun(method):
 
         from waflib.Build import INSTALL
+        isdir = os.path.isdir
 
         def execute(self):
 
@@ -253,12 +255,15 @@ class _InstallContext(InstallContext):
                 for output in self.outputs:
                     dirpath = output.parent.abspath()
                     try:
-                        if isInstall == INSTALL and not os.path.isdir(dirpath):
+                        if isInstall == INSTALL:
                             os.makedirs(dirpath)
                     except OSError as ex:
-                        raise error.ZenMakeError(str(ex))
+                        # It can't be checked before call of os.makedirs because
+                        # tasks work in parallel.
+                        if not isdir(dirpath): # exist_ok
+                            raise error.ZenMakeError(str(ex))
 
-                    if os.path.isdir(dirpath) and not os.access(dirpath, os.W_OK):
+                    if isdir(dirpath) and not os.access(dirpath, os.W_OK):
                         raise error.ZenMakeError('Permission denied: ' + dirpath)
 
             method(self)

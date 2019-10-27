@@ -7,6 +7,7 @@ tasks = {
         'defines'  : ['ABC=1', 'DOIT'],
         'export-includes' : True,
         'export-defines' : True,
+        'install-path' : None,
     },
     'stlib' : {
         'features' : 'stlib',
@@ -16,8 +17,9 @@ tasks = {
         'features' : 'shlib',
         'source'   :  dict( include = 'shlibmain/**/*.cpp' ),
         'use'      : 'shlib stlib',
+        'install-path' : '${PREFIX}/lbr',
     },
-    'test' : {
+    'main' : {
         'features' : 'program',
         'source'   :  dict( include = 'prog/**/*.cpp' ),
         'use'      : 'shlibmain',
