@@ -34,10 +34,10 @@ joinpath = os.path.join
 ZM_BIN = cmn.ZENMAKE_DIR # it's a dir but it contains __main__.py
 PYTHON_EXE = sys.executable if sys.executable else 'python'
 
-CUSTOM_TOOLCHAIN_PRJDIR = joinpath('cpp', '005-custom-toolchain')
-COMPLEX_UNITTEST_PRJDIR = joinpath('cpp', '009-complex-unittest')
-AUTOCONFIG_PRJDIR = joinpath('cpp', '002-simple')
-FORINSTALL_PRJDIRS = [joinpath('cpp', '004-complex'), joinpath('cpp', '009-complex-unittest')]
+CUSTOM_TOOLCHAIN_PRJDIR = joinpath('cpp', '05-custom-toolchain')
+COMPLEX_UNITTEST_PRJDIR = joinpath('cpp', '09-complex-unittest')
+AUTOCONFIG_PRJDIR = joinpath('cpp', '02-simple')
+FORINSTALL_PRJDIRS = [joinpath('cpp', '04-complex'), joinpath('cpp', '09-complex-unittest')]
 
 def collectProjectDirs():
     result = []
