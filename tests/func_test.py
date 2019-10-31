@@ -39,14 +39,25 @@ COMPLEX_UNITTEST_PRJDIR = joinpath('cpp', '09-complex-unittest')
 AUTOCONFIG_PRJDIR = joinpath('cpp', '02-simple')
 FORINSTALL_PRJDIRS = [joinpath('cpp', '04-complex'), joinpath('cpp', '09-complex-unittest')]
 
+PLATFORM_TESTS = {
+    CUSTOM_TOOLCHAIN_PRJDIR: ['linux', 'darwin'],
+    joinpath('asm', '01-simple-gas') : ['linux'],
+    joinpath('asm', '02-simple-nasm') : ['linux'],
+}
+
 def collectProjectDirs():
+    for path in PLATFORM_TESTS:
+        path = joinpath(cmn.TEST_PROJECTS_DIR, path)
+        assert os.path.isdir(path)
+
     result = []
     for dirpath, _, filenames in os.walk(cmn.TEST_PROJECTS_DIR):
         if 'buildconf.py' not in filenames and 'buildconf.yaml' not in filenames:
             continue
         prjdir = os.path.relpath(dirpath, cmn.TEST_PROJECTS_DIR)
-        if prjdir == CUSTOM_TOOLCHAIN_PRJDIR and PLATFORM == 'windows':
-            print('We ignore tests for %r on windows' % prjdir)
+        allowedPlatforms = PLATFORM_TESTS.get(prjdir, None)
+        if allowedPlatforms and PLATFORM not in allowedPlatforms:
+            print('We ignore tests for %r on %r' % (prjdir, PLATFORM))
             continue
         result.append(prjdir)
     result.sort()

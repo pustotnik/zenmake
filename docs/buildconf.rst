@@ -191,10 +191,11 @@ platforms
     A `dict <buildconf-dict-def_>`_ with some settings specific to platforms.
     It's important variable if your project should be built on more than one
     platform. Each value must have name of platform with value of 2 parameters:
-    ``valid`` and ``default``. Parameter ``valid`` is a list of valid/supported
-    buildtypes_ for selected platform and optional parameter ``default`` specifies
-    default buildtype as one of valid buildtypes. Also parameter ``default``
-    overrides parameter ``default`` from buildtypes_ for selected platform.
+    ``valid`` and ``default``. Parameter ``valid`` is a string or list of
+    valid/supported buildtypes_ for selected platform and optional parameter
+    ``default`` specifies default buildtype as one of valid buildtypes.
+    Also parameter ``default`` overrides parameter ``default``
+    from buildtypes_ for selected platform.
 
     Valid platform names: ``linux``, ``windows``, ``darwin``, ``freebsd``,
     ``openbsd``, ``sunos``, ``cygwin``, ``msys``, ``riscos``, ``atheos``,
@@ -448,8 +449,11 @@ taskparams
         ``auto-*`` where ``*`` is programming language, for example
         ``auto-c`` or ``auto-c++``.
 
-        | Some known names for C: ``gcc``, ``clang``, ``msvc``, ``icc``.
-        | Some known names for C++: ``g++``, ``clang++``, ``msvc``, ``icpc``.
+        | Known names for C: ``gcc``, ``clang``, ``msvc``, ``icc``, ``xlc``,
+                             ``suncc``, ``irixcc``.
+        | Known names for C++: ``g++``, ``clang++``, ``msvc``, ``icpc``,
+                               ``xlc++``, ``sunc++``.
+        | Known names for Assembler: ``gas``, ``nasm``.
 
         .. note::
 
@@ -466,14 +470,20 @@ taskparams
     cxxflags
         One or more compiler flags for C++.
 
+    asflags
+        One or more compiler flags for Assembler.
+
     cppflags
         One or more compiler flags added at the end of compilation commands.
 
     linkflags
         One or more linker flags for C/C++.
 
+    aslinkflags
+        One or more linker flags for Assembler.
+
     defines
-        One or more defines for C/C++.
+        One or more defines for C/C++/Assembler.
 
     export-defines
         If it's True then it exports value of ``defines`` for all buld tasks
@@ -577,11 +587,14 @@ taskparams
             }
 
     conftests
-        A list of configuration tests. Each item is a ``dict`` where ``act``
-        specifies some type of configuration test. They are called on
+        A list of configuration tests. An item ih the list can be a ``dict``
+        where ``act`` specifies some type of configuration test. Another
+        possible value of the item is a python function that must return
+        True/False on Success/Failure. Arguments for such a function can be
+        absent or: ``task``, ``buildtype``. These tests are called on
         **configure** step (command **configure**).
 
-        These configuration tests:
+        These configuration tests in ``dict`` format:
 
             ``act`` = ``check-programs``
                 Check existence of programs from list in the ``names``.
@@ -599,6 +612,11 @@ taskparams
                 Check existence of the system libraries from list in
                 the ``names``. If ``autodefine`` is set to True it generates
                 ``C/C++ define name`` like ``HAVE_LIB_SOMELIB``.
+
+            ``act`` = ``check-by-pyfunc``
+                Check by python function. It'a another way to use python
+                function for checking. In this way you can use parameter
+                ``mandatory``.
 
             ``act`` = ``check``
                 Just proxy to Waf common method ``check``.
@@ -624,11 +642,17 @@ taskparams
 
         .. code-block:: python
 
+            def check(task, buildtype):
+                # some checking
+                return True
+
             'myapp' : {
                 'features'   : 'cxxshlib',
                 'sys-libs'   : ['m', 'rt'],
                 # ...
                 'conftests'  : [
+                    # do checking in function 'check'
+                    check,
                     # Check libs from param 'sys-libs'
                     dict(act = 'check-sys-libs'),
                     dict(act = 'check-headers', names = 'cstdio', mandatory = True),

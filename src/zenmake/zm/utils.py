@@ -62,6 +62,13 @@ def toList(val):
         return val.split()
     return val
 
+def uniqueListWithOrder(lst):
+    """
+    Return new list with preserved the original order of the list
+    """
+    used = set()
+    return [x for x in lst if x not in used and (used.add(x) or True)]
+
 def unfoldPath(cwd, path):
     """
     Unfold path applying os.path.expandvars, os.path.expanduser and

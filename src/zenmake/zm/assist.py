@@ -230,6 +230,28 @@ def setTaskToolchainEnvVars(env, taskParams):
             # so here we add values, not replace them.
             env[var] += utils.toList(val)
 
+def _confTestCheckByPyFunc(entity, **kwargs):
+    cfgCtx    = kwargs['cfgCtx']
+    buildtype = kwargs['buildtype']
+    taskName  = kwargs['taskName']
+
+    func = entity['func']
+    funcArgCount = func.__code__.co_argcount
+    mandatory = entity.pop('mandatory', True)
+
+    cfgCtx.start_msg('Checking by function %r' % func.__name__)
+    if funcArgCount == 0:
+        result = func()
+    else:
+        result = func(task = taskName, buildtype = buildtype)
+
+    if not result:
+        cfgCtx.end_msg(result = 'failed', color = 'YELLOW')
+        if mandatory:
+            cfgCtx.fatal('Checking by function %r failed' % func.__name__)
+    else:
+        cfgCtx.end_msg('ok')
+
 def _confTestCheckPrograms(entity, **kwargs):
     cfgCtx = kwargs['cfgCtx']
 
@@ -308,6 +330,7 @@ def _confTestWriteHeader(entity, **kwargs):
     cfgCtx.write_config_header(fileName, **entity)
 
 _confTestFuncs = {
+    'check-by-pyfunc'     : _confTestCheckByPyFunc,
     'check-programs'      : _confTestCheckPrograms,
     'check-sys-libs'      : _confTestCheckSysLibs,
     'check-headers'       : _confTestCheckHeaders,
@@ -333,7 +356,13 @@ def runConfTests(cfgCtx, buildtype, tasks):
             called = called,
         )
         for entity in confTests:
-            entity = entity.copy()
+            if callable(entity):
+                entity = {
+                    'act' : 'check-by-pyfunc',
+                    'func' : entity,
+                }
+            else:
+                entity = entity.copy()
             act = entity.pop('act', None)
             func = _confTestFuncs.get(act, None)
             if not func:
@@ -416,11 +445,10 @@ def detectConfTaskFeatures(taskParams):
     features = utils.toList(taskParams.get('features', []))
     detected = [ TASK_WAF_FEATURES_MAP.get(x, '') for x in features ]
 
-    features.extend(detected)
-    features = set(features)
+    features = detected + features
+    features = utils.uniqueListWithOrder(features)
     if '' in features:
         features.remove('')
-    features = list(features)
     taskParams['features'] = features
     return features
 
@@ -516,19 +544,18 @@ def handleFeaturesAlieses(taskParams):
 
     found = False
     alieses = set(TASK_WAF_ALIESES)
+    kwargs = dict( source = source )
     for feature in features:
         if feature not in alieses:
             continue
         found = True
-        kwargs = dict( source = source )
         setFeatures(kwargs, feature)
-        features.extend(kwargs['features'])
 
     if not found:
         return
 
-    features = set(features) - alieses
-    taskParams['features'] = list(features)
+    features.extend(kwargs['features'])
+    taskParams['features'] = [ x for x in features if x not in alieses]
 
 def configureTaskParams(cfgCtx, confHandler, taskName, taskParams):
     """

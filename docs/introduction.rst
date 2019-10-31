@@ -13,10 +13,6 @@ but be flexible.
 
 Details about reasons to create this project can be found :ref:`here<why>`.
 
-It uses WAF as internal engine. It's for C/C++ projects
-now but may be later some other languages will be added. Especially WAF
-supports a lot of other programming languages for building.
-
 Main features
 -------------
     - Easy to use and flexible build config as python (.py) or as yaml file.
@@ -30,10 +26,12 @@ Main features
       build and run tests only on changes. Details are :ref:`here<buildtests>`.
     - Running custom scripts during build phase.
     - Supported platforms: GNU/Linux, MacOS, MS Windows. Also some other
-      platforms like FreeBSD should be supported but they aren't tested.
-    - Supported languages: C, C++
-    - Supported compilers: at least gcc, clang and msvc. But actually all
-      compilers that Waf_ supports.
+      platforms like OpenBSD/FreeBSD should be supported but they aren't tested.
+    - Supported languages:
+
+      - C: gcc, clang, msvc, icc, xlc, suncc, irixcc
+      - C++: g++, clang++, msvc, icpc, xlc++, sunc++
+      - Assembler: gas (GNU Assembler), nasm/yasm (experimental)
 
 Plans to do
 ------------

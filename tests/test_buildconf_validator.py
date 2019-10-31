@@ -191,7 +191,7 @@ class TestSuite(object):
             confnode[param] = cmn.randomstr()
             with pytest.raises(ZenMakeConfTypeError):
                 validator.validate(buildconf)
-            confnode[param] = [cmn.randomstr(), cmn.randomint(), cmn.randomint()]
+            confnode[param] = [cmn.randomint(), cmn.randomint(), cmn.randomstr()]
             with pytest.raises(ZenMakeConfTypeError):
                 validator.validate(buildconf)
             self._validateListOfStrsValues(buildconf, confnode, param, validVals)
@@ -204,7 +204,7 @@ class TestSuite(object):
             confnode[param] = cmn.randomint()
             with pytest.raises(ZenMakeConfTypeError):
                 validator.validate(buildconf)
-            confnode[param] = [cmn.randomstr(), cmn.randomint(), cmn.randomint()]
+            confnode[param] = [cmn.randomint(), cmn.randomint(), cmn.randomstr()]
             with pytest.raises(ZenMakeConfTypeError):
                 validator.validate(buildconf)
             self._validateStrValues(buildconf, confnode, param, validVals)
@@ -269,7 +269,7 @@ class TestSuite(object):
         )
         self._checkParamsAsStr(buildconf, confnode, paramNames)
 
-        self._checkParamsAsStr(buildconf, confnode,
+        self._checkParamsAsStrOrListOfStrs(buildconf, confnode,
                                ['toolchain'], KNOWN_TOOLCHAIN_KINDS)
 
         paramNames = (
@@ -431,7 +431,7 @@ class TestSuite(object):
             'testbtype' : {}
         })
 
-        self._checkParamsAsStr(buildconf, buildconf.buildtypes['testbtype'],
+        self._checkParamsAsStrOrListOfStrs(buildconf, buildconf.buildtypes['testbtype'],
                                ['toolchain'], KNOWN_TOOLCHAIN_KINDS + toolNames)
 
     def testValidateParamPlatforms(self):
@@ -460,7 +460,7 @@ class TestSuite(object):
         setattr(buildconf, 'platforms', {})
         for _platform in KNOWN_PLATFORMS:
             buildconf.platforms[_platform] = {}
-            self._checkParamsAsListOfStrs(
+            self._checkParamsAsStrOrListOfStrs(
                         buildconf, buildconf.platforms[_platform], ['valid'])
             self._checkParamsAsStr(
                         buildconf, buildconf.platforms[_platform], ['default'])

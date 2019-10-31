@@ -19,6 +19,14 @@ compiler:
   - clang
   - gcc
 
+addons:
+  apt:
+    packages:
+    - build-essential
+    - bison
+    - nasm
+    - yasm
+
 # most problematic at first places
 matrix:
   include:

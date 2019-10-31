@@ -59,16 +59,16 @@ buildtypes = {
 
 platforms = {
     'linux' : {
-        'valid'   : ['debug-gcc', 'debug-clang', 'release-gcc', 'release-clang' ],
+        'valid'   : 'debug-gcc debug-clang release-gcc release-clang',
         'default' : 'debug-gcc',
     },
     # Mac OS
     'darwin' : {
-        'valid'   : ['debug-clang', 'release-clang' ],
+        'valid'   : 'debug-clang release-clang',
         'default' : 'debug-clang',
     },
     'windows' : {
-        'valid'   : ['debug-msvc', 'release-msvc' ],
+        'valid'   : 'debug-msvc release-msvc',
         'default' : 'debug-msvc',
     },
 }

@@ -22,10 +22,12 @@ Main features
   build and run tests only on changes.
 - Running custom scripts during build phase.
 - Supported platforms: GNU/Linux, MacOS, MS Windows. Also some other
-  platforms like FreeBSD should be supported but they aren't tested.
-- Supported languages: C, C++
-- Supported compilers: at least gcc, clang and msvc. But actually all
-  compilers that Waf_ supports.
+  platforms like OpenBSD/FreeBSD should be supported but they aren't tested.
+- Supported languages:
+
+  - C: gcc, clang, msvc, icc, xlc, suncc, irixcc
+  - C++: g++, clang++, msvc, icpc, xlc++, sunc++
+  - Assembler: gas (GNU Assembler), nasm (experimental)
 
 Documentation
 -------------

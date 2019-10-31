@@ -17,45 +17,64 @@ from zm import toolchains
 
 CompilersInfo = toolchains.CompilersInfo
 
-SUPPORTED_LANGS = ('c', 'c++')
+COMPILERS_MAP = {
+    'c'   : {
+        'windows': ['msvc', 'gcc', 'clang'],
+        'darwin':  ['clang', 'gcc'],
+        'linux':   ['gcc', 'clang', 'icc'],
+        'default': ['clang', 'gcc'],
+    },
+    'c++' : {
+        'windows': ['msvc', 'g++', 'clang++'],
+        'darwin':  ['clang++', 'g++'],
+        'linux':   ['g++', 'clang++', 'icpc'],
+        'default': ['clang++', 'g++'],
+    },
+    'asm' : {
+        'default':['gas', 'nasm'],
+    },
+}
+
+SUPPORTED_LANGS = COMPILERS_MAP.keys()
 
 def testAllFlagVars():
     gottenVars = CompilersInfo.allFlagVars()
     # to force covering of cache
     _gottenVars = CompilersInfo.allFlagVars()
     assert _gottenVars == gottenVars
-    requiredVars = ['CPPFLAGS', 'CXXFLAGS', 'LDFLAGS', 'CFLAGS']
-    for v in requiredVars:
-        assert v in gottenVars
+    requiredVars = set([
+        'CPPFLAGS', 'CXXFLAGS', 'LDFLAGS', 'CFLAGS', 'LINKFLAGS',
+        'ASFLAGS',
+    ])
+    assert requiredVars <= set(gottenVars)
 
 def testAllCfgEnvVars():
     gottenVars = CompilersInfo.allCfgEnvVars()
     # to force covering of cache
     _gottenVars = CompilersInfo.allCfgEnvVars()
     assert _gottenVars == gottenVars
-    requiredVars = [
+    requiredVars = set([
         'CPPFLAGS', 'CFLAGS', 'LINKFLAGS', 'CXXFLAGS',
-        'LDFLAGS', 'DEFINES'
-    ]
-    for v in requiredVars:
-        assert v in gottenVars
+        'LDFLAGS', 'DEFINES', 'ASFLAGS',
+    ])
+    assert requiredVars <= set(gottenVars)
 
 def testAllLangs():
-    assert sorted(CompilersInfo.allLangs()) == sorted(['c', 'c++'])
+    assert sorted(CompilersInfo.allLangs()) == sorted(SUPPORTED_LANGS)
 
 def testAllVarsToSetCompiler():
     gottenVars = CompilersInfo.allVarsToSetCompiler()
     # to force covering of cache
     _gottenVars = CompilersInfo.allVarsToSetCompiler()
     assert _gottenVars == gottenVars
-    requiredVars = ['CC', 'CXX']
-    for v in requiredVars:
-        assert v in gottenVars
+    requiredVars = ['CC', 'CXX', 'AS']
+    assert sorted(requiredVars) == sorted(gottenVars)
 
 def testVarToSetCompiler():
     LANGMAP = {
         'c'   : 'CC',
         'c++' : 'CXX',
+        'asm' : 'AS',
     }
     for lang in SUPPORTED_LANGS:
         gottenVar = CompilersInfo.varToSetCompiler(lang)
@@ -67,30 +86,25 @@ def testVarToSetCompiler():
         CompilersInfo.varToSetCompiler('invalid lang')
 
 def testCompilers():
-    import importlib
 
     for lang in SUPPORTED_LANGS:
-        wafLang = lang.replace('+', 'x')
-        module = importlib.import_module('waflib.Tools.compiler_' + wafLang)
-        compilersDict = getattr(module, wafLang + '_compiler')
+        langCompiler = COMPILERS_MAP[lang]
 
         for _platform in ('linux', 'windows', 'darwin'):
-            wafplatform = _platform
-            if _platform == 'windows':
-                wafplatform = 'win32'
             compilers = CompilersInfo.compilers(lang, _platform)
             # to force covering of cache
             _compilers = CompilersInfo.compilers(lang, _platform)
             assert _compilers == compilers
-            assert sorted(set(compilers)) == \
-                                sorted(set(compilersDict[wafplatform]))
+
+            expected = langCompiler.get(_platform, langCompiler['default'])
+            assert set(compilers) == set(expected)
 
         compilers = CompilersInfo.compilers(lang, 'all')
         # to force covering of cache
         _compilers = CompilersInfo.compilers(lang, 'all')
         assert _compilers == compilers
-        assert sorted(set(compilers)) == \
-                        sorted(set(itertools.chain(*compilersDict.values())))
+        assert set(compilers) >= \
+                        set(itertools.chain(*langCompiler.values()))
 
     with pytest.raises(ZenMakeError):
         CompilersInfo.compilers('')

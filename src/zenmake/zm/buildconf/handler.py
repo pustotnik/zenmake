@@ -115,6 +115,7 @@ class BuildConfHandler(object):
         if destPlatform in self._platforms:
             platformFound = True
             supported = self._platforms[destPlatform].get('valid', [])
+            supported = utils.toList(supported)
         else:
             supported = self._conf.buildtypes.keys()
         supported = set(supported)
@@ -311,18 +312,19 @@ class BuildConfHandler(object):
         for taskParams in viewvalues(self.tasks):
             tool = taskParams.get('toolchain', None)
             if tool:
-                _toolchains.add(tool)
+                _toolchains |= set(utils.toList(tool))
             else:
                 features = utils.toList(taskParams.get('features', []))
-                lang = None
+                atools = set()
                 for feature in features:
                     lang = TASK_WAF_FEATURES_MAP.get(feature, None)
                     if not lang and feature in TASK_FEATURES_LANGS:
                         lang = feature
-                if lang:
-                    tool = 'auto-' + lang.replace('x', '+')
-                    taskParams['toolchain'] = tool
-                    _toolchains.add(tool)
+                    if lang:
+                        atools.add('auto-' + lang.replace('x', '+'))
+                if atools:
+                    _toolchains |= atools
+                    taskParams['toolchain'] = list(atools)
 
         _toolchains = tuple(_toolchains)
         self._meta.toolchains.names = _toolchains

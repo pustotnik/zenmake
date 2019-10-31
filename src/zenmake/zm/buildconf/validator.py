@@ -12,6 +12,7 @@ from zm import toolchains
 from zm.constants import KNOWN_PLATFORMS
 from zm.error import ZenMakeConfError, ZenMakeConfTypeError, ZenMakeConfValueError
 from zm.pyutils import maptype, stringtype, viewitems, viewvalues
+from zm.utils import toList
 from zm.autodict import AutoDict as _AutoDict
 
 KNOWN_TOOLCHAIN_KINDS = ['auto-' + lang \
@@ -52,17 +53,19 @@ taskscheme = {
         },
     },
     'toolchain' : {
-        'type': 'str',
+        'type': ('str', 'list-of-strs'),
         'allowed' : KNOWN_TOOLCHAIN_KINDS,
     },
+    'asflags' :   { 'type': ('str', 'list-of-strs') },
+    'aslinkflags' : { 'type': ('str', 'list-of-strs') },
     'cflags' :    { 'type': ('str', 'list-of-strs') },
     'cxxflags' :  { 'type': ('str', 'list-of-strs') },
     'cppflags' :  { 'type': ('str', 'list-of-strs') },
     'linkflags' : { 'type': ('str', 'list-of-strs') },
     'defines' :   { 'type': ('str', 'list-of-strs') },
-    'export-includes': { 'type': ('bool', 'str', 'list-of-strs') },
-    'export-defines':  { 'type': ('bool', 'str', 'list-of-strs') },
-    'install-path': { 'type': ('bool', 'str') },
+    'export-includes' : { 'type': ('bool', 'str', 'list-of-strs') },
+    'export-defines' :  { 'type': ('bool', 'str', 'list-of-strs') },
+    'install-path' : { 'type': ('bool', 'str') },
     'run' :       {
         'type' : 'dict',
         'vars' : {
@@ -79,7 +82,7 @@ taskscheme = {
     },
     'conftests' : {
         'type': 'list',
-        'vars-type' : 'dict',
+        'vars-type' : ('dict', 'func'),
         'dict-vars' : {
             'act' :        { 'type': 'str' },
             'names' :      { 'type': ('str', 'list-of-strs') },
@@ -145,7 +148,7 @@ confscheme = {
         'keys-list' : KNOWN_PLATFORMS,
         'vars-type' : 'dict',
         'vars' : {
-            'valid' : { 'type': 'list-of-strs' },
+            'valid' : { 'type': ('str', 'list-of-strs') },
             'default' : { 'type': 'str' },
         },
     },
@@ -219,10 +222,23 @@ class Validator(object):
 
         types = schemeAttrs['type']
         handlerArgs = (confnode, schemeAttrs, fullkey)
+        valToList = False
+        _types = types
 
-        for _type in types:
+        # special case
+        if 'allowed' in schemeAttrs and sorted(types) == ['list-of-strs', 'str']:
+            # this order of types is necessary
+            _types = ('list-of-strs', 'str')
+            valToList = True
+
+        for _type in _types:
+            if valToList and _type == 'list-of-strs':
+                val = toList(confnode)
+            else:
+                val = confnode
+
             try:
-                Validator._getHandler(_type)(*handlerArgs)
+                Validator._getHandler(_type)(val, schemeAttrs, fullkey)
             except ZenMakeConfTypeError:
                 pass
             else:
@@ -283,15 +299,19 @@ class Validator(object):
         allowed = _getAttrValue(schemeAttrs, 'allowed', 'list', default = None)
         varsType = _getAttrValue(schemeAttrs, 'vars-type', 'list', default = None)
 
+        _schemeAttrs = schemeAttrs
         if varsType:
             handler = Validator._getHandler(varsType)
+            _schemeAttrs = dict(schemeAttrs)
+            _schemeAttrs['type'] = varsType
+
         for i, elem in enumerate(confnode):
             if allowed is not None and elem not in allowed:
                 msg = "Invalid value for param %r." % fullkey
                 msg = '%s Allowed values: %r' %(msg, allowed)
                 raise ZenMakeConfValueError(msg)
             if varsType:
-                handler(elem, schemeAttrs, '%s.[%d]' % (fullkey, i))
+                handler(elem, _schemeAttrs, '%s.[%d]' % (fullkey, i))
 
     @staticmethod
     def _handleFunc(confnode, _, fullkey):
@@ -440,6 +460,8 @@ class Validator(object):
         Entry point for validation
         """
 
+        #TODO: refactor this code
+
         _conf = _AutoDict(vars(conf))
         _scheme = deepcopy(confscheme)
 
@@ -448,7 +470,8 @@ class Validator(object):
         # set allowed values for toolchain in tasks and buildtypes
         btypesNamed = btypesVars[ANYAMOUNTSTRS_KEY]['vars']
         if 'toolchains' in _conf and isinstance(_conf['toolchains'], maptype):
-            allowed = list(KNOWN_TOOLCHAIN_KINDS)
+            # make copy of list
+            allowed = list(taskscheme['toolchain']['allowed'])
             allowed.extend(_conf['toolchains'].keys())
             _scheme['tasks']['vars']['toolchain']['allowed'] = allowed
             btypesNamed['toolchain']['allowed'] = allowed

@@ -20,8 +20,8 @@ _langinfo = {
     # 'cfgenv.vars' - WAF ConfigSet variables that is used on 'configure' step
     'c' : {
         'env.var'      : 'CC',
-        'env.flagvars' : ('CFLAGS', 'CPPFLAGS', 'LDFLAGS'),
-        'cfgenv.vars'  : ('CFLAGS', 'CPPFLAGS', 'LINKFLAGS', 'LDFLAGS', 'DEFINES'),
+        'env.flagvars' : ('CFLAGS', 'CPPFLAGS', 'LDFLAGS', 'LINKFLAGS'),
+        'cfgenv.vars'  : ('CFLAGS', 'CPPFLAGS', 'LDFLAGS', 'LINKFLAGS', 'DEFINES'),
         'compiler.list' : {
             'module' : 'waflib.Tools.compiler_c',
             'var'    : 'c_compiler',
@@ -29,11 +29,21 @@ _langinfo = {
     },
     'c++' : {
         'env.var'   : 'CXX',
-        'env.flagvars' : ('CXXFLAGS', 'CPPFLAGS', 'LDFLAGS'),
-        'cfgenv.vars'  : ('CXXFLAGS', 'CPPFLAGS', 'LINKFLAGS', 'LDFLAGS', 'DEFINES'),
+        'env.flagvars' : ('CXXFLAGS', 'CPPFLAGS', 'LDFLAGS', 'LINKFLAGS'),
+        'cfgenv.vars'  : ('CXXFLAGS', 'CPPFLAGS', 'LDFLAGS', 'LINKFLAGS', 'DEFINES'),
         'compiler.list' : {
             'module' : 'waflib.Tools.compiler_cxx',
             'var'    : 'cxx_compiler',
+        },
+    },
+    'asm' : {
+        'env.var'      : 'AS',
+        'env.flagvars' : ('ASFLAGS', 'ASLINKFLAGS', 'LDFLAGS'),
+        'cfgenv.vars'  : ('ASFLAGS', 'ASLINK', 'ASLINKFLAGS', 'DEFINES'),
+        'compiler.list' : {
+            'table' : {
+                'default':['gas', 'nasm'],
+            },
         },
     },
 }
@@ -111,11 +121,14 @@ class CompilersInfo(object):
         if compilers:
             return compilers
 
-        # load chosen module
         getterInfo = _langinfo[lang]['compiler.list']
-        module = loadPyModule(getterInfo['module'])
-        # and process var
-        table = getattr(module, getterInfo['var'], None)
+        table = getterInfo.get('table')
+        if not table:
+            # load chosen module
+            module = loadPyModule(getterInfo['module'])
+            # and process var
+            table = getattr(module, getterInfo['var'], None)
+
         if table is None or not isinstance(table, maptype):
             # Code of Waf was changed
             raise NotImplementedError()

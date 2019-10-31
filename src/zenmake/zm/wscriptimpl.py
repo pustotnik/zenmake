@@ -23,6 +23,7 @@ import os
 from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext, InstallContext
 from zm.pyutils import viewitems
+from zm.utils import toList
 from zm import log, shared, cli, assist, error
 from zm.buildconf.validator import KNOWN_TASK_PARAM_NAMES
 
@@ -102,8 +103,12 @@ def configure(conf):
         taskParams['$task.variant'] = taskVariant
 
         # set up env with toolchain for task
-        toolchain = taskParams.get('toolchain', None)
-        baseEnv = toolchainsEnvs.get(toolchain, rootEnv)
+        toolchains = toList(taskParams.get('toolchain', []))
+        if not toolchains:
+            conf.fatal("No toolchain for task found. Is buildconf correct?")
+        baseEnv = toolchainsEnvs.get(toolchains[0], rootEnv)
+        for toolname in toolchains[1:]:
+            baseEnv.update(toolchainsEnvs.get(toolname, rootEnv))
 
         # and save selected env (conf.setenv makes the new object that is
         # not desirable here)

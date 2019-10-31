@@ -23,6 +23,13 @@ CXX
 
         CXX=clang++ zenmake build -v
 
+AS
+    Set Assembler. It can be name of installed a system compiler or any path
+    to existing compiler. It overrides values from :ref:`build config<buildconf>`
+    if present. Example::
+
+        AS=gcc zenmake build -v
+
 CFLAGS
     Set list of compilation flags for C files. It overrides values from
     :ref:`build config<buildconf>` if present. Example::
@@ -36,10 +43,22 @@ CXXFLAGS
         CXXFLAGS='-O3 -fPIC' zenmake build -v
 
 LDFLAGS
-    Set list of link flags for C/C++ projects. It overrides values from
+    Set list of link flags for C/C++ files. It overrides values from
     :ref:`build config<buildconf>` if present. Example::
 
         LDFLAGS='-Wl,--as-needed' zenmake build -v
+
+ASFLAGS
+    Set list of compilation flags for Assembler files. It overrides values from
+    :ref:`build config<buildconf>` if present. Example::
+
+        ASFLAGS='-Os' zenmake build -v
+
+ASLINKFLAGS
+    Set list of link flags for Assembler files. It overrides values from
+    :ref:`build config<buildconf>` if present. Example::
+
+        ASLINKFLAGS='-s' zenmake build -v
 
 JOBS
     Default value for the amount of parallel jobs. Has no effect when ``-j`` is
