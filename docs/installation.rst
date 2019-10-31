@@ -70,9 +70,9 @@ run zenmake. Example for Linux (``zmrepo`` is custom directory)::
     $ cd zmrepo
     $ git clone https://gitlab.com/pustotnik/zenmake.git .
 
-Next step is optional. Switch to version 0.4.0. Version can be any existing::
+Next step is optional. Switch to existing version, for example to 0.7.0::
 
-    $ git checkout v0.4.0
+    $ git checkout v0.7.0
 
 Here you can make symlink/alias/script to run zenmake.
 Variants to run zenmake from current directory::

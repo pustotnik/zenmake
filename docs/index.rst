@@ -19,6 +19,7 @@ ZenMake documentation
    quickstart
    installation
    buildconf
+   commands
    envvars
    tests
    faq

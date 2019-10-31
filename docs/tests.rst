@@ -23,10 +23,10 @@ Then you have a choice:
 
     - Specify task parameter :ref:`run <buildconf-taskparams-run>`.
 
-Tests are always built on ``build`` stage and run on ``test`` stage. Order of
-buiding and running test tasks is controlled by their depedencies as for
-just build tasks. So it's possible to use task parameter ``use`` to control
-order of running of tests.
+Tests are always built only on ``build`` stage and run only on ``test`` stage.
+Order of buiding and running test tasks is controlled by their depedencies
+as for just build tasks. So it's possible to use task parameter ``use`` to
+control order of running of tests.
 
     Example of test tasks in python format:
 
