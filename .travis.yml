@@ -21,6 +21,7 @@ compiler:
 
 addons:
   apt:
+    update: true
     packages:
     - build-essential
     - bison
