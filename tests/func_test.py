@@ -14,6 +14,7 @@ import io
 import re
 import subprocess
 import shutil
+import platform as _platform
 from collections import defaultdict
 from zipfile import ZipFile, is_zipfile as iszip
 
@@ -33,20 +34,22 @@ from zm.toolchains import CompilersInfo
 joinpath = os.path.join
 ZM_BIN = cmn.ZENMAKE_DIR # it's a dir but it contains __main__.py
 PYTHON_EXE = sys.executable if sys.executable else 'python'
+PYTHON_VER = _platform.python_version()
 
 CUSTOM_TOOLCHAIN_PRJDIR = joinpath('cpp', '05-custom-toolchain')
 COMPLEX_UNITTEST_PRJDIR = joinpath('cpp', '09-complex-unittest')
 AUTOCONFIG_PRJDIR = joinpath('cpp', '02-simple')
 FORINSTALL_PRJDIRS = [joinpath('cpp', '04-complex'), joinpath('cpp', '09-complex-unittest')]
 
-PLATFORM_TESTS = {
-    CUSTOM_TOOLCHAIN_PRJDIR: ['linux', 'darwin'],
-    joinpath('asm', '01-simple-gas') : ['linux'],
-    joinpath('asm', '02-simple-nasm') : ['linux'],
+TEST_CONDITIONS = {
+    CUSTOM_TOOLCHAIN_PRJDIR: dict( os = ['linux', 'darwin'], ),
+    joinpath('asm', '01-simple-gas') : dict( os = ['linux']),
+    joinpath('asm', '02-simple-nasm') :
+        dict( os = ['linux'], py = ['2.7', '3.6', '3.7', '3.8']),
 }
 
 def collectProjectDirs():
-    for path in PLATFORM_TESTS:
+    for path in TEST_CONDITIONS:
         path = joinpath(cmn.TEST_PROJECTS_DIR, path)
         assert os.path.isdir(path)
 
@@ -55,10 +58,16 @@ def collectProjectDirs():
         if 'buildconf.py' not in filenames and 'buildconf.yaml' not in filenames:
             continue
         prjdir = os.path.relpath(dirpath, cmn.TEST_PROJECTS_DIR)
-        allowedPlatforms = PLATFORM_TESTS.get(prjdir, None)
-        if allowedPlatforms and PLATFORM not in allowedPlatforms:
-            print('We ignore tests for %r on %r' % (prjdir, PLATFORM))
-            continue
+        condition = TEST_CONDITIONS.get(prjdir, None)
+        if condition:
+            destos =  condition.get('os')
+            if destos and PLATFORM not in destos:
+                print('We ignore tests for %r on %r' % (prjdir, PLATFORM))
+                continue
+            py = condition.get('py')
+            if py and not any(PYTHON_VER.startswith(x) for x in py):
+                print('We ignore tests for %r on python %r' % (prjdir, PYTHON_VER))
+                continue
         result.append(prjdir)
     result.sort()
     return result
