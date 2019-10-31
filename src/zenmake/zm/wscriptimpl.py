@@ -104,11 +104,21 @@ def configure(conf):
 
         # set up env with toolchain for task
         toolchains = toList(taskParams.get('toolchain', []))
-        if not toolchains:
-            conf.fatal("No toolchain for task found. Is buildconf correct?")
-        baseEnv = toolchainsEnvs.get(toolchains[0], rootEnv)
-        for toolname in toolchains[1:]:
-            baseEnv.update(toolchainsEnvs.get(toolname, rootEnv))
+        if toolchains:
+            baseEnv = toolchainsEnvs.get(toolchains[0], rootEnv)
+            if len(toolchains) > 1:
+                # make copy of env to avoid using 'update' on original
+                # toolchain env
+                baseEnv = assist.copyEnv(baseEnv)
+            for toolname in toolchains[1:]:
+                baseEnv.update(toolchainsEnvs.get(toolname, rootEnv))
+        else:
+            if 'source' in taskParams:
+                msg = "No toolchain for task %r found." % taskName
+                msg += " Is buildconf correct?"
+                conf.fatal(msg)
+            else:
+                baseEnv = rootEnv
 
         # and save selected env (conf.setenv makes the new object that is
         # not desirable here)

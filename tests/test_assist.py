@@ -250,7 +250,7 @@ def testHandleTaskIncludesParam():
     _taskParams = deepcopy(taskParams)
     assist.handleTaskIncludesParam(_taskParams, srcroot)
     assert _taskParams['includes'] == [ abspaths[0], abspaths[1], '.' ]
-    assert _taskParams['includes'] == _taskParams['export-includes']
+    assert _taskParams['includes'][:-1] == _taskParams['export-includes']
 
     taskParams['export-includes'] = abspaths
     _taskParams = deepcopy(taskParams)

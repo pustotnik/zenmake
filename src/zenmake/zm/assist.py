@@ -481,7 +481,7 @@ def handleTaskIncludesParam(taskParams, srcroot):
         return
 
     if isinstance(exportIncludes, bool) and exportIncludes:
-        exportIncludes = includes
+        exportIncludes = includes[:-1] # exclude '.'
     else:
         exportIncludes = makeIncludes(exportIncludes)
     taskParams['export-includes'] = exportIncludes

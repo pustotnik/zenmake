@@ -17,13 +17,13 @@ configure
     Configures project. In most cases you don't need to call this command
     directly. Command ``build`` will call this command itself if necessary.
     This command processes most of values of :ref:`buildconf<buildconf>`.
-    So any changes in :ref:`buildconf<buildconf>` leads to call of this command.
+    So any change in :ref:`buildconf<buildconf>` leads to call of this command.
 
 build
     Builds project of the current directory. It's the main command. To see all
     possible parameters use ``zenmake help build`` or
     ``zenmake build --help``. For example you can use ``-v`` to see more info
-    about building process or ``-p`` to use progress bar instead text logging.
+    about building process or ``-p`` to use progress bar instead of text logging.
     It calls ``configure`` itself if necessary.
 
 test
