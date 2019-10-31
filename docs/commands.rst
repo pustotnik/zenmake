@@ -15,7 +15,7 @@ instead of ``distclean``.
 
 configure
     Configures project. In most cases you don't need to call this command
-    explicit. Command ``build`` will call this command itself if necessary.
+    directly. Command ``build`` will call this command itself if necessary.
     This command processes most of values of :ref:`buildconf<buildconf>`.
     So any changes in :ref:`buildconf<buildconf>` leads to call of this command.
 
@@ -45,4 +45,4 @@ install
     In common it looks like classic ``make install``.
 
 uninstall
-    Removes the targets installed with command ``install``.
+    Removes the build targets installed with command ``install``.
