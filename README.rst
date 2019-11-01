@@ -19,7 +19,7 @@ Main features
 - Automatic reconfiguring: no need to run command 'configure'.
 - Compiler autodetection. (Thanks to Waf_)
 - Building and running functional/unit tests including a possibility to
-  build and run tests only on changes. Details are :ref:`here<buildtests>`.
+  build and run tests only on changes.
 - Running custom scripts during a build phase.
 - Supported platforms: GNU/Linux, MacOS, MS Windows. Some other
   platforms like OpenBSD/FreeBSD should be work as well but they
