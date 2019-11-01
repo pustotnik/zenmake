@@ -7,8 +7,8 @@ ZenMake
 |ProjectStatus|
 
 ZenMake is a build system based on the meta build system/framework Waf_.
-Main purpose of the project is to be as simple as possible to use
-but be flexible.
+The main purpose of ZenMake is to be be as simple to use as possible
+but remain flexible.
 
 Main features
 -------------
@@ -17,12 +17,13 @@ Main features
 - Distribution as zip application or as system package (pip).
 - Automatic build order and dependencies. (Thanks to Waf)
 - Automatic reconfiguring: no need to run command 'configure'.
-- Possibility to autodetect a compiler. (Thanks to Waf)
-- Building and running functional/unit tests including possibility to
-  build and run tests only on changes.
-- Running custom scripts during build phase.
-- Supported platforms: GNU/Linux, MacOS, MS Windows. Also some other
-  platforms like OpenBSD/FreeBSD should be supported but they aren't tested.
+- Compiler autodetection. (Thanks to Waf_)
+- Building and running functional/unit tests including a possibility to
+  build and run tests only on changes. Details are :ref:`here<buildtests>`.
+- Running custom scripts during a build phase.
+- Supported platforms: GNU/Linux, MacOS, MS Windows. Some other
+  platforms like OpenBSD/FreeBSD should be work as well but they
+  haven’t been tested.
 - Supported languages:
 
   - C: gcc, clang, msvc, icc, xlc, suncc, irixcc

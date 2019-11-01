@@ -27,8 +27,8 @@ build
     It calls ``configure`` itself if necessary.
 
 test
-    Builds and runs tests of the current directory. If no tests it's equal to
-    run ``build``. Command ``test`` builds and runs tests by default while
+    Builds and runs tests of the current directory. If no tests it's the same as running
+    ``build``. Command ``test`` builds and runs tests by default while
     command ``build`` doesn't.
 
 clean

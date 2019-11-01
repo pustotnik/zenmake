@@ -8,7 +8,7 @@ Quickstart guide
 To use ZenMake you need :ref:`ZenMake<installation>` and
 :ref:`buildconf<buildconf>` file in the root of your project.
 
-Let's consider an example with such a structure::
+Let's consider an example with this structure::
 
     testproject
     ├── buildconf.py
@@ -53,13 +53,13 @@ Lines  Description
 =====  =======================================================================
 1      Section with build tasks
 2,7    Names of build tasks. By default they are used as target names.
-       Resulting target names will be made depending on platform. For example,
-       on Windows 'program' will result to 'program.exe'.
+       Resulting target names will be adjusted depending on a platform.
+       For example, on Windows 'program' will result to 'program.exe'.
 3      Mark build task as a shared library.
 4      Specify all \*.cpp files in the directory 'shlib' recursively.
-5,10   Specify path for C/C++ headers relative to project root directory.
-       Actually here it's not necessary because ZenMake add project root
-       directory itself. But it's an example.
+5,10   Specify the path for C/C++ headers relative to the project root directory.
+       In this example, this parameter is optional as ZenMake adds the
+       project root directory itself. But it's an example.
 8      Mark build task as an executable.
 9      Specify all \*.cpp files in the directory 'prog' recursively.
 11     Specify task 'util' as dependency to task 'program'.
@@ -72,8 +72,8 @@ Lines  Description
        type was specifying for ZenMake command.
 =====  =======================================================================
 
-In case of using YAML the file ``buildconf.yaml`` with the same values for this
-case can be like that:
+In case of using YAML the file ``buildconf.yaml`` with the same values as above
+would look like this:
 
 .. code-block:: yaml
 
@@ -96,8 +96,8 @@ case can be like that:
         cxxflags  : -O2
       default : debug
 
-Then you can run ``zenmake`` in the root of project and ZenMake will build
-current project:
+Once you have the config, run ``zenmake`` in the root of the project and
+ZenMake does the build:
 
 .. code-block:: console
 
@@ -115,10 +115,10 @@ current project:
     'build' finished successfully (0.433s)
 
 Running ZenMake without any parameters in a directory with ``buildconf.py`` or
-``buildconf.yaml`` is equal to run ``zenmake build``. Otherwise it's equal to
-``zenmake help``.
+``buildconf.yaml`` is the same as running ``zenmake build``. Otherwise it's
+the same as ``zenmake help``.
 
-List of all commands with a short description can be gotten with
+Get the list of all commands with a short description using
 ``zenmake help`` or ``zenmake --help``. To get help on selected command you
 can use ``zenmake help <selected command>`` or
 ``zenmake <selected comman> --help``
@@ -143,5 +143,5 @@ be used:
 
 One of the effective and simple ways to learn something is to use
 real examples.
-Examples of projects can be found in repository `here <repo_demo_projects_>`_.
+Examples of projects can be found in the repository `here <repo_demo_projects_>`_.
 

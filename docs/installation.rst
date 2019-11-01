@@ -19,7 +19,7 @@ There are different ways to install/use ZenMake:
 
 Via python package (pip)
 ------------------------
-ZenMake has `own python package <pypipkg_>`_. So you can install it as::
+ZenMake has its `own python package <pypipkg_>`_. You can install it by::
 
     pip install zenmake
 
@@ -45,10 +45,10 @@ In this way pip will install PyYAML if it's not installed already.
     `here <https://pip.pypa.io/en/stable/installing/>`_.
 
 .. note::
-    You can install zenmake with pip and virtualenv_. In this case you don't
+    You can install ZenMake with pip and virtualenv_. In this case you don't
     touch system packages and it doesn't require root privileges.
 
-After installing you can run zenmake just by typing::
+After installing you can run ZenMake just by typing::
 
     zenmake
 
@@ -57,14 +57,14 @@ After installing you can run zenmake just by typing::
 Via git
 ----------
 
-You can use zenmake from Git repository. But branch ``master`` can be
-broken. Also you can just to switch to desirable version using git tag. Each
-version of zenmake has git tag. Body of zenmake application is located in
-``src/zenmake`` path in repository. So you don't needed other directories and
-files in repository and remove them if you want. Then you can make symlink
-to ``src/zenmake/zmrun.py``, shell alias or make callable
+You can use ZenMake from Git repository. But branch ``master`` can be
+broken. Also, you can just to switch to the required version using git tag. Each
+version of ZenMake has a git tag. The body of ZenMake application is located in
+``src/zenmake`` path in the repository. You don't need other directories and
+files in repository and you can remove them if you want. Then you can make symlink
+to ``src/zenmake/zmrun.py``, shell alias or make executable
 .sh script (for Linux/MacOS/..) or .bat (for Windows) to
-run zenmake. Example for Linux (``zmrepo`` is custom directory)::
+run ZenMake. Example for Linux (``zmrepo`` is custom directory)::
 
     $ mkdir zmrepo
     $ cd zmrepo
@@ -75,7 +75,7 @@ Next step is optional. Switch to existing version, for example to 0.7.0::
     $ git checkout v0.7.0
 
 Here you can make symlink/alias/script to run zenmake.
-Variants to run zenmake from current directory::
+Alternatives is to run ZenMake from the current directory::
 
     $ src/zenmake/zmrun.py
     $ python src/zenmake
@@ -86,8 +86,8 @@ Variants to run zenmake from current directory::
 
 As a zip application
 ------------------------
-Zenmake can be run as executable python zip application. And zenmake can make
-such zipapp itself with command ``zipapp``.
+Zenmake can be run as an executable python zip application. And ZenMake can make
+such zipapp with the command ``zipapp``.
 Using steps from `Via Git <installation-via-git_>`_ you can run::
 
     $ python src/zenmake zipapp
@@ -96,9 +96,9 @@ Using steps from `Via Git <installation-via-git_>`_ you can run::
     $ ./zenmake.pyz
     ...
 
-Resulting file ``zenmake.pyz`` can be used as is without repository and pip
-excepting PyYAML must be installed if you want to use yaml build configs.
-So you can copy ``zenmake.pyz`` in root of your project and distribute this
+Resulting file ``zenmake.pyz`` can be used without the repository and pip.
+However, PyYAML must be installed if you want to use yaml build configs.
+You can copy ``zenmake.pyz`` to the root of your project and distribute this
 file with your project. It can be used on any supported platform and doesn't
 require any additional access and changes in your system.
 
