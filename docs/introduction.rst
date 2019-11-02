@@ -11,7 +11,7 @@ ZenMake is a build system based on the meta build system/framework Waf_.
 The main purpose of ZenMake is to be be as simple to use as possible
 but remain flexible.
 
-My reasons to create this project can be found :ref:`here<why>`.
+Some reasons to create this project can be found :ref:`here<why>`.
 
 Main features
 -------------

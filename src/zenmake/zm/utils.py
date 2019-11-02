@@ -82,8 +82,14 @@ def unfoldPath(cwd, path):
 
     path = os.path.expandvars(path)
     path = os.path.expanduser(path)
-    path = os.path.abspath(path)
-    return os.path.normpath(path)
+    path = os.path.abspath(path) # abspath returns normalized absolutized version
+    return path
+
+def getNativePath(path):
+    """
+    Return native path from POSIX path
+    """
+    return path.replace('/', os.sep) if os.sep != '/' else path
 
 def mksymlink(src, dst, force = True):
     """

@@ -78,6 +78,9 @@ Here you can make symlink/alias/script to run zenmake.
 Alternatives is to run ZenMake from the current directory::
 
     $ src/zenmake/zmrun.py
+
+or::
+
     $ python src/zenmake
 
 .. note::

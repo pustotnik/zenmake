@@ -35,14 +35,20 @@ class BuildConfPaths(object):
         dirname    = os.path.dirname
         abspath    = os.path.abspath
         unfoldPath = utils.unfoldPath
+        getNative  = utils.getNativePath
+
+        buildroot     = getNative(conf.buildroot)
+        realbuildroot = getNative(conf.realbuildroot)
+        srcroot       = getNative(conf.srcroot)
+        projectroot   = getNative(conf.project['root'])
 
         self.buildconffile = abspath(conf.__file__)
         self.buildconfdir  = dirname(self.buildconffile)
-        self.buildroot     = unfoldPath(self.buildconfdir, conf.buildroot)
-        self.realbuildroot = unfoldPath(self.buildconfdir, conf.realbuildroot)
+        self.buildroot     = unfoldPath(self.buildconfdir, buildroot)
+        self.realbuildroot = unfoldPath(self.buildconfdir, realbuildroot)
         self.buildout      = joinpath(self.buildroot, BUILDOUTNAME)
-        self.projectroot   = unfoldPath(self.buildconfdir, conf.project['root'])
-        self.srcroot       = unfoldPath(self.buildconfdir, conf.srcroot)
+        self.projectroot   = unfoldPath(self.buildconfdir, projectroot)
+        self.srcroot       = unfoldPath(self.buildconfdir, srcroot)
 
         if not self.realbuildroot:
             self.realbuildroot = self.buildroot

@@ -49,8 +49,9 @@ some custom purposes.
     You can use native paths but it's recommended to use wherever possible
     POSIX paths (Symbol ``/`` is used as a separator in a path).
     With POSIX paths you will ensure the same paths on
-    different platforms/operation systems. On Windows POSIX paths will be
-    converted into windows paths automatically. But not vice versa.
+    different platforms/operation systems. POSIX paths will be
+    converted into native paths automatically. But not vice versa.
+    For example, path 'my/path' will be converted into 'my\\path' on Windows.
     Also it's recommended to use relative paths wherever possible.
 
 Below is the detailed description of each buildconf variable.
@@ -61,7 +62,7 @@ buildroot
     directory 'build' in the project root path. Path can be absolute or
     relative to directory where buildconf file is located. It is important
     to be able to remove the build directory safely, so it should never
-    be given as . or ...
+    be given as ``.`` or ``..``.
 
 realbuildroot
 """""""""""""
@@ -75,7 +76,8 @@ realbuildroot
     started with enabled "Create symbolic links" privilege and usual user
     doesn't have a such privilege. Path can be absolute or relative to
     directory where buildconf file is located. It is important to be able to
-    remove the build directory safely, so it should never be given as . or ...
+    remove the build directory safely, so it should never be given as ``.``
+    or ``..``.
 
 srcroot
 """""""
@@ -91,7 +93,7 @@ project
     :name: The name of the project. It's name of the project directory by default.
     :version: The version of the project. It's empty by default.
               It's used as default value for ``ver-num`` field if not empty.
-    :root: A path to the root of the project. It's '.' by default and in most
+    :root: A path to the root of the project. It's ``.`` by default and in most
            cases it shouldn't be changed. Path can be absolute or relative to
            directory where buildconf file is located.
 
@@ -119,8 +121,9 @@ tasks
 
         tasks:
           mylib :
-            ..
+            # some task parameters
           myexe :
+            # some task parameters
             use : mylib
 
     .. note::
