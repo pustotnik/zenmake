@@ -438,6 +438,19 @@ def loadToolchains(cfgCtx, buildconfHandler, copyFromEnv):
 
     return toolchainsEnvs
 
+def getTaskNamesWithDeps(tasks, names):
+    """
+    Gather all task names including tasks in 'use'
+    """
+    result = list(names)
+    for name in names:
+        params = tasks.get(name, {})
+        deps = params.get('use')
+        if deps:
+            result.extend(getTaskNamesWithDeps(tasks, utils.toList(deps)))
+
+    return result
+
 def detectConfTaskFeatures(taskParams):
     """
     Detect all features for task

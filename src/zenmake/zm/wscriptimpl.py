@@ -209,6 +209,8 @@ def build(bld):
 
     tasks = bld.env.alltasks[buildtype]
     allowedTasks = cli.selected.args.tasks
+    if allowedTasks:
+        allowedTasks = set(assist.getTaskNamesWithDeps(tasks, allowedTasks))
 
     for taskName, taskParams in viewitems(tasks):
 
