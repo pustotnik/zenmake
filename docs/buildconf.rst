@@ -82,8 +82,9 @@ realbuildroot
 srcroot
 """""""
     A path to the root directory for all source files to compile.
-    By default it's just root path of the project. Path can be absolute or
-    relative to directory where buildconf file is located.
+    By default it's root directory of the project (see ``root`` in the
+    variable project_). The path can be absolute or relative to directory
+    where buildconf file is located.
 
 project
 """""""
@@ -94,7 +95,7 @@ project
     :version: The version of the project. It's empty by default.
               It's used as default value for ``ver-num`` field if not empty.
     :root: A path to the root of the project. It's ``.`` by default and in most
-           cases it shouldn't be changed. Path can be absolute or relative to
+           cases it shouldn't be changed. The path can be absolute or relative to
            directory where buildconf file is located.
 
 features
