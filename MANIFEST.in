@@ -3,3 +3,4 @@ include src/zenmake/waf/waf-light
 include src/zenmake/version
 recursive-include src/zenmake *.py
 recursive-include tests *
+recursive-include demos *
