@@ -43,17 +43,16 @@ def prepareDirs(bconfPaths):
     from zm import assist
     assist.writeWScriptFile(bconfPaths.wscriptfile)
 
-def handleCLI(buildConfHandler, args, buildOnEmpty):
+def handleCLI(buildConfHandler, args, noBuildConf):
     """
     Handle CLI and return command object and waf cmd line
     """
     from zm import cli
 
-    defaults = {
-        '*' : dict( buildtype = buildConfHandler.defaultBuildType )
-    }
+    defaults = dict( buildtype = buildConfHandler.defaultBuildType )
+    defaults.update(buildConfHandler.options)
 
-    cmd, wafCmdLine = cli.parseAll(args, defaults, buildOnEmpty)
+    cmd, wafCmdLine = cli.parseAll(args, defaults, noBuildConf)
     cli.selected = cmd
     return cmd, wafCmdLine
 
@@ -121,7 +120,7 @@ def run():
     bconfPaths = bconfHandler.confPaths
     isBuildConfFake = assist.isBuildConfFake(buildconf)
 
-    cmd, wafCmdLine = handleCLI(bconfHandler, sys.argv, not isBuildConfFake)
+    cmd, wafCmdLine = handleCLI(bconfHandler, sys.argv, isBuildConfFake)
     if cmd.name in _indyCmd:
         return runIndyCmd(cmd)
 

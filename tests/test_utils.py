@@ -170,3 +170,13 @@ def testLoadPyModule(mocker):
 
 
     assert oldSysPath == sys.path
+
+def testGetNativePath(monkeypatch):
+
+    monkeypatch.setattr(os, 'sep', '/')
+    path = 'my/path/to/something'
+    assert utils.getNativePath(path) == path
+
+    monkeypatch.setattr(os, 'sep', '\\')
+    path = 'my/path/to/something'
+    assert utils.getNativePath(path) == path.replace('/', '\\')

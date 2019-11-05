@@ -23,6 +23,7 @@ Simplified scheme of buildconf:
     srcroot_ = path
     project_ = { ... }
     features_ = { ... }
+    options_ = { ... }
     tasks_ = { name: taskparams_ }
     buildtypes_ = { name: taskparams_ }
     toolchains_ = { name: parameters }
@@ -107,6 +108,25 @@ features
                  the command ``build`` if it's necessary.
                  It's ``True`` by default. Usually you don't need to change
                  this value.
+
+options
+""""""""
+    A `dict <buildconf-dict-def_>`_ array with default values for command
+    line options. It can be any existing command line option that ZenMake has.
+    If you want to set option for selected commands then you can set in format
+    of a `dict <buildconf-dict-def_>`_ where key is a name of command or
+    special value 'any' which means any command. If some command doesn't have
+    selected option then it will be ignored.
+    Example in YAML format:
+
+    .. code-block:: yaml
+
+        options:
+          verbose: 1
+          jobs : { build : 4 }
+          progress :
+            any: false
+            build: true
 
 tasks
 """""

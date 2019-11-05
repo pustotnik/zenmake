@@ -15,7 +15,8 @@ import pytest
 from zm.error import *
 from zm.constants import KNOWN_PLATFORMS
 import tests.common as cmn
-from zm.buildconf.validator import Validator, KNOWN_TOOLCHAIN_KINDS
+from zm.buildconf.scheme import KNOWN_TOOLCHAIN_KINDS
+from zm.buildconf.validator import Validator
 
 validator = Validator()
 

@@ -13,7 +13,7 @@ from collections import namedtuple, defaultdict
 # argparse from the https://pypi.org/project/argparse/ supports alieses
 from auxiliary.argparse import argparse
 from zm.constants import APPNAME, CAP_APPNAME, PLATFORM
-from zm.pyutils import viewitems
+from zm.pyutils import maptype, viewitems
 from zm import log
 from zm.error import ZenMakeLogicError
 from zm.autodict import AutoDict as _AutoDict
@@ -216,6 +216,9 @@ _options = [
     ),
 ]
 
+COMMAND_NAMES = ( x.name for x in _commands )
+OPTION_NAMES = ( x.names[-1].replace('-', '', 2) for x in _options )
+
 DEFAULT_PREFIX = '/usr/local/'
 if PLATFORM == 'windows':
     import tempfile
@@ -224,23 +227,17 @@ if PLATFORM == 'windows':
     DEFAULT_PREFIX = d[0].upper() + d[1:]
 
 _READY_OPT_DEFAULTS = {
-    '*' : {
-        'verbose': 0,
-        'color': os.environ.get('NOCOLOR', '') and 'no' or 'auto',
-        'build-tests': 'no',
-        'run-tests' : 'none',
-        'destdir' : os.environ.get('DESTDIR', ''),
-        'prefix' : os.environ.get('PREFIX', '') or DEFAULT_PREFIX,
-        'bindir' : os.environ.get('BINDIR', None),
-        'libdir' : os.environ.get('LIBDIR', None),
+    'verbose': 0,
+    'color': os.environ.get('NOCOLOR', '') and 'no' or 'auto',
+    'build-tests': { 'any': 'no',   'test' : 'yes' },
+    'run-tests'  : { 'any': 'none', 'test' : 'all' },
+    'destdir' : {
+        'any': os.environ.get('DESTDIR', ''),
+        'zipapp' : os.environ.get('DESTDIR', '.'),
     },
-    'test' : {
-        'build-tests': 'yes',
-        'run-tests' : 'all',
-    },
-    'zipapp' : {
-        'destdir' : os.environ.get('DESTDIR', '.'),
-    },
+    'prefix' : os.environ.get('PREFIX', '') or DEFAULT_PREFIX,
+    'bindir' : os.environ.get('BINDIR', None),
+    'libdir' : os.environ.get('LIBDIR', None),
 }
 
 class CmdLineParser(object):
@@ -258,10 +255,7 @@ class CmdLineParser(object):
 
         self._defaults = defaultdict(dict)
         self._defaults.update(_READY_OPT_DEFAULTS)
-        dkeys = set(list(self._defaults.keys()) + list(defaults.keys()))
-        for k in dkeys:
-            if k in defaults:
-                self._defaults[k].update(defaults[k])
+        self._defaults.update(defaults)
 
         self._options = []
         self._command = None
@@ -346,10 +340,11 @@ class CmdLineParser(object):
 
     def _getOptionDefault(self, opt, cmd  = None):
         optName = opt.names[-1].replace('-', '', 2)
-        cmd = '*' if cmd is None else cmd.name
-        defaultsAny = self._defaults['*']
-        defaults = self._defaults.get(cmd, defaultsAny)
-        return defaults.get(optName, defaultsAny.get(optName, None))
+        val = self._defaults.get(optName, None)
+        if isinstance(val, maptype):
+            cmd = 'any' if cmd is None else cmd.name
+            val = val.get(cmd, val.get('any', None))
+        return val
 
     @staticmethod
     def _joinCmdNameWithAlieses(cmd):
@@ -464,7 +459,7 @@ class CmdLineParser(object):
 
         self._wafCmdLine = cmdline
 
-    def parse(self, args = None, buildOnEmpty = False):
+    def parse(self, args = None, noBuildConf = True):
         """ Parse command line args """
 
         if args is None:
@@ -472,7 +467,7 @@ class CmdLineParser(object):
 
         # simple hack for default behavior if command is not defined
         if not args:
-            args = ['build'] if buildOnEmpty else ['help']
+            args = ['help'] if noBuildConf else ['build']
 
         # parse
         args = self._parser.parse_args(args)
@@ -500,7 +495,7 @@ class CmdLineParser(object):
         """
         return self._wafCmdLine
 
-def parseAll(args, defaults, buildOnEmpty):
+def parseAll(args, defaults, noBuildConf):
     """
     Parse all command line args with CmdLineParser and save selected
     command as object of ParsedCommand in global var 'selected' of this module.
@@ -508,6 +503,6 @@ def parseAll(args, defaults, buildOnEmpty):
     """
 
     parser = CmdLineParser(APPNAME, defaults)
-    cmd = parser.parse(args[1:], buildOnEmpty)
+    cmd = parser.parse(args[1:], noBuildConf)
 
     return cmd, parser.wafCmdLine

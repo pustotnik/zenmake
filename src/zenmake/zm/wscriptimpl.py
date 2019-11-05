@@ -25,7 +25,7 @@ from waflib.Build import BuildContext, InstallContext
 from zm.pyutils import viewitems
 from zm.utils import toList
 from zm import log, shared, cli, assist, error
-from zm.buildconf.validator import KNOWN_TASK_PARAM_NAMES
+from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
 
 # pylint: disable=unused-argument
 

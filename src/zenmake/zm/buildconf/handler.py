@@ -209,6 +209,11 @@ class BuildConfHandler(object):
         return self._conf.project['version']
 
     @property
+    def options(self):
+        """ Get cli options """
+        return self._conf.options
+
+    @property
     def confPaths(self):
         """ Get object of class BuildConfPaths """
         return self._confpaths

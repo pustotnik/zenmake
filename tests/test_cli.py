@@ -19,7 +19,7 @@ class TestSuite(object):
 
     @pytest.fixture(autouse = True)
     def setup(self):
-        self.defaults = { '*' : { 'buildtype': 'somedebug' } }
+        self.defaults = { 'buildtype': 'somedebug' }
         self.parser = cli.CmdLineParser('test', self.defaults)
 
     def _parseHelpArgs(self, args, capsys):
@@ -94,7 +94,7 @@ class TestSuite(object):
     def testCmdBuild(self):
 
         baseExpectedArgs = {
-            'buildtype' : self.defaults['*']['buildtype'],
+            'buildtype' : self.defaults['buildtype'],
             'jobs' : None,
             'configure': False,
             'color': 'auto',
@@ -196,7 +196,7 @@ class TestSuite(object):
     def testCmdTest(self):
 
         baseExpectedArgs = {
-            'buildtype' : self.defaults['*']['buildtype'],
+            'buildtype' : self.defaults['buildtype'],
             'jobs' : None,
             'configure': False,
             'color': 'auto',
@@ -295,7 +295,7 @@ class TestSuite(object):
     def testCmdConfigure(self):
 
         baseExpectedArgs = {
-            'buildtype' : self.defaults['*']['buildtype'],
+            'buildtype' : self.defaults['buildtype'],
             'color': 'auto',
             'distclean': False,
             'verbose': 0,
@@ -345,7 +345,7 @@ class TestSuite(object):
     def testCmdClean(self):
 
         baseExpectedArgs = {
-            'buildtype' : self.defaults['*']['buildtype'],
+            'buildtype' : self.defaults['buildtype'],
             'color': 'auto',
             'verbose': 0,
         }
@@ -451,7 +451,7 @@ class TestSuite(object):
     def checkCmdInstall(self, cmd):
 
         baseExpectedArgs = {
-            'buildtype' : self.defaults['*']['buildtype'],
+            'buildtype' : self.defaults['buildtype'],
             'jobs' : None,
             'color': 'auto',
             'configure': False,

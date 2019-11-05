@@ -47,6 +47,10 @@ def initDefaults(buildconf):
     params = buildconf.features
     params['autoconfig'] = params.get('autoconfig', True)
 
+    # options
+    if not hasattr(buildconf, 'options'):
+        setattr(buildconf, 'options', {})
+
     # project
     if not hasattr(buildconf, 'project'):
         setattr(buildconf, 'project', {})
