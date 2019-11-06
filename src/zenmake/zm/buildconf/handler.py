@@ -4,8 +4,6 @@
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
  license: BSD 3-Clause License, see LICENSE for more details.
-
- There are functions and classes specific to process with our wscript.
 """
 
 import os
@@ -20,12 +18,7 @@ from zm.constants import PLATFORM, TASK_FEATURES_LANGS, TASK_WAF_FEATURES_MAP
 
 joinpath = os.path.join
 
-def _getBuildTypeFromCLI(clicmd):
-    if not clicmd or not clicmd.args.buildtype:
-        return ''
-    return clicmd.args.buildtype
-
-class BuildConfHandler(object):
+class ConfHandler(object):
     """
     Class to handle data from buildconf
     """
@@ -34,8 +27,6 @@ class BuildConfHandler(object):
 
     def __init__(self, conf):
 
-        self.cmdLineHandled = False
-
         self._conf = conf
         self._platforms = self._conf.platforms
 
@@ -43,8 +34,10 @@ class BuildConfHandler(object):
         # just in case
         self._meta.buildtypes = AutoDict()
 
-        from zm.buildconf.paths import BuildConfPaths
-        self._confpaths = BuildConfPaths(conf)
+        self._meta.buildtypes.selected = None
+
+        from zm.buildconf.paths import ConfPaths
+        self._confpaths = ConfPaths(conf)
         self._preprocess()
 
     def _preprocess(self):
@@ -167,17 +160,15 @@ class BuildConfHandler(object):
 
         self._meta.buildtypes.default = buildtype
 
-    def _checkCmdLineHandled(self):
-        if not self.cmdLineHandled:
-            raise ZenMakeLogicError("Command line args wasn't handled yet. "
-                                    "You should call method handleCmdLineArgs.")
+    def _checkBuildTypeIsSet(self):
+        if self._meta.buildtypes.selected is None:
+            raise ZenMakeLogicError("Command line buildtype wasn't applied yet. "
+                                    "You should call method applyBuildType.")
 
-    def handleCmdLineArgs(self, clicmd):
+    def applyBuildType(self, buildtype):
         """
-        Apply values from command line
+        Apply buildtype from command line
         """
-
-        buildtype = _getBuildTypeFromCLI(clicmd)
 
         supportedBuildTypes = self.supportedBuildTypes
         if buildtype not in supportedBuildTypes:
@@ -191,7 +182,6 @@ class BuildConfHandler(object):
 
         self._meta.buildtypes.selected = buildtype
         self._meta.buildtype.dir = joinpath(self._confpaths.buildout, buildtype)
-        self.cmdLineHandled = True
 
     @property
     def conf(self):
@@ -215,7 +205,7 @@ class BuildConfHandler(object):
 
     @property
     def confPaths(self):
-        """ Get object of class BuildConfPaths """
+        """ Get object of class buildconf.paths.ConfPaths """
         return self._confpaths
 
     @property
@@ -232,14 +222,14 @@ class BuildConfHandler(object):
     def selectedBuildType(self):
         """ Get selected build type """
 
-        self._checkCmdLineHandled()
+        self._checkBuildTypeIsSet()
         return self._meta.buildtypes.selected
 
     @property
     def selectedBuildTypeDir(self):
         """ Get selected build type directory """
 
-        self._checkCmdLineHandled()
+        self._checkBuildTypeIsSet()
         return self._meta.buildtype.dir
 
     @property
@@ -248,7 +238,7 @@ class BuildConfHandler(object):
         Get all handled build tasks
         """
 
-        self._checkCmdLineHandled()
+        self._checkBuildTypeIsSet()
 
         buildtype = self.selectedBuildType
         if buildtype in self._meta.tasks:
@@ -310,7 +300,7 @@ class BuildConfHandler(object):
         if 'names' in self._meta.toolchains:
             return self._meta.toolchains.names
 
-        self._checkCmdLineHandled()
+        self._checkBuildTypeIsSet()
 
         # gather unique names
         _toolchains = set()

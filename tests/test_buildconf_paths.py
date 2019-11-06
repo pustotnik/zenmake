@@ -12,14 +12,14 @@ import os
 import pytest
 from tests.common import asRealConf
 from zm import utils
-from zm.buildconf.paths import BuildConfPaths
+from zm.buildconf.paths import ConfPaths
 from zm.constants import *
 
 joinpath = os.path.join
 
 def testAll(testingBuildConf):
     fakeBuildConf = testingBuildConf
-    bcpaths = BuildConfPaths(asRealConf(fakeBuildConf))
+    bcpaths = ConfPaths(asRealConf(fakeBuildConf))
 
     dirname    = os.path.dirname
     abspath    = os.path.abspath

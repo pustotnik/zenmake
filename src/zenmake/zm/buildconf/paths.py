@@ -4,8 +4,6 @@
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
  license: BSD 3-Clause License, see LICENSE for more details.
-
- There are functions and classes specific to process with our wscript.
 """
 
 import os
@@ -17,7 +15,7 @@ from zm.constants import WAF_CACHE_DIRNAME, WAF_CACHE_NAMESUFFIX, \
 
 joinpath = os.path.join
 
-class BuildConfPaths(object):
+class ConfPaths(object):
     """
     Class to calculate different paths depending on buildconf
     """
@@ -38,20 +36,25 @@ class BuildConfPaths(object):
         getNative  = utils.getNativePath
 
         buildroot     = getNative(conf.buildroot)
-        realbuildroot = getNative(conf.realbuildroot)
         srcroot       = getNative(conf.srcroot)
         projectroot   = getNative(conf.project['root'])
+
+        if not hasattr(conf, 'realbuildroot') or not conf.realbuildroot:
+            realbuildroot = buildroot
+        else:
+            realbuildroot = getNative(conf.realbuildroot)
 
         self.buildconffile = abspath(conf.__file__)
         self.buildconfdir  = dirname(self.buildconffile)
         self.buildroot     = unfoldPath(self.buildconfdir, buildroot)
-        self.realbuildroot = unfoldPath(self.buildconfdir, realbuildroot)
         self.buildout      = joinpath(self.buildroot, BUILDOUTNAME)
         self.projectroot   = unfoldPath(self.buildconfdir, projectroot)
         self.srcroot       = unfoldPath(self.buildconfdir, srcroot)
 
-        if not self.realbuildroot:
+        if realbuildroot == buildroot:
             self.realbuildroot = self.buildroot
+        else:
+            self.realbuildroot = unfoldPath(self.buildconfdir, realbuildroot)
 
         # TODO: add as option
         #self.wscripttop    = self.buildroot

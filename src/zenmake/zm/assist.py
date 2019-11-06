@@ -751,9 +751,9 @@ def isBuildConfChanged(conf):
     Returns True if it's changed or file just doesn't exist.
     """
 
-    from zm.buildconf.paths import BuildConfPaths
+    from zm.buildconf.paths import ConfPaths
     try:
-        bconfPaths = BuildConfPaths(conf)
+        bconfPaths = ConfPaths(conf)
     except AttributeError:
         return True
 

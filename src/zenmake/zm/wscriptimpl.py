@@ -22,7 +22,7 @@ import os
 
 from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext, InstallContext
-from zm.pyutils import viewitems
+from zm.pyutils import stringtype, viewitems
 from zm.utils import toList
 from zm import log, shared, cli, assist, error
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
@@ -55,7 +55,10 @@ def init(ctx):
     It's called by Waf before all other commands but after 'options'
     """
 
-    shared.buildConfHandler.handleCmdLineArgs(cli.selected)
+    buildtype = cli.selected.args.buildtype
+    if not buildtype and not isinstance(buildtype, stringtype):
+        buildtype = ''
+    shared.buildConfHandler.applyBuildType(buildtype)
 
     buildtype = shared.buildConfHandler.selectedBuildType
 

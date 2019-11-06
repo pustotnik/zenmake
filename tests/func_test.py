@@ -26,7 +26,7 @@ from zm import starter
 from zm import pyutils, assist, cli, utils, zipapp, version
 from zm.autodict import AutoDict
 from zm.buildconf import loader as bconfloader
-from zm.buildconf.handler import BuildConfHandler
+from zm.buildconf.handler import ConfHandler as BuildConfHandler
 from zm.constants import ZENMAKE_CMN_CFGSET_FILENAME, PLATFORM, APPNAME
 from zm.constants import TASK_WAF_MAIN_FEATURES
 from zm.toolchains import CompilersInfo
@@ -173,7 +173,7 @@ def processConfHandlerWithCLI(testSuit, cmdLine):
     cmdLine = list(cmdLine)
     cmdLine.insert(0, APPNAME)
     cmd, _ = starter.handleCLI(testSuit.confHandler, cmdLine, True)
-    testSuit.confHandler.handleCmdLineArgs(cmd)
+    testSuit.confHandler.applyBuildType(cmd.args.buildtype)
 
 def getTaskEnv(testSuit, taskName):
     buildtype = testSuit.confHandler.selectedBuildType

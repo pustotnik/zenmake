@@ -89,6 +89,8 @@ def getNativePath(path):
     """
     Return native path from POSIX path
     """
+    if not path:
+        return path
     return path.replace('/', os.sep) if os.sep != '/' else path
 
 def mksymlink(src, dst, force = True):

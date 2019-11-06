@@ -49,8 +49,8 @@ def handleCLI(buildConfHandler, args, noBuildConf):
     """
     from zm import cli
 
-    defaults = dict( buildtype = buildConfHandler.defaultBuildType )
-    defaults.update(buildConfHandler.options)
+    defaults = dict(buildConfHandler.options)
+    defaults.update(dict(buildtype = buildConfHandler.defaultBuildType))
 
     cmd, wafCmdLine = cli.parseAll(args, defaults, noBuildConf)
     cli.selected = cmd
@@ -106,7 +106,7 @@ def run():
     # process buildconf and CLI
     from zm import log, assist, error, shared
     from zm.buildconf import loader as bconfLoader
-    from zm.buildconf.handler import BuildConfHandler
+    from zm.buildconf.handler import ConfHandler as BuildConfHandler
 
     try:
         buildconf = bconfLoader.load(check = False, dirpath = os.getcwd())

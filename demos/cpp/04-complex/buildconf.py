@@ -1,6 +1,6 @@
 
 options = {
-    'color': 'no',
+    #'color': 'no',
     'jobs' : { 'build' : 4 },
     'progress' : {'any': False, 'build': True },
 }
