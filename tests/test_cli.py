@@ -9,6 +9,7 @@
 """
 
 import sys
+import os
 from copy import deepcopy
 import pytest
 import tests.common as cmn
@@ -108,6 +109,7 @@ class TestSuite(object):
             'bindir' : None,
             'libdir' : None,
             'prefix' : cli.DEFAULT_PREFIX,
+            'buildroot' : None,
         }
 
         CMDNAME = 'build'
@@ -152,7 +154,7 @@ class TestSuite(object):
             dict(
                 args = [CMDNAME, '--distclean'],
                 expectedArgsUpdate = {'distclean': True},
-                wafArgs = [CMDNAME] + CMNOPTS,
+                wafArgs = ['distclean', CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--build-tests', 'yes'],
@@ -189,6 +191,11 @@ class TestSuite(object):
                 expectedArgsUpdate = {'tasks': ['sometask', 'anothertask']},
                 wafArgs = [CMDNAME] + CMNOPTS,
             ),
+            dict(
+                args = [CMDNAME, '--buildroot', 'somedir'],
+                expectedArgsUpdate = {'buildroot' : 'somedir'},
+                wafArgs = [CMDNAME] + CMNOPTS,
+            ),
         ]
 
         self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
@@ -207,6 +214,7 @@ class TestSuite(object):
             'verbose': 0,
             'buildTests': True,
             'runTests': 'all',
+            'buildroot' : None,
         }
 
         CMDNAME = 'test'
@@ -251,7 +259,7 @@ class TestSuite(object):
             dict(
                 args = [CMDNAME, '--distclean'],
                 expectedArgsUpdate = {'distclean': True},
-                wafArgs = ['build', CMDNAME] + CMNOPTS,
+                wafArgs = ['distclean', 'build', CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--build-tests', 'no'],
@@ -288,6 +296,11 @@ class TestSuite(object):
                 expectedArgsUpdate = {'tasks': ['sometask', 'anothertask']},
                 wafArgs = ['build', CMDNAME] + CMNOPTS,
             ),
+            dict(
+                args = [CMDNAME, '--buildroot', os.getcwd()],
+                expectedArgsUpdate = {'buildroot' : os.getcwd()},
+                wafArgs = ['build', CMDNAME] + CMNOPTS,
+            ),
         ]
 
         self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
@@ -302,6 +315,7 @@ class TestSuite(object):
             'bindir' : None,
             'libdir' : None,
             'prefix' : cli.DEFAULT_PREFIX,
+            'buildroot' : None,
         }
 
         CMDNAME = 'configure'
@@ -321,7 +335,7 @@ class TestSuite(object):
             dict(
                 args = [CMDNAME, '--distclean'],
                 expectedArgsUpdate = {'distclean': True},
-                wafArgs = [CMDNAME] + CMNOPTS,
+                wafArgs = ['distclean', CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--verbose'],
@@ -338,6 +352,11 @@ class TestSuite(object):
                 expectedArgsUpdate = {'color': 'no'},
                 wafArgs = [CMDNAME, '--color=no'] + CMNOPTS[1:],
             ),
+            dict(
+                args = [CMDNAME, '--buildroot', os.getcwd()],
+                expectedArgsUpdate = {'buildroot' : os.getcwd()},
+                wafArgs = [CMDNAME] + CMNOPTS,
+            ),
         ]
 
         self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
@@ -348,6 +367,7 @@ class TestSuite(object):
             'buildtype' : self.defaults['buildtype'],
             'color': 'auto',
             'verbose': 0,
+            'buildroot' : None,
         }
 
         CMDNAME = 'clean'
@@ -379,6 +399,11 @@ class TestSuite(object):
                 expectedArgsUpdate = {'color': 'no'},
                 wafArgs = [CMDNAME, '--color=no'],
             ),
+            dict(
+                args = [CMDNAME, '--buildroot', os.getcwd()],
+                expectedArgsUpdate = {'buildroot' : os.getcwd()},
+                wafArgs = [CMDNAME] + CMNOPTS,
+            ),
         ]
 
         self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
@@ -388,6 +413,7 @@ class TestSuite(object):
         baseExpectedArgs = {
             'color': 'auto',
             'verbose': 0,
+            'buildroot' : None,
         }
 
         CMDNAME = 'distclean'
@@ -413,6 +439,11 @@ class TestSuite(object):
                 args = [CMDNAME, '--color', 'no'],
                 expectedArgsUpdate = {'color': 'no'},
                 wafArgs = [CMDNAME, '--color=no'],
+            ),
+            dict(
+                args = [CMDNAME, '--buildroot', os.getcwd()],
+                expectedArgsUpdate = {'buildroot' : os.getcwd()},
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
         ]
 
@@ -463,6 +494,7 @@ class TestSuite(object):
             'bindir' : None,
             'libdir' : None,
             'prefix' : cli.DEFAULT_PREFIX,
+            'buildroot' : None,
         }
 
         if cmd == 'uninstall':
@@ -502,6 +534,11 @@ class TestSuite(object):
                 args = [CMDNAME, '--color', 'no'],
                 expectedArgsUpdate = {'color': 'no'},
                 wafArgs = [CMDNAME, '--color=no'] + CMNOPTS[1:],
+            ),
+            dict(
+                args = [CMDNAME, '--buildroot', os.getcwd()],
+                expectedArgsUpdate = {'buildroot' : os.getcwd()},
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
         ]
 

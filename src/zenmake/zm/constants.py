@@ -15,9 +15,12 @@ COPYRIGHT_ONE_LINE = '2019, %s' % AUTHOR
 BUILDOUTNAME = 'out'
 WAF_CACHE_DIRNAME = 'c4che'
 WAF_CACHE_NAMESUFFIX = '_cache.py'
+WAF_LOCKFILE = '.lock-wafbuild'
 ZENMAKE_CACHE_NAMESUFFIX = '.%s.py' % APPNAME
 ZENMAKE_CMN_CFGSET_FILENAME = '.%s-common' % APPNAME
-WSCRIPT_NAME = 'zmwscript'
+BUILDCONF_NAME = 'buildconf'
+BUILDCONF_EXTS = ['.py', '.yaml', '.yml']
+BUILDCONF_FILENAMES = ['%s%s' % (BUILDCONF_NAME, x) for x in BUILDCONF_EXTS]
 
 TASK_WAF_ALIESES = ('stlib', 'shlib', 'program', 'objects')
 TASK_WAF_FEATURES_MAP = {

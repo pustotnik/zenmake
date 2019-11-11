@@ -334,4 +334,8 @@ class Validator(object):
                 allowed.remove('default')
             btypesVars['default']['allowed'] = allowed
 
-        self._validate(_conf, _scheme, conf.__name__)
+        try:
+            self._validate(_conf, _scheme, conf.__name__)
+        except ZenMakeConfError as ex:
+            ex.msg = "Error in file %r:\n%s" % (conf.__file__, ex.msg)
+            raise ex

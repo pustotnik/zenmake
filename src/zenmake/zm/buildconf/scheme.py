@@ -186,3 +186,4 @@ confscheme = {
 }
 
 KNOWN_TASK_PARAM_NAMES = taskscheme.keys()
+KNOWN_CONF_PARAM_NAMES = confscheme.keys()

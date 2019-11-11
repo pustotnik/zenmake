@@ -8,7 +8,7 @@
 
 __all__ = [
     'validate',
-    'initDefaults',
+    'applyDefaults',
     'load',
 ]
 
@@ -16,10 +16,14 @@ import os
 import sys
 
 from zm import log
+from zm.constants import BUILDCONF_FILENAMES
 from zm.error import ZenMakeConfError
 from zm.pyutils import maptype, viewitems
 from zm.utils import loadPyModule
 from zm.buildconf.validator import Validator as _Validator
+
+isfile = os.path.isfile
+joinpath = os.path.join
 
 def validate(buildconf):
     """
@@ -34,7 +38,7 @@ def validate(buildconf):
         log.error(str(ex))
         sys.exit(1)
 
-def initDefaults(buildconf):
+def applyDefaults(buildconf):
     """
     Set default values to some params in buildconf if they don't exist
     """
@@ -87,8 +91,9 @@ def initDefaults(buildconf):
     if not hasattr(buildconf, 'buildroot'):
         setattr(buildconf, 'buildroot',
                 os.path.join(buildconf.project['root'], 'build'))
-    if not hasattr(buildconf, 'realbuildroot'):
-        setattr(buildconf, 'realbuildroot', buildconf.buildroot)
+
+    # Param 'realbuildroot' must not be set here
+
     if not hasattr(buildconf, 'srcroot'):
         setattr(buildconf, 'srcroot', buildconf.project['root'])
 
@@ -123,47 +128,58 @@ def _loadYaml(filepath):
         setattr(buildconf, k, v)
     return buildconf
 
-def load(name = 'buildconf', dirpath = None, check = True):
+def findConfFile(dpath, fname = None):
+    """
+    Try to find buildconf file.
+    Returns filename if found or None
+    """
+    if fname:
+        if isfile(joinpath(dpath, fname)):
+            return fname
+        return None
+
+    for name in BUILDCONF_FILENAMES:
+        if isfile(joinpath(dpath, name)):
+            return name
+    return None
+
+def load(dirpath = None, filename = None, withDefaults = True, check = True):
     """
     Load buildconf.
     Param 'dirpath' is optional param that is used as directory
     with buildconf file.
     """
 
-    isfile = os.path.isfile
-    joinpath = os.path.join
-    filenamePy = '%s.py' % name
-    filenameYaml = '%s.yaml' % name
-    found = None
     if not dirpath:
         # try to find config file
         for path in sys.path:
-            if isfile(joinpath(path, filenamePy)):
+            _filename = findConfFile(path, filename)
+            if _filename:
                 dirpath = path
-                found = 'py'
+                filename = _filename
                 break
-            if isfile(joinpath(path, filenameYaml)):
-                dirpath = path
-                found = 'yaml'
-                break
+        else:
+            filename = None
     else:
-        if isfile(joinpath(dirpath, filenamePy)):
-            found = 'py'
-        elif isfile(joinpath(dirpath, filenameYaml)):
-            found = 'yaml'
+        filename = findConfFile(dirpath, filename)
+
+    found = None
+    if filename:
+        found = 'py' if filename.endswith('.py') else 'yaml'
 
     if found == 'py':
         # Avoid writing .pyc files
         sys.dont_write_bytecode = True
-        module = loadPyModule(name, dirpath = dirpath, withImport = False)
+        module = loadPyModule(filename[:-3], dirpath = dirpath, withImport = False)
         sys.dont_write_bytecode = False # pragma: no cover
     elif found == 'yaml':
-        module = _loadYaml(joinpath(dirpath, filenameYaml))
+        module = _loadYaml(joinpath(dirpath, filename))
     else:
         module = loadPyModule('zm.buildconf.fakeconf')
 
     if check:
         validate(module)
-    initDefaults(module)
+    if withDefaults:
+        applyDefaults(module)
 
     return module

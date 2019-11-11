@@ -10,11 +10,13 @@ import os
 import sys
 import subprocess
 
-from waflib import Options, Context, Configure, Scripting, Utils
+from waflib import Options, Context, Configure, Utils
 from waflib.ConfigSet import ConfigSet
-from zm import log, assist, utils
+from zm.constants import BUILDCONF_FILENAMES
+from zm import log, assist, utils, error, wscriptimpl
 from zm.pyutils import stringtype
 from zm.pypkg import PkgPath
+from zm.waf import launcher
 
 joinpath = os.path.join
 
@@ -23,10 +25,14 @@ joinpath = os.path.join
 Configure.autoconfig = False
 
 def _areBuildTypesNotConfigured(clicmd, bconfHandler):
-    buildconf = bconfHandler.conf
+
+    from zm.buildconf.utils import gatherAllTaskNames
+
     buildtype = clicmd.args.buildtype
     zmcachedir = bconfHandler.confPaths.zmcachedir
-    for taskName in buildconf.tasks:
+
+    allTaskNames = gatherAllTaskNames(bconfHandler.conf)
+    for taskName in allTaskNames:
         taskVariant = assist.makeTaskVariantName(buildtype, taskName)
         fname = assist.makeCacheConfFileName(zmcachedir, taskVariant)
         if not os.path.exists(fname):
@@ -60,7 +66,7 @@ def _handleNoLockInTop(ctx, envGetter):
 
     # It's needed to rerun command to apply changes in Context otherwise
     # Waf won't work correctly.
-    Scripting.run_command(ctx.cmd)
+    launcher.runCommand(ctx.cmd)
     return True
 
 def wrapBldCtxNoLockInTop(bconfHandler, method):
@@ -84,8 +90,8 @@ def wrapBldCtxAutoConf(clicmd, bconfHandler, method):
     """
 
     def runConfigAndCommand(self, env):
-        Scripting.run_command(env.config_cmd or 'configure')
-        Scripting.run_command(self.cmd)
+        launcher.runCommand(env.config_cmd or 'configure')
+        launcher.runCommand(self.cmd)
 
     def execute(self):
 
@@ -123,7 +129,7 @@ def wrapBldCtxAutoConf(clicmd, bconfHandler, method):
             runConfigAndCommand(self, ConfigSet())
             return
 
-        if env.run_dir != bconfPaths.wscriptdir:
+        if env.run_dir != bconfPaths.buildconfdir:
             runConfigAndCommand(self, env)
             return
 
@@ -169,12 +175,12 @@ def wrapUtilsGetProcess(_):
 
 def getFileExtensions(src):
     """
-	Returns the file extensions for the list of files given as input
+    Returns the file extensions for the list of files given as input
 
-	:param src: files to process
-	:list src: list of string or :py:class:`waflib.Node.Node`
-	:return: list of file extensions
-	:rtype: set of strings
+    :param src: files to process
+    :list src: list of string or :py:class:`waflib.Node.Node`
+    :return: list of file extensions
+    :rtype: set of strings
 	"""
 
     # This implementation gives more optimal result for using in
@@ -187,10 +193,75 @@ def getFileExtensions(src):
         ret.add(path[path.rfind('.') + 1:])
     return ret
 
+def wrapCtxRecurse():
+    """
+    Wrap Context.Context.recurse to work correctly without 'wscript'.
+    """
+
+    #pylint: disable=too-many-arguments,unused-argument
+    def execute(self, dirs, name = None, mandatory = True, once = True, encoding = None):
+
+        try:
+            cache = self.recurseCache
+        except AttributeError:
+            cache = self.recurseCache = {}
+
+        for dirpath in utils.toList(dirs):
+
+            if not os.path.isabs(dirpath):
+                # absolute paths only
+                dirpath = joinpath(self.path.abspath(), dirpath)
+
+            # try to find buildconf
+            for fname in BUILDCONF_FILENAMES:
+                node = self.root.find_node(joinpath(dirpath, fname))
+                if node:
+                    break
+            else:
+                continue
+
+            tup = (node, name or self.fun)
+            if once and tup in cache:
+                continue
+
+            cache[tup] = True
+            self.pre_recurse(node)
+            try:
+                # try to find function for command
+                func = getattr(wscriptimpl, (name or self.fun), None)
+                if not func:
+                    if not mandatory:
+                        continue
+                    errmsg = 'No function %r defined in %s' % \
+                                (name or self.fun, wscriptimpl.__file__)
+                    raise error.ZenMakeError(errmsg)
+                # call function for command
+                func(self)
+            finally:
+                self.post_recurse(node)
+
+    return execute
+
+def wrapCfgCtxPostRecurse():
+    """
+    Wrap Configure.ConfigurationContext.post_recurse to avoid some actions.
+    It's mostly for performance
+    """
+
+    def execute(self, node):
+        super(Configure.ConfigurationContext, self).post_recurse(node)
+        self.hash = 0
+        self.files = []
+
+    return execute
+
 def setupAll(cmd, bconfHandler):
     """ Setup all wrappers for Waf """
 
     Utils.get_process = wrapUtilsGetProcess(Utils.get_process)
+
+    Context.Context.recurse = wrapCtxRecurse()
+    Configure.ConfigurationContext.post_recurse = wrapCfgCtxPostRecurse()
 
     from waflib import Build
 

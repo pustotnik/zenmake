@@ -9,15 +9,11 @@
 import sys
 import os
 from os import path
-import atexit
 if sys.hexversion < 0x2070000:
     raise ImportError('Python >= 2.7 is required')
 
 #pylint: disable=wrong-import-position
-from waflib import Context
-from zm import WAF_DIR
-from zm.constants import WSCRIPT_NAME
-Context.WSCRIPT_FILE = WSCRIPT_NAME
+from zm.constants import WAF_LOCKFILE
 
 joinpath = path.join
 
@@ -27,32 +23,19 @@ _indyCmd = {
     'sysinfo' : 'zm.sysinfo',
 }
 
-def prepareDirs(bconfPaths):
-    """
-    Prepare some paths for correct work
-    """
-    from zm import utils
-
-    buildroot     = bconfPaths.buildroot
-    realbuildroot = bconfPaths.realbuildroot
-    if not path.exists(realbuildroot):
-        os.makedirs(realbuildroot)
-    if buildroot != realbuildroot and not path.exists(buildroot):
-        utils.mksymlink(realbuildroot, buildroot)
-
-    from zm import assist
-    assist.writeWScriptFile(bconfPaths.wscriptfile)
-
-def handleCLI(buildConfHandler, args, noBuildConf):
+def handleCLI(args, noBuildConf, bconfHandler):
     """
     Handle CLI and return command object and waf cmd line
     """
     from zm import cli
 
-    defaults = dict(buildConfHandler.options)
-    defaults.update(dict(buildtype = buildConfHandler.defaultBuildType))
+    if bconfHandler:
+        defaults = dict(bconfHandler.options)
+        defaults.update(dict(buildtype = bconfHandler.defaultBuildType))
+    else:
+        defaults = {}
 
-    cmd, wafCmdLine = cli.parseAll(args, defaults, noBuildConf)
+    cmd, wafCmdLine = cli.parseAll(args, noBuildConf, defaults)
     cli.selected = cmd
     return cmd, wafCmdLine
 
@@ -69,18 +52,66 @@ def runIndyCmd(cmd):
     """
 
     from zm.utils import loadPyModule
-    from zm import log, error
-    verbose = cmd.args.verbose
 
     if cmd.name not in _indyCmd:
         raise NotImplementedError('Unknown command')
 
     moduleName = _indyCmd[cmd.name]
+    module = loadPyModule(moduleName, withImport = True)
+    return module.Command().run(cmd.args)
+
+def run():
+    """
+    Prepare and run ZenMake and Waf with ZenMake stuffs
+    """
+
+    # use of Options.lockfile is not enough
+    os.environ['WAFLOCK'] = WAF_LOCKFILE
+    from waflib import Options
+    Options.lockfile = WAF_LOCKFILE
+
+    # process buildconf and CLI
+    from zm import log, assist, error, shared
+    from zm.buildconf import loader as bconfLoader
+    from zm.buildconf.handler import ConfHandler as BuildConfHandler
+
+    noBuildConf = True
+    cwd = os.getcwd()
+    cmd = None
 
     try:
-        module = loadPyModule(moduleName, withImport = True)
-        return module.Command().run(cmd.args)
+        # We cannot to know if buildconf is changed if buildroot is unknown.
+        # Information about it is stored in the file that is located in buildroot.
+        # But buildroot can be set on the command line and we must to parse CLI
+        # before processing of buildconf.
+
+        bconfFileName = bconfLoader.findConfFile(cwd)
+        noBuildConf = bconfFileName is None
+        cmd, wafCmdLine = handleCLI(sys.argv, noBuildConf, None)
+
+        if cmd.name in _indyCmd:
+            return runIndyCmd(cmd)
+
+        if noBuildConf:
+            log.error('Config buildconf.py/.yaml not found. Check one '
+                      'exists in the project directory.')
+            return 1
+
+        cliBuildRoot = cmd.args.get('buildroot', None)
+        buildconf = bconfLoader.load(check = False, dirpath = cwd,
+                                     filename = bconfFileName)
+        if assist.isBuildConfChanged(buildconf, cliBuildRoot) or isDevVersion():
+            bconfLoader.validate(buildconf)
+        bconfHandler = BuildConfHandler(buildconf, cliBuildRoot)
+
+        if bconfHandler.options or not ('buildtype' in cmd.args and cmd.args.buildtype):
+            # Do parsing of CLI again to apply defaults from buildconf
+            cmd, wafCmdLine = handleCLI(sys.argv, noBuildConf, bconfHandler)
+
     except error.ZenMakeError as ex:
+        verbose = 0
+        if cmd:
+            verbose = cmd.args.verbose
         if verbose > 1:
             log.pprint('RED', ex.fullmsg)
         log.error(ex.msg)
@@ -89,83 +120,18 @@ def runIndyCmd(cmd):
         log.pprint('RED', 'Interrupted')
         sys.exit(68)
 
-def run():
-    """
-    Prepare and run ZenMake and Waf with ZenMake stuffs
-    """
-
-    # When set to a non-empty value, the process will not search for a build
-    # configuration in upper folders.
-    os.environ['NOCLIMB'] = '1'
-
-    # use of Options.lockfile is not enough
-    os.environ['WAFLOCK'] = '.lock-wafbuild'
-    from waflib import Options
-    Options.lockfile = '.lock-wafbuild'
-
-    # process buildconf and CLI
-    from zm import log, assist, error, shared
-    from zm.buildconf import loader as bconfLoader
-    from zm.buildconf.handler import ConfHandler as BuildConfHandler
-
-    try:
-        buildconf = bconfLoader.load(check = False, dirpath = os.getcwd())
-        if assist.isBuildConfChanged(buildconf) or isDevVersion():
-            bconfLoader.validate(buildconf)
-        bconfHandler = BuildConfHandler(buildconf)
-    except error.ZenMakeError as ex:
-        log.error(ex.msg)
-        sys.exit(1)
     shared.buildConfHandler = bconfHandler
     bconfPaths = bconfHandler.confPaths
-    isBuildConfFake = assist.isBuildConfFake(buildconf)
-
-    cmd, wafCmdLine = handleCLI(bconfHandler, sys.argv, isBuildConfFake)
-    if cmd.name in _indyCmd:
-        return runIndyCmd(cmd)
-
-    if isBuildConfFake:
-        log.error('Config buildconf.py not found. Check buildconf.py '
-                  'exists in the project directory.')
-        return 1
-
-    # Special case for 'distclean'
-    if cmd.name == 'distclean':
-        assist.distclean(bconfPaths)
-        return 0
-
-    if cmd.args.distclean:
-        assist.distclean(bconfPaths)
-
-    prepareDirs(bconfPaths)
 
     # Load waf add-ons to support of custom waf features
     import zm.waf
     zm.waf.loadAllAddOns()
 
     # start waf ecosystem
-    from waflib import Scripting
-    del sys.argv[1:]
-    sys.argv.extend(wafCmdLine)
     from zm.waf import wrappers
     wrappers.setupAll(cmd, bconfHandler)
 
-    cwd = bconfPaths.wscriptdir
-    Scripting.waf_entry_point(cwd, Context.WAFVERSION, WAF_DIR)
+    from zm.waf import launcher
+    launcher.run(cmd, wafCmdLine, bconfPaths)
 
     return 0
-
-def atExit():
-    """
-    Callback function for atexit
-    """
-
-    # remove 'wscript' file if it exists
-    from zm import shared
-    if not shared.buildConfHandler:
-        return
-    wscriptfile = shared.buildConfHandler.confPaths.wscriptfile
-    if path.isfile(wscriptfile):
-        os.remove(wscriptfile)
-
-atexit.register(atExit)

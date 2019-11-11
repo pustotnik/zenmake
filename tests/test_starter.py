@@ -23,20 +23,25 @@ def testHandleCLI(capsys):
 
     noBuildConf = True
     args = [APPNAME]
-    buildConfHandler = AutoDict(
+    bconfHandler = AutoDict(
         defaultBuildType = '',
         options = {},
     )
 
     with pytest.raises(SystemExit):
-        starter.handleCLI(buildConfHandler, args, noBuildConf)
+        starter.handleCLI(args, noBuildConf, bconfHandler)
+    # clean output
+    capsys.readouterr()
+
+    with pytest.raises(SystemExit):
+        starter.handleCLI(args, noBuildConf, None)
     # clean output
     capsys.readouterr()
 
     #############
     args = [APPNAME, 'build']
-    buildConfHandler.options = {}
-    cmd, wafCmdLine = starter.handleCLI(buildConfHandler, args, noBuildConf)
+    bconfHandler.options = {}
+    cmd, wafCmdLine = starter.handleCLI(args, noBuildConf, bconfHandler)
     assert cmd == cli.selected
     assert cmd.name == 'build'
     assert wafCmdLine[0] == 'build'
@@ -44,21 +49,28 @@ def testHandleCLI(capsys):
     assert cmd.args.jobs is None
     assert not cmd.args.progress
 
-    buildConfHandler.options = {
+    bconfHandler.options = {
         'verbose': 1,
         'jobs' : { 'build' : 4 },
         'progress' : {'any': False, 'build': True },
     }
-    cmd, wafCmdLine = starter.handleCLI(buildConfHandler, args, noBuildConf)
+    cmd, wafCmdLine = starter.handleCLI(args, noBuildConf, bconfHandler)
     assert cmd == cli.selected
     assert cmd.name == 'build'
     assert wafCmdLine[0] == 'build'
     assert cmd.args.verbose == 1
     assert cmd.args.jobs == 4
     assert cmd.args.progress
+    cmd, wafCmdLine = starter.handleCLI(args, noBuildConf, None)
+    assert cmd == cli.selected
+    assert cmd.name == 'build'
+    assert wafCmdLine[0] == 'build'
+    assert cmd.args.verbose == 0
+    assert cmd.args.jobs is None
+    assert not cmd.args.progress
 
     args = [APPNAME, 'test']
-    cmd, wafCmdLine = starter.handleCLI(buildConfHandler, args, noBuildConf)
+    cmd, wafCmdLine = starter.handleCLI(args, noBuildConf, bconfHandler)
     assert cmd == cli.selected
     assert cmd.name == 'test'
     assert wafCmdLine[0] == 'build'

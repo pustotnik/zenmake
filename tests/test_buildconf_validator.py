@@ -22,6 +22,7 @@ validator = Validator()
 
 class FakeBuildConf:
     __name__ = 'testconf'
+    __file__ = os.path.join(os.getcwd(), 'fakeconf.py')
 
 class TestSuite(object):
 

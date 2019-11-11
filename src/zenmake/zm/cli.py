@@ -87,6 +87,17 @@ _commands = [
     ),
 ]
 
+# map: cmd name/alies -> _Command
+def _makeCmdNameMap():
+    cmdNameMap = {}
+    for cmd in _commands:
+        cmdNameMap[cmd.name] = cmd
+        for alias in cmd.aliases:
+            cmdNameMap[alias] = cmd
+    return cmdNameMap
+
+_cmdNameMap = _makeCmdNameMap()
+
 class _PosArg(_AutoDict):
 
     NOTARGPARSE_FIELDS = ('name', 'commands')
@@ -187,6 +198,12 @@ _options = [
         help = 'destination directory',
     ),
     _Option(
+        names = ['-o', '--buildroot'],
+        commands = ['configure', 'build', 'test', 'clean',
+                    'distclean', 'install', 'uninstall'],
+        help = "build directory for the project",
+    ),
+    _Option(
         names = ['--prefix'],
         commands = ['configure', 'build', 'install', 'uninstall'],
         help = 'installation prefix',
@@ -226,19 +243,21 @@ if PLATFORM == 'windows':
     # windows preserves the case, but gettempdir does not
     DEFAULT_PREFIX = d[0].upper() + d[1:]
 
-_READY_OPT_DEFAULTS = {
-    'verbose': 0,
-    'color': os.environ.get('NOCOLOR', '') and 'no' or 'auto',
-    'build-tests': { 'any': 'no',   'test' : 'yes' },
-    'run-tests'  : { 'any': 'none', 'test' : 'all' },
-    'destdir' : {
-        'any': os.environ.get('DESTDIR', ''),
-        'zipapp' : os.environ.get('DESTDIR', '.'),
-    },
-    'prefix' : os.environ.get('PREFIX', '') or DEFAULT_PREFIX,
-    'bindir' : os.environ.get('BINDIR', None),
-    'libdir' : os.environ.get('LIBDIR', None),
-}
+def _getReadyOptDefaults():
+    return {
+        'verbose': 0,
+        'color': os.environ.get('NOCOLOR', '') and 'no' or 'auto',
+        'build-tests': { 'any': 'no',   'test' : 'yes' },
+        'run-tests'  : { 'any': 'none', 'test' : 'all' },
+        'destdir' : {
+            'any': os.environ.get('DESTDIR', ''),
+            'zipapp' : os.environ.get('DESTDIR', '.'),
+        },
+        'buildroot' : os.environ.get('BUILDROOT', None),
+        'prefix' : os.environ.get('PREFIX', '') or DEFAULT_PREFIX,
+        'bindir' : os.environ.get('BINDIR', None),
+        'libdir' : os.environ.get('LIBDIR', None),
+    }
 
 class CmdLineParser(object):
     """
@@ -247,14 +266,14 @@ class CmdLineParser(object):
     """
 
     __slots__ = (
-        '_defaults', '_options', '_command', '_wafCmdLine', '_cmdNameMap',
+        '_defaults', '_options', '_command', '_wafCmdLine',
         '_parser', '_commandHelps'
     )
 
     def __init__(self, progName, defaults):
 
         self._defaults = defaultdict(dict)
-        self._defaults.update(_READY_OPT_DEFAULTS)
+        self._defaults.update(_getReadyOptDefaults())
         self._defaults.update(defaults)
 
         self._options = []
@@ -262,13 +281,6 @@ class CmdLineParser(object):
         self._wafCmdLine = []
 
         self._setupOptions()
-
-        # map: cmd name/alies -> _Command
-        self._cmdNameMap = {}
-        for cmd in _commands:
-            self._cmdNameMap[cmd.name] = cmd
-            for alias in cmd.aliases:
-                self._cmdNameMap[alias] = cmd
 
         class MyHelpFormatter(argparse.HelpFormatter):
             """ Some customization"""
@@ -362,7 +374,7 @@ class CmdLineParser(object):
             self._parser.print_help()
             return True
 
-        _topic = self._cmdNameMap.get(topic, None)
+        _topic = _cmdNameMap.get(topic, None)
         if _topic:
             _topic = _topic.name
 
@@ -418,7 +430,7 @@ class CmdLineParser(object):
 
     def _fillCmdInfo(self, parsedArgs):
         args = _AutoDict(vars(parsedArgs))
-        cmd = self._cmdNameMap[args.pop('command')]
+        cmd = _cmdNameMap[args.pop('command')]
         self._command = ParsedCommand(
             name = cmd.name,
             args = args,
@@ -448,6 +460,8 @@ class CmdLineParser(object):
             cmdline.insert(0, 'configure')
         if options.clean:
             cmdline.insert(0, 'clean')
+        if options.distclean:
+            cmdline.insert(0, 'distclean')
         if options.progress:
             cmdline.append('--progress')
         if options.verbose:
@@ -459,7 +473,7 @@ class CmdLineParser(object):
 
         self._wafCmdLine = cmdline
 
-    def parse(self, args = None, noBuildConf = True):
+    def parse(self, args = None, defaultCmd = 'help'):
         """ Parse command line args """
 
         if args is None:
@@ -467,11 +481,11 @@ class CmdLineParser(object):
 
         # simple hack for default behavior if command is not defined
         if not args:
-            args = ['help'] if noBuildConf else ['build']
+            args = [defaultCmd]
 
         # parse
         args = self._parser.parse_args(args)
-        cmd = self._cmdNameMap[args.command]
+        cmd = _cmdNameMap[args.command]
         self._postParse(args)
 
         if cmd.name == 'help':
@@ -495,14 +509,19 @@ class CmdLineParser(object):
         """
         return self._wafCmdLine
 
-def parseAll(args, defaults, noBuildConf):
+def parseAll(args, noBuildConf = True, defaults = None):
     """
     Parse all command line args with CmdLineParser and save selected
     command as object of ParsedCommand in global var 'selected' of this module.
     Returns selected command as object of ParsedCommand and parser.wafCmdLine
     """
 
+    # simple hack for default behavior if command is not defined
+    defaultCmd = 'help' if noBuildConf else 'build'
+
+    if defaults is None:
+        defaults = {}
     parser = CmdLineParser(APPNAME, defaults)
-    cmd = parser.parse(args[1:], noBuildConf)
+    cmd = parser.parse(args[1:], defaultCmd)
 
     return cmd, parser.wafCmdLine

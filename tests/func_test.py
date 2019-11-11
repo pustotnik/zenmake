@@ -16,6 +16,7 @@ import subprocess
 import shutil
 import platform as _platform
 from collections import defaultdict
+from copy import copy, deepcopy
 from zipfile import ZipFile, is_zipfile as iszip
 
 import pytest
@@ -30,6 +31,7 @@ from zm.buildconf.handler import ConfHandler as BuildConfHandler
 from zm.constants import ZENMAKE_CMN_CFGSET_FILENAME, PLATFORM, APPNAME
 from zm.constants import TASK_WAF_MAIN_FEATURES
 from zm.toolchains import CompilersInfo
+from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES
 
 joinpath = os.path.join
 ZM_BIN = cmn.ZENMAKE_DIR # it's a dir but it contains __main__.py
@@ -38,7 +40,6 @@ PYTHON_VER = _platform.python_version()
 
 CUSTOM_TOOLCHAIN_PRJDIR = joinpath('cpp', '05-custom-toolchain')
 COMPLEX_UNITTEST_PRJDIR = joinpath('cpp', '09-complex-unittest')
-AUTOCONFIG_PRJDIR = joinpath('cpp', '02-simple')
 FORINSTALL_PRJDIRS = [joinpath('cpp', '04-complex'), joinpath('cpp', '09-complex-unittest')]
 
 TEST_CONDITIONS = {
@@ -165,14 +166,19 @@ def setupTest(self, request, tmpdir):
     shutil.copytree(currentPrjDir, tmptestDir, ignore = copytreeIgnore)
 
     self.cwd = tmptestDir
-    projectConf = bconfloader.load('buildconf', self.cwd)
-    self.confHandler = BuildConfHandler(projectConf)
-    self.confPaths = self.confHandler.confPaths
+    self.projectConf = bconfloader.load(dirpath = self.cwd)
 
 def processConfHandlerWithCLI(testSuit, cmdLine):
     cmdLine = list(cmdLine)
     cmdLine.insert(0, APPNAME)
-    cmd, _ = starter.handleCLI(testSuit.confHandler, cmdLine, True)
+
+    cmd, _ = starter.handleCLI(cmdLine, True, None)
+    cliBuildRoot = cmd.args.get('buildroot', None)
+
+    testSuit.confHandler = BuildConfHandler(testSuit.projectConf, cliBuildRoot)
+    testSuit.confPaths = testSuit.confHandler.confPaths
+
+    cmd, _ = starter.handleCLI(cmdLine, False, testSuit.confHandler)
     testSuit.confHandler.applyBuildType(cmd.args.buildtype)
 
 def getTaskEnv(testSuit, taskName):
@@ -201,7 +207,7 @@ def handleTaskFeatures(testSuit, taskParams):
     assist.detectConfTaskFeatures(taskParams)
     if 'source' in taskParams:
         confPaths = testSuit.confPaths
-        srcDir = os.path.relpath(confPaths.srcroot, confPaths.wscriptdir)
+        srcDir = os.path.relpath(confPaths.srcroot, confPaths.buildconfdir)
         ctx = Context.Context(run_dir = testSuit.cwd)
         srcDirNode = ctx.path.find_dir(srcDir)
         taskParams['source'] = assist.handleTaskSourceParam(taskParams, srcDirNode)
@@ -209,6 +215,19 @@ def handleTaskFeatures(testSuit, taskParams):
     assert isinstance(taskParams['features'], list)
 
 def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
+
+    def makeConfDict(conf, deep):
+        result = AutoDict()
+        _conf = AutoDict(vars(conf))
+        for k in KNOWN_CONF_PARAM_NAMES:
+            if deep:
+                result[k] = deepcopy(_conf[k])
+            else:
+                result[k] = copy(_conf[k])
+        return result
+
+    _conf = makeConfDict(testSuit.projectConf, deep = True)
+
     # checks for target files
     processConfHandlerWithCLI(testSuit, cmdLine)
     buildtype = testSuit.confHandler.selectedBuildType
@@ -241,6 +260,9 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
             targetpath = joinpath(os.path.dirname(targetpath),
                                 '%s.lib' % target)
             assert os.path.isfile(targetpath) == resultExists
+
+    # check original buildconf was not changed
+    assert _conf == makeConfDict(testSuit.projectConf, deep = False)
 
 @pytest.mark.usefixtures("unsetEnviron")
 class TestBase(object):
@@ -609,11 +631,11 @@ class TestFeatureTest(object):
         # clean
         cmdLine = ['clean']
         assert runZm(self, cmdLine)[0] == 0
+        checkBuildResults(self, cmdLine, False, True)
         assert os.path.isdir(self.confPaths.buildroot)
         assert os.path.isdir(self.confPaths.buildout)
         assert os.path.isfile(self.confPaths.wafcachefile)
         assert os.path.isfile(self.confPaths.zmcmnconfset)
-        checkBuildResults(self, cmdLine, False, True)
 
     def testCmdBuildRTAllVariants(self, projects):
 
@@ -637,11 +659,11 @@ class TestFeatureTest(object):
         # clean
         cmdLine = ['clean']
         assert runZm(self, cmdLine)[0] == 0
+        checkBuildResults(self, cmdLine, False, True)
         assert os.path.isdir(self.confPaths.buildroot)
         assert os.path.isdir(self.confPaths.buildout)
         assert os.path.isfile(self.confPaths.wafcachefile)
         assert os.path.isfile(self.confPaths.zmcmnconfset)
-        checkBuildResults(self, cmdLine, False, True)
 
     def testCmdTestRTAllVariants(self, projects):
 
@@ -689,7 +711,7 @@ class TestAutoconfig(object):
     def allZmExe(self, request):
         self.zmExe = _zmExes[request.param]
 
-    @pytest.fixture(params = [AUTOCONFIG_PRJDIR])
+    @pytest.fixture(params = [joinpath('cpp', '02-simple')])
     def project(self, request, tmpdir):
 
         self.testdir = None
@@ -930,3 +952,36 @@ class TestInstall(object):
         exitcode, _, _ = runZm(self, cmdLine)
         assert exitcode == 0
         assert not os.path.exists(destdir)
+
+@pytest.mark.usefixtures("unsetEnviron")
+class TestBuildRoot(object):
+
+    @pytest.fixture(params = getZmExecutables(), autouse = True)
+    def allZmExe(self, request):
+        self.zmExe = _zmExes[request.param]
+
+    @pytest.fixture(params = [joinpath('c', '02-simple'), joinpath('cpp', '02-simple')])
+    def project(self, request, tmpdir):
+
+        def teardown():
+            if request.node.rep_call.failed:
+                printOutputs(self)
+
+        request.addfinalizer(teardown)
+        setupTest(self, request, tmpdir)
+
+    def testInCLI(self, project):
+
+        cmdLine = ['build', '-o', '_bld']
+        assert runZm(self, cmdLine)[0] == 0
+        checkBuildResults(self, cmdLine, True)
+        assert self.confPaths.buildroot == joinpath(self.confPaths.buildconfdir, '_bld')
+
+    def testInEnv(self, project, monkeypatch):
+
+        monkeypatch.setenv('BUILDROOT', '_bld_')
+        env = { 'BUILDROOT' : '_bld_' }
+        cmdLine = ['build']
+        assert runZm(self, cmdLine, env)[0] == 0
+        checkBuildResults(self, cmdLine, True)
+        assert self.confPaths.buildroot == joinpath(self.confPaths.buildconfdir, '_bld_')

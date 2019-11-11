@@ -8,12 +8,10 @@
 
 import os
 import sys
-import importlib
 import re
 
 from waflib import Utils as wafutils
 from zm import pyutils as _pyutils
-from zm.pypkg import PkgPath
 
 WINDOWS_RESERVED_FILENAMES = (
     'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5',
@@ -114,6 +112,7 @@ def _loadPyModuleWithoutImport(name):
 
     import types
     from zm.error import ZenMakeError
+    from zm.pypkg import PkgPath
     joinpath = os.path.join
 
     module = types.ModuleType(name)
@@ -171,6 +170,7 @@ def loadPyModule(name, dirpath = None, withImport = True):
     """
 
     if withImport:
+        import importlib
         loadModule = importlib.import_module
     else:
         loadModule = _loadPyModuleWithoutImport

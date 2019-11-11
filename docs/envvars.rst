@@ -84,6 +84,13 @@ NOSYNC
 
         NOSYNC=1 zenmake build
 
+BUILDROOT
+    Build directory for the project. The path can be absolute or relative to
+    the current directory.
+    Example::
+
+        BUILDROOT=bld zenmake build
+
 DESTDIR
     Default installation base directory when ``--destdir`` is not provided on
     the command line.

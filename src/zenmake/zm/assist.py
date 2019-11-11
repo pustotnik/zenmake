@@ -18,7 +18,7 @@ from waflib import Errors as waferror
 from waflib.Tools.c_aliases import set_features as setFeatures
 from zm.pyutils import stringtype, maptype, viewitems
 from zm import utils, toolchains, log, version
-from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, WSCRIPT_NAME, \
+from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, \
                          TASK_WAF_ALIESES, TASK_WAF_FEATURES_MAP
 
 joinpath = os.path.join
@@ -59,6 +59,7 @@ def dumpZenMakeCmnConfSet(bconfPaths):
 
     cinfo = toolchains.CompilersInfo
     envVarNames = cinfo.allFlagVars() + cinfo.allVarsToSetCompiler()
+    envVarNames.append('BUILDROOT')
 
     zmCmn.toolenvs = {}
     for name in envVarNames:
@@ -101,27 +102,6 @@ def makeTaskVariantName(buildtype, taskName):
     """ Make 'variant' name for task """
     name = taskName.strip().replace(' ', '_')
     return '%s.%s' % (buildtype, re.sub(r'(?u)[^-\w.]', '.', name))
-
-WSCRIPT_BODY = '''\
-# coding=utf-8
-
-"""
- Copyright (c) 2019, Alexander Magola. All rights reserved.
- license: BSD 3-Clause License, see LICENSE for more details.
-
- This module is entry WAF wscript file that is copied from zenmake.
-
- Do not commit this to version control.
-"""
-
-from zm.wscriptimpl import *
-'''
-
-def writeWScriptFile(filepath):
-    """ Write 'wscript' file """
-
-    with open(filepath, 'w') as file:
-        file.write(WSCRIPT_BODY)
 
 def copyEnv(env):
     """
@@ -530,7 +510,7 @@ def handleTaskSourceParam(taskParams, srcDirNode):
             ignorecase = src.get('ignorecase', False),
             #FIXME: Waf says: Calling ant_glob on build folders is
             # dangerous. Such a case can be seen if build
-            # the tests/projects/cpp/002-simple
+            # the demos/cpp/002-simple
             remove = False,
         )
 
@@ -661,6 +641,9 @@ def fullclean(bconfPaths, verbose = 1):
     buildroot     = bconfPaths.buildroot
     projectroot   = bconfPaths.projectroot
 
+    assert not projectroot.startswith(buildroot)
+    assert not projectroot.startswith(realbuildroot)
+
     paths = [realbuildroot, buildroot]
     for path in list(paths):
         paths.append(os.path.realpath(path))
@@ -681,27 +664,19 @@ def fullclean(bconfPaths, verbose = 1):
         loginfo("Removing lockfile '%s'" % lockfile)
         os.remove(lockfile)
 
-    wscriptfile = os.path.join(projectroot, WSCRIPT_NAME)
-    if os.path.isfile(wscriptfile):
-        loginfo("Removing wscript file '%s'" % wscriptfile)
-        os.remove(wscriptfile)
-
 def distclean(bconfPaths):
     """
-    Full replacement for distclean from WAF
+    Implementation for distclean from WAF
     """
-
-    cmdTimer = utils.Timer()
 
     verbose = 1
     import zm.cli as cli
-    if cli.selected:
-        log.enableColorsByCli(cli.selected.args.color)
-        verbose = cli.selected.args.verbose
+    cmd = cli.selected
+    if cmd:
+        log.enableColorsByCli(cmd.args.color)
+        verbose = cmd.args.verbose
 
     fullclean(bconfPaths, verbose)
-
-    log.info('%r finished successfully (%s)', 'distclean', cmdTimer)
 
 def isBuildConfFake(conf):
     """
@@ -730,9 +705,12 @@ def areToolchainEnvVarsAreChanged(zmCmnConfSet):
 
     cinfo = toolchains.CompilersInfo
     envVarNames = cinfo.allFlagVars() + cinfo.allVarsToSetCompiler()
+    envVarNames.append('BUILDROOT')
 
     lastEnvVars = zmCmnConfSet.toolenvs
     for name in envVarNames:
+        if name not in lastEnvVars:
+            return True
         if lastEnvVars[name] != os.environ.get(name, ''):
             return True
 
@@ -745,7 +723,7 @@ def isZmVersionChanged(zmCmnConfSet):
 
     return zmCmnConfSet.zmversion != version.current()
 
-def isBuildConfChanged(conf):
+def isBuildConfChanged(conf, buildroot):
     """
     Try to detect if current buildconf file is changed.
     Returns True if it's changed or file just doesn't exist.
@@ -753,7 +731,7 @@ def isBuildConfChanged(conf):
 
     from zm.buildconf.paths import ConfPaths
     try:
-        bconfPaths = ConfPaths(conf)
+        bconfPaths = ConfPaths(conf, buildroot)
     except AttributeError:
         return True
 

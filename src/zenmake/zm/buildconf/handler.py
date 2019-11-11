@@ -10,11 +10,12 @@ import os
 from collections import defaultdict
 from copy import deepcopy
 
-from zm.pyutils import viewitems, viewvalues
-from zm import utils, toolchains, log
+from zm.constants import PLATFORM, TASK_FEATURES_LANGS, TASK_WAF_FEATURES_MAP
 from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeLogicError, ZenMakeConfError
-from zm.constants import PLATFORM, TASK_FEATURES_LANGS, TASK_WAF_FEATURES_MAP
+from zm.pyutils import viewitems, viewvalues
+from zm import utils, toolchains, log
+from zm.buildconf.utils import gatherAllTaskNames
 
 joinpath = os.path.join
 
@@ -25,7 +26,7 @@ class ConfHandler(object):
 
     __slots__ = 'cmdLineHandled', '_conf', '_platforms', '_meta', '_confpaths'
 
-    def __init__(self, conf):
+    def __init__(self, conf, buildroot = None):
 
         self._conf = conf
         self._platforms = self._conf.platforms
@@ -37,7 +38,7 @@ class ConfHandler(object):
         self._meta.buildtypes.selected = None
 
         from zm.buildconf.paths import ConfPaths
-        self._confpaths = ConfPaths(conf)
+        self._confpaths = ConfPaths(conf, buildroot)
         self._preprocess()
 
     def _preprocess(self):
@@ -244,11 +245,7 @@ class ConfHandler(object):
         if buildtype in self._meta.tasks:
             return self._meta.tasks[buildtype]
 
-        # gather all task names
-        allTaskNames = list(self._conf.tasks.keys())
-        for entry in self._conf.matrix:
-            allTaskNames.extend(utils.toList(entry.get('for', {}).get('task', [])))
-        allTaskNames = tuple(set(allTaskNames))
+        allTaskNames = tuple(gatherAllTaskNames(self._conf))
 
         tasks = {}
 
@@ -268,7 +265,6 @@ class ConfHandler(object):
                          "It's probably a mistake.")
                 condition = {}
             params = entry.get('set', {})
-            params.pop('default-buildtype', None)
 
             condTasks = utils.toList(condition.get('task', []))
             condBuildtypes = utils.toList(condition.get('buildtype', []))
@@ -285,6 +281,7 @@ class ConfHandler(object):
             for taskName in condTasks:
                 task = tasks.setdefault(taskName, {})
                 task.update(params)
+                task.pop('default-buildtype', None)
 
         self._handleTasksEnvVars(tasks)
 

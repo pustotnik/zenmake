@@ -75,6 +75,8 @@ def init():
         return execute
 
     for cmd in ('options', 'init', 'configure', 'build', 'shutdown'):
+        if not hasattr(wscript, cmd):
+            continue
         _hooks[cmd] = WhenCall(
             pre  = HooksInfo( funcs = [], sorted = set() ),
             post = HooksInfo( funcs = [], sorted = set() )

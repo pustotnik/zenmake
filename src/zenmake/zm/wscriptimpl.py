@@ -13,6 +13,7 @@ __all__ = [
     'init',
     'configure',
     'build',
+    'distclean',
     'shutdown',
     'APPNAME',
     'VERSION',
@@ -33,7 +34,6 @@ from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
 top = shared.buildConfHandler.confPaths.wscripttop
 out = shared.buildConfHandler.confPaths.wscriptout
 
-# mostly for WAF 'dist' command
 APPNAME = shared.buildConfHandler.projectName
 VERSION = shared.buildConfHandler.projectVersion
 
@@ -55,7 +55,13 @@ def init(ctx):
     It's called by Waf before all other commands but after 'options'
     """
 
-    buildtype = cli.selected.args.buildtype
+    cliArgs = cli.selected.args
+    if 'buildtype' not in cliArgs:
+        return
+
+    # Next code only for command with 'buildtype' param
+
+    buildtype = cliArgs.buildtype
     if not buildtype and not isinstance(buildtype, stringtype):
         buildtype = ''
     shared.buildConfHandler.applyBuildType(buildtype)
@@ -205,7 +211,7 @@ def build(bld):
     #   the drive letters (win32 systems)
 
     # Path must be relative
-    srcDir = os.path.relpath(bconfPaths.srcroot, bconfPaths.wscriptdir)
+    srcDir = os.path.relpath(bconfPaths.srcroot, bconfPaths.buildconfdir)
     # Since ant_glob can traverse both source and build folders, it is a best
     # practice to call this method only from the most specific build node.
     srcDirNode = bld.path.find_dir(srcDir)
@@ -250,6 +256,14 @@ def build(bld):
     # It's neccesary to revert to origin variant otherwise WAF won't find
     # correct path at the end of the building step.
     bld.variant = buildtype
+
+def distclean(ctx):
+    """
+    Implementation for wscript.distclean
+    """
+
+    bconfPaths = shared.buildConfHandler.confPaths
+    assist.distclean(bconfPaths)
 
 def shutdown(ctx):
     """

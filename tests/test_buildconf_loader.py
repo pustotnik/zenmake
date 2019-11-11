@@ -24,8 +24,8 @@ class FakeBuildConf:
 def testInitDefaults():
 
     buildconf = FakeBuildConf()
-    bconfloader.initDefaults(buildconf)
-    # check if initDefaults produces validate params
+    bconfloader.applyDefaults(buildconf)
+    # check if applyDefaults produces validate params
     bconfloader.validate(buildconf)
 
     assert hasattr(buildconf, 'features')
@@ -53,9 +53,6 @@ def testInitDefaults():
     assert buildconf.buildroot == \
                         os.path.join(buildconf.project['root'], 'build')
 
-    assert hasattr(buildconf, 'realbuildroot')
-    assert buildconf.realbuildroot == buildconf.buildroot
-
     assert hasattr(buildconf, 'srcroot')
     assert buildconf.srcroot == buildconf.project['root']
 
@@ -63,7 +60,7 @@ def testInitDefaults():
 
     buildconf = FakeBuildConf()
     setattr(buildconf, 'features', { 'autoconfig' : False })
-    bconfloader.initDefaults(buildconf)
+    bconfloader.applyDefaults(buildconf)
     assert buildconf.features == { 'autoconfig': False }
 
     buildconf = FakeBuildConf()
@@ -75,8 +72,8 @@ def testInitDefaults():
         },
     }
     setattr(buildconf, 'buildtypes', buildtypes)
-    bconfloader.initDefaults(buildconf)
-    # check if initDefaults produces validate params
+    bconfloader.applyDefaults(buildconf)
+    # check if applyDefaults produces validate params
     bconfloader.validate(buildconf)
 
     assert buildconf.buildtypes == buildtypes

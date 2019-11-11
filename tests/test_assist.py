@@ -115,16 +115,6 @@ def testMakeTaskVariantName():
     name = assist.makeTaskVariantName(buildtype, taskName)
     assert name == '%s.%s' % (buildtype, 'bbb_..ccc')
 
-def testWriteWScriptFile(tmpdir):
-    wscriptfile = tmpdir.join("wscript")
-    assert not os.path.exists(str(wscriptfile))
-    assist.writeWScriptFile(str(wscriptfile))
-    assert os.path.exists(str(wscriptfile))
-    with open(str(wscriptfile), 'r') as f:
-        lines = f.readlines()
-    found = [ x for x in lines if 'from zm.wscriptimpl import *' in x ]
-    assert found
-
 def testCopyEnv():
     rootenv = ConfigSet()
     rootenv.test1 = 'test1'
@@ -340,17 +330,12 @@ def testDistclean(tmpdir, monkeypatch):
     from waflib import Options
     monkeypatch.setattr(Options, 'lockfile', lockfileName)
 
-    wscriptfile = projectroot.join(WSCRIPT_NAME)
-    wscriptfile.write("wscript")
-    assert os.path.isfile(str(wscriptfile))
-
     with cmn.capturedOutput(): # just supress any output
         assist.distclean(fakeConfPaths)
 
     assert not os.path.exists(fakeConfPaths.realbuildroot)
     assert not os.path.exists(fakeConfPaths.buildroot)
     assert os.path.exists(fakeConfPaths.projectroot)
-    assert not os.path.exists(str(wscriptfile))
     assert not os.path.exists(str(lockfile))
 
     # rare cases

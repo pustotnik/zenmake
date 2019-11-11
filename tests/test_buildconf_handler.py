@@ -34,7 +34,7 @@ class TestSuite(object):
         assert confHandler.conf == conf
         assert confHandler.projectName == buildconf.project.name
         assert confHandler.projectVersion == buildconf.project.version
-        assert confHandler.confPaths == BuildConfPaths(buildconf)
+        assert confHandler.confPaths == BuildConfPaths(buildconf, None)
 
     def testDefaultBuildType(self, testingBuildConf):
         buildconf = testingBuildConf
@@ -273,7 +273,7 @@ class TestSuite(object):
         buildtype = 'mybuildtype'
 
         fakeBuildConf = utils.loadPyModule('zm.buildconf.fakeconf', withImport = False)
-        bconfloader.initDefaults(fakeBuildConf)
+        bconfloader.applyDefaults(fakeBuildConf)
         confHandler = BuildConfHandler(fakeBuildConf)
         with pytest.raises(ZenMakeError):
             confHandler.applyBuildType(buildtype)

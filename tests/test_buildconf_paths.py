@@ -17,28 +17,46 @@ from zm.constants import *
 
 joinpath = os.path.join
 
-def testAll(testingBuildConf):
-    fakeBuildConf = testingBuildConf
-    bcpaths = ConfPaths(asRealConf(fakeBuildConf))
+@pytest.fixture(params = [None, 'somedir'])
+def buildroot(request):
+    return request.param
+
+@pytest.fixture(params = [None, 'somedir2'])
+def realbuildroot(request):
+    return request.param
+
+def testAll(buildroot, realbuildroot, monkeypatch, testingBuildConf):
 
     dirname    = os.path.dirname
     abspath    = os.path.abspath
     unfoldPath = utils.unfoldPath
 
+    fakeBuildConf = testingBuildConf
+
+    if not buildroot:
+        buildroot = fakeBuildConf.buildroot
+
+    if realbuildroot:
+        monkeypatch.setattr(fakeBuildConf, 'realbuildroot', realbuildroot)
+
+    bcpaths = ConfPaths(asRealConf(fakeBuildConf), buildroot)
+
     assert bcpaths.buildconffile == abspath(fakeBuildConf.__file__)
     assert bcpaths.buildconfdir  == dirname(bcpaths.buildconffile)
     assert bcpaths.buildroot     == unfoldPath(bcpaths.buildconfdir,
-                                                fakeBuildConf.buildroot)
-    assert bcpaths.realbuildroot == unfoldPath(bcpaths.buildconfdir,
+                                                buildroot)
+    if realbuildroot:
+        assert bcpaths.realbuildroot == unfoldPath(bcpaths.buildconfdir,
                                                 fakeBuildConf.realbuildroot)
+    else:
+        assert bcpaths.realbuildroot == bcpaths.buildroot
+
     assert bcpaths.buildout      == joinpath(bcpaths.buildroot, BUILDOUTNAME)
     assert bcpaths.projectroot   == unfoldPath(bcpaths.buildconfdir,
                                                 fakeBuildConf.project['root'])
     assert bcpaths.srcroot       == unfoldPath(bcpaths.buildconfdir,
                                                 fakeBuildConf.srcroot)
     assert bcpaths.wscriptout    == bcpaths.buildout
-    assert bcpaths.wscriptfile   == joinpath(bcpaths.wscripttop, WSCRIPT_NAME)
-    assert bcpaths.wscriptdir    == dirname(bcpaths.wscriptfile)
     assert bcpaths.wafcachedir   == joinpath(bcpaths.buildout,
                                                 WAF_CACHE_DIRNAME)
     assert bcpaths.wafcachefile  == joinpath(bcpaths.wafcachedir,
