@@ -98,6 +98,8 @@ def run():
             return 1
 
         cliBuildRoot = cmd.args.get('buildroot', None)
+        if cliBuildRoot and not os.path.isabs(cliBuildRoot):
+            cliBuildRoot = joinpath(cwd, cliBuildRoot)
         buildconf = bconfLoader.load(check = False, dirpath = cwd,
                                      filename = bconfFileName)
         if assist.isBuildConfChanged(buildconf, cliBuildRoot) or isDevVersion():
@@ -129,6 +131,6 @@ def run():
     wrappers.setupAll()
 
     from zm.waf import launcher
-    launcher.run(cmd, wafCmdLine, bconfHandler)
+    launcher.run(cwd, cmd, wafCmdLine, bconfHandler)
 
     return 0

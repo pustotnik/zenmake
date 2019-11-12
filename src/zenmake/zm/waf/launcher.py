@@ -128,7 +128,7 @@ def setupAndRunCommands(wafCmdLine, bconfHandler):
 
     runCommand(bconfHandler, 'shutdown')
 
-def run(cmd, wafCmdLine, bconfHandler):
+def run(cwd, cmd, wafCmdLine, bconfHandler):
     """
     Replacement for the Scripting.waf_entry_point
     """
@@ -140,7 +140,8 @@ def run(cmd, wafCmdLine, bconfHandler):
 
     # Store current directory before any chdir
     Context.waf_dir = WAF_DIR
-    Context.run_dir = Context.launch_dir = bconfPaths.buildconfdir
+    Context.launch_dir = cwd
+    Context.run_dir = bconfPaths.buildconfdir
     Context.out_dir = bconfPaths.buildout
 
     # ZenMake doesn't use lockfile in a project root
