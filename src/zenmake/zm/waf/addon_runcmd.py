@@ -15,7 +15,7 @@ from waflib.TaskGen import feature, after
 from waflib.Errors import WafError
 from waflib import Task
 from zm.pyutils import viewitems
-from zm import log, shared, error
+from zm import log, error
 from zm.constants import PLATFORM, EXE_FILE_EXTS
 from zm.waf.addons import postcmd
 
@@ -27,7 +27,7 @@ else:
 def _processCmdLine(conf, cwd, shell, cmdArgs):
     """ Get and process 'cmd' at 'configure' stage """
 
-    confHandler = shared.buildConfHandler
+    confHandler = conf.bconfHandler
     bconfPaths  = confHandler.confPaths
     btypeDir    = confHandler.selectedBuildTypeDir
     projectroot = bconfPaths.projectroot
@@ -86,7 +86,7 @@ def _processCmdLine(conf, cwd, shell, cmdArgs):
 def postConf(conf):
     """ Prepare task params after wscript.configure """
 
-    confHandler = shared.buildConfHandler
+    confHandler = conf.bconfHandler
     bconfPaths  = confHandler.confPaths
     btypeDir    = confHandler.selectedBuildTypeDir
     projectroot = bconfPaths.projectroot
@@ -197,11 +197,9 @@ def _createRunCmdTask(tgen, ruleArgs):
 
     return task
 
-def _createRuleWithFunc(funcName):
+def _createRuleWithFunc(confHandler, funcName):
 
-    confHandler = shared.buildConfHandler
     bconfPaths  = confHandler.confPaths
-
     bconf = confHandler.conf
     func = getattr(bconf, funcName)
 
@@ -271,7 +269,7 @@ def applyRunCmd(tgen):
         raise error.ZenMakeError(msg)
 
     if cmdType == 'func':
-        ruleArgs['rule'] = _createRuleWithFunc(cmd)
+        ruleArgs['rule'] = _createRuleWithFunc(ctx.bconfHandler, cmd)
     else:
         ruleArgs['rule'] = cmd
 

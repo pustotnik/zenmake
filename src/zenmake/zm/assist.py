@@ -678,6 +678,15 @@ def distclean(bconfPaths):
 
     fullclean(bconfPaths, verbose)
 
+def setWscriptVars(module, bconfHandler):
+    """
+    Set wscript vars: top, out, APPNAME, VERSION
+    """
+    module.top = bconfHandler.confPaths.wscripttop
+    module.out = bconfHandler.confPaths.wscriptout
+    module.APPNAME = bconfHandler.projectName
+    module.VERSION = bconfHandler.projectVersion
+
 def isBuildConfFake(conf):
     """
     Return True if loaded buildconf is a fake module.

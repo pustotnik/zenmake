@@ -25,17 +25,18 @@ from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext, InstallContext
 from zm.pyutils import stringtype, viewitems
 from zm.utils import toList
-from zm import log, shared, cli, assist, error
+from zm import log, cli, assist, error
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
 
 # pylint: disable=unused-argument
 
-# these variables are mandatory ('/' are converted automatically)
-top = shared.buildConfHandler.confPaths.wscripttop
-out = shared.buildConfHandler.confPaths.wscriptout
+# These variables are set in another place.
+# To detect possible errors these variables are set to 0, not to None.
+top = 0
+out = 0
 
-APPNAME = shared.buildConfHandler.projectName
-VERSION = shared.buildConfHandler.projectVersion
+APPNAME = None
+VERSION = None
 
 def options(opt):
     """
@@ -43,7 +44,7 @@ def options(opt):
     It's called by Waf as method where cmdline options can be added/removed
     """
 
-    # This method WAF calls before all other methods including 'init'
+    # This method is called before all other methods including 'init'
 
     # Remove incompatible options
     #opt.parser.remove_option('-o')
@@ -52,7 +53,7 @@ def options(opt):
 def init(ctx):
     """
     Implementation for wscript.init
-    It's called by Waf before all other commands but after 'options'
+    It's called before all other commands but after 'options'
     """
 
     cliArgs = cli.selected.args
@@ -64,9 +65,9 @@ def init(ctx):
     buildtype = cliArgs.buildtype
     if not buildtype and not isinstance(buildtype, stringtype):
         buildtype = ''
-    shared.buildConfHandler.applyBuildType(buildtype)
+    ctx.bconfHandler.applyBuildType(buildtype)
 
-    buildtype = shared.buildConfHandler.selectedBuildType
+    buildtype = ctx.bconfHandler.selectedBuildType
 
     # set 'variant' for BuildContext and all classes based on BuildContext
     setattr(BuildContext, 'variant', buildtype)
@@ -80,7 +81,7 @@ def configure(conf):
     conf.env.NO_LOCK_IN_RUN = True
     conf.env.NO_LOCK_IN_TOP = True
 
-    confHandler = shared.buildConfHandler
+    confHandler = conf.bconfHandler
 
     # set/fix vars PREFIX, BINDIR, LIBDIR
     assist.applyInstallPaths(conf.env, cli.selected)
@@ -197,7 +198,7 @@ def build(bld):
     """
 
     buildtype = validateVariant(bld)
-    bconfPaths = shared.buildConfHandler.confPaths
+    bconfPaths = bld.bconfHandler.confPaths
 
     isInstall = bld.cmd in ('install', 'uninstall')
     if isInstall:
@@ -262,7 +263,7 @@ def distclean(ctx):
     Implementation for wscript.distclean
     """
 
-    bconfPaths = shared.buildConfHandler.confPaths
+    bconfPaths = ctx.bconfHandler.confPaths
     assist.distclean(bconfPaths)
 
 def shutdown(ctx):

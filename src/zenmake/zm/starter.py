@@ -71,7 +71,7 @@ def run():
     Options.lockfile = WAF_LOCKFILE
 
     # process buildconf and CLI
-    from zm import log, assist, error, shared
+    from zm import log, assist, error
     from zm.buildconf import loader as bconfLoader
     from zm.buildconf.handler import ConfHandler as BuildConfHandler
 
@@ -120,18 +120,15 @@ def run():
         log.pprint('RED', 'Interrupted')
         sys.exit(68)
 
-    shared.buildConfHandler = bconfHandler
-    bconfPaths = bconfHandler.confPaths
-
     # Load waf add-ons to support of custom waf features
     import zm.waf
     zm.waf.loadAllAddOns()
 
     # start waf ecosystem
     from zm.waf import wrappers
-    wrappers.setupAll(cmd, bconfHandler)
+    wrappers.setupAll()
 
     from zm.waf import launcher
-    launcher.run(cmd, wafCmdLine, bconfPaths)
+    launcher.run(cmd, wafCmdLine, bconfHandler)
 
     return 0

@@ -14,7 +14,7 @@ import traceback
 from waflib import Options, Context, Errors
 from zm import WAF_DIR
 #from zm.constants import BUILDCONF_FILENAMES
-from zm import log, utils, wscriptimpl
+from zm import log, utils, wscriptimpl, assist
 
 joinpath = os.path.join
 
@@ -88,7 +88,7 @@ def _setupWafOptions(wafCmdLine):
     ctx.execute()
     assert Options.commands
 
-def runCommand(cmdName):
+def runCommand(bconfHandler, cmdName):
     """
     Executes a single Waf command.
     """
@@ -96,6 +96,8 @@ def runCommand(cmdName):
     ctx.log_timer = utils.Timer()
     ctx.options = Options.options # provided for convenience
     ctx.cmd = cmdName
+    setattr(ctx, 'bconfHandler', bconfHandler)
+
     try:
         ctx.execute()
     finally:
@@ -103,34 +105,38 @@ def runCommand(cmdName):
         ctx.finalize()
     return ctx
 
-def setupAndRunCommands(wafCmdLine, bconfPaths):
+def setupAndRunCommands(wafCmdLine, bconfHandler):
     """
 	Execute the Waf commands that were given on the command-line, and the other options
 	"""
 
     def runNextCmd():
         cmdName = Options.commands.pop(0)
-        ctx = runCommand(cmdName)
+        ctx = runCommand(bconfHandler, cmdName)
         log.info('%r finished successfully (%s)', cmdName, ctx.log_timer)
 
+    assist.setWscriptVars(wscriptimpl, bconfHandler)
+
     _setupWafOptions(wafCmdLine)
-    runCommand('init')
+    runCommand(bconfHandler, 'init')
     if Options.commands[0] == 'distclean':
         runNextCmd()
     if Options.commands:
-        _prepareBuildDir(bconfPaths)
+        _prepareBuildDir(bconfHandler.confPaths)
     while Options.commands:
         runNextCmd()
 
-    runCommand('shutdown')
+    runCommand(bconfHandler, 'shutdown')
 
-def run(cmd, wafCmdLine, bconfPaths):
+def run(cmd, wafCmdLine, bconfHandler):
     """
     Replacement for the Scripting.waf_entry_point
     """
 
     #TODO: Is Context.run_dir necessary? In waf it's a dir where wscript is.
     # I made it as dir where top-level buildconf is located
+
+    bconfPaths = bconfHandler.confPaths
 
     # Store current directory before any chdir
     Context.waf_dir = WAF_DIR
@@ -164,7 +170,7 @@ def run(cmd, wafCmdLine, bconfPaths):
 
     #pylint: disable=broad-except
     try:
-        setupAndRunCommands(wafCmdLine, bconfPaths)
+        setupAndRunCommands(wafCmdLine, bconfHandler)
     except Errors.WafError as ex:
         if verbose > 1:
             log.pprint('RED', ex.verbose_msg)

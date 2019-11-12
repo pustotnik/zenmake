@@ -24,11 +24,11 @@ joinpath = os.path.join
 # It's just to rid of needless work and to save working time.
 Configure.autoconfig = False
 
-def _areBuildTypesNotConfigured(clicmd, bconfHandler):
+def _isBuildTypeNotConfigured(bconfHandler):
 
     from zm.buildconf.utils import gatherAllTaskNames
 
-    buildtype = clicmd.args.buildtype
+    buildtype = bconfHandler.selectedBuildType
     zmcachedir = bconfHandler.confPaths.zmcachedir
 
     allTaskNames = gatherAllTaskNames(bconfHandler.conf)
@@ -66,34 +66,34 @@ def _handleNoLockInTop(ctx, envGetter):
 
     # It's needed to rerun command to apply changes in Context otherwise
     # Waf won't work correctly.
-    launcher.runCommand(ctx.cmd)
+    launcher.runCommand(ctx.bconfHandler, ctx.cmd)
     return True
 
-def wrapBldCtxNoLockInTop(bconfHandler, method):
+def wrapBldCtxNoLockInTop(method):
     """
     Decorator that handles only case with conf.env.NO_LOCK_IN_RUN = True and/or
     conf.env.NO_LOCK_IN_TOP = True
     """
 
-    def execute(self):
-        bconfPaths = bconfHandler.confPaths
-        if not _handleNoLockInTop(self, lambda: _loadLockfileEnv(bconfPaths)):
-            method(self)
+    def execute(ctx):
+        bconfPaths = ctx.bconfHandler.confPaths
+        if not _handleNoLockInTop(ctx, lambda: _loadLockfileEnv(bconfPaths)):
+            method(ctx)
 
     return execute
 
-def wrapBldCtxAutoConf(clicmd, bconfHandler, method):
+def wrapBldCtxAutoConf(method):
     """
     Decorator that enables context commands to run *configure* as needed.
     It handles also case with conf.env.NO_LOCK_IN_RUN = True and/or
     conf.env.NO_LOCK_IN_TOP = True
     """
 
-    def runConfigAndCommand(self, env):
-        launcher.runCommand(env.config_cmd or 'configure')
-        launcher.runCommand(self.cmd)
+    def runConfigAndCommand(ctx, env):
+        launcher.runCommand(ctx.bconfHandler, env.config_cmd or 'configure')
+        launcher.runCommand(ctx.bconfHandler, ctx.cmd)
 
-    def execute(self):
+    def execute(ctx):
 
         wrapBldCtxAutoConf.callCounter += 1
         if wrapBldCtxAutoConf.callCounter > 10:
@@ -104,19 +104,19 @@ def wrapBldCtxAutoConf(clicmd, bconfHandler, method):
             raise Exception('Infinite recursion was detected')
 
         if wrapBldCtxAutoConf.onlyRunMethod:
-            method(self)
+            method(ctx)
             # reset flag
             wrapBldCtxAutoConf.onlyRunMethod = False
             return
 
-        bconfPaths = bconfHandler.confPaths
+        bconfPaths = ctx.bconfHandler.confPaths
 
         # Execute the configuration automatically
-        autoconfig = bconfHandler.conf.features['autoconfig']
+        autoconfig = ctx.bconfHandler.conf.features['autoconfig']
 
         if not autoconfig:
-            if not _handleNoLockInTop(self, lambda: _loadLockfileEnv(bconfPaths)):
-                method(self)
+            if not _handleNoLockInTop(ctx, lambda: _loadLockfileEnv(bconfPaths)):
+                method(ctx)
             return
 
         # mark for the next recursive call
@@ -126,26 +126,26 @@ def wrapBldCtxAutoConf(clicmd, bconfHandler, method):
         env = _loadLockfileEnv(bconfPaths)
         if not env:
             log.warn('Configuring the project')
-            runConfigAndCommand(self, ConfigSet())
+            runConfigAndCommand(ctx, ConfigSet())
             return
 
         if env.run_dir != bconfPaths.buildconfdir:
-            runConfigAndCommand(self, env)
+            runConfigAndCommand(ctx, env)
             return
 
         cmnConfSet = assist.loadZenMakeCmnConfSet(bconfPaths)
         if not cmnConfSet or assist.isZmVersionChanged(cmnConfSet) or \
                     assist.areMonitoredFilesChanged(cmnConfSet) or \
                     assist.areToolchainEnvVarsAreChanged(cmnConfSet):
-            runConfigAndCommand(self, env)
+            runConfigAndCommand(ctx, env)
             return
 
-        if _areBuildTypesNotConfigured(clicmd, bconfHandler):
-            runConfigAndCommand(self, env)
+        if _isBuildTypeNotConfigured(ctx.bconfHandler):
+            runConfigAndCommand(ctx, env)
             return
 
-        if not _handleNoLockInTop(self, lambda: env):
-            method(self)
+        if not _handleNoLockInTop(ctx, lambda: env):
+            method(ctx)
         return
 
     return execute
@@ -199,46 +199,46 @@ def wrapCtxRecurse():
     """
 
     #pylint: disable=too-many-arguments,unused-argument
-    def execute(self, dirs, name = None, mandatory = True, once = True, encoding = None):
+    def execute(ctx, dirs, name = None, mandatory = True, once = True, encoding = None):
 
         try:
-            cache = self.recurseCache
+            cache = ctx.recurseCache
         except AttributeError:
-            cache = self.recurseCache = {}
+            cache = ctx.recurseCache = {}
 
         for dirpath in utils.toList(dirs):
 
             if not os.path.isabs(dirpath):
                 # absolute paths only
-                dirpath = joinpath(self.path.abspath(), dirpath)
+                dirpath = joinpath(ctx.path.abspath(), dirpath)
 
             # try to find buildconf
             for fname in BUILDCONF_FILENAMES:
-                node = self.root.find_node(joinpath(dirpath, fname))
+                node = ctx.root.find_node(joinpath(dirpath, fname))
                 if node:
                     break
             else:
                 continue
 
-            tup = (node, name or self.fun)
+            tup = (node, name or ctx.fun)
             if once and tup in cache:
                 continue
 
             cache[tup] = True
-            self.pre_recurse(node)
+            ctx.pre_recurse(node)
             try:
                 # try to find function for command
-                func = getattr(wscriptimpl, (name or self.fun), None)
+                func = getattr(wscriptimpl, (name or ctx.fun), None)
                 if not func:
                     if not mandatory:
                         continue
                     errmsg = 'No function %r defined in %s' % \
-                                (name or self.fun, wscriptimpl.__file__)
+                                (name or ctx.fun, wscriptimpl.__file__)
                     raise error.ZenMakeError(errmsg)
                 # call function for command
-                func(self)
+                func(ctx)
             finally:
-                self.post_recurse(node)
+                ctx.post_recurse(node)
 
     return execute
 
@@ -248,14 +248,14 @@ def wrapCfgCtxPostRecurse():
     It's mostly for performance
     """
 
-    def execute(self, node):
-        super(Configure.ConfigurationContext, self).post_recurse(node)
-        self.hash = 0
-        self.files = []
+    def execute(ctx, node):
+        super(Configure.ConfigurationContext, ctx).post_recurse(node)
+        ctx.hash = 0
+        ctx.files = []
 
     return execute
 
-def setupAll(cmd, bconfHandler):
+def setupAll():
     """ Setup all wrappers for Waf """
 
     Utils.get_process = wrapUtilsGetProcess(Utils.get_process)
@@ -265,10 +265,9 @@ def setupAll(cmd, bconfHandler):
 
     from waflib import Build
 
-    Build.BuildContext.execute = wrapBldCtxAutoConf(cmd, bconfHandler,
-                                                    Build.BuildContext.execute)
+    Build.BuildContext.execute = wrapBldCtxAutoConf(Build.BuildContext.execute)
     for ctxCls in (Build.CleanContext, Build.ListContext):
-        ctxCls.execute = wrapBldCtxNoLockInTop(bconfHandler, ctxCls.execute)
+        ctxCls.execute = wrapBldCtxNoLockInTop(ctxCls.execute)
 
     from waflib.Tools import c_aliases
     c_aliases.get_extensions = getFileExtensions

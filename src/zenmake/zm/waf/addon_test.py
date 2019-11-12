@@ -15,7 +15,7 @@ from waflib.TaskGen import feature, after
 from waflib import Build, Task
 from waflib.Build import BuildContext
 from zm.pyutils import viewitems, viewvalues
-from zm import log, shared, cli, error
+from zm import log, cli, error
 from zm.autodict import AutoDict as _AutoDict
 from zm.waf.addons import precmd, postcmd
 
@@ -94,10 +94,10 @@ def _isSuitableForRunCmd(taskParams):
     return taskParams['$runnable'] or taskParams.get('run', None)
 
 @postcmd('configure', beforeAddOn = ['runcmd'])
-def postConf(_):
+def postConf(conf):
     """ Configure tasks """
 
-    confHandler = shared.buildConfHandler
+    confHandler = conf.bconfHandler
     tasks       = confHandler.tasks
 
     for params in viewvalues(tasks):
@@ -264,11 +264,12 @@ class TestContext(BuildContext):
     def _makeTask(self, taskItem):
         ctx = self
         params = taskItem.params
-
-        bconfPaths = shared.buildConfHandler.confPaths
         target = params.get('target', None)
         if not target:
             return
+
+        #pylint: disable=no-member
+        bconfPaths = self.bconfHandler.confPaths
 
         # make task generator suitable for add-on 'runcmd'.
         kwargs = dict(
