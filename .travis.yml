@@ -111,7 +111,6 @@ before_install:
       #pip3 install --upgrade pip
       #eval "$(pyenv init -)"
       export PATH="$(pyenv root)/shims:${PATH}"
-      #export PATH="$HOME/.pyenv/shims:${PATH}"
       #pyenv install --list
       pyenv install -s $PYENV_VERSION
       #pyenv versions
@@ -140,7 +139,6 @@ script:
     fi
 
 after_success:
-  #- python -m coveralls
   - COVERALLS_PARALLEL=true python -m coveralls
 
 notifications:
