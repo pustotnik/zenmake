@@ -6,4 +6,4 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-from zm.waf.addons import *
+#from zm.waf.addons import *
