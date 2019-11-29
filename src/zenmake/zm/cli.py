@@ -107,7 +107,7 @@ _posargs = [
     # global options that are used before command in cmd line
     _PosArg(
         name = 'tasks',
-        nargs = '*', # this arg is optional
+        nargs = '*', # it means this arg is optional
         default = [],
         help = 'select tasks from buildconf, all tasks if nothing is selected',
         commands = ['build', 'test'],
@@ -479,9 +479,9 @@ class CmdLineParser(object):
         if args is None:
             args = sys.argv[1:]
 
-        # simple hack for default behavior if command is not defined
-        if not args:
-            args = [defaultCmd]
+        # simple hack to set default command
+        if not args or not [ x for x in args if not x.startswith('-') ]:
+            args.insert(0, defaultCmd)
 
         # parse
         args = self._parser.parse_args(args)
