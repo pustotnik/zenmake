@@ -15,9 +15,10 @@ except ImportError:
 
 class AutoDict(dict):
     """
+    This class provides dot notation and auto creation of items.
     Usually inheritance from built-in dict type is a bad idea. Especially if you
-    want to override __*item__ methods. But here I want just to have dot notation and
-    auto creation of items. And this class for internal use only.
+    want to override __*item__ methods. But here I want just to have dot
+    notation and auto creation of items. And this class for internal use only.
     I will remake this class if I get some problems with it.
     """
 
@@ -27,12 +28,7 @@ class AutoDict(dict):
         return val
 
     def __getattr__(self, name):
-        # We can not use self.get to check value because value
-        # can be any including None.
-        if name not in self:
-            val = AutoDict()
-            self[name] = val
-        return self[name]
+        return self[name] # this calls __missing__ if name doesn't exist
 
     def __setattr__(self, name, value):
         self[name] = value
