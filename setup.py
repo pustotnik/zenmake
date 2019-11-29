@@ -26,10 +26,11 @@ os.chdir(here)
 SRC_DIR = 'src'
 DEST_DIR = 'dist'
 DIST_DIR = os.path.join(DEST_DIR, 'dist')
+DEMOS_DIRPATH = os.path.join(here, 'demos')
 
 sys.path.append(os.path.join(here, SRC_DIR))
 from zenmake.zm import version
-from zenmake.zm.constants import APPNAME, CAP_APPNAME, AUTHOR
+from zenmake.zm.constants import APPNAME, CAP_APPNAME, AUTHOR, BUILDCONF_FILENAMES
 
 PYPI_USER = 'pustotnik'
 
@@ -111,7 +112,21 @@ class clean(Command):
     def finalize_options(self):
         pass
 
+    def clean_builddirs(self, startdir):
+        python = sys.executable if sys.executable else 'python'
+        zmdir = os.path.join(here, SRC_DIR, 'zenmake')
+        devnull = open(os.devnull, 'w')
+        for dirpath, _, filenames in os.walk(startdir):
+            if not any(x in BUILDCONF_FILENAMES for x in filenames):
+                continue
+            print('Clean up %r ...' % os.path.relpath(dirpath, here))
+            cmdline = [python, zmdir, 'distclean']
+            subprocess.call(cmdline, cwd = dirpath, stdout = devnull)
+
     def run(self):
+
+        self.clean_builddirs(DEMOS_DIRPATH)
+
         remove = []
         for root, dirs, files in os.walk(here):
             for pattern in self.PATTERNS:
@@ -124,6 +139,7 @@ class clean(Command):
         for path in self.TOP_DIRS:
             remove.append(os.path.join(here, path))
 
+        # remove all
         for path in remove:
             if os.path.isdir(path):
                 shutil.rmtree(path, ignore_errors = True)
