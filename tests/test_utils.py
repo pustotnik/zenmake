@@ -78,12 +78,12 @@ def testNormalizeForFileName(monkeypatch):
     assert utils.normalizeForFileName('abc') == 'abc'
     assert utils.normalizeForFileName(' abc ') == 'abc'
     assert utils.normalizeForFileName('a b c') == 'a_b_c'
-    assert utils.normalizeForFileName('a b c', spaseAsDash = True) == 'a-b-c'
+    assert utils.normalizeForFileName('a b c', spaceAsDash = True) == 'a-b-c'
     assert utils.normalizeForFileName(' aBc<>:?*.e ') == 'aBc.e'
     monkeypatch.setattr(utils, 'PLATFORM', 'windows')
     assert utils.normalizeForFileName('aux') == '_aux'
 
-def testLoadPyModule(mocker):
+def testLoadPyModule(mocker, monkeypatch):
 
     cwd = os.path.abspath(os.path.dirname(__file__))
     oldSysPath = sys.path
@@ -164,7 +164,8 @@ def testLoadPyModule(mocker):
     checkModule(module, False)
 
     # errors
-    PkgPath.read = mocker.MagicMock(side_effect = EnvironmentError)
+    monkeypatch.setattr(PkgPath, "read",
+                        mocker.MagicMock(side_effect = EnvironmentError))
     with pytest.raises(error.ZenMakeError):
         utils.loadPyModule(name, dirpath = None, withImport = False)
 

@@ -37,12 +37,12 @@ substVars          = wafutils.subst_vars
 libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
 
-def normalizeForFileName(s, spaseAsDash = False):
+def normalizeForFileName(s, spaceAsDash = False):
     """
     Convert a string into string suitable for file name
     """
     s = str(s).strip()
-    if spaseAsDash:
+    if spaceAsDash:
         s = s.replace(' ', '-')
     else:
         s = s.replace(' ', '_')
