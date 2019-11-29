@@ -53,7 +53,7 @@ class FuncMeta(object):
 def init():
     """ Module initialization """
 
-    import zm.wscriptimpl as wscript
+    import zm.waf.wscriptimpl as wscript
 
     def callHooks(hooksInfo, ctx):
         if not hooksInfo.sorted:

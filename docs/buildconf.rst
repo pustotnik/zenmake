@@ -18,9 +18,9 @@ Simplified scheme of buildconf:
 
 .. parsed-literal::
 
+    startdir_ = path
     buildroot_ = path
     realbuildroot_ = path
-    srcroot_ = path
     project_ = { ... }
     features_ = { ... }
     options_ = { ... }
@@ -29,6 +29,7 @@ Simplified scheme of buildconf:
     toolchains_ = { name: parameters }
     platforms_ = { name: parameters }
     matrix_ = [ { for: {...}, set: taskparams_ }, ... ]
+    subdirs_ = [] or 'all'/'auto'/'' or True/False
 
 .. _buildconf-dict-def:
 
@@ -57,13 +58,22 @@ some custom purposes.
 
 Below is the detailed description of each buildconf variable.
 
+startdir
+""""""""
+    A start path for all paths in a buildconf.
+    It is ``.`` by default. The path can be absolute or relative to directory
+    where current buildconf file is located. It means by default all other
+    relative paths in the current buildconf file are considered as the paths
+    relative to directory with the current buildconf file.
+    But you can change this by setting different value to this variable.
+
 buildroot
 """""""""
     A path to the root of a project build directory. By default it is
-    directory 'build' in the project root path. Path can be absolute or
-    relative to directory where buildconf file is located. It is important
-    to be able to remove the build directory safely, so it should never
-    be given as ``.`` or ``..``.
+    directory 'build' in the directory with the top-level buildconf file of
+    the project. Path can be absolute or relative to the startdir_.
+    It is important to be able to remove the build
+    directory safely, so it should never be given as ``.`` or ``..``.
 
 realbuildroot
 """""""""""""
@@ -75,29 +85,20 @@ realbuildroot
     nowadays and it can used to make building in memory. Such a way can improve
     speed of building. Note that on Windows OS process of ZenMake needs to be
     started with enabled "Create symbolic links" privilege and usual user
-    doesn't have a such privilege. Path can be absolute or relative to
-    directory where buildconf file is located. It is important to be able to
-    remove the build directory safely, so it should never be given as ``.``
-    or ``..``.
-
-srcroot
-"""""""
-    A path to the root directory for all source files to compile.
-    By default it's root directory of the project (see ``root`` in the
-    variable project_). The path can be absolute or relative to directory
-    where buildconf file is located.
+    doesn't have a such privilege.
+    Path can be absolute or relative to the startdir_.
+    It is important to be able to remove the build directory safely,
+    so it should never be given as ``.`` or ``..``.
 
 project
 """""""
     A `dict <buildconf-dict-def_>`_ with some parameters for the project.
     Supported values:
 
-    :name: The name of the project. It's name of the project directory by default.
+    :name: The name of the project. It's name of the top-level startdir_
+           directory by default.
     :version: The version of the project. It's empty by default.
               It's used as default value for ``ver-num`` field if not empty.
-    :root: A path to the root of the project. It's ``.`` by default and in most
-           cases it shouldn't be changed. The path can be absolute or relative to
-           directory where buildconf file is located.
 
 features
 """"""""
@@ -193,7 +194,7 @@ toolchains
     toolchain/compiler. Environment variables are usually such variables as
     ``CC``, ``CXX``, ``AR``, ``LINK_CXX`` and etc that is used to specify
     name or path to existing toolchain/compiler. Path can be absolute or
-    relative to `project root <project_>`_. Names of toolchains from this
+    relative to the startdir_. Names of toolchains from this
     variable can be used as value for parameter ``toolchain`` in taskparams_.
 
     Example in YAML format:
@@ -297,6 +298,22 @@ matrix
           - for: { buildtype: [debug-clang, release-clang], platform: linux darwin }
             set: { toolchain: clang++ }
 
+.. _buildconf-subdirs:
+
+subdirs
+"""""""
+    This variable controls including buildconf files from other sub directories
+    of the project.
+
+    - If it is list of paths then ZenMake will try to use this list as paths
+      to sub directories with the buildconf files and will use all found ones.
+      Paths can be absolute or relative to the startdir_.
+    - If it is an empty list or python special value None
+      or just absent at all then ZenMake will not try to use any
+      sub directories of the project to find buildconf files.
+
+.. _buildconf-taskparams:
+
 taskparams
 """"""""""
     It's not variable name. It's a `dict <buildconf-dict-def_>`_ as a some
@@ -389,6 +406,14 @@ taskparams
         This attribute enables the link against libraries (static or shared).
         It's used not for system libraries (see ``sys-libs``). Also it's used
         to declare dependencies between build tasks.
+        It is one or more the other task names.
+        Examples:
+
+        .. code-block:: python
+
+            'use' : 'util'
+            'use' : 'util mylib'
+            'use' : ['util', 'mylib']
 
     ver-num
         Enforce version numbering on shared libraries. It can be used with
@@ -397,7 +422,7 @@ taskparams
 
     includes
         Include paths are used by the C/C++ compilers for finding headers.
-        Paths should be relative to srcroot_ or absolute but last variant is
+        Paths should be relative to startdir_ or absolute. But last variant is
         not recommended.
 
     export-includes
@@ -430,7 +455,7 @@ taskparams
             :ignorecase:
                 Ignore case while matching (False by default), optional field.
 
-        Any path or pattern should be relative to srcroot_.
+        Any path or pattern should be relative to the startdir_.
 
         Examples in python format:
 
@@ -443,12 +468,12 @@ taskparams
             'source' : 'main.c about.c'
             'source' : ['main.c', 'about.c'] # the same result
 
-            # get all *.cpp files in 'srcroot' recursively
+            # get all *.cpp files in the 'startdir' recursively
             'source' :  dict( include = '**/*.cpp' )
             # or
             'source' :  { 'include': '**/*.cpp' }
 
-            # get all *.cpp files in 'srcroot'/mylib recursively
+            # get all *.cpp files in the 'startdir'/mylib recursively
             'source' :  dict( include = 'mylib/**/*.cpp' )
 
         Examples in YAML format:
@@ -460,7 +485,7 @@ taskparams
             # or
             source : [main.c, about.c]
 
-            # get all *.cpp files in 'srcroot'/mylib recursively
+            # get all *.cpp files in the 'startdir'/mylib recursively
             source: { include: 'mylib/**/*.cpp' }
             # or
             source:
@@ -544,10 +569,8 @@ taskparams
 
             :taskname:
                 Name of current build task
-            :projectroot:
-                Root directory of the project
-            :srcroot:
-                Root directory of the project sources
+            :startdir:
+                Current startdir_
             :buildroot:
                 Root directory for building
             :buildout:
@@ -562,7 +585,7 @@ taskparams
         :cwd:
             Working directory where to run ``cmd``. By default it's build
             directory for current buildtype. Path can be absolute or
-            relative to `project root <project_>`_.
+            relative to the startdir_.
         :env:
             Environment variables for ``cmd``. It's a ``dict`` where each
             key is a name of variable and value is a value of env variable.

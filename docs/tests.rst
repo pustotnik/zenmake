@@ -19,7 +19,8 @@ Then you have a choice:
     - If selected task has no feature \*program and has no
       :ref:`run <buildconf-taskparams-run>` but has \*stlib/\*shlib then
       this task is cosidered as a task with test but ZenMake will not try
-      to run this task as test. It's usuful for extra libraries for tests.
+      to run this task as test. It's useful for creation of separated
+      libraries for tests only.
 
     - Specify task parameter :ref:`run <buildconf-taskparams-run>`.
 
@@ -49,6 +50,7 @@ control order of running of tests.
             'use'       : 'complex',
             'conftests' : [ dict(act = 'check-programs', names = 'python'), ]
         },
+        # testcmn is a library with common code for tests only
         'testcmn' : {
             'features' : 'cxxshlib test',
             'source'   :  'tests/common.cpp',

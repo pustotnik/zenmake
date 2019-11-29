@@ -97,8 +97,7 @@ def _isSuitableForRunCmd(taskParams):
 def postConf(conf):
     """ Configure tasks """
 
-    confHandler = conf.bconfHandler
-    tasks       = confHandler.tasks
+    tasks = conf.getbconf().tasks
 
     for params in viewvalues(tasks):
         features = params['features']
@@ -120,13 +119,12 @@ def postConf(conf):
 @precmd('build', beforeAddOn = ['runcmd'])
 def preBuild(bld):
     """
-    Preprocess zm.wscriptimpl.build
+    Preprocess zm.waf.wscriptimpl.build
     """
 
-    from zm.wscriptimpl import validateVariant
-    buildtype = validateVariant(bld)
+    buildtype = bld.validateVariant()
 
-    tasks = bld.env.alltasks[buildtype]
+    tasks = bld.getTasks(buildtype)
     _shared.confTasks = tasks.copy()
     _shared.testsFound = False
     ignoredBuildTasks = []
@@ -152,8 +150,7 @@ def preBuild(bld):
 @postcmd('build')
 def postBuild(bld):
     """
-    Gather some info from BuildContext at the end of the 'build' call.
-    It's just for optimisation.
+    Postprocess zm.waf.wscriptimpl.build
     """
 
     _shared.buildHandled = True
@@ -172,6 +169,8 @@ def postBuild(bld):
 
     processTasksForRun(_shared.confTasks)
 
+    #Gather some info from BuildContext at the end of the 'build' call.
+    #It's just for optimisation.
     ctxCache = _shared.ctxCache
     ctxCache['envs'] = bld.all_envs
     ctxCache['saved.attrs'] = {}
@@ -261,20 +260,17 @@ class TestContext(BuildContext):
         # clear cache to allow gc to free some memory
         ctxCache.clear()
 
-    def _makeTask(self, taskItem):
+    def _makeTask(self, taskItem, bconfPaths):
         ctx = self
         params = taskItem.params
         target = params.get('target', None)
         if not target:
             return
 
-        #pylint: disable=no-member
-        bconfPaths = self.bconfHandler.confPaths
-
         # make task generator suitable for add-on 'runcmd'.
         kwargs = dict(
             features = ['runcmd'],
-            name     = os.path.relpath(target, bconfPaths.projectroot),
+            name     = os.path.relpath(target, bconfPaths.startdir),
             color    = 'PINK',
             run      = params.get('run', {}),
         )
@@ -289,6 +285,9 @@ class TestContext(BuildContext):
 
         runTestsOnChanges = _shared.runTestsOnChanges
 
+        #pylint: disable=no-member
+        bconfPaths = self.getbconf().confPaths
+
         taskItems = _shared.taskItems
         ordered = sorted(taskItems.values())
 
@@ -302,7 +301,7 @@ class TestContext(BuildContext):
             if runTestsOnChanges and taskItem.name not in changedTasks:
                 continue
 
-            self._makeTask(taskItem)
+            self._makeTask(taskItem, bconfPaths)
 
         taskItems.clear()
 

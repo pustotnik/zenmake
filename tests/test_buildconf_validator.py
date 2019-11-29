@@ -322,7 +322,7 @@ class TestSuite(object):
 
     def testValidateParamStrs(self):
 
-        for param in ('buildroot', 'realbuildroot', 'srcroot'):
+        for param in ('buildroot', 'realbuildroot', 'startdir'):
             buildconf = FakeBuildConf()
             setattr(buildconf, param, 11)
             with pytest.raises(ZenMakeConfTypeError):
@@ -350,7 +350,7 @@ class TestSuite(object):
 
         buildconf = FakeBuildConf()
         setattr(buildconf, 'project', {})
-        paramNames = ('name', 'version', 'root')
+        paramNames = ('name', 'version')
         self._checkParamsAsStr(buildconf, buildconf.project, paramNames)
 
     def testValidateParamBuildtypes(self):

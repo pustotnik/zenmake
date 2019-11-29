@@ -16,7 +16,7 @@ import os
 import sys
 
 from zm import log
-from zm.constants import BUILDCONF_FILENAMES
+from zm.constants import BUILDCONF_FILENAMES, DEFAULT_BUILDROOTNAME
 from zm.error import ZenMakeConfError
 from zm.pyutils import maptype, viewitems
 from zm.utils import loadPyModule
@@ -38,64 +38,55 @@ def validate(buildconf):
         log.error(str(ex))
         sys.exit(1)
 
-def applyDefaults(buildconf):
+def applyDefaults(buildconf, isTopLevel, projectDir):
     """
     Set default values to some params in buildconf if they don't exist
     """
 
     params = None
 
-    # features
-    if not hasattr(buildconf, 'features'):
-        setattr(buildconf, 'features', {})
-    params = buildconf.features
-    params['autoconfig'] = params.get('autoconfig', True)
+    # Param 'startdir' is set in another place
+
+    # buildroot
+    if isTopLevel:
+        if not hasattr(buildconf, 'buildroot'):
+            setattr(buildconf, 'buildroot', DEFAULT_BUILDROOTNAME)
+
+    # Param 'realbuildroot' must not be set here
 
     # options
     if not hasattr(buildconf, 'options'):
         setattr(buildconf, 'options', {})
 
+    # features
+    if not hasattr(buildconf, 'features'):
+        setattr(buildconf, 'features', {})
+    if isTopLevel:
+        params = buildconf.features
+        params['autoconfig'] = params.get('autoconfig', True)
+
+    # usedirs
+    if not hasattr(buildconf, 'subdirs'):
+        setattr(buildconf, 'subdirs', [])
+
     # project
     if not hasattr(buildconf, 'project'):
         setattr(buildconf, 'project', {})
-    params = buildconf.project
-    params['root'] = params.get('root', os.curdir)
-    params['name'] = params.get('name', None)
-    if params['name'] is None:
-        name = os.path.dirname(os.path.abspath(buildconf.__file__))
-        name = os.path.basename(name)
-        params['name'] = name
-    params['version'] = params.get('version', '')
+    if isTopLevel:
+        params = buildconf.project
+        params['name'] = params.get('name', None)
+        if params['name'] is None:
+            params['name'] = os.path.basename(projectDir)
+        params['version'] = params.get('version', '')
 
-    # toolchains
-    if not hasattr(buildconf, 'toolchains'):
-        setattr(buildconf, 'toolchains', {})
-
-    # platforms
-    if not hasattr(buildconf, 'platforms'):
-        setattr(buildconf, 'platforms', {})
-
-    # buildtypes
-    if not hasattr(buildconf, 'buildtypes'):
-        setattr(buildconf, 'buildtypes', {})
-
-    # tasks
-    if not hasattr(buildconf, 'tasks'):
-        setattr(buildconf, 'tasks', {})
+    # toolchains, platforms, buildtypes, tasks
+    for param in ('toolchains', 'platforms', 'buildtypes', 'tasks'):
+        if not hasattr(buildconf, param):
+            setattr(buildconf, param, {})
 
     # matrix
     if not hasattr(buildconf, 'matrix'):
         setattr(buildconf, 'matrix', [])
-
-    # global vars
-    if not hasattr(buildconf, 'buildroot'):
-        setattr(buildconf, 'buildroot',
-                os.path.join(buildconf.project['root'], 'build'))
-
-    # Param 'realbuildroot' must not be set here
-
-    if not hasattr(buildconf, 'srcroot'):
-        setattr(buildconf, 'srcroot', buildconf.project['root'])
 
 def _loadYaml(filepath):
     try:
@@ -143,7 +134,7 @@ def findConfFile(dpath, fname = None):
             return name
     return None
 
-def load(dirpath = None, filename = None, withDefaults = True, check = True):
+def load(dirpath = None, filename = None, check = True):
     """
     Load buildconf.
     Param 'dirpath' is optional param that is used as directory
@@ -179,7 +170,5 @@ def load(dirpath = None, filename = None, withDefaults = True, check = True):
 
     if check:
         validate(module)
-    if withDefaults:
-        applyDefaults(module)
 
     return module

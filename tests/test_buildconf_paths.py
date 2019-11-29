@@ -12,57 +12,39 @@ import os
 import pytest
 from tests.common import asRealConf
 from zm import utils
+from zm.autodict import AutoDict
 from zm.buildconf.paths import ConfPaths
 from zm.constants import *
 
 joinpath = os.path.join
 
-@pytest.fixture(params = [None, 'somedir'])
-def buildroot(request):
-    return request.param
-
-@pytest.fixture(params = [None, 'somedir2'])
-def realbuildroot(request):
-    return request.param
-
-def testAll(buildroot, realbuildroot, monkeypatch, testingBuildConf):
+def testAll(testingBuildConf):
 
     dirname    = os.path.dirname
     abspath    = os.path.abspath
     unfoldPath = utils.unfoldPath
 
     fakeBuildConf = testingBuildConf
+    fakeBuildConf.startdir = '.'
+    fakeBuildConf.realbuildroot = 'realbuildroot'
 
-    if not buildroot:
-        buildroot = fakeBuildConf.buildroot
+    bconf = AutoDict(
+        _conf = asRealConf(fakeBuildConf),
+        path = abspath(fakeBuildConf.__file__),
+        confdir = dirname(abspath(fakeBuildConf.__file__)),
+    )
 
-    if realbuildroot:
-        monkeypatch.setattr(fakeBuildConf, 'realbuildroot', realbuildroot)
-
-    bcpaths = ConfPaths(asRealConf(fakeBuildConf), buildroot)
+    bcpaths = ConfPaths(bconf)
 
     assert bcpaths.buildconffile == abspath(fakeBuildConf.__file__)
     assert bcpaths.buildconfdir  == dirname(bcpaths.buildconffile)
-    assert bcpaths.buildroot     == unfoldPath(bcpaths.buildconfdir,
-                                                buildroot)
-    if realbuildroot:
-        assert bcpaths.realbuildroot == unfoldPath(bcpaths.buildconfdir,
-                                                fakeBuildConf.realbuildroot)
-    else:
-        assert bcpaths.realbuildroot == bcpaths.buildroot
-
+    assert bcpaths.startdir      == fakeBuildConf.startdir
+    assert bcpaths.buildroot     == fakeBuildConf.buildroot
+    assert bcpaths.realbuildroot == fakeBuildConf.realbuildroot
     assert bcpaths.buildout      == joinpath(bcpaths.buildroot, BUILDOUTNAME)
-    assert bcpaths.projectroot   == unfoldPath(bcpaths.buildconfdir,
-                                                fakeBuildConf.project['root'])
-    assert bcpaths.srcroot       == unfoldPath(bcpaths.buildconfdir,
-                                                fakeBuildConf.srcroot)
+    assert bcpaths.wscripttop    == fakeBuildConf.startdir
     assert bcpaths.wscriptout    == bcpaths.buildout
-    assert bcpaths.wafcachedir   == joinpath(bcpaths.buildout,
-                                                WAF_CACHE_DIRNAME)
-    assert bcpaths.wafcachefile  == joinpath(bcpaths.wafcachedir,
-                                                WAF_CACHE_NAMESUFFIX)
+    assert bcpaths.wafcachedir   == joinpath(bcpaths.buildout, WAF_CACHE_DIRNAME)
+    assert bcpaths.wafcachefile  == joinpath(bcpaths.wafcachedir, WAF_CACHE_NAMESUFFIX)
     assert bcpaths.zmcachedir    == bcpaths.wafcachedir
-    assert bcpaths.zmcmnconfset  == joinpath(bcpaths.buildroot,
-                                                ZENMAKE_CMN_CFGSET_FILENAME)
-    assert bcpaths.wscripttop == bcpaths.projectroot or \
-            bcpaths.wscripttop == bcpaths.buildroot
+    assert bcpaths.zmcmnconfset  == joinpath(bcpaths.buildroot, ZENMAKE_CMN_CFGSET_FILENAME)

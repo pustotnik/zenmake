@@ -12,7 +12,8 @@ import os
 from copy import deepcopy
 import pytest
 from tests.common import asRealConf, randomstr
-from zm.buildconf.handler import ConfHandler as BuildConfHandler
+from zm.buildconf.processing import Config as BuildConfig
+from zm.buildconf.processing import ConfManager as BuildConfManager
 from zm.buildconf.paths import ConfPaths as BuildConfPaths
 from zm import toolchains, utils
 from zm.buildconf import loader as bconfloader
@@ -28,19 +29,18 @@ class TestSuite(object):
     def testInit(self, testingBuildConf):
         buildconf = testingBuildConf
         conf = asRealConf(buildconf)
-        confHandler = BuildConfHandler(conf)
+        bconf = BuildConfig(conf)
         with pytest.raises(ZenMakeError):
-            btype = confHandler.selectedBuildType
-        assert confHandler.conf == conf
-        assert confHandler.projectName == buildconf.project.name
-        assert confHandler.projectVersion == buildconf.project.version
-        assert confHandler.confPaths == BuildConfPaths(buildconf, None)
+            btype = bconf.selectedBuildType
+        assert bconf._conf == conf
+        assert bconf.projectName == buildconf.project.name
+        assert bconf.projectVersion == buildconf.project.version
 
     def testDefaultBuildType(self, testingBuildConf):
         buildconf = testingBuildConf
 
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        assert confHandler.defaultBuildType == ''
+        bconf = BuildConfig(asRealConf(buildconf))
+        assert bconf.defaultBuildType == ''
 
         buildconf.buildtypes.mybuildtype = {}
         buildconf.buildtypes.abc = {}
@@ -48,8 +48,8 @@ class TestSuite(object):
 
         # CASE: buildconf.buildtypes.default
         buildconf = deepcopy(testingBuildConf)
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        assert confHandler.defaultBuildType == 'mybuildtype'
+        bconf = BuildConfig(asRealConf(buildconf))
+        assert bconf.defaultBuildType == 'mybuildtype'
 
         # CASE: buildconf.buildtypes.default is not valid in
         # buildconf.platforms
@@ -58,28 +58,28 @@ class TestSuite(object):
             PLATFORM : AutoDict(valid = ['abc'], )
         })
         with pytest.raises(ZenMakeError):
-            confHandler = BuildConfHandler(asRealConf(buildconf))
-            bt = confHandler.defaultBuildType
+            bconf = BuildConfig(asRealConf(buildconf))
+            bt = bconf.defaultBuildType
         buildconf.platforms = AutoDict({
             PLATFORM : AutoDict(valid = ['mybuildtype'], )
         })
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        assert confHandler.defaultBuildType == 'mybuildtype'
+        bconf = BuildConfig(asRealConf(buildconf))
+        assert bconf.defaultBuildType == 'mybuildtype'
 
         # CASE: buildconf.platforms[..].default
         buildconf = deepcopy(testingBuildConf)
         buildconf.platforms = AutoDict({
             PLATFORM : AutoDict(valid = ['abc'], default = 'abc')
         })
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        assert confHandler.defaultBuildType == 'abc'
+        bconf = BuildConfig(asRealConf(buildconf))
+        assert bconf.defaultBuildType == 'abc'
 
         # CASE: buildconf.platforms[..].default doesn't exist
         buildconf = deepcopy(testingBuildConf)
         buildconf.platforms[PLATFORM].default = 'void'
         with pytest.raises(ZenMakeError):
-            confHandler = BuildConfHandler(asRealConf(buildconf))
-            bt = confHandler.defaultBuildType
+            bconf = BuildConfig(asRealConf(buildconf))
+            bt = bconf.defaultBuildType
 
         # CASE: global buildconf.matrix[..].default-buildtype
         buildconf = deepcopy(testingBuildConf)
@@ -88,8 +88,8 @@ class TestSuite(object):
                 'for' : {}, 'set' : { 'default-buildtype' : 'abc' }
             }
         ]
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        assert confHandler.defaultBuildType == 'abc'
+        bconf = BuildConfig(asRealConf(buildconf))
+        assert bconf.defaultBuildType == 'abc'
 
         # CASE: platform buildconf.matrix[..].default-buildtype
         buildconf = deepcopy(testingBuildConf)
@@ -99,33 +99,33 @@ class TestSuite(object):
                 'set' : { 'default-buildtype' : 'abc' }
             }
         ]
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        assert confHandler.defaultBuildType == 'abc'
+        bconf = BuildConfig(asRealConf(buildconf))
+        assert bconf.defaultBuildType == 'abc'
         buildconf.matrix = [
             {
                 'for' : { 'platform' : PLATFORM + randomstr() },
                 'set' : { 'default-buildtype' : 'abc' }
             }
         ]
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        assert confHandler.defaultBuildType == 'mybuildtype'
+        bconf = BuildConfig(asRealConf(buildconf))
+        assert bconf.defaultBuildType == 'mybuildtype'
 
     def testSelectedBuildType(self, testingBuildConf):
         buildconf = testingBuildConf
         buildconf.buildtypes.mybuildtype = {}
         buildconf.buildtypes.default = 'mybuildtype'
 
-        confHandler = BuildConfHandler(asRealConf(buildconf))
+        bconf = BuildConfig(asRealConf(buildconf))
         with pytest.raises(ZenMakeLogicError):
-            bt = confHandler.selectedBuildType
+            bt = bconf.selectedBuildType
 
         buildtype = 'mybuildtype'
-        confHandler.applyBuildType(buildtype)
-        assert confHandler.selectedBuildType == buildtype
+        bconf.applyBuildType(buildtype)
+        assert bconf.selectedBuildType == buildtype
 
     def _checkSupportedBuildTypes(self, buildconf, expected):
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        assert sorted(confHandler.supportedBuildTypes) == sorted(expected)
+        bconf = BuildConfig(asRealConf(buildconf))
+        assert sorted(bconf.supportedBuildTypes) == sorted(expected)
 
     def testSupportedBuildTypes(self, testingBuildConf):
         buildconf = testingBuildConf
@@ -145,8 +145,8 @@ class TestSuite(object):
         buildconf = deepcopy(testingBuildConf)
         buildconf.platforms[PLATFORM] = AutoDict()
         with pytest.raises(ZenMakeError):
-            confHandler = BuildConfHandler(asRealConf(buildconf))
-            empty = confHandler.supportedBuildTypes
+            bconf = BuildConfig(asRealConf(buildconf))
+            empty = bconf.supportedBuildTypes
 
         # CASE: buildtypes in buildconf.buildtypes and non-empty value of
         # buildconf.platforms[PLATFORM] with non-existent value.
@@ -268,45 +268,43 @@ class TestSuite(object):
         self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2' ])
 
 
-    def testHandleCmdLineArgs(self, testingBuildConf):
+    def testApplyBuildType(self, testingBuildConf):
 
         buildtype = 'mybuildtype'
-
-        fakeBuildConf = utils.loadPyModule('zm.buildconf.fakeconf', withImport = False)
-        bconfloader.applyDefaults(fakeBuildConf)
-        confHandler = BuildConfHandler(fakeBuildConf)
-        with pytest.raises(ZenMakeError):
-            confHandler.applyBuildType(buildtype)
 
         buildconf = testingBuildConf
         buildconf.buildtypes.mybuildtype = {}
         buildconf.buildtypes.default = 'mybuildtype'
 
-        confHandler = BuildConfHandler(asRealConf(buildconf))
+        bconf = BuildConfig(asRealConf(buildconf))
         with pytest.raises(ZenMakeLogicError):
-            bt = confHandler.selectedBuildType
+            bt = bconf.selectedBuildType
 
         with pytest.raises(ZenMakeError):
-            confHandler.applyBuildType(None)
+            bconf.applyBuildType(None)
 
-        confHandler.applyBuildType(buildtype)
+        bconf.applyBuildType(buildtype)
         # Hm, all other results of this method is checked in testSupportedBuildTypes
-        assert confHandler.selectedBuildType
+        assert bconf.selectedBuildType
 
     def _checkTasks(self, buildconf, buildtype, expected):
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        confHandler.applyBuildType(buildtype)
-        assert confHandler.tasks == expected
+        bconf = BuildConfig(asRealConf(buildconf))
+        bconf.applyBuildType(buildtype)
+
+        expected = expected.copy()
+        for task in expected:
+            expected[task]['$startdir'] = '.'
+        assert bconf.tasks == expected
         # to force covering of cache
-        assert confHandler.tasks == expected
+        assert bconf.tasks == expected
 
     def testTasks(self, testingBuildConf, monkeypatch):
         buildconf = testingBuildConf
 
         # CASE: invalid use
-        confHandler = BuildConfHandler(asRealConf(buildconf))
+        bconf = BuildConfig(asRealConf(buildconf))
         with pytest.raises(ZenMakeLogicError):
-            empty = confHandler.tasks
+            empty = bconf.tasks
 
         buildconf.buildtypes.default = 'mybuildtype'
         buildconf.buildtypes.mybuildtype = {}
@@ -315,11 +313,11 @@ class TestSuite(object):
 
         # CASE: just empty buildconf.tasks
         buildconf = deepcopy(testingBuildConf)
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        confHandler.applyBuildType(buildtype)
-        assert confHandler.tasks == {}
+        bconf = BuildConfig(asRealConf(buildconf))
+        bconf.applyBuildType(buildtype)
+        assert bconf.tasks == {}
         # this assert just for in case
-        assert confHandler.selectedBuildType == 'mybuildtype'
+        assert bconf.selectedBuildType == 'mybuildtype'
 
         # CASE: just some buildconf.tasks, nothing else
         buildconf = deepcopy(testingBuildConf)
@@ -530,20 +528,20 @@ class TestSuite(object):
         })
 
     def _checkToolchainNames(self, buildconf, buildtype, expected):
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        confHandler.applyBuildType(buildtype)
-        assert sorted(confHandler.toolchainNames) == sorted(expected)
+        bconf = BuildConfig(asRealConf(buildconf))
+        bconf.applyBuildType(buildtype)
+        assert sorted(bconf.toolchainNames) == sorted(expected)
         # to force covering of cache
-        assert sorted(confHandler.toolchainNames) == sorted(expected)
+        assert sorted(bconf.toolchainNames) == sorted(expected)
 
     def testToolchainNames(self, testingBuildConf):
 
         buildconf = testingBuildConf
 
         # CASE: invalid use
-        confHandler = BuildConfHandler(asRealConf(buildconf))
+        bconf = BuildConfig(asRealConf(buildconf))
         with pytest.raises(ZenMakeLogicError):
-            empty = confHandler.toolchainNames
+            empty = bconf.toolchainNames
 
         buildconf.buildtypes['debug-gxx'] = {}
         buildconf.buildtypes.default = 'debug-gxx'
@@ -553,10 +551,10 @@ class TestSuite(object):
         buildconf = deepcopy(testingBuildConf)
         buildconf.tasks.test1.param1 = '111'
         buildconf.tasks.test2.param2 = '222'
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        confHandler.applyBuildType(buildtype)
+        bconf = BuildConfig(asRealConf(buildconf))
+        bconf.applyBuildType(buildtype)
         # it returns tuple but it can return list so we check by len
-        assert len(confHandler.toolchainNames) == 0
+        assert len(bconf.toolchainNames) == 0
 
         # CASE: tasks with the same toolchain
         buildconf = deepcopy(testingBuildConf)
@@ -580,10 +578,10 @@ class TestSuite(object):
                 'set' : { 'param1' : '11', 'param2' : '22' }
             },
         ]
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        confHandler.applyBuildType(buildtype)
+        bconf = BuildConfig(asRealConf(buildconf))
+        bconf.applyBuildType(buildtype)
         # it returns tuple but it can return list so we check by len
-        assert len(confHandler.toolchainNames) == 0
+        assert len(bconf.toolchainNames) == 0
 
         # CASE: tasks in matrix with the same toolchain
         buildconf = deepcopy(testingBuildConf)
@@ -611,17 +609,17 @@ class TestSuite(object):
 
         # CASE: no custom toolchains
         buildconf = deepcopy(testingBuildConf)
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        assert confHandler.customToolchains == {}
+        bconf = BuildConfig(asRealConf(buildconf))
+        assert bconf.customToolchains == {}
 
         # CASE: invalid toolchain
         buildconf = deepcopy(testingBuildConf)
         buildconf.toolchains = {
             'something' : {}
         }
-        confHandler = BuildConfHandler(asRealConf(buildconf))
+        bconf = BuildConfig(asRealConf(buildconf))
         with pytest.raises(ZenMakeError):
-            empty = confHandler.customToolchains
+            empty = bconf.customToolchains
 
         # CASE: one custom toolchain with fake path
         buildconf = deepcopy(testingBuildConf)
@@ -631,16 +629,16 @@ class TestSuite(object):
                 'var': joinpath('path', 'to', 'toolchain')
             },
         }
-        confHandler = BuildConfHandler(asRealConf(buildconf))
-        confPaths = confHandler.confPaths
+        bconf = BuildConfig(asRealConf(buildconf))
+        confPaths = bconf.confPaths
         expected = deepcopy(buildconf.toolchains)
         expected['something']['vars'] = {
-            'var' : utils.unfoldPath(confPaths.projectroot,
+            'var' : utils.unfoldPath(confPaths.startdir,
                                      buildconf.toolchains['something']['var'])
         }
         del expected['something']['var']
-        assert confHandler.customToolchains == expected
+        assert bconf.customToolchains == expected
         captured = capsys.readouterr()
-        assert "doesn't exists" in captured.err
+        assert "doesn't exist" in captured.err
         # to force covering of cache
-        assert confHandler.customToolchains == expected
+        assert bconf.customToolchains == expected

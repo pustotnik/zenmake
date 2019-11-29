@@ -8,7 +8,6 @@
 
 import os
 
-from zm import utils
 from zm.error import ZenMakeConfValueError
 from zm.constants import WAF_CACHE_DIRNAME, WAF_CACHE_NAMESUFFIX, \
                          ZENMAKE_CMN_CFGSET_FILENAME, BUILDOUTNAME
@@ -24,42 +23,31 @@ class ConfPaths(object):
 
     __slots__ = (
         'buildconffile', 'buildconfdir', 'buildroot', 'realbuildroot',
-        'buildout', 'projectroot', 'srcroot', 'wscripttop', 'wscriptout',
+        'startdir', 'buildout', 'wscripttop', 'wscriptout',
         'wafcachedir', 'wafcachefile', 'zmcachedir', 'zmcmnconfset',
     )
 
-    def __init__(self, conf, buildroot):
+    def __init__(self, bconf):
+        """
+        bconf - object of buildconf.Config
+        """
 
-        dirname    = os.path.dirname
-        abspath    = os.path.abspath
-        unfoldPath = utils.unfoldPath
-        getNative  = utils.getNativePath
+        #pylint: disable=protected-access
+        buildconf = bconf._conf
+        #pylint: enable=protected-access
 
-        if not buildroot:
-            buildroot = conf.buildroot
+        # See buildconf.Config
+        self.buildconffile = bconf.path
+        self.buildconfdir  = bconf.confdir
+        self.startdir      = buildconf.startdir
+        self.buildroot     = buildconf.buildroot
+        self.realbuildroot = buildconf.realbuildroot
 
-        buildroot     = getNative(buildroot)
-        srcroot       = getNative(conf.srcroot)
-        projectroot   = getNative(conf.project['root'])
+        # other attributes
+        self.buildout = joinpath(self.buildroot, BUILDOUTNAME)
 
-        if not hasattr(conf, 'realbuildroot') or not conf.realbuildroot:
-            realbuildroot = buildroot
-        else:
-            realbuildroot = getNative(conf.realbuildroot)
-
-        self.buildconffile = abspath(conf.__file__)
-        self.buildconfdir  = dirname(self.buildconffile)
-        self.buildroot     = unfoldPath(self.buildconfdir, buildroot)
-        self.buildout      = joinpath(self.buildroot, BUILDOUTNAME)
-        self.projectroot   = unfoldPath(self.buildconfdir, projectroot)
-        self.srcroot       = unfoldPath(self.buildconfdir, srcroot)
-
-        if realbuildroot == buildroot:
-            self.realbuildroot = self.buildroot
-        else:
-            self.realbuildroot = unfoldPath(self.buildconfdir, realbuildroot)
-
-        self.wscripttop    = self.projectroot
+        #self.wscripttop    = self.buildconfdir
+        self.wscripttop    = self.startdir
 
         self.wscriptout    = self.buildout
         self.wafcachedir   = joinpath(self.buildout, WAF_CACHE_DIRNAME)
@@ -67,13 +55,11 @@ class ConfPaths(object):
         self.zmcachedir    = self.wafcachedir
         self.zmcmnconfset  = joinpath(self.buildroot, ZENMAKE_CMN_CFGSET_FILENAME)
 
-        self._checkBuildRoot('buildroot', 'projectroot')
-        self._checkBuildRoot('buildroot', 'srcroot')
+        self._checkBuildRoot('buildroot', 'startdir')
         self._checkBuildRoot('buildroot', 'buildconfdir')
 
         if self.realbuildroot != self.buildroot:
-            self._checkBuildRoot('realbuildroot', 'projectroot')
-            self._checkBuildRoot('realbuildroot', 'srcroot')
+            self._checkBuildRoot('realbuildroot', 'startdir')
             self._checkBuildRoot('realbuildroot', 'buildconfdir')
 
     def __eq__(self, other):
@@ -86,9 +72,7 @@ class ConfPaths(object):
         buildrootVal = getattr(self, buildrootName)
         checkingVal = getattr(self, checkingName)
 
-        if checkingName == 'projectroot':
-            checkingName = "'project.root'"
-        elif checkingName == 'buildconfdir':
+        if checkingName == 'buildconfdir':
             checkingName = 'directory with buildconf file'
         else:
             checkingName = "%r" % checkingName

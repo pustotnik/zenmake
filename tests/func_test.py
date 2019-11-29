@@ -1,7 +1,11 @@
 # coding=utf-8
 #
 
-# pylint: skip-file
+# _pylint: skip-file
+# pylint: disable = wildcard-import, unused-wildcard-import, unused-import
+# pylint: disable = missing-docstring, invalid-name, bad-continuation
+# pylint: disable = unused-argument, no-member, attribute-defined-outside-init
+# pylint: disable = too-many-lines
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
@@ -17,19 +21,20 @@ import shutil
 import platform as _platform
 from collections import defaultdict
 from copy import copy, deepcopy
-from zipfile import ZipFile, is_zipfile as iszip
+from zipfile import is_zipfile as iszip
 
 import pytest
-from waflib import Build, Context
+from waflib import Context
 from waflib.ConfigSet import ConfigSet
 import tests.common as cmn
 from zm import starter
-from zm import pyutils, assist, cli, utils, zipapp, version
+from zm import pyutils, cli, utils, zipapp, version
+from zm.waf import launcher, assist
 from zm.autodict import AutoDict
 from zm.buildconf import loader as bconfloader
-from zm.buildconf.handler import ConfHandler as BuildConfHandler
+from zm.buildconf.processing import ConfManager as BuildConfManager
 from zm.constants import ZENMAKE_CMN_CFGSET_FILENAME, PLATFORM, APPNAME
-from zm.constants import TASK_WAF_MAIN_FEATURES
+from zm.constants import TASK_WAF_MAIN_FEATURES, BUILDCONF_FILENAMES
 from zm.toolchains import CompilersInfo
 from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES
 
@@ -55,9 +60,20 @@ def collectProjectDirs():
         assert os.path.isdir(path)
 
     result = []
+    dirWithConf = None
     for dirpath, _, filenames in os.walk(cmn.TEST_PROJECTS_DIR):
-        if 'buildconf.py' not in filenames and 'buildconf.yaml' not in filenames:
+
+        if not any(x in BUILDCONF_FILENAMES for x in filenames):
             continue
+
+        if not dirWithConf:
+            dirWithConf = dirpath
+        elif dirpath.startswith(dirWithConf):
+            #collect only top-level configs
+            continue
+        else:
+            dirWithConf = dirpath
+
         prjdir = os.path.relpath(dirpath, cmn.TEST_PROJECTS_DIR)
         condition = TEST_CONDITIONS.get(prjdir, None)
         if condition:
@@ -69,7 +85,9 @@ def collectProjectDirs():
             if py and not any(PYTHON_VER.startswith(x) for x in py):
                 print('We ignore tests for %r on python %r' % (prjdir, PYTHON_VER))
                 continue
+
         result.append(prjdir)
+
     result.sort()
     return result
 
@@ -139,33 +157,25 @@ def setupTest(self, request, tmpdir):
     #if not testName:
     #    testName = request.node.name
 
-    #projectDirName = request.param
-    projectDirName = 'prj'
+    demosDir = 'demos'
 
     if PLATFORM == 'windows':
         # On windows with pytest it gets too long path
-        projectDirName = '_' # shortest name
+        demosDir = '_' # shortest name
         tmpdirForTests = cmn.SHARED_TMP_DIR
-        tmptestDir = joinpath(tmpdirForTests, projectDirName)
+        tmptestDir = joinpath(tmpdirForTests, demosDir)
         shutil.rmtree(tmptestDir, ignore_errors = True)
     else:
-        tmptestDir = joinpath(str(tmpdir.realpath()), projectDirName)
+        tmptestDir = joinpath(str(tmpdir.realpath()), demosDir)
 
     def copytreeIgnore(src, names):
         # don't copy build dir/files
         if ZENMAKE_CMN_CFGSET_FILENAME in names:
             return names
-        return ['build']
+        return ['build', '_build']
 
-    currentPrjDir = joinpath(cmn.TEST_PROJECTS_DIR, request.param)
-    prjBuildDir = joinpath(currentPrjDir, 'build')
-    if os.path.exists(prjBuildDir):
-        prjBuildDir = os.path.realpath(prjBuildDir)
-        if os.path.isdir(prjBuildDir):
-            shutil.rmtree(prjBuildDir, ignore_errors = True)
-    shutil.copytree(currentPrjDir, tmptestDir, ignore = copytreeIgnore)
-
-    self.cwd = tmptestDir
+    shutil.copytree(cmn.TEST_PROJECTS_DIR, tmptestDir, ignore = copytreeIgnore)
+    self.cwd = joinpath(tmptestDir, request.param)
     self.projectConf = bconfloader.load(dirpath = self.cwd)
 
 def processConfHandlerWithCLI(testSuit, cmdLine):
@@ -175,17 +185,20 @@ def processConfHandlerWithCLI(testSuit, cmdLine):
     cmd, _ = starter.handleCLI(cmdLine, True, None)
     cliBuildRoot = cmd.args.get('buildroot', None)
 
-    testSuit.confHandler = BuildConfHandler(testSuit.projectConf, cliBuildRoot)
-    testSuit.confPaths = testSuit.confHandler.confPaths
+    bconfDir = testSuit.cwd
+    confManager = BuildConfManager(bconfDir, cliBuildRoot)
+    testSuit.confManager = confManager
+    testSuit.confPaths = confManager.root.confPaths
 
-    cmd, _ = starter.handleCLI(cmdLine, False, testSuit.confHandler)
-    testSuit.confHandler.applyBuildType(cmd.args.buildtype)
+    cmd, _ = starter.handleCLI(cmdLine, False, confManager.root.options)
+    assist.initBuildType(confManager, cmd.args.buildtype)
 
 def getTaskEnv(testSuit, taskName):
-    buildtype = testSuit.confHandler.selectedBuildType
+    bconf = testSuit.confManager.root
+    buildtype = bconf.selectedBuildType
     taskVariant = assist.makeTaskVariantName(buildtype, taskName)
     cacheConfFile = assist.makeCacheConfFileName(
-                                    testSuit.confPaths.zmcachedir, taskVariant)
+                                    bconf.confPaths.zmcachedir, taskVariant)
     env = ConfigSet(cacheConfFile)
     return env
 
@@ -206,13 +219,17 @@ def getTargetPattern(testSuit, taskName, features):
 def handleTaskFeatures(testSuit, taskParams):
     assist.detectConfTaskFeatures(taskParams)
     if 'source' in taskParams:
-        confPaths = testSuit.confPaths
-        srcDir = os.path.relpath(confPaths.srcroot, confPaths.buildconfdir)
         ctx = Context.Context(run_dir = testSuit.cwd)
-        srcDirNode = ctx.path.find_dir(srcDir)
-        taskParams['source'] = assist.handleTaskSourceParam(taskParams, srcDirNode)
+        setattr(ctx, 'bconfManager', testSuit.confManager)
+        taskParams['source'] = assist.handleTaskSourceParam(ctx, taskParams)
     assist.handleFeaturesAlieses(taskParams)
     assert isinstance(taskParams['features'], list)
+
+def getBuildTasks(confManager):
+    tasks = {}
+    for bconf in confManager.configs:
+        tasks.update(bconf.tasks)
+    return tasks
 
 def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
 
@@ -230,10 +247,13 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
 
     # checks for target files
     processConfHandlerWithCLI(testSuit, cmdLine)
-    buildtype = testSuit.confHandler.selectedBuildType
+    confManager = testSuit.confManager
+    buildtype = confManager.root.selectedBuildType
+    buildout = confManager.root.confPaths.buildout
     isWindows = PLATFORM == 'windows'
 
-    for taskName, taskParams in testSuit.confHandler.tasks.items():
+    tasks = getBuildTasks(confManager)
+    for taskName, taskParams in tasks.items():
 
         handleTaskFeatures(testSuit, taskParams)
         features = taskParams['features']
@@ -248,8 +268,7 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
 
         fileNamePattern, isExe = getTargetPattern(testSuit, taskName, features)
         target = taskParams.get('target', taskName)
-        targetpath = joinpath(testSuit.confPaths.buildout, buildtype,
-                                fileNamePattern % target)
+        targetpath = joinpath(buildout, buildtype, fileNamePattern % target)
 
         assert os.path.isfile(targetpath) == resultExists
         if resultExists and isExe:
@@ -352,11 +371,12 @@ class TestBase(object):
     def testCustomToolchain(self, customtoolchains):
 
         cmdLine = ['build']
-        returncode, stdout, stderr =  self._runZm(cmdLine)
+        returncode, stdout, _ =  self._runZm(cmdLine)
         assert returncode == 0
         checkBuildResults(self, cmdLine, True)
 
-        for taskName, taskParams in self.confHandler.tasks.items():
+        tasks = getBuildTasks(self.confManager)
+        for taskParams in tasks.values():
             toolchain = taskParams.get('toolchain', None)
             assert toolchain is not None
             if not toolchain.startswith('custom-'):
@@ -603,7 +623,7 @@ class TestFeatureTest(object):
                 if not ('cout' in line and 'calcSum' in line):
                     continue
                 lines.insert(i + 1, 'std::cout << "Test was changed" << std::endl;\n')
-                break;
+                break
 
         with open(fpath, 'w') as file:
             file.writelines(lines)
@@ -682,7 +702,7 @@ class TestIndyCmd(object):
     def testZipAppCmd(self, tmpdir):
         cmdLine = ['zipapp']
         self.cwd = str(tmpdir.realpath())
-        exitcode, stdout, stderr = runZm(self, cmdLine)
+        exitcode = runZm(self, cmdLine)[0]
         assert exitcode == 0
         zipAppPath = joinpath(self.cwd, zipapp.ZIPAPP_NAME)
         assert os.path.isfile(zipAppPath)
@@ -691,14 +711,14 @@ class TestIndyCmd(object):
     def testVersionCmd(self, tmpdir):
         cmdLine = ['version']
         self.cwd = str(tmpdir.realpath())
-        exitcode, stdout, stderr = runZm(self, cmdLine)
+        exitcode, stdout, _ = runZm(self, cmdLine)
         assert exitcode == 0
         assert 'version' in stdout
 
     def testSysInfoCmd(self, tmpdir):
         cmdLine = ['sysinfo']
         self.cwd = str(tmpdir.realpath())
-        exitcode, stdout, stderr = runZm(self, cmdLine)
+        exitcode, stdout, _ = runZm(self, cmdLine)
         assert exitcode == 0
         assert 'information' in stdout
 
@@ -837,7 +857,8 @@ class TestInstall(object):
 
         targets = set()
         processConfHandlerWithCLI(self, cmdLine)
-        for taskName, taskParams in self.confHandler.tasks.items():
+        tasks = getBuildTasks(self.confManager)
+        for taskName, taskParams in tasks.items():
 
             handleTaskFeatures(self, taskParams)
             features = taskParams['features']
@@ -869,7 +890,8 @@ class TestInstall(object):
                 targetpath = joinpath(installPath, targetpath)
 
             if check.destdir:
-                targetpath = joinpath(check.destdir, os.path.splitdrive(targetpath)[1].lstrip(os.sep))
+                targetpath = joinpath(check.destdir,
+                                      os.path.splitdrive(targetpath)[1].lstrip(os.sep))
             assert os.path.isfile(targetpath)
             if isExe:
                 assert os.access(targetpath, os.X_OK)
@@ -882,7 +904,7 @@ class TestInstall(object):
                 assert os.path.isfile(targetpath)
                 targets.add(targetpath)
 
-        for root, dirs, files in os.walk(check.destdir):
+        for root, _, files in os.walk(check.destdir):
             for name in files:
                 path = joinpath(root, name)
                 assert path in targets

@@ -12,11 +12,10 @@ import subprocess
 
 from waflib import Options, Context, Configure, Utils
 from waflib.ConfigSet import ConfigSet
-from zm.constants import BUILDCONF_FILENAMES
-from zm import log, assist, utils, error, wscriptimpl
+from zm import log, utils
 from zm.pyutils import stringtype
 from zm.pypkg import PkgPath
-from zm.waf import launcher
+from zm.waf import assist, launcher
 
 joinpath = os.path.join
 
@@ -24,19 +23,18 @@ joinpath = os.path.join
 # It's just to rid of needless work and to save working time.
 Configure.autoconfig = False
 
-def _isBuildTypeNotConfigured(bconfHandler):
+def _isBuildTypeNotConfigured(bconfMngr):
 
-    from zm.buildconf.utils import gatherAllTaskNames
+    rootbconf  = bconfMngr.root
+    buildtype  = rootbconf.selectedBuildType
+    zmcachedir = rootbconf.confPaths.zmcachedir
 
-    buildtype = bconfHandler.selectedBuildType
-    zmcachedir = bconfHandler.confPaths.zmcachedir
-
-    allTaskNames = gatherAllTaskNames(bconfHandler.conf)
-    for taskName in allTaskNames:
-        taskVariant = assist.makeTaskVariantName(buildtype, taskName)
-        fname = assist.makeCacheConfFileName(zmcachedir, taskVariant)
-        if not os.path.exists(fname):
-            return True
+    for bconf in bconfMngr.configs:
+        for taskName in bconf.taskNames:
+            taskVariant = assist.makeTaskVariantName(buildtype, taskName)
+            fname = assist.makeCacheConfFileName(zmcachedir, taskVariant)
+            if not os.path.isfile(fname):
+                return True
     return False
 
 def _loadLockfileEnv(bconfPaths):
@@ -66,7 +64,7 @@ def _handleNoLockInTop(ctx, envGetter):
 
     # It's needed to rerun command to apply changes in Context otherwise
     # Waf won't work correctly.
-    launcher.runCommand(ctx.bconfHandler, ctx.cmd)
+    launcher.runCommand(ctx.bconfManager, ctx.cmd)
     return True
 
 def wrapBldCtxNoLockInTop(method):
@@ -76,7 +74,7 @@ def wrapBldCtxNoLockInTop(method):
     """
 
     def execute(ctx):
-        bconfPaths = ctx.bconfHandler.confPaths
+        bconfPaths = ctx.bconfManager.root.confPaths
         if not _handleNoLockInTop(ctx, lambda: _loadLockfileEnv(bconfPaths)):
             method(ctx)
 
@@ -90,8 +88,8 @@ def wrapBldCtxAutoConf(method):
     """
 
     def runConfigAndCommand(ctx, env):
-        launcher.runCommand(ctx.bconfHandler, env.config_cmd or 'configure')
-        launcher.runCommand(ctx.bconfHandler, ctx.cmd)
+        launcher.runCommand(ctx.bconfManager, env.config_cmd or 'configure')
+        launcher.runCommand(ctx.bconfManager, ctx.cmd)
 
     def execute(ctx):
 
@@ -109,10 +107,12 @@ def wrapBldCtxAutoConf(method):
             wrapBldCtxAutoConf.onlyRunMethod = False
             return
 
-        bconfPaths = ctx.bconfHandler.confPaths
+        bconfMngr = ctx.bconfManager
+        bconf = bconfMngr.root
+        bconfPaths = bconf.confPaths
 
         # Execute the configuration automatically
-        autoconfig = ctx.bconfHandler.conf.features['autoconfig']
+        autoconfig = bconf.features['autoconfig']
 
         if not autoconfig:
             if not _handleNoLockInTop(ctx, lambda: _loadLockfileEnv(bconfPaths)):
@@ -129,7 +129,7 @@ def wrapBldCtxAutoConf(method):
             runConfigAndCommand(ctx, ConfigSet())
             return
 
-        if env.run_dir != bconfPaths.buildconfdir:
+        if env.run_dir != bconfPaths.startdir:
             runConfigAndCommand(ctx, env)
             return
 
@@ -140,7 +140,7 @@ def wrapBldCtxAutoConf(method):
             runConfigAndCommand(ctx, env)
             return
 
-        if _isBuildTypeNotConfigured(ctx.bconfHandler):
+        if _isBuildTypeNotConfigured(bconfMngr):
             runConfigAndCommand(ctx, env)
             return
 
@@ -193,81 +193,16 @@ def getFileExtensions(src):
         ret.add(path[path.rfind('.') + 1:])
     return ret
 
-def wrapCtxRecurse():
-    """
-    Wrap Context.Context.recurse to work correctly without 'wscript'.
-    """
-
-    #pylint: disable=too-many-arguments,unused-argument
-    def execute(ctx, dirs, name = None, mandatory = True, once = True, encoding = None):
-
-        try:
-            cache = ctx.recurseCache
-        except AttributeError:
-            cache = ctx.recurseCache = {}
-
-        for dirpath in utils.toList(dirs):
-
-            if not os.path.isabs(dirpath):
-                # absolute paths only
-                dirpath = joinpath(ctx.path.abspath(), dirpath)
-
-            # try to find buildconf
-            for fname in BUILDCONF_FILENAMES:
-                node = ctx.root.find_node(joinpath(dirpath, fname))
-                if node:
-                    break
-            else:
-                continue
-
-            tup = (node, name or ctx.fun)
-            if once and tup in cache:
-                continue
-
-            cache[tup] = True
-            ctx.pre_recurse(node)
-            try:
-                # try to find function for command
-                func = getattr(wscriptimpl, (name or ctx.fun), None)
-                if not func:
-                    if not mandatory:
-                        continue
-                    errmsg = 'No function %r defined in %s' % \
-                                (name or ctx.fun, wscriptimpl.__file__)
-                    raise error.ZenMakeError(errmsg)
-                # call function for command
-                func(ctx)
-            finally:
-                ctx.post_recurse(node)
-
-    return execute
-
-def wrapCfgCtxPostRecurse():
-    """
-    Wrap Configure.ConfigurationContext.post_recurse to avoid some actions.
-    It's mostly for performance
-    """
-
-    def execute(ctx, node):
-        super(Configure.ConfigurationContext, ctx).post_recurse(node)
-        ctx.hash = 0
-        ctx.files = []
-
-    return execute
-
-def setupAll():
-    """ Setup all wrappers for Waf """
+def setup():
+    """ Setup some wrappers for Waf """
 
     Utils.get_process = wrapUtilsGetProcess(Utils.get_process)
 
-    Context.Context.recurse = wrapCtxRecurse()
-    Configure.ConfigurationContext.post_recurse = wrapCfgCtxPostRecurse()
+    from waflib.Tools import c_aliases
+    c_aliases.get_extensions = getFileExtensions
 
     from waflib import Build
 
     Build.BuildContext.execute = wrapBldCtxAutoConf(Build.BuildContext.execute)
     for ctxCls in (Build.CleanContext, Build.ListContext):
         ctxCls.execute = wrapBldCtxNoLockInTop(ctxCls.execute)
-
-    from waflib.Tools import c_aliases
-    c_aliases.get_extensions = getFileExtensions

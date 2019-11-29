@@ -13,6 +13,7 @@ import shutil
 import pytest
 from zm.error import *
 import tests.common as cmn
+from zm.constants import DEFAULT_BUILDROOTNAME
 from zm.buildconf import loader as bconfloader
 
 file = __file__
@@ -21,46 +22,68 @@ class FakeBuildConf:
     __name__ = 'testconf'
     __file__ = file
 
+def checkCommonDefaults(buildconf):
+
+    assert not hasattr(buildconf, 'startdir')
+    assert not hasattr(buildconf, 'realbuildroot')
+
+    assert hasattr(buildconf, 'options')
+    assert buildconf.options == {}
+
+    assert hasattr(buildconf, 'features')
+
+    assert hasattr(buildconf, 'subdirs')
+    assert buildconf.subdirs == []
+
+    assert hasattr(buildconf, 'project')
+
+    for param in ('toolchains', 'platforms', 'buildtypes', 'tasks'):
+        assert hasattr(buildconf, param)
+        assert getattr(buildconf, param) == {}
+
+    assert hasattr(buildconf, 'matrix')
+    assert buildconf.matrix == []
+
 def testInitDefaults():
 
+    ######### top-level
+
     buildconf = FakeBuildConf()
-    bconfloader.applyDefaults(buildconf)
+    projectDir = os.path.dirname(buildconf.__file__)
+    bconfloader.applyDefaults(buildconf, True, projectDir)
     # check if applyDefaults produces validate params
     bconfloader.validate(buildconf)
 
-    assert hasattr(buildconf, 'features')
+    checkCommonDefaults(buildconf)
+
+    assert hasattr(buildconf, 'buildroot')
+    assert buildconf.buildroot == DEFAULT_BUILDROOTNAME
+
     assert buildconf.features == { 'autoconfig': True }
 
-    assert hasattr(buildconf, 'project')
     assert buildconf.project == {
-        'root' : os.curdir,
         'name' : 'tests', # name of directory with current test
         'version': '',
     }
 
-    assert hasattr(buildconf, 'toolchains')
-    assert buildconf.toolchains == {}
+    ######### not top-level
 
-    assert hasattr(buildconf, 'platforms')
-    assert buildconf.platforms == {}
+    buildconf = FakeBuildConf()
+    projectDir = os.path.dirname(buildconf.__file__)
+    bconfloader.applyDefaults(buildconf, False, projectDir)
+    # check if applyDefaults produces validate params
+    bconfloader.validate(buildconf)
 
-    assert hasattr(buildconf, 'buildtypes')
+    checkCommonDefaults(buildconf)
 
-    assert hasattr(buildconf, 'tasks')
-    assert buildconf.tasks == {}
-
-    assert hasattr(buildconf, 'buildroot')
-    assert buildconf.buildroot == \
-                        os.path.join(buildconf.project['root'], 'build')
-
-    assert hasattr(buildconf, 'srcroot')
-    assert buildconf.srcroot == buildconf.project['root']
+    assert buildconf.features == {}
+    assert buildconf.project == {}
 
     ###################
 
     buildconf = FakeBuildConf()
     setattr(buildconf, 'features', { 'autoconfig' : False })
-    bconfloader.applyDefaults(buildconf)
+    bconfloader.applyDefaults(buildconf, True, '')
     assert buildconf.features == { 'autoconfig': False }
 
     buildconf = FakeBuildConf()
@@ -72,7 +95,7 @@ def testInitDefaults():
         },
     }
     setattr(buildconf, 'buildtypes', buildtypes)
-    bconfloader.applyDefaults(buildconf)
+    bconfloader.applyDefaults(buildconf, True, '')
     # check if applyDefaults produces validate params
     bconfloader.validate(buildconf)
 
@@ -80,7 +103,7 @@ def testInitDefaults():
 
 def testLoad(capsys, monkeypatch, tmpdir):
     import sys
-    from zm.assist import isBuildConfFake
+    from zm.waf.assist import isBuildConfFake
 
     buildconf = bconfloader.load(check = False)
     buildconf = bconfloader.load(check = True)

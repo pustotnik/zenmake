@@ -27,10 +27,10 @@ else:
 def _processCmdLine(conf, cwd, shell, cmdArgs):
     """ Get and process 'cmd' at 'configure' stage """
 
-    confHandler = conf.bconfHandler
-    bconfPaths  = confHandler.confPaths
-    btypeDir    = confHandler.selectedBuildTypeDir
-    projectroot = bconfPaths.projectroot
+    bconf      = conf.getbconf()
+    bconfPaths = bconf.confPaths
+    btypeDir   = bconf.selectedBuildTypeDir
+    startdir   = bconfPaths.startdir
 
     cmdline = cmdArgs.get('cmd', '').strip()
     if not cmdline:
@@ -49,7 +49,7 @@ def _processCmdLine(conf, cwd, shell, cmdArgs):
         if any(' ' in s for s in cmdSplitted):
             shell = True
 
-    paths = [cwd, projectroot, btypeDir]
+    paths = [cwd, startdir, btypeDir]
     paths.extend(os.environ.get('PATH', '').split(os.pathsep))
     fkw = dict(
         path_list = paths, quiet = True,
@@ -86,11 +86,10 @@ def _processCmdLine(conf, cwd, shell, cmdArgs):
 def postConf(conf):
     """ Prepare task params after wscript.configure """
 
-    confHandler = conf.bconfHandler
-    bconfPaths  = confHandler.confPaths
-    btypeDir    = confHandler.selectedBuildTypeDir
-    projectroot = bconfPaths.projectroot
-    tasks       = confHandler.tasks
+    bconf      = conf.getbconf()
+    btypeDir   = bconf.selectedBuildTypeDir
+    rootdir    = bconf.rootdir
+    tasks      = bconf.tasks
 
     for taskName, taskParams in viewitems(tasks):
         features = taskParams['features']
@@ -114,8 +113,11 @@ def postConf(conf):
 
         cwd = cmdArgs.get('cwd', None)
         if cwd:
+            startdir = cmdArgs.get('startdir', bconf.startdir)
             if not os.path.isabs(cwd):
-                cwd = os.path.join(projectroot, cwd)
+                if not os.path.isabs(startdir):
+                    startdir = os.path.join(rootdir, startdir)
+                cwd = os.path.join(startdir, cwd)
             cwd = conf.root.make_node(cwd).abspath()
         else:
             cwd = btypeDir
@@ -197,24 +199,22 @@ def _createRunCmdTask(tgen, ruleArgs):
 
     return task
 
-def _createRuleWithFunc(confHandler, funcName):
+def _createRuleWithFunc(bconf, funcName):
 
-    bconfPaths  = confHandler.confPaths
-    bconf = confHandler.conf
-    func = getattr(bconf, funcName)
+    bconfPaths  = bconf.confPaths
+    func = bconf.getattr(funcName)[0]
 
     def runFunc(task):
         tgen = task.generator
         zmTaskParams = getattr(tgen, 'zm-task-params', {})
         args = {
-            'taskname'    : tgen.name,
-            'projectroot' : bconfPaths.projectroot,
-            'srcroot'     : bconfPaths.srcroot,
-            'buildroot'   : bconfPaths.buildroot,
-            'buildout'    : bconfPaths.buildout,
-            'buildtype'   : confHandler.selectedBuildType,
-            'target'      : zmTaskParams.get('$real.target', ''),
-            'waftask'     : task,
+            'taskname'  : tgen.name,
+            'startdir'  : bconfPaths.startdir,
+            'buildroot' : bconfPaths.buildroot,
+            'buildout'  : bconfPaths.buildout,
+            'buildtype' : bconf.selectedBuildType,
+            'target'    : zmTaskParams.get('$real.target', ''),
+            'waftask'   : task,
         }
         func(args)
 
@@ -269,7 +269,7 @@ def applyRunCmd(tgen):
         raise error.ZenMakeError(msg)
 
     if cmdType == 'func':
-        ruleArgs['rule'] = _createRuleWithFunc(ctx.bconfHandler, cmd)
+        ruleArgs['rule'] = _createRuleWithFunc(ctx.getbconf(), cmd)
     else:
         ruleArgs['rule'] = cmd
 

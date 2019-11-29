@@ -37,7 +37,7 @@ def unsetEnviron(monkeypatch):
 def testingBuildConf():
     buildconf = types.ModuleType('buildconf')
     buildconf.__file__ = os.path.abspath('buildconf.py')
-    bconfloader.applyDefaults(buildconf)
+    bconfloader.applyDefaults(buildconf, True, os.path.dirname(buildconf.__file__))
 
     # AutoDict is more useful in tests
 

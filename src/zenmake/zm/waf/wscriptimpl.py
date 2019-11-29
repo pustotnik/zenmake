@@ -22,13 +22,15 @@ __all__ = [
 import os
 
 from waflib.ConfigSet import ConfigSet
-from waflib.Build import BuildContext, InstallContext
-from zm.pyutils import stringtype, viewitems
+from waflib.Build import BuildContext
+from zm.pyutils import viewitems
 from zm.utils import toList
-from zm import log, cli, assist, error
+from zm import cli, error
+from zm.waf import assist
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
 
-# pylint: disable=unused-argument
+joinpath = os.path.join
+abspath = os.path.abspath
 
 # These variables are set in another place.
 # To detect possible errors these variables are set to 0, not to None.
@@ -38,17 +40,13 @@ out = 0
 APPNAME = None
 VERSION = None
 
-def options(opt):
+def options(_):
     """
     Implementation for wscript.options
     It's called by Waf as method where cmdline options can be added/removed
     """
 
     # This method is called before all other methods including 'init'
-
-    # Remove incompatible options
-    #opt.parser.remove_option('-o')
-    #opt.parser.remove_option('-t')
 
 def init(ctx):
     """
@@ -62,14 +60,9 @@ def init(ctx):
 
     # Next code only for command with 'buildtype' param
 
-    buildtype = cliArgs.buildtype
-    if not buildtype and not isinstance(buildtype, stringtype):
-        buildtype = ''
-    ctx.bconfHandler.applyBuildType(buildtype)
+    assert id(ctx.bconfManager.root) == id(ctx.getbconf())
+    buildtype = assist.initBuildType(ctx.bconfManager, cliArgs.buildtype)
 
-    buildtype = ctx.bconfHandler.selectedBuildType
-
-    # set 'variant' for BuildContext and all classes based on BuildContext
     setattr(BuildContext, 'variant', buildtype)
 
 def configure(conf):
@@ -77,32 +70,20 @@ def configure(conf):
     Implementation for wscript.configure
     """
 
-    # See details here: https://gitlab.com/ita1024/waf/issues/1563
-    conf.env.NO_LOCK_IN_RUN = True
-    conf.env.NO_LOCK_IN_TOP = True
+    bconf = conf.getbconf()
 
-    confHandler = conf.bconfHandler
+    if not bconf.parent: # for top-level conf only
+        # set/fix vars PREFIX, BINDIR, LIBDIR
+        assist.applyInstallPaths(conf.env, cli.selected)
 
-    # set/fix vars PREFIX, BINDIR, LIBDIR
-    assist.applyInstallPaths(conf.env, cli.selected)
-
-    # for assist.runConfTests
-    conf.env['PROJECT_NAME'] = confHandler.projectName
-
-    # get root env
-    assert conf.variant == ''
-    rootEnv = conf.env
+    emptyEnv = ConfigSet()
 
     # load all toolchains envs
-    toolchainsEnvs = assist.loadToolchains(conf, confHandler, rootEnv)
+    toolchainsEnvs = conf.loadToolchains(bconf, emptyEnv)
 
-    zmcachedir = confHandler.confPaths.zmcachedir
-    wafcachefile = confHandler.confPaths.wafcachefile
-    conf.env.alltasks = assist.loadTasksFromCache(wafcachefile)
-
-    buildtype = confHandler.selectedBuildType
-    tasks = confHandler.tasks
-    conf.env.alltasks[buildtype] = tasks
+    zmcachedir = bconf.confPaths.zmcachedir
+    buildtype = bconf.selectedBuildType
+    tasks = bconf.tasks
 
     # Prepare task envs based on toolchains envs
     for taskName, taskParams in viewitems(tasks):
@@ -115,27 +96,27 @@ def configure(conf):
         # set up env with toolchain for task
         toolchains = toList(taskParams.get('toolchain', []))
         if toolchains:
-            baseEnv = toolchainsEnvs.get(toolchains[0], rootEnv)
+            baseEnv = toolchainsEnvs.get(toolchains[0], emptyEnv)
             if len(toolchains) > 1:
                 # make copy of env to avoid using 'update' on original
                 # toolchain env
                 baseEnv = assist.copyEnv(baseEnv)
             for toolname in toolchains[1:]:
-                baseEnv.update(toolchainsEnvs.get(toolname, rootEnv))
+                baseEnv.update(toolchainsEnvs.get(toolname, emptyEnv))
         else:
             if 'source' in taskParams:
                 msg = "No toolchain for task %r found." % taskName
                 msg += " Is buildconf correct?"
                 conf.fatal(msg)
             else:
-                baseEnv = rootEnv
+                baseEnv = emptyEnv
 
         # and save selected env (conf.setenv makes the new object that is
         # not desirable here)
-        assist.setConfDirectEnv(conf, taskVariant, baseEnv)
+        conf.setDirectEnv(taskVariant, baseEnv)
 
     # run conf checkers
-    assist.runConfTests(conf, buildtype, tasks)
+    conf.runConfTests(buildtype, tasks)
 
     # Configure tasks
     for taskName, taskParams in viewitems(tasks):
@@ -146,17 +127,17 @@ def configure(conf):
         taskVariant = taskParams['$task.variant']
 
         # Create env for task from root env with cleanup
-        taskEnv = assist.makeTaskEnv(conf, taskVariant)
+        taskEnv = conf.makeTaskEnv(taskVariant)
 
         # conf.setenv with unknown name or non-empty env makes deriving or
         # creates the new object and it is not really needed here
-        assist.setConfDirectEnv(conf, taskVariant, taskEnv)
+        conf.setDirectEnv(taskVariant, taskEnv)
 
         # set toolchain env variables
         assist.setTaskToolchainEnvVars(conf.env, taskParams)
 
         # configure all possible task params
-        assist.configureTaskParams(conf, confHandler, taskName, taskParams)
+        conf.configureTaskParams(bconf, taskName, taskParams)
 
         # Waf always loads all *_cache.py files in directory 'c4che' during
         # build step. So it loads all stored variants even though they
@@ -168,37 +149,30 @@ def configure(conf):
         # waf will store it in 'c4che'
         conf.all_envs.pop(taskVariant, None)
 
-    # reset current env
-    conf.setenv('')
-
     # Remove unneccesary envs
     for toolchain in toolchainsEnvs:
         conf.all_envs.pop(toolchain, None)
 
-    assist.dumpZenMakeCmnConfSet(confHandler.confPaths)
+    conf.saveTasksInEnv(bconf)
 
-def validateVariant(ctx):
-    """ Check current variant and return it """
+    # switch current env to the root env
+    conf.setenv('')
 
-    if ctx.variant is None:
-        ctx.fatal('No variant!')
-
-    buildtype = ctx.variant
-    if buildtype not in ctx.env.alltasks:
-        if ctx.cmd == 'clean':
-            log.info("Buildtype '%s' not found. Nothing to clean" % buildtype)
-            return None
-        ctx.fatal("Buildtype '%s' not found! Was step 'configure' missed?"
-                  % buildtype)
-    return buildtype
+    # gather tasks in subdirs
+    subdirs = bconf.subdirs
+    if subdirs:
+        conf.recurse(subdirs)
 
 def build(bld):
     """
     Implementation for wscript.build
     """
 
-    buildtype = validateVariant(bld)
-    bconfPaths = bld.bconfHandler.confPaths
+    buildtype = bld.validateVariant()
+
+    bconf = bld.bconfManager.root
+    assert id(bconf) == id(bld.getbconf())
+    bconfPaths = bconf.confPaths
 
     isInstall = bld.cmd in ('install', 'uninstall')
     if isInstall:
@@ -210,14 +184,19 @@ def build(bld):
     # - ctx.path represents the path to the wscript file being executed
     # - ctx.root is the root of the file system or the folder containing
     #   the drive letters (win32 systems)
+    #
+    # The build context provides two additional nodes:
+    #   srcnode: node representing the top-level directory (== top)
+    #   bldnode: node representing the build directory     (== out)
+    # To obtain a build node from a src node and vice-versa, the following methods may be used:
+    #   Node.get_src()
+    #   Node.get_bld()
+    # top == bld.srcnode.abspath()
+    # out == bld.bldnode.abspath()
 
-    # Path must be relative
-    srcDir = os.path.relpath(bconfPaths.srcroot, bconfPaths.buildconfdir)
-    # Since ant_glob can traverse both source and build folders, it is a best
-    # practice to call this method only from the most specific build node.
-    srcDirNode = bld.path.find_dir(srcDir)
+    bldPathNode = bld.path
 
-    tasks = bld.env.alltasks[buildtype]
+    tasks = bld.getTasks(buildtype)
     allowedTasks = cli.selected.args.tasks
     if allowedTasks:
         allowedTasks = set(assist.getTaskNamesWithDeps(tasks, allowedTasks))
@@ -226,6 +205,9 @@ def build(bld):
 
         if allowedTasks and taskName not in allowedTasks:
             continue
+
+        # set bld.path to startdir of the buildconf from which the current task
+        bld.path = bld.getTaskPathNode(taskParams['$startdir'])
 
         # task env variables are stored in separative env
         # so it's need to switch in
@@ -237,7 +219,13 @@ def build(bld):
         bld.env.parent = rootEnv
 
         if 'source' in taskParams:
-            taskParams['source'] = assist.handleTaskSourceParam(taskParams, srcDirNode)
+            source = assist.handleTaskSourceParam(bld, taskParams)
+            if not source:
+                msg = "No source files found for task %r." % taskName
+                msg += " Nothing to build. Check config(s) and/or file(s)."
+                raise error.ZenMakeError(msg)
+
+            taskParams['source'] = source
 
         assist.handleFeaturesAlieses(taskParams)
 
@@ -254,7 +242,10 @@ def build(bld):
         # create build task generator
         bld(**bldParams)
 
-    # It's neccesary to revert to origin variant otherwise WAF won't find
+    # just in case
+    bld.path = bldPathNode
+
+    # It's neccesary to return to original variant otherwise WAF won't find
     # correct path at the end of the building step.
     bld.variant = buildtype
 
@@ -263,73 +254,12 @@ def distclean(ctx):
     Implementation for wscript.distclean
     """
 
-    bconfPaths = ctx.bconfHandler.confPaths
+    bconfPaths = ctx.getbconf().confPaths
     assist.distclean(bconfPaths)
 
-def shutdown(ctx):
+def shutdown(_):
     """
     Implementation for wscript.shutdown
     """
 
     # Do nothing
-
-class _InstallContext(InstallContext):
-
-    @staticmethod
-    def _wrapInstTaskRun(method):
-
-        from waflib.Build import INSTALL
-        isdir = os.path.isdir
-
-        def execute(self):
-
-            # Make more user-friendly error report
-
-            isInstall = self.generator.bld.is_install
-            if isInstall:
-                for output in self.outputs:
-                    dirpath = output.parent.abspath()
-                    try:
-                        if isInstall == INSTALL:
-                            os.makedirs(dirpath)
-                    except OSError as ex:
-                        # It can't be checked before call of os.makedirs because
-                        # tasks work in parallel.
-                        if not isdir(dirpath): # exist_ok
-                            raise error.ZenMakeError(str(ex))
-
-                    if isdir(dirpath) and not os.access(dirpath, os.W_OK):
-                        raise error.ZenMakeError('Permission denied: ' + dirpath)
-
-            method(self)
-
-        return execute
-
-    def execute(self):
-
-        from waflib.Errors import WafError
-        from waflib.Build import inst
-
-        inst.run = _InstallContext._wrapInstTaskRun(inst.run)
-
-        try:
-            super(_InstallContext, self).execute()
-        except WafError as ex:
-
-            # Cut out only error message
-
-            msg = ex.msg.splitlines()[-1]
-            prefix = 'ZenMakeError:'
-            if not msg.startswith(prefix):
-                raise
-            msg = msg[len(prefix):].strip()
-            raise error.ZenMakeError(msg)
-
-class _UninstallContext(_InstallContext):
-
-    cmd = 'uninstall'
-
-    def __init__(self, **kw):
-        super(_UninstallContext, self).__init__(**kw)
-        from waflib.Build import UNINSTALL
-        self.is_install = UNINSTALL

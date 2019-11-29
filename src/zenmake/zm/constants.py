@@ -6,12 +6,15 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+import os
 from zm.utils import platform as _platform
 
 APPNAME = 'zenmake'
 CAP_APPNAME = 'ZenMake'
 AUTHOR = 'Alexander Magola'
 COPYRIGHT_ONE_LINE = '2019, %s' % AUTHOR
+
+DEFAULT_BUILDROOTNAME = 'build'
 BUILDOUTNAME = 'out'
 WAF_CACHE_DIRNAME = 'c4che'
 WAF_CACHE_NAMESUFFIX = '_cache.py'
@@ -44,6 +47,7 @@ TASK_WAF_FEATURES_MAP = {
 TASK_WAF_MAIN_FEATURES = set(TASK_WAF_FEATURES_MAP.keys())
 TASK_FEATURES_LANGS = set(TASK_WAF_FEATURES_MAP.values())
 
+CWD = os.getcwd()
 PLATFORM = _platform()
 KNOWN_PLATFORMS = (
     'linux', 'windows', 'darwin', 'freebsd', 'openbsd', 'sunos', 'cygwin',

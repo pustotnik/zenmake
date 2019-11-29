@@ -104,9 +104,9 @@ _optionsOptScheme = _genSameSchemeDict(OPTION_NAMES, {
 })
 
 confscheme = {
+    'startdir' : { 'type': 'str' },
     'buildroot' : { 'type': 'str' },
     'realbuildroot' : { 'type': 'str' },
-    'srcroot' : { 'type': 'str' },
     'features' : {
         'type' : 'dict',
         'vars' : {
@@ -118,12 +118,14 @@ confscheme = {
         'allow-unknown-keys' : False,
         'vars' : _optionsOptScheme,
     },
+    'subdirs' : {
+        'type' : 'list-of-strs',
+    },
     'project' : {
         'type' : 'dict',
         'vars' : {
             'name' : { 'type': 'str' },
             'version' : { 'type': 'str' },
-            'root' : { 'type': 'str' },
         },
     },
     'tasks' : {

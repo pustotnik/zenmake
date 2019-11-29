@@ -1,7 +1,9 @@
 # coding=utf-8
 #
 
-# pylint: skip-file
+# _pylint: skip-file
+# pylint: disable = wildcard-import, unused-wildcard-import, unused-import
+# pylint: disable = missing-docstring, invalid-name, bad-continuation
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
@@ -23,13 +25,10 @@ def testHandleCLI(capsys):
 
     noBuildConf = True
     args = [APPNAME]
-    bconfHandler = AutoDict(
-        defaultBuildType = '',
-        options = {},
-    )
+    options = {}
 
     with pytest.raises(SystemExit):
-        starter.handleCLI(args, noBuildConf, bconfHandler)
+        starter.handleCLI(args, noBuildConf, options)
     # clean output
     capsys.readouterr()
 
@@ -40,8 +39,8 @@ def testHandleCLI(capsys):
 
     #############
     args = [APPNAME, 'build']
-    bconfHandler.options = {}
-    cmd, wafCmdLine = starter.handleCLI(args, noBuildConf, bconfHandler)
+    options = {}
+    cmd, wafCmdLine = starter.handleCLI(args, noBuildConf, options)
     assert cmd == cli.selected
     assert cmd.name == 'build'
     assert wafCmdLine[0] == 'build'
@@ -49,12 +48,12 @@ def testHandleCLI(capsys):
     assert cmd.args.jobs is None
     assert not cmd.args.progress
 
-    bconfHandler.options = {
+    options = {
         'verbose': 1,
         'jobs' : { 'build' : 4 },
         'progress' : {'any': False, 'build': True },
     }
-    cmd, wafCmdLine = starter.handleCLI(args, noBuildConf, bconfHandler)
+    cmd, wafCmdLine = starter.handleCLI(args, noBuildConf, options)
     assert cmd == cli.selected
     assert cmd.name == 'build'
     assert wafCmdLine[0] == 'build'
@@ -70,10 +69,43 @@ def testHandleCLI(capsys):
     assert not cmd.args.progress
 
     args = [APPNAME, 'test']
-    cmd, wafCmdLine = starter.handleCLI(args, noBuildConf, bconfHandler)
+    cmd, wafCmdLine = starter.handleCLI(args, noBuildConf, options)
     assert cmd == cli.selected
     assert cmd.name == 'test'
     assert wafCmdLine[0] == 'build'
     assert cmd.args.verbose == 1
     assert cmd.args.jobs is None
     assert not cmd.args.progress
+
+def testFindTopLevelBuildConfDir(tmpdir):
+
+    startdir = str(tmpdir.realpath())
+    assert starter.findTopLevelBuildConfDir(startdir) is None
+
+    dir1 = tmpdir.mkdir("dir1")
+    dir2 = dir1.mkdir("dir2")
+    dir3 = dir2.mkdir("dir3")
+    dir4 = dir3.mkdir("dir4")
+
+    assert starter.findTopLevelBuildConfDir(str(dir4)) is None
+
+    buildconf = joinpath(str(dir4), 'buildconf.py')
+    with open(buildconf, 'w+') as file:
+        file.write("buildconf")
+    assert starter.findTopLevelBuildConfDir(str(dir4)) == str(dir4)
+    assert starter.findTopLevelBuildConfDir(str(dir3)) is None
+
+    buildconf = joinpath(str(dir3), 'buildconf.yaml')
+    with open(buildconf, 'w+') as file:
+        file.write("buildconf")
+    assert starter.findTopLevelBuildConfDir(str(dir4)) == str(dir3)
+    assert starter.findTopLevelBuildConfDir(str(dir3)) == str(dir3)
+    assert starter.findTopLevelBuildConfDir(str(dir2)) is None
+
+    buildconf = joinpath(str(dir1), 'buildconf.yml')
+    with open(buildconf, 'w+') as file:
+        file.write("buildconf")
+    assert starter.findTopLevelBuildConfDir(str(dir4)) == str(dir1)
+    assert starter.findTopLevelBuildConfDir(str(dir3)) == str(dir1)
+    assert starter.findTopLevelBuildConfDir(str(dir2)) == str(dir1)
+    assert starter.findTopLevelBuildConfDir(str(dir1)) == str(dir1)

@@ -13,7 +13,7 @@ if sys.hexversion < 0x2070000:
     raise ImportError('Python >= 2.7 is required')
 
 #pylint: disable=wrong-import-position
-from zm.constants import WAF_LOCKFILE
+from zm.constants import WAF_LOCKFILE, CWD
 
 joinpath = path.join
 
@@ -23,28 +23,16 @@ _indyCmd = {
     'sysinfo' : 'zm.sysinfo',
 }
 
-def handleCLI(args, noBuildConf, bconfHandler):
+def handleCLI(args, noBuildConf, options):
     """
     Handle CLI and return command object and waf cmd line
     """
     from zm import cli
 
-    if bconfHandler:
-        defaults = dict(bconfHandler.options)
-        defaults.update(dict(buildtype = bconfHandler.defaultBuildType))
-    else:
-        defaults = {}
-
+    defaults = options if options else {}
     cmd, wafCmdLine = cli.parseAll(args, noBuildConf, defaults)
     cli.selected = cmd
     return cmd, wafCmdLine
-
-def isDevVersion():
-    """
-    Detect that this is development version
-    """
-    from zm import version
-    return version.isDev()
 
 def runIndyCmd(cmd):
     """
@@ -60,6 +48,27 @@ def runIndyCmd(cmd):
     module = loadPyModule(moduleName, withImport = True)
     return module.Command().run(cmd.args)
 
+def findTopLevelBuildConfDir(startdir):
+    """
+    Try to find top level dir with a buildconf file.
+    Return None if file was not found.
+    """
+
+    from zm.buildconf.loader import findConfFile
+
+    curdir = startdir
+    found = None
+    while curdir:
+        if findConfFile(curdir):
+            found = curdir
+
+        nextdir = path.dirname(curdir)
+        if nextdir == curdir:
+            break
+        curdir = nextdir
+
+    return found
+
 def run():
     """
     Prepare and run ZenMake and Waf with ZenMake stuffs
@@ -71,22 +80,21 @@ def run():
     Options.lockfile = WAF_LOCKFILE
 
     # process buildconf and CLI
-    from zm import log, assist, error
-    from zm.buildconf import loader as bconfLoader
-    from zm.buildconf.handler import ConfHandler as BuildConfHandler
+    from zm import log, error
+    from zm.buildconf.processing import ConfManager as BuildConfManager
 
     noBuildConf = True
-    cwd = os.getcwd()
+    cwd = CWD
     cmd = None
 
     try:
         # We cannot to know if buildconf is changed if buildroot is unknown.
-        # Information about it is stored in the file that is located in buildroot.
+        # This information is stored in the file that is located in buildroot.
         # But buildroot can be set on the command line and we must to parse CLI
         # before processing of buildconf.
 
-        bconfFileName = bconfLoader.findConfFile(cwd)
-        noBuildConf = bconfFileName is None
+        bconfDir = findTopLevelBuildConfDir(cwd)
+        noBuildConf = bconfDir is None
         cmd, wafCmdLine = handleCLI(sys.argv, noBuildConf, None)
 
         if cmd.name in _indyCmd:
@@ -98,17 +106,15 @@ def run():
             return 1
 
         cliBuildRoot = cmd.args.get('buildroot', None)
-        if cliBuildRoot and not os.path.isabs(cliBuildRoot):
+        if cliBuildRoot and not path.isabs(cliBuildRoot):
             cliBuildRoot = joinpath(cwd, cliBuildRoot)
-        buildconf = bconfLoader.load(check = False, dirpath = cwd,
-                                     filename = bconfFileName)
-        if assist.isBuildConfChanged(buildconf, cliBuildRoot) or isDevVersion():
-            bconfLoader.validate(buildconf)
-        bconfHandler = BuildConfHandler(buildconf, cliBuildRoot)
 
-        if bconfHandler.options or not ('buildtype' in cmd.args and cmd.args.buildtype):
+        bconfManager = BuildConfManager(bconfDir, cliBuildRoot)
+        bconf = bconfManager.root
+
+        if bconf.options:
             # Do parsing of CLI again to apply defaults from buildconf
-            cmd, wafCmdLine = handleCLI(sys.argv, noBuildConf, bconfHandler)
+            cmd, wafCmdLine = handleCLI(sys.argv, noBuildConf, bconf.options)
 
     except error.ZenMakeError as ex:
         verbose = 0
@@ -122,15 +128,8 @@ def run():
         log.pprint('RED', 'Interrupted')
         sys.exit(68)
 
-    # Load waf add-ons to support of custom waf features
-    import zm.waf
-    zm.waf.loadAllAddOns()
-
     # start waf ecosystem
-    from zm.waf import wrappers
-    wrappers.setupAll()
-
     from zm.waf import launcher
-    launcher.run(cwd, cmd, wafCmdLine, bconfHandler)
+    launcher.run(cwd, cmd, wafCmdLine, bconfManager)
 
     return 0

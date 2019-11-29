@@ -14,7 +14,13 @@ import traceback
 from waflib import Options, Context, Errors
 from zm import WAF_DIR
 #from zm.constants import BUILDCONF_FILENAMES
-from zm import log, utils, wscriptimpl, assist
+from zm import log, utils
+from zm.waf import wscriptimpl
+
+#pylint: disable=unused-import
+# These modules must be just imported
+from zm.waf import context, configure, build, install
+#pylint: enable=unused-import
 
 joinpath = os.path.join
 
@@ -69,7 +75,7 @@ def _prepareBuildDir(bconfPaths):
     if buildroot != realbuildroot and not os.path.exists(buildroot):
         utils.mksymlink(realbuildroot, buildroot)
 
-def _setWafMainModule(bconfdir, bconfname):
+def _setWafMainModule(rootdir):
     """
     Alternative implementation of Scripting.set_main_module
     """
@@ -77,26 +83,48 @@ def _setWafMainModule(bconfdir, bconfname):
     # ZenMake uses only one 'wscript' and it is the wscriptimpl module
     Context.g_module = wscriptimpl
 
-    # Set path to the buildconf file
-    Context.g_module.root_path = joinpath(bconfdir, bconfname)
+    # Set root path
+    fakename = 'fakeconfname'
+    Context.g_module.root_path = joinpath(rootdir, fakename)
 
-def _setupWafOptions(wafCmdLine):
+def setWscriptVars(module, bconf):
+    """
+    Set wscript vars: top, out, APPNAME, VERSION
+    """
+    module.top = bconf.confPaths.wscripttop
+    module.out = bconf.confPaths.wscriptout
+    module.APPNAME = bconf.projectName
+    module.VERSION = bconf.projectVersion
+
+def setupWafOptions(bconfManager, wafCmdLine):
+    """
+    Execure 'options' as the Waf command.
+    This command parses command line args for the Waf.
+    """
+
     del sys.argv[1:]
     sys.argv.extend(wafCmdLine)
 
     ctx = Context.create_context('options')
+
+    # inject zenmake vars
+    setattr(ctx, 'bconfManager', bconfManager)
+
     ctx.execute()
     assert Options.commands
 
-def runCommand(bconfHandler, cmdName):
+def runCommand(bconfManager, cmdName):
     """
     Executes a single Waf command.
     """
+
     ctx = Context.create_context(cmdName)
     ctx.log_timer = utils.Timer()
     ctx.options = Options.options # provided for convenience
     ctx.cmd = cmdName
-    setattr(ctx, 'bconfHandler', bconfHandler)
+
+    # inject zenmake vars
+    setattr(ctx, 'bconfManager', bconfManager)
 
     try:
         ctx.execute()
@@ -105,43 +133,43 @@ def runCommand(bconfHandler, cmdName):
         ctx.finalize()
     return ctx
 
-def setupAndRunCommands(wafCmdLine, bconfHandler):
+def setupAndRunCommands(wafCmdLine, bconfManager):
     """
 	Execute the Waf commands that were given on the command-line, and the other options
 	"""
 
     def runNextCmd():
         cmdName = Options.commands.pop(0)
-        ctx = runCommand(bconfHandler, cmdName)
+        ctx = runCommand(bconfManager, cmdName)
         log.info('%r finished successfully (%s)', cmdName, ctx.log_timer)
 
-    assist.setWscriptVars(wscriptimpl, bconfHandler)
+    bconf = bconfManager.root
+    setWscriptVars(wscriptimpl, bconf)
 
-    _setupWafOptions(wafCmdLine)
-    runCommand(bconfHandler, 'init')
+    setupWafOptions(bconfManager, wafCmdLine)
+
+    runCommand(bconfManager, 'init')
     if Options.commands[0] == 'distclean':
         runNextCmd()
     if Options.commands:
-        _prepareBuildDir(bconfHandler.confPaths)
+        _prepareBuildDir(bconf.confPaths)
     while Options.commands:
         runNextCmd()
 
-    runCommand(bconfHandler, 'shutdown')
+    runCommand(bconfManager, 'shutdown')
 
-def run(cwd, cmd, wafCmdLine, bconfHandler):
+def run(cwd, cmd, wafCmdLine, bconfManager):
     """
     Replacement for the Scripting.waf_entry_point
     """
 
-    #TODO: Is Context.run_dir necessary? In waf it's a dir where wscript is.
-    # I made it as dir where top-level buildconf is located
-
-    bconfPaths = bconfHandler.confPaths
+    bconf = bconfManager.root
+    bconfPaths = bconf.confPaths
 
     # Store current directory before any chdir
     Context.waf_dir = WAF_DIR
     Context.launch_dir = cwd
-    Context.run_dir = bconfPaths.buildconfdir
+    Context.run_dir = bconfPaths.startdir
     Context.out_dir = bconfPaths.buildout
 
     # ZenMake doesn't use lockfile in a project root
@@ -166,12 +194,20 @@ def run(cwd, cmd, wafCmdLine, bconfHandler):
         log.error('The folder %r is unreadable', Context.run_dir)
         sys.exit(1)
 
-    _setWafMainModule(bconfPaths.buildconfdir, bconfPaths.buildconffile)
+    _setWafMainModule(bconf.rootdir)
+
+    from zm.waf import wrappers
+    wrappers.setup()
+
+    # Load waf add-ons to support the custom waf features
+    from zm.waf import addons
+    addons.loadAllAddOns()
+
     verbose = cmd.args.verbose
 
     #pylint: disable=broad-except
     try:
-        setupAndRunCommands(wafCmdLine, bconfHandler)
+        setupAndRunCommands(wafCmdLine, bconfManager)
     except Errors.WafError as ex:
         if verbose > 1:
             log.pprint('RED', ex.verbose_msg)
