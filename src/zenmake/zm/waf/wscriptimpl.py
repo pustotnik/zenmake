@@ -65,6 +65,8 @@ def init(ctx):
 
     setattr(BuildContext, 'variant', buildtype)
 
+    assist.printZenMakeHeader(ctx.bconfManager)
+
 def configure(conf):
     """
     Implementation for wscript.configure

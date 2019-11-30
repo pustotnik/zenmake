@@ -444,6 +444,16 @@ def distclean(bconfPaths):
 
     fullclean(bconfPaths, verbose)
 
+def printZenMakeHeader(bconfManager):
+    """
+    Log header with some info.
+    """
+
+    bconf = bconfManager.root
+    log.info("* Project name: '%s'" % bconf.projectName)
+    log.info("* Project version: %s" % (bconf.projectVersion or 'undefined'))
+    log.info("* Build type: '%s'" % bconf.selectedBuildType)
+
 def isBuildConfFake(conf):
     """
     Return True if loaded buildconf is a fake module.
