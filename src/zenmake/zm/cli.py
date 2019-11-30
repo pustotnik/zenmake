@@ -481,7 +481,11 @@ class CmdLineParser(object):
 
         # simple hack to set default command
         if not args or not [ x for x in args if not x.startswith('-') ]:
-            args.insert(0, defaultCmd)
+            optHelp = _options[0]
+            assert optHelp.action == 'help'
+            # don't show help for default command
+            if not any(x in optHelp.names for x in args):
+                args.insert(0, defaultCmd)
 
         # parse
         args = self._parser.parse_args(args)
