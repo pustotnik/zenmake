@@ -42,7 +42,7 @@ class Validator(object):
     @staticmethod
     def _checkStrKey(key, fullkey):
         if not isinstance(key, stringtype):
-            msg = "Invalid type of key `%r`. In %r this key should be string." \
+            msg = "Type of key `%r` is invalid. In %r this key should be string." \
                 % (key, fullkey)
             raise ZenMakeConfTypeError(msg)
 
@@ -94,7 +94,7 @@ class Validator(object):
                 typeNames.append('dict/another map type')
             else:
                 typeNames.append(_type)
-        msg = "Invalid value `%r` for param %r." % (confnode, fullkey)
+        msg = "Value `%r` is invalid for the param %r." % (confnode, fullkey)
         msg += " It should be %s." % " or ".join(typeNames)
         raise ZenMakeConfTypeError(msg)
 
@@ -121,19 +121,19 @@ class Validator(object):
         _getAttrValue = Validator._getAttrValue
         allowed = _getAttrValue(schemeAttrs, 'allowed', 'str', default = None)
         if allowed is not None and confnode not in allowed:
-            msg = "Invalid value `%r` for param %r." % (confnode, fullkey)
+            msg = "Value `%r` is invalid for the param %r." % (confnode, fullkey)
             msg = '%s Allowed values: %r' %(msg, allowed)
             raise ZenMakeConfValueError(msg)
 
     @staticmethod
     def _handleList(confnode, schemeAttrs, fullkey):
-        def raiseInvalidTypeErr():
-            msg = "Invalid value `%r` for param %r." % (confnode, fullkey)
+        def raiseInvalidTypeErr(value):
+            msg = "Value `%r` is invalid for the param %r." % (value, fullkey)
             msg += " It should be list"
             raise ZenMakeConfTypeError(msg)
 
         if not isinstance(confnode, (list, tuple)):
-            raiseInvalidTypeErr()
+            raiseInvalidTypeErr(confnode)
 
         _getAttrValue = Validator._getAttrValue
         allowed = _getAttrValue(schemeAttrs, 'allowed', 'list', default = None)
@@ -147,8 +147,8 @@ class Validator(object):
 
         for i, elem in enumerate(confnode):
             if allowed is not None and elem not in allowed:
-                msg = "Invalid value for param %r." % fullkey
-                msg = '%s Allowed values: %r' %(msg, allowed)
+                msg = "Value %r is invalid for the param %r." % (elem, fullkey)
+                msg = '%s Allowed values: %s' %(msg, str(allowed)[1:-1])
                 raise ZenMakeConfValueError(msg)
             if varsType:
                 handler(elem, _schemeAttrs, '%s.[%d]' % (fullkey, i))
@@ -161,22 +161,22 @@ class Validator(object):
 
     @staticmethod
     def _handleListOfStrs(confnode, schemeAttrs, fullkey):
-        def raiseInvalidTypeErr():
-            msg = "Invalid value `%r` for param %r." % (confnode, fullkey)
+        def raiseInvalidTypeErr(value):
+            msg = "Value `%r` is invalid for the param %r." % (value, fullkey)
             msg += " It should be list of strings"
             raise ZenMakeConfTypeError(msg)
 
         if not isinstance(confnode, (list, tuple)):
-            raiseInvalidTypeErr()
+            raiseInvalidTypeErr(confnode)
 
         _getAttrValue = Validator._getAttrValue
         allowed = _getAttrValue(schemeAttrs, 'allowed', 'list-of-strs', default = None)
         for elem in confnode:
             if not isinstance(elem, stringtype):
-                raiseInvalidTypeErr()
+                raiseInvalidTypeErr(elem)
             if allowed is not None and elem not in allowed:
-                msg = "Invalid value for param %r." % fullkey
-                msg = '%s Allowed values: %r' %(msg, allowed)
+                msg = "Value %r is invalid for the param %r." % (elem, fullkey)
+                msg = '%s\nAllowed values: %s' %(msg, str(allowed)[1:-1])
                 raise ZenMakeConfValueError(msg)
 
     @staticmethod
@@ -252,6 +252,10 @@ class Validator(object):
             raise NotImplementedError # pragma: no cover
 
     @staticmethod
+    def _genFullKey(keyprefix, key):
+        return '.'.join((keyprefix, key)) if keyprefix else key
+
+    @staticmethod
     def _validateUsualItems(conf, items, keyprefix):
         _handledKeys = []
         for key, schemeAttrs in items:
@@ -259,7 +263,7 @@ class Validator(object):
             if confnode is None:
                 continue
             typeName = schemeAttrs['type']
-            fullKey = '.'.join((keyprefix, key))
+            fullKey = Validator._genFullKey(keyprefix, key)
             Validator._getHandler(typeName)(confnode, schemeAttrs, fullKey)
             _handledKeys.append(key)
         return _handledKeys
@@ -288,10 +292,10 @@ class Validator(object):
             if key in _handledKeys:
                 continue
             if _anyAmountStrsKey is not None and isinstance(key, stringtype):
-                fullKey = '.'.join((keyprefix, key))
+                fullKey = Validator._genFullKey(keyprefix, key)
                 handler(value, schemeAttrs, fullKey)
             elif not allowUnknownKeys:
-                msg = "Unknown key `%r` for param %r." % (key, keyprefix)
+                msg = "Unknown key `%r` for the param %r." % (key, keyprefix)
                 msg += " Unknown keys aren't allowed here."
                 msg += "\nValid values: %r" % sorted(scheme.keys())
                 raise ZenMakeConfError(msg)
@@ -335,7 +339,10 @@ class Validator(object):
             btypesVars['default']['allowed'] = allowed
 
         try:
-            self._validate(_conf, _scheme, conf.__name__)
+            self._validate(_conf, _scheme, '')
         except ZenMakeConfError as ex:
-            ex.msg = "Error in file %r:\n%s" % (conf.__file__, ex.msg)
+            origMsg = ex.msg
+            ex.msg = "Error in the file %r:" % (conf.__file__)
+            for line in origMsg.splitlines():
+                ex.msg += "\n  %s" % line
             raise ex
