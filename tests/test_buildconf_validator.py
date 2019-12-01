@@ -341,7 +341,8 @@ class TestSuite(object):
         setattr(buildconf, 'features', { 'autoconfig' : False })
         validator.validate(buildconf)
         setattr(buildconf, 'features', { 'autoconfig' : False, 'unknown': 1 })
-        validator.validate(buildconf)
+        with pytest.raises(ZenMakeConfError):
+            validator.validate(buildconf)
 
     def testValidateParamProject(self):
 
@@ -373,13 +374,9 @@ class TestSuite(object):
         #####
         buildconf = FakeBuildConf()
         setattr(buildconf, 'buildtypes', {})
-        setattr(buildconf, 'tasks', {})
-        taskNames = [cmn.randomstr() for i in range(4)]
-        buildconf.tasks[taskNames[0]] = {
-            'buildtypes' : { btypeNames[0] : {} }
-        }
-        buildconf.tasks[taskNames[2]] = {
-            'buildtypes' : { btypeNames[3] : {} }
+        buildconf.buildtypes = {
+            btypeNames[0] : {},
+            btypeNames[3] : {},
         }
         buildconf.buildtypes['default'] = btypeNames[0]
         validator.validate(buildconf)

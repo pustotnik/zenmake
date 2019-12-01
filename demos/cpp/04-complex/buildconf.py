@@ -13,7 +13,7 @@ tasks = {
         'defines'  : ['ABC=1', 'DOIT'],
         'export-includes' : True,
         'export-defines' : True,
-        'install-path' : None,
+        'install-path' : False,
     },
     'stlib' : {
         'features' : 'stlib',

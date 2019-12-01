@@ -295,7 +295,7 @@ class Validator(object):
                 fullKey = Validator._genFullKey(keyprefix, key)
                 handler(value, schemeAttrs, fullKey)
             elif not allowUnknownKeys:
-                msg = "Unknown key `%r` for the param %r." % (key, keyprefix)
+                msg = "Unknown key %r is in the param %r." % (key, keyprefix)
                 msg += " Unknown keys aren't allowed here."
                 msg += "\nValid values: %r" % sorted(scheme.keys())
                 raise ZenMakeConfError(msg)

@@ -308,8 +308,8 @@ subdirs
     - If it is list of paths then ZenMake will try to use this list as paths
       to sub directories with the buildconf files and will use all found ones.
       Paths can be absolute or relative to the startdir_.
-    - If it is an empty list or python special value None
-      or just absent at all then ZenMake will not try to use any
+    - If it is an empty list or just absent at all
+      then ZenMake will not try to use any
       sub directories of the project to find buildconf files.
 
 .. _buildconf-taskparams:
@@ -542,7 +542,7 @@ taskparams
     install-path
         String representing the installation path for the output files.
         It's used in commands ``install`` and ``uninstall``.
-        To disable installation, set it to False, None or empty string.
+        To disable installation, set it to False or empty string.
         If it's absent then general values of ``${PREFIX}``, ``${BINDIR}``
         and ``${LIBDIR}`` will be used to detect path.
         You can use variables ``${PREFIX}``, ``${BINDIR}``, ``${LIBDIR}`` here

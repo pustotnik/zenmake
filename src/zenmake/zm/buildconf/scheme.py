@@ -44,6 +44,7 @@ taskscheme = {
     'includes':     { 'type': ('str', 'list-of-strs') },
     'source' :      {
         'type': ('str', 'list-of-strs', 'dict'),
+        'dict-allow-unknown-keys' : False,
         'dict-vars' : {
             'include' :    { 'type': 'str' },
             'exclude' :    { 'type': 'str' },
@@ -66,6 +67,7 @@ taskscheme = {
     'install-path' : { 'type': ('bool', 'str') },
     'run' :       {
         'type' : 'dict',
+        'allow-unknown-keys' : False,
         'vars' : {
             'cmd' : { 'type': ('str', 'func') },
             'cwd' : { 'type': 'str' },
@@ -81,12 +83,15 @@ taskscheme = {
     'conftests' : {
         'type': 'list',
         'vars-type' : ('dict', 'func'),
+        #'dict-allow-unknown-keys' : False,
         'dict-vars' : {
             'act' :        { 'type': 'str' },
             'names' :      { 'type': ('str', 'list-of-strs') },
+            'paths' :      { 'type': ('str', 'list-of-strs') },
             'mandatory' :  { 'type': 'bool' },
             'autodefine' : { 'type': 'bool' },
             'file' :       { 'type': 'str' },
+            'guard':       { 'type': 'str' },
         },
     },
     'normalize-target-name' : { 'type': 'bool' },
@@ -109,6 +114,7 @@ confscheme = {
     'realbuildroot' : { 'type': 'str' },
     'features' : {
         'type' : 'dict',
+        'allow-unknown-keys' : False,
         'vars' : {
             'autoconfig' : { 'type': 'bool' },
         },
@@ -123,6 +129,7 @@ confscheme = {
     },
     'project' : {
         'type' : 'dict',
+        'allow-unknown-keys' : False,
         'vars' : {
             'name' : { 'type': 'str' },
             'version' : { 'type': 'str' },
@@ -132,6 +139,7 @@ confscheme = {
         'type' : 'vars-in-dict',
         'keys-kind' : 'anystr',
         'vars-type' : 'dict',
+        'vars-allow-unknown-keys' : False,
         'vars' : taskscheme,
     },
     'buildtypes' : {
@@ -139,6 +147,7 @@ confscheme = {
         'vars' : {
             ANYAMOUNTSTRS_KEY : {
                 'type' : 'dict',
+                'allow-unknown-keys' : False,
                 'vars' : taskscheme,
             },
             'default' : { 'type': 'str' },
@@ -173,6 +182,7 @@ confscheme = {
         'dict-vars' : {
             'for' : {
                 'type': 'dict',
+                'allow-unknown-keys' : False,
                 'vars' : {
                     'task' : { 'type': ('str', 'list-of-strs') },
                     'buildtype' : { 'type': ('str', 'list-of-strs') },
@@ -181,7 +191,11 @@ confscheme = {
             },
             'set' : {
                 'type' : 'dict',
-                'vars' : taskscheme,
+                'allow-unknown-keys' : False,
+                'vars' : dict(
+                    { 'default-buildtype' : { 'type': 'str' } },
+                    **taskscheme
+                ),
             },
         },
     },
