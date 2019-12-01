@@ -222,7 +222,7 @@ def handleTaskFeatures(testSuit, taskParams):
         ctx = Context.Context(run_dir = testSuit.cwd)
         setattr(ctx, 'bconfManager', testSuit.confManager)
         taskParams['source'] = assist.handleTaskSourceParam(ctx, taskParams)
-    assist.handleFeaturesAlieses(taskParams)
+    assist.handleTaskFeaturesAlieses(taskParams)
     assert isinstance(taskParams['features'], list)
 
 def getBuildTasks(confManager):

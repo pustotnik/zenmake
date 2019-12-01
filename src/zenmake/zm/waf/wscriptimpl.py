@@ -147,8 +147,8 @@ def configure(conf):
         # load only needed ones.
         conf.env.store(assist.makeCacheConfFileName(zmcachedir, taskVariant))
 
-        # It's necessary to delete variant from conf.all_envs otherwise
-        # waf will store it in 'c4che'
+        # It's necessary to delete variant from conf.all_envs. Otherwise
+        # Waf will store it in 'c4che'
         conf.all_envs.pop(taskVariant, None)
 
     # Remove unneccesary envs
@@ -229,7 +229,8 @@ def build(bld):
 
             taskParams['source'] = source
 
-        assist.handleFeaturesAlieses(taskParams)
+        assist.handleTaskFeaturesAlieses(taskParams)
+        assist.checkWafTasksForFeatures(taskParams)
 
         bldParams = taskParams.copy()
         # Remove params that can conflict with waf in theory

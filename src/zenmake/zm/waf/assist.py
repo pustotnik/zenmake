@@ -17,7 +17,7 @@ from waflib.Tools.c_aliases import set_features as setFeatures
 from zm.pyutils import stringtype
 from zm import utils, toolchains, log, version
 from zm.error import ZenMakeError
-from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, CWD, \
+from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, CWD, TASK_WAF_MAIN_FEATURES, \
                          TASK_WAF_ALIESES, TASK_WAF_FEATURES_MAP
 
 joinpath = os.path.join
@@ -217,6 +217,22 @@ def detectConfTaskFeatures(taskParams):
     taskParams['features'] = features
     return features
 
+def validateConfTaskFeatures(taskParams, validFeatures):
+    """
+    Check all features are valid and remove unsupported features
+    """
+
+    features = taskParams['features']
+    unknown = [x for x in features if x not in validFeatures]
+    if unknown:
+        for val in unknown:
+            features.remove(val)
+            msg = 'Feature %r in task %r is not supported. Removed.' % \
+                  (val, taskParams['name'])
+            log.warn(msg)
+    taskParams['features'] = features
+    return features
+
 def _makeTaskPathParam(param, rootdir, startdir):
     """
     Make correct param with path(s) according to param and task stardir
@@ -362,7 +378,7 @@ def handleTaskSourceParam(ctx, taskParams):
         remove = False,
     )
 
-def handleFeaturesAlieses(taskParams):
+def handleTaskFeaturesAlieses(taskParams):
     """
     Detect features for alieses 'stlib', 'shlib', 'program' and 'objects'
     """
@@ -389,6 +405,22 @@ def handleFeaturesAlieses(taskParams):
 
     features.extend(kwargs['features'])
     taskParams['features'] = [ x for x in features if x not in alieses]
+
+def checkWafTasksForFeatures(taskParams):
+    """
+    Validate current features with loaded Waf task classes
+    """
+
+    from waflib import Task
+
+    # check only supported Waf features
+    features = TASK_WAF_MAIN_FEATURES & set(taskParams['features'])
+    for feature in features:
+        if feature not in Task.classes:
+            msg = "Feature %r can not be processed for task %r." % \
+                  (feature, taskParams['name'])
+            msg += " Maybe you didn't set correct toolchain for this task."
+            raise ZenMakeError(msg)
 
 def fullclean(bconfPaths, verbose = 1):
     """

@@ -80,8 +80,11 @@ class TaskItem(object):
     def __ge__(self, other):
         return self.weight() >= other.weight()
 
-def setup():
-    """ Some initialization """
+@postcmd('options')
+def postOpt(ctx):
+    """ Extra init after wscript.options """
+
+    ctx.validUserTaskFeatures.add('test')
 
     cliArgs = cli.selected.args
     _shared.runTestsOnChanges = False

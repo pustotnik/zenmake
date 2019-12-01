@@ -24,6 +24,12 @@ if PLATFORM == 'windows':
 else:
     CMDFILE_EXTS = EXE_FILE_EXTS
 
+@postcmd('options')
+def postOpt(ctx):
+    """ Extra init after wscript.options """
+
+    ctx.validUserTaskFeatures.add('runcmd')
+
 def _processCmdLine(conf, cwd, shell, cmdArgs):
     """ Get and process 'cmd' at 'configure' stage """
 

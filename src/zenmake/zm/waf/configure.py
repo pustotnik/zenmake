@@ -314,7 +314,9 @@ class ConfigurationContext(WafConfContext):
         startdir = bconf.startdir
         taskParams['name'] = taskName
 
-        features = assist.detectConfTaskFeatures(taskParams)
+        assist.detectConfTaskFeatures(taskParams)
+        assist.validateConfTaskFeatures(taskParams, self.validUserTaskFeatures)
+        features = taskParams['features']
 
         normalizeTarget = taskParams.get('normalize-target-name', False)
         target = taskParams.get('target', taskName)

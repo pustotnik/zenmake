@@ -169,9 +169,6 @@ def getAddOn(name):
     if not addon:
         moduleName = 'zm.waf.addon_%s' % name
         addon = loadPyModule(moduleName, withImport = True)
-        setup = getattr(addon, 'setup', None)
-        if setup:
-            setup()
         _cache[name] = addon
 
     return addon

@@ -10,26 +10,38 @@ import os
 
 from waflib.Context import Context as WafContext
 from waflib.ConfigSet import ConfigSet
+from zm.constants import TASK_WAF_ALIESES, TASK_WAF_MAIN_FEATURES, TASK_FEATURES_LANGS
 from zm.autodict import AutoDict as _AutoDict
 from zm import utils, error
 from zm.waf import wscriptimpl
 
 joinpath = os.path.join
 
-def ctxmethod(ctxClass, methodName = None):
+def ctxmethod(ctxClass, methodName = None, wrap = False):
     """
     Decorator to replace/attach method to existing Waf context class
     """
 
     def decorator(func):
         funcName = methodName if methodName else func.__name__
-        setattr(ctxClass, funcName, func)
+        if wrap:
+            method = getattr(ctxClass, funcName)
+            def execute(*args, **kwargs):
+                method(*args, **kwargs)
+                func(*args, **kwargs)
+            setattr(ctxClass, funcName, execute)
+        else:
+            setattr(ctxClass, funcName, func)
         return func
 
     return decorator
 
 # Context is the base class for all other context classes and it is not auto
 # registering class. So it cannot be just declared for extending/changing.
+
+# Valid task features for user in buildconf
+WafContext.validUserTaskFeatures = TASK_WAF_MAIN_FEATURES | TASK_FEATURES_LANGS \
+    | set(TASK_WAF_ALIESES)
 
 @ctxmethod(WafContext, 'getbconf')
 def _getCtxBuildConf(ctx):
