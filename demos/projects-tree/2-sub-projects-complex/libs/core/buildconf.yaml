@@ -1,0 +1,28 @@
+
+startdir: src
+
+project:
+  version : 0.4.0
+
+tasks:
+  corelib :
+    features : shlib
+    source   :  { include: '**/*.c' }
+    export-includes : true
+    conftests :
+      - { act: check-headers, names: stdio.h }
+
+matrix:
+  - for : { buildtype : [debug-gcc, release-gcc] }
+    set :
+      toolchain : gcc
+  - for : { buildtype : [debug-clang, release-clang] }
+    set :
+      toolchain : clang
+  - for : { buildtype : [debug-gcc, debug-clang] }
+    set :
+      cflags: -O0
+  - for : { buildtype : [release-gcc, release-clang] }
+    set :
+      cflags: -O3
+

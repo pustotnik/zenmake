@@ -90,6 +90,8 @@ def configure(conf):
     # Prepare task envs based on toolchains envs
     for taskName, taskParams in viewitems(tasks):
 
+        taskParams['name'] = taskName
+
         # make variant name for each task: 'buildtype.taskname'
         taskVariant = assist.makeTaskVariantName(buildtype, taskName)
         # store it
@@ -139,7 +141,7 @@ def configure(conf):
         assist.setTaskToolchainEnvVars(conf.env, taskParams)
 
         # configure all possible task params
-        conf.configureTaskParams(bconf, taskName, taskParams)
+        conf.configureTaskParams(bconf, taskParams)
 
         # Waf always loads all *_cache.py files in directory 'c4che' during
         # build step. So it loads all stored variants even though they

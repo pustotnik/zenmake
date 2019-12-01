@@ -1,30 +1,31 @@
 
 buildroot = '_build'
 
+project = { 'version' : '0.3.1' }
+
 subdirs = [
-    'libs/core',
-    'libs/engine',
+    'libs',
     'main',
 ]
 
 buildtypes = {
     'debug-gcc' : {
         'toolchain' : 'g++',
-        'cxxflags' : '-fPIC -O0 -g',
+        'cxxflags' : '-O0 -g',
         'linkflags' : '-Wl,--as-needed',
     },
     'release-gcc' : {
         'toolchain' : 'g++',
-        'cxxflags' : '-fPIC -O2',
+        'cxxflags' : '-O2',
         'linkflags' : '-Wl,--as-needed',
     },
     'debug-clang' : {
         'toolchain' : 'clang++',
-        'cxxflags' : '-fPIC -O0 -g',
+        'cxxflags' : '-O0 -g',
     },
     'release-clang' : {
         'toolchain' : 'clang++',
-        'cxxflags' : '-fPIC -O2',
+        'cxxflags' : '-O2',
     },
     'debug-msvc' : {
         'toolchain' : 'msvc',

@@ -11,7 +11,6 @@ tasks = {
     'corelib' : {
         'features' : 'shlib',
         'source'   :  dict( include = '**/*.c' ),
-        #'includes' : 'src',
         'export-includes' : True,
         'conftests'  : [
             dict(act = 'check-headers', names = 'stdio.h'),

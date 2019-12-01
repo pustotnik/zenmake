@@ -45,7 +45,10 @@ PYTHON_VER = _platform.python_version()
 
 CUSTOM_TOOLCHAIN_PRJDIR = joinpath('cpp', '05-custom-toolchain')
 COMPLEX_UNITTEST_PRJDIR = joinpath('cpp', '09-complex-unittest')
-FORINSTALL_PRJDIRS = [joinpath('cpp', '04-complex'), joinpath('cpp', '09-complex-unittest')]
+FORINSTALL_PRJDIRS = [
+    joinpath('cpp', '09-complex-unittest'),
+    joinpath('projects-tree', '2-sub-projects-complex'),
+]
 
 TEST_CONDITIONS = {
     CUSTOM_TOOLCHAIN_PRJDIR: dict( os = ['linux', 'darwin'], ),
@@ -142,14 +145,21 @@ def runZm(self, cmdline, env = None):
     )
     return proc.returncode, stdout, stderr
 
-def printOutputs(self):
-    zmInfo = getattr(self, 'zm', None)
+def printOutputs(testSuit):
+    zmInfo = getattr(testSuit, 'zm', None)
     if not zmInfo:
         return
     for param in ('stdout', 'stderr'):
         out = zmInfo.get(param, None)
         if out:
             print('\n' + out)
+
+def printErrorOnFailed(testSuit, request):
+    rep_call = getattr(request.node, 'rep_call', None)
+    if not rep_call or rep_call.failed:
+        printOutputs(testSuit)
+        return True
+    return False
 
 def setupTest(self, request, tmpdir):
 
@@ -229,6 +239,10 @@ def getBuildTasks(confManager):
     tasks = {}
     for bconf in confManager.configs:
         tasks.update(bconf.tasks)
+        prjver = bconf.projectVersion
+        for taskParams in tasks.values():
+            if prjver and 'ver-num' not in taskParams:
+                taskParams['ver-num'] = prjver
     return tasks
 
 def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
@@ -275,10 +289,19 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
             assert os.access(targetpath, os.X_OK)
 
         isSharedLib = any([x.endswith('shlib') for x in features])
-        if isSharedLib and isWindows:
-            targetpath = joinpath(os.path.dirname(targetpath),
+        if isSharedLib:
+            if isWindows:
+                targetpath = joinpath(os.path.dirname(targetpath),
                                 '%s.lib' % target)
-            assert os.path.isfile(targetpath) == resultExists
+                assert os.path.isfile(targetpath) == resultExists
+            elif os.name == 'posix':
+                verNum = taskParams.get('ver-num', None)
+                if verNum:
+                    verNum = verNum.split('.')
+                    targetpath1 = targetpath + '.' + verNum[0]
+                    targetpath2 = targetpath + '.' + ".".join(verNum)
+                    assert os.path.isfile(targetpath1) == resultExists
+                    assert os.path.isfile(targetpath2) == resultExists
 
     # check original buildconf was not changed
     assert _conf == makeConfDict(testSuit.projectConf, deep = False)
@@ -297,8 +320,7 @@ class TestBase(object):
     def allprojects(self, request, tmpdir):
 
         def teardown():
-            if request.node.rep_call.failed:
-                printOutputs(self)
+            printErrorOnFailed(self, request)
 
         request.addfinalizer(teardown)
         setupTest(self, request, tmpdir)
@@ -481,8 +503,7 @@ class TestFeatureRunCmd(object):
     def projects(self, request, tmpdir):
 
         def teardown():
-            if request.node.rep_call.failed:
-                printOutputs(self)
+            printErrorOnFailed(self, request)
 
         request.addfinalizer(teardown)
         setupTest(self, request, tmpdir)
@@ -540,8 +561,7 @@ class TestFeatureTest(object):
     def projects(self, request, tmpdir):
 
         def teardown():
-            if request.node.rep_call.failed:
-                printOutputs(self)
+            printErrorOnFailed(self, request)
 
         request.addfinalizer(teardown)
         setupTest(self, request, tmpdir)
@@ -737,9 +757,7 @@ class TestAutoconfig(object):
         self.testdir = None
 
         def teardown():
-            if request.node.rep_call.failed:
-                printOutputs(self)
-            elif self.testdir:
+            if not printErrorOnFailed(self, request) and self.testdir:
                 zmdir = joinpath(self.testdir, 'zenmake')
                 if os.path.isdir(zmdir):
                     shutil.rmtree(zmdir, ignore_errors = True)
@@ -838,8 +856,7 @@ class TestInstall(object):
     def project(self, request, tmpdir):
 
         def teardown():
-            if request.node.rep_call.failed:
-                printOutputs(self)
+            printErrorOnFailed(self, request)
 
         request.addfinalizer(teardown)
         setupTest(self, request, tmpdir)
@@ -899,10 +916,17 @@ class TestInstall(object):
             targets.add(targetpath)
 
             isSharedLib = any([x.endswith('shlib') for x in features])
-            if isSharedLib and isWindows:
-                targetpath = joinpath(os.path.dirname(targetpath), '%s.lib' % target)
-                assert os.path.isfile(targetpath)
-                targets.add(targetpath)
+            if isSharedLib:
+                if isWindows:
+                    targetpath = joinpath(os.path.dirname(targetpath), '%s.lib' % target)
+                    assert os.path.isfile(targetpath)
+                    targets.add(targetpath)
+                elif os.name == 'posix':
+                    verNum = taskParams.get('ver-num', None)
+                    if verNum:
+                        verNum = verNum.split('.')
+                        targets.add(targetpath + '.' + verNum[0])
+                        targets.add(targetpath + '.' + ".".join(verNum))
 
         for root, _, files in os.walk(check.destdir):
             for name in files:
@@ -986,8 +1010,7 @@ class TestBuildRoot(object):
     def project(self, request, tmpdir):
 
         def teardown():
-            if request.node.rep_call.failed:
-                printOutputs(self)
+            printErrorOnFailed(self, request)
 
         request.addfinalizer(teardown)
         setupTest(self, request, tmpdir)

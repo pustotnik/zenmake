@@ -302,7 +302,7 @@ class ConfigurationContext(WafConfContext):
 
         self.setenv('')
 
-    def configureTaskParams(self, bconf, taskName, taskParams):
+    def configureTaskParams(self, bconf, taskParams):
         """
         Handle every known task param that can be handled at configure stage.
         It is better for common performance because command 'configure' is used
@@ -312,7 +312,7 @@ class ConfigurationContext(WafConfContext):
         btypeDir = bconf.selectedBuildTypeDir
         rootdir  = bconf.rootdir
         startdir = bconf.startdir
-        taskParams['name'] = taskName
+        taskName = taskParams['name']
 
         assist.detectConfTaskFeatures(taskParams)
         assist.validateConfTaskFeatures(taskParams, self.validUserTaskFeatures)

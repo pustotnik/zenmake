@@ -205,7 +205,13 @@ class Config(object):
             _current = getattr(currentConf, param, {})
             _parent = getattr(parentConf, param, {})
             _new = _parent.copy()
-            _new.update(_current)
+            for k, v in viewitems(_current):
+                if isinstance(v, maptype):
+                    _new.setdefault(k, {})
+                    _new[k].update(v)
+                else:
+                    _new[k] = v
+
             setattr(currentConf, param, _new)
 
         # startdir, options, subdirs - they are not merged

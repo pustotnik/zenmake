@@ -1,4 +1,8 @@
 
+def check():
+    # some checking
+    return True
+
 tasks = {
     'extra' : {
         'features' : 'shlib',
@@ -7,6 +11,7 @@ tasks = {
         'use'      : 'corelib',
         'conftests'  : [
             dict(act = 'check-headers', names = 'iostream'),
+            check,
         ],
     },
     'engine' : {
@@ -18,5 +23,11 @@ tasks = {
         'conftests'  : [
             dict(act = 'check-headers', names = 'iostream'),
         ],
+    },
+}
+
+buildtypes = {
+    'debug-gcc' : {
+        'cxxflags' : '-O1 -g',
     },
 }
