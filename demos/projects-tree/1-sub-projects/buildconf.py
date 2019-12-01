@@ -52,3 +52,12 @@ platforms = {
         'default' : 'debug-msvc',
     },
 }
+
+matrix = [
+    {
+        'for' : {}, # for all
+        'set' : {
+          'rpath' : '.',
+        }
+    },
+]

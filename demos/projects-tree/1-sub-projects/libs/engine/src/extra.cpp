@@ -1,5 +1,5 @@
 #include <iostream>
-#include "core.h"
+#include "common.h"
 #include "extra.h"
 
 int doubleSum(int a, int b)

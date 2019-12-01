@@ -1,6 +1,4 @@
 
-startdir = 'src'
-
 tasks = {
     'subdirs-test' : {
         'features' : 'program',
