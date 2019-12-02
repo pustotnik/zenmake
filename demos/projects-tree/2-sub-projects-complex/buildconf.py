@@ -6,6 +6,7 @@ project = { 'version' : '0.3.1' }
 subdirs = [
     'libs',
     'main',
+    'tests',
 ]
 
 buildtypes = {

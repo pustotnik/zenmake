@@ -24,6 +24,12 @@ tasks = {
             dict(act = 'check-headers', names = 'iostream'),
         ],
     },
+    'extra-test' : {
+        'features' : 'cxxprogram test',
+        'source'   : 'tests/test_extra.cpp',
+        'includes' : 'src ../../tests/src',
+        'use'      : 'extra testcmn',
+    },
 }
 
 buildtypes = {
