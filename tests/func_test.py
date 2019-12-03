@@ -39,6 +39,10 @@ from zm.toolchains import CompilersInfo
 from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES
 
 joinpath = os.path.join
+isfile = os.path.isfile
+isdir = os.path.isdir
+
+
 ZM_BIN = cmn.ZENMAKE_DIR # it's a dir but it contains __main__.py
 PYTHON_EXE = sys.executable if sys.executable else 'python'
 PYTHON_VER = _platform.python_version()
@@ -60,7 +64,7 @@ TEST_CONDITIONS = {
 def collectProjectDirs():
     for path in TEST_CONDITIONS:
         path = joinpath(cmn.TEST_PROJECTS_DIR, path)
-        assert os.path.isdir(path)
+        assert isdir(path)
 
     result = []
     dirWithConf = None
@@ -108,7 +112,7 @@ def getZmExecutables():
     cmd = _zmExes['normal'] + ['zipapp', '--destdir', tmpdir]
     devnull = open(os.devnull, 'w')
     subprocess.call(cmd, stdout = devnull)
-    assert os.path.isfile(zipAppFile)
+    assert isfile(zipAppFile)
 
     # On Windows 10 files *.pyz can be used as is because there is
     # a launcher (python.exe) that assosiated with this file extension in
@@ -286,39 +290,45 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
             continue
 
         taskEnv = getTaskEnv(testSuit, taskName)
-        fileNamePattern, targetKind = getTargetPattern(taskEnv, features)
+        fpattern, targetKind = getTargetPattern(taskEnv, features)
         target = taskParams.get('target', taskName)
         targetdir = joinpath(buildout, buildtype)
 
         if targetKind == 'shlib':
-            targetpath = joinpath(targetdir, fileNamePattern % target)
+            targetpath = joinpath(targetdir, fpattern % target)
             verNum = taskParams.get('ver-num', None)
             if verNum:
-                verNum = verNum.split('.')
-                alttarget = target + '-' + verNum[0]
+                nums = verNum.split('.')
+                alttarget = target + '-' + nums[0]
                 paths = [targetpath,
-                    joinpath(targetdir, fileNamePattern % alttarget)]
+                    joinpath(targetdir, fpattern % alttarget)]
                 if resultExists:
-                    assert any(os.path.isfile(x) for x in paths)
+                    assert any(isfile(x) for x in paths)
                 else:
-                    assert all(not os.path.isfile(x) for x in paths)
+                    assert all(not isfile(x) for x in paths)
+
                 if isLinux:
-                    targetpath1 = targetpath + '.' + verNum[0]
-                    targetpath2 = targetpath + '.' + ".".join(verNum)
-                    assert os.path.isfile(targetpath1) == resultExists
-                    assert os.path.isfile(targetpath2) == resultExists
+                    targetpath1 = targetpath + '.' + nums[0]
+                    targetpath2 = targetpath + '.' + verNum
+                    assert isfile(targetpath1) == resultExists
+                    assert isfile(targetpath2) == resultExists
+                elif targetpath.endswith('.dylib'):
+                    fname = fpattern % (target + '.' + nums[0])
+                    assert isfile(joinpath(targetdir, fname)) == resultExists
+                    fname = fpattern % (target + '.' + verNum)
+                    assert isfile(joinpath(targetdir, fname)) == resultExists
             else:
-                assert os.path.isfile(targetpath) == resultExists
+                assert isfile(targetpath) == resultExists
 
             if isWindows:
                 targetpath = joinpath(targetdir, '%s.lib' % target)
-                assert os.path.isfile(targetpath) == resultExists
+                assert isfile(targetpath) == resultExists
         else:
-            targetpath = joinpath(targetdir, fileNamePattern % target)
-            assert os.path.isfile(targetpath) == resultExists
+            targetpath = joinpath(targetdir, fpattern % target)
+            assert isfile(targetpath) == resultExists
 
         if targetKind == 'exe' and resultExists:
-            targetpath = joinpath(targetdir, fileNamePattern % target)
+            targetpath = joinpath(targetdir, fpattern % target)
             assert os.access(targetpath, os.X_OK)
 
     # check original buildconf was not changed
@@ -352,8 +362,8 @@ class TestBase(object):
         cmdLine = ['configure']
         assert self._runZm(cmdLine)[0] == 0
         checkBuildResults(self, cmdLine, False)
-        assert os.path.isfile(self.confPaths.wafcachefile)
-        assert os.path.isfile(self.confPaths.zmcmnconfset)
+        assert isfile(self.confPaths.wafcachefile)
+        assert isfile(self.confPaths.zmcmnconfset)
 
         cmdLine = ['build']
         assert self._runZm(cmdLine)[0] == 0
@@ -387,10 +397,10 @@ class TestBase(object):
         # clean
         cmdLine = ['clean']
         assert self._runZm(cmdLine)[0] == 0
-        assert os.path.isdir(self.confPaths.buildroot)
-        assert os.path.isdir(self.confPaths.buildout)
-        assert os.path.isfile(self.confPaths.wafcachefile)
-        assert os.path.isfile(self.confPaths.zmcmnconfset)
+        assert isdir(self.confPaths.buildroot)
+        assert isdir(self.confPaths.buildout)
+        assert isfile(self.confPaths.wafcachefile)
+        assert isfile(self.confPaths.zmcmnconfset)
         checkBuildResults(self, cmdLine, False)
 
     def testBuildAndDistclean(self, allprojects):
@@ -401,7 +411,7 @@ class TestBase(object):
         checkBuildResults(self, cmdLine, True)
 
         # distclean
-        assert os.path.isdir(self.confPaths.buildroot)
+        assert isdir(self.confPaths.buildroot)
         cmdLine = ['distclean']
         assert self._runZm(cmdLine)[0] == 0
         assert not os.path.exists(self.confPaths.buildroot)
@@ -690,10 +700,10 @@ class TestFeatureTest(object):
         cmdLine = ['clean']
         assert runZm(self, cmdLine)[0] == 0
         checkBuildResults(self, cmdLine, False, True)
-        assert os.path.isdir(self.confPaths.buildroot)
-        assert os.path.isdir(self.confPaths.buildout)
-        assert os.path.isfile(self.confPaths.wafcachefile)
-        assert os.path.isfile(self.confPaths.zmcmnconfset)
+        assert isdir(self.confPaths.buildroot)
+        assert isdir(self.confPaths.buildout)
+        assert isfile(self.confPaths.wafcachefile)
+        assert isfile(self.confPaths.zmcmnconfset)
 
     def testCmdBuildRTAllVariants(self, projects):
 
@@ -718,10 +728,10 @@ class TestFeatureTest(object):
         cmdLine = ['clean']
         assert runZm(self, cmdLine)[0] == 0
         checkBuildResults(self, cmdLine, False, True)
-        assert os.path.isdir(self.confPaths.buildroot)
-        assert os.path.isdir(self.confPaths.buildout)
-        assert os.path.isfile(self.confPaths.wafcachefile)
-        assert os.path.isfile(self.confPaths.zmcmnconfset)
+        assert isdir(self.confPaths.buildroot)
+        assert isdir(self.confPaths.buildout)
+        assert isfile(self.confPaths.wafcachefile)
+        assert isfile(self.confPaths.zmcmnconfset)
 
     def testCmdTestRTAllVariants(self, projects):
 
@@ -743,7 +753,7 @@ class TestIndyCmd(object):
         exitcode = runZm(self, cmdLine)[0]
         assert exitcode == 0
         zipAppPath = joinpath(self.cwd, zipapp.ZIPAPP_NAME)
-        assert os.path.isfile(zipAppPath)
+        assert isfile(zipAppPath)
         assert iszip(zipAppPath)
 
     def testVersionCmd(self, tmpdir):
@@ -777,7 +787,7 @@ class TestAutoconfig(object):
         def teardown():
             if not printErrorOnFailed(self, request) and self.testdir:
                 zmdir = joinpath(self.testdir, 'zenmake')
-                if os.path.isdir(zmdir):
+                if isdir(zmdir):
                     shutil.rmtree(zmdir, ignore_errors = True)
 
         request.addfinalizer(teardown)
@@ -814,7 +824,7 @@ class TestAutoconfig(object):
         # then it should be checked
 
         buildConfFile = joinpath(self.cwd, 'buildconf.py')
-        assert os.path.isfile(buildConfFile)
+        assert isfile(buildConfFile)
 
         with open(buildConfFile, 'r') as file:
             lines = file.readlines()
@@ -886,7 +896,7 @@ class TestInstall(object):
         env.BINDIR = check.bindir
         env.LIBDIR = check.libdir
 
-        assert os.path.isdir(check.destdir)
+        assert isdir(check.destdir)
 
         isWindows = PLATFORM == 'windows'
 
@@ -907,7 +917,7 @@ class TestInstall(object):
                 continue
 
             taskEnv = getTaskEnv(self, taskName)
-            fileNamePattern, targetKind = getTargetPattern(taskEnv, features)
+            fpattern, targetKind = getTargetPattern(taskEnv, features)
 
             if targetKind == 'stlib':
                 # static libs aren't installed
@@ -930,7 +940,7 @@ class TestInstall(object):
                 targetdir = joinpath(check.destdir,
                                       os.path.splitdrive(targetdir)[1].lstrip(os.sep))
 
-            targetpath = joinpath(targetdir, fileNamePattern % target)
+            targetpath = joinpath(targetdir, fpattern % target)
             targets.add(targetpath)
 
             if targetKind == 'exe':
@@ -939,16 +949,23 @@ class TestInstall(object):
             if targetKind == 'shlib':
                 verNum = taskParams.get('ver-num', None)
                 if verNum:
-                    verNum = verNum.split('.')
-                    targets.add(targetpath + '.' + verNum[0])
-                    targets.add(targetpath + '.' + ".".join(verNum))
+                    nums = verNum.split('.')
+                    if targetpath.endswith('.dylib'):
+                        fname = fpattern % (target + '.' + nums[0])
+                        targets.add(joinpath(targetdir, fname))
+                        fname = fpattern % (target + '.' + verNum)
+                        targets.add(joinpath(targetdir, fname))
+                    else:
+                        targets.add(targetpath + '.' + nums[0])
+                        targets.add(targetpath + '.' + verNum)
 
-                    alttarget = target + '-' + verNum[0]
-                    targets.add(joinpath(targetdir, fileNamePattern % alttarget))
+                    if taskEnv.DEST_BINFMT == 'pe':
+                        fname = fpattern % (target + '-' + nums[0])
+                        targets.add(joinpath(targetdir, fname))
 
                 if isWindows:
                     targetpath = joinpath(targetdir, '%s.lib' % target)
-                    assert os.path.isfile(targetpath)
+                    assert isfile(targetpath)
                     targets.add(targetpath)
 
         for root, _, files in os.walk(check.destdir):
