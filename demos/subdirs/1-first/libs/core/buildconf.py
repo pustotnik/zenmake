@@ -13,7 +13,7 @@ tasks = {
         'source'   :  dict( include = '**/*.c' ),
         'export-includes' : True,
         'conftests'  : [
-            dict(act = 'check-headers', names = 'stdio.h'),
+            #dict(act = 'check-headers', names = 'stdio.h'),
             check,
         ],
     },

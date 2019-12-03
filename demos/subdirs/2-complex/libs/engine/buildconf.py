@@ -10,7 +10,7 @@ tasks = {
         'includes' : 'src',
         'use'      : 'corelib',
         'conftests'  : [
-            dict(act = 'check-headers', names = 'iostream'),
+            #dict(act = 'check-headers', names = 'iostream'),
             check,
         ],
     },
@@ -21,7 +21,7 @@ tasks = {
         'use'      : 'extra',
         'export-includes' : True,
         'conftests'  : [
-            dict(act = 'check-headers', names = 'iostream'),
+            #dict(act = 'check-headers', names = 'iostream'),
         ],
     },
     'extra-test' : {

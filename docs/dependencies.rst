@@ -51,5 +51,5 @@ Other variables are merged including ``matrix``. But build tasks in
 the ``matrix`` which are not from the current buildconf are ignored
 excepting explicit specified ones.
 
-Some examples can be found in the directory 'projects-tree'
+Some examples can be found in the directory 'subdirs'
 in the repository `here <repo_demo_projects_>`_.

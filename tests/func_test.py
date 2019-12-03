@@ -5,7 +5,7 @@
 # pylint: disable = wildcard-import, unused-wildcard-import, unused-import
 # pylint: disable = missing-docstring, invalid-name, bad-continuation
 # pylint: disable = unused-argument, no-member, attribute-defined-outside-init
-# pylint: disable = too-many-lines
+# pylint: disable = too-many-lines, too-many-branches
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
@@ -47,7 +47,7 @@ CUSTOM_TOOLCHAIN_PRJDIR = joinpath('cpp', '05-custom-toolchain')
 COMPLEX_UNITTEST_PRJDIR = joinpath('cpp', '09-complex-unittest')
 FORINSTALL_PRJDIRS = [
     joinpath('cpp', '09-complex-unittest'),
-    joinpath('projects-tree', '2-sub-projects-complex'),
+    joinpath('subdirs', '2-complex'),
 ]
 
 TEST_CONDITIONS = {
@@ -212,19 +212,23 @@ def getTaskEnv(testSuit, taskName):
     env = ConfigSet(cacheConfFile)
     return env
 
-def getTargetPattern(testSuit, taskName, features):
-    executable = False
+def getTargetPattern(env, features):
+    kind = 'file'
     fileNamePattern = '%s'
-    env = getTaskEnv(testSuit, taskName)
     for feature in features:
         # find pattern via brute force :)
         key = feature + '_PATTERN'
         if key not in env:
             continue
         fileNamePattern = env[key]
-        executable = feature.endswith('program')
+        if feature.endswith('program'):
+            kind = 'exe'
+        elif feature.endswith('shlib'):
+            kind = 'shlib'
+        elif feature.endswith('stlib'):
+            kind = 'stlib'
 
-    return fileNamePattern, executable
+    return fileNamePattern, kind
 
 def handleTaskFeatures(testSuit, taskParams):
     assist.detectConfTaskFeatures(taskParams)
@@ -265,6 +269,7 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
     buildtype = confManager.root.selectedBuildType
     buildout = confManager.root.confPaths.buildout
     isWindows = PLATFORM == 'windows'
+    isLinux = PLATFORM == 'linux'
 
     tasks = getBuildTasks(confManager)
     for taskName, taskParams in tasks.items():
@@ -280,28 +285,41 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
             # check only with features from TASK_WAF_MAIN_FEATURES
             continue
 
-        fileNamePattern, isExe = getTargetPattern(testSuit, taskName, features)
+        taskEnv = getTaskEnv(testSuit, taskName)
+        fileNamePattern, targetKind = getTargetPattern(taskEnv, features)
         target = taskParams.get('target', taskName)
-        targetpath = joinpath(buildout, buildtype, fileNamePattern % target)
+        targetdir = joinpath(buildout, buildtype)
 
-        assert os.path.isfile(targetpath) == resultExists
-        if resultExists and isExe:
-            assert os.access(targetpath, os.X_OK)
-
-        isSharedLib = any([x.endswith('shlib') for x in features])
-        if isSharedLib:
-            if isWindows:
-                targetpath = joinpath(os.path.dirname(targetpath),
-                                '%s.lib' % target)
-                assert os.path.isfile(targetpath) == resultExists
-            elif os.name == 'posix':
-                verNum = taskParams.get('ver-num', None)
-                if verNum:
-                    verNum = verNum.split('.')
+        if targetKind == 'shlib':
+            targetpath = joinpath(targetdir, fileNamePattern % target)
+            verNum = taskParams.get('ver-num', None)
+            if verNum:
+                verNum = verNum.split('.')
+                alttarget = target + '-' + verNum[0]
+                paths = [targetpath,
+                    joinpath(targetdir, fileNamePattern % alttarget)]
+                if resultExists:
+                    assert any(os.path.isfile(x) for x in paths)
+                else:
+                    assert all(not os.path.isfile(x) for x in paths)
+                if isLinux:
                     targetpath1 = targetpath + '.' + verNum[0]
                     targetpath2 = targetpath + '.' + ".".join(verNum)
                     assert os.path.isfile(targetpath1) == resultExists
                     assert os.path.isfile(targetpath2) == resultExists
+            else:
+                assert os.path.isfile(targetpath) == resultExists
+
+            if isWindows:
+                targetpath = joinpath(targetdir, '%s.lib' % target)
+                assert os.path.isfile(targetpath) == resultExists
+        else:
+            targetpath = joinpath(targetdir, fileNamePattern % target)
+            assert os.path.isfile(targetpath) == resultExists
+
+        if targetKind == 'exe' and resultExists:
+            targetpath = joinpath(targetdir, fileNamePattern % target)
+            assert os.access(targetpath, os.X_OK)
 
     # check original buildconf was not changed
     assert _conf == makeConfDict(testSuit.projectConf, deep = False)
@@ -888,45 +906,50 @@ class TestInstall(object):
                 # check only with features from TASK_WAF_MAIN_FEATURES
                 continue
 
-            isStLib = any([x.endswith('stlib') for x in features])
-            if isStLib: # static libs aren't installed
+            taskEnv = getTaskEnv(self, taskName)
+            fileNamePattern, targetKind = getTargetPattern(taskEnv, features)
+
+            if targetKind == 'stlib':
+                # static libs aren't installed
                 continue
 
-            fileNamePattern, isExe = getTargetPattern(self, taskName, features)
+            isExe = targetKind == 'exe'
             target = taskParams.get('target', taskName)
-            targetpath = fileNamePattern % target
 
             if 'install-path' not in taskParams:
-                targetpath = joinpath(check.bindir if isExe else check.libdir, targetpath)
+                targetdir = check.bindir if isExe else check.libdir
             else:
                 installPath = taskParams.get('install-path', '')
                 if not installPath:
                     continue
 
                 installPath = os.path.normpath(utils.substVars(installPath, env))
-                targetpath = joinpath(installPath, targetpath)
+                targetdir = installPath
 
             if check.destdir:
-                targetpath = joinpath(check.destdir,
-                                      os.path.splitdrive(targetpath)[1].lstrip(os.sep))
-            assert os.path.isfile(targetpath)
-            if isExe:
-                assert os.access(targetpath, os.X_OK)
+                targetdir = joinpath(check.destdir,
+                                      os.path.splitdrive(targetdir)[1].lstrip(os.sep))
 
+            targetpath = joinpath(targetdir, fileNamePattern % target)
             targets.add(targetpath)
 
-            isSharedLib = any([x.endswith('shlib') for x in features])
-            if isSharedLib:
+            if targetKind == 'exe':
+                assert os.access(targetpath, os.X_OK)
+
+            if targetKind == 'shlib':
+                verNum = taskParams.get('ver-num', None)
+                if verNum:
+                    verNum = verNum.split('.')
+                    targets.add(targetpath + '.' + verNum[0])
+                    targets.add(targetpath + '.' + ".".join(verNum))
+
+                    alttarget = target + '-' + verNum[0]
+                    targets.add(joinpath(targetdir, fileNamePattern % alttarget))
+
                 if isWindows:
-                    targetpath = joinpath(os.path.dirname(targetpath), '%s.lib' % target)
+                    targetpath = joinpath(targetdir, '%s.lib' % target)
                     assert os.path.isfile(targetpath)
                     targets.add(targetpath)
-                elif os.name == 'posix':
-                    verNum = taskParams.get('ver-num', None)
-                    if verNum:
-                        verNum = verNum.split('.')
-                        targets.add(targetpath + '.' + verNum[0])
-                        targets.add(targetpath + '.' + ".".join(verNum))
 
         for root, _, files in os.walk(check.destdir):
             for name in files:
