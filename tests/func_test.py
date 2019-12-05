@@ -5,7 +5,7 @@
 # pylint: disable = wildcard-import, unused-wildcard-import, unused-import
 # pylint: disable = missing-docstring, invalid-name, bad-continuation
 # pylint: disable = unused-argument, no-member, attribute-defined-outside-init
-# pylint: disable = too-many-lines, too-many-branches
+# pylint: disable = too-many-lines, too-many-branches, too-many-statements
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
@@ -171,16 +171,16 @@ def setupTest(self, request, tmpdir):
     #if not testName:
     #    testName = request.node.name
 
-    demosDir = 'demos'
+    projectDirName = 'prj'
 
     if PLATFORM == 'windows':
         # On windows with pytest it gets too long path
-        demosDir = '_' # shortest name
+        projectDirName = '_' # shortest name
         tmpdirForTests = cmn.SHARED_TMP_DIR
-        tmptestDir = joinpath(tmpdirForTests, demosDir)
+        tmptestDir = joinpath(tmpdirForTests, projectDirName)
         shutil.rmtree(tmptestDir, ignore_errors = True)
     else:
-        tmptestDir = joinpath(str(tmpdir.realpath()), demosDir)
+        tmptestDir = joinpath(str(tmpdir.realpath()), projectDirName)
 
     def copytreeIgnore(src, names):
         # don't copy build dir/files
@@ -188,8 +188,19 @@ def setupTest(self, request, tmpdir):
             return names
         return ['build', '_build']
 
-    shutil.copytree(cmn.TEST_PROJECTS_DIR, tmptestDir, ignore = copytreeIgnore)
-    self.cwd = joinpath(tmptestDir, request.param)
+    testPath = request.param
+    testPathParts = testPath.split(os.sep)
+    currentPrjDir = os.sep.join(testPathParts[:2])
+    currentPrjDir = joinpath(cmn.TEST_PROJECTS_DIR, currentPrjDir)
+
+    prjBuildDir = joinpath(currentPrjDir, 'build')
+    if os.path.exists(prjBuildDir):
+        prjBuildDir = os.path.realpath(prjBuildDir)
+        if os.path.isdir(prjBuildDir):
+            shutil.rmtree(prjBuildDir, ignore_errors = True)
+    shutil.copytree(currentPrjDir, tmptestDir, ignore = copytreeIgnore)
+
+    self.cwd = joinpath(tmptestDir, os.sep.join(testPathParts[2:]))
     self.projectConf = bconfloader.load(dirpath = self.cwd)
 
 def processConfHandlerWithCLI(testSuit, cmdLine):

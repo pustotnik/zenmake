@@ -31,11 +31,14 @@ def platform():
 PLATFORM = platform()
 
 readFile           = wafutils.readf
-mkHashOfStrings    = wafutils.h_list
+hashOfStrs         = wafutils.h_list
+hashOfFunc         = wafutils.h_fun
+hexOfStr           = wafutils.to_hex
 normalizeForDefine = wafutils.quote_define_name
 substVars          = wafutils.subst_vars
 libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
+threading          = wafutils.threading
 
 def normalizeForFileName(s, spaceAsDash = False):
     """
@@ -143,7 +146,6 @@ def _loadPyModuleWithoutImport(name):
 
     #pylint: disable=exec-used
     exec(compile(code, modulePath.path, 'exec'), module.__dict__)
-    #pylint: enable=exec-used
 
     # From https://docs.python.org/3/reference/import.html:
     #

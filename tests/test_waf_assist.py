@@ -57,7 +57,7 @@ def testDumpZenMakeCommonFile(tmpdir):
 
     _hash = 0
     for file in cfgenv.monitfiles:
-        _hash = utils.mkHashOfStrings((_hash, utils.readFile(file, 'rb')))
+        _hash = utils.hashOfStrs((_hash, utils.readFile(file, 'rb')))
     assert cfgenv.monithash == _hash
 
     assert 'toolenvs' in cfgenv

@@ -22,11 +22,17 @@ tasks = {
         'run'      : {
             'cmd' : "echo 'This is runcmd in task \"shlib\"'",
         },
+        'conftests'  : [
+            dict(act = 'check-headers', names = 'iostream'),
+        ],
     },
     'stlib' : {
         'features' : 'cxxstlib',
         'source'   :  dict( include = 'stlib/**/*.cpp' ),
         'includes' : '.',
+        'conftests'  : [
+            dict(act = 'check-headers', names = 'cstdio'),
+        ],
     },
     'shlibmain' : {
         'features' : 'cxxshlib',

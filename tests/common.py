@@ -47,7 +47,11 @@ def capturedOutput():
         sys.stdout, sys.stderr = oldout, olderr
 
 def makeTmpDirForTests():
-    path = tempfile.mkdtemp(prefix = 'zm.tests.')
+    if utils.PLATFORM == 'windows':
+        prefix = ''
+    else:
+        prefix = 'zm.tests.'
+    path = tempfile.mkdtemp(prefix = prefix)
     _tempdirs.append(path)
     return path
 

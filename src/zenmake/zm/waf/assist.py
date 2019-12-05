@@ -53,8 +53,8 @@ def dumpZenMakeCmnConfSet(bconfManager):
     zmCmn.monithash  = 0
 
     for file in zmCmn.monitfiles:
-        zmCmn.monithash = utils.mkHashOfStrings((zmCmn.monithash,
-                                                 utils.readFile(file, 'rb')))
+        zmCmn.monithash = utils.hashOfStrs((zmCmn.monithash,
+                                            utils.readFile(file, 'rb')))
 
     cinfo = toolchains.CompilersInfo
     envVarNames = cinfo.allFlagVars() + cinfo.allVarsToSetCompiler()
@@ -500,7 +500,7 @@ def areMonitoredFilesChanged(zmCmnConfSet):
     _hash = 0
     for file in zmCmnConfSet.monitfiles:
         try:
-            _hash = utils.mkHashOfStrings((_hash, utils.readFile(file, 'rb')))
+            _hash = utils.hashOfStrs((_hash, utils.readFile(file, 'rb')))
         except EnvironmentError:
             return True
 

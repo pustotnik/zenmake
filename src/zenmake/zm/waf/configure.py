@@ -7,6 +7,7 @@
 """
 
 import os
+import shutil
 from collections import defaultdict
 
 # NOTICE:This module must import modules with original Waf context classes
@@ -15,8 +16,10 @@ from collections import defaultdict
 # using of the Waf such classes are created in the 'wscript' because this
 # file is loaded always after all Waf context classes.
 
-from waflib.Context import Context as WafContext
+from waflib import ConfigSet, Options
+from waflib.Context import Context as WafContext, create_context as createContext
 from waflib.Configure import ConfigurationContext as WafConfContext
+from waflib.Configure import conf
 from waflib import Errors as waferror
 from zm.autodict import AutoDict as _AutoDict
 from zm.pyutils import viewitems
@@ -380,3 +383,111 @@ class ConfigurationContext(WafConfContext):
 
         taskParams['$real.target'] = realTarget
         taskParams['$runnable'] = runnable
+
+def _calcConfCheckDir(ctx, checkArgs):
+
+    buf = []
+    for key in sorted(checkArgs.keys()):
+        v = checkArgs[key]
+        if hasattr(v, '__call__'):
+            buf.append(utils.hashOfFunc(v))
+        else:
+            buf.append(str(v))
+    kwhash = utils.hashOfStrs(buf)
+    checkHash = utils.hexOfStr(kwhash)
+
+    # can be called from conf.multicheck
+    lock = utils.threading.Lock()
+    with lock:
+        env = ctx.all_envs[''] # top env
+        if 'conf-check-id' not in env:
+            env['conf-check-id'] = {}
+        confCheckId = env['conf-check-id']
+        if checkHash not in confCheckId:
+            lastId = confCheckId.get('last-id', 0)
+            confCheckId['last-id'] = currentId = lastId + 1
+            confCheckId[checkHash] = currentId
+        else:
+            currentId = confCheckId[checkHash]
+
+    isWindows = os.sep == '\\'
+    dirpath = ctx.bldnode.abspath() + os.sep + (not isWindows and '.' or '')
+    dirpath += 'cfgchk%d' % currentId
+    return dirpath
+
+@conf
+def run_build(self, *k, **kw):
+    """
+	Create a temporary build context to execute a build.
+    Alternative version of the waflib.Configure.run_build
+    """
+
+    # pylint: disable = invalid-name,unused-argument
+
+    topdir = _calcConfCheckDir(self, kw)
+
+    cachemode = kw.get('confcache', getattr(Options.options, 'confcache', None))
+
+    if not cachemode and os.path.exists(topdir):
+        shutil.rmtree(topdir)
+
+    try:
+        os.makedirs(topdir)
+    except OSError:
+        pass
+
+    try:
+        os.stat(topdir)
+    except OSError:
+        self.fatal('cannot use the configuration test folder %r' % topdir)
+
+    if cachemode:
+        cache = None
+        cachePath = joinpath(topdir, 'cache_run_build')
+        try:
+            cache = ConfigSet.ConfigSet(cachePath)
+        except EnvironmentError:
+            pass
+        else:
+            ret = cache[self.variant]
+            if isinstance(ret, str) and ret.startswith('Test does not build'):
+                self.fatal(ret)
+            return ret
+
+    bdir = joinpath(topdir, 'b')
+    if not os.path.exists(bdir):
+        os.makedirs(bdir)
+
+    clsName = kw.get('run_build_cls') or getattr(self, 'run_build_cls', 'build')
+    self.test_bld = bld = createContext(clsName, top_dir = topdir, out_dir = bdir)
+    bld.init_dirs()
+    bld.progress_bar = 0
+    bld.targets = '*'
+
+    bld.logger = self.logger
+    bld.all_envs.update(self.all_envs)
+    bld.env = kw['env']
+
+    bld.kw = kw
+    bld.conf = self
+    kw['build_fun'](bld)
+    ret = -1
+    try:
+        try:
+            bld.compile()
+        except waferror.WafError:
+            import traceback
+            ret = 'Test does not build: %s' % traceback.format_exc()
+            self.fatal(ret)
+        else:
+            ret = getattr(bld, 'retval', 0)
+    finally:
+        if cachemode:
+            # cache the results each time
+            if not cache:
+                cache = ConfigSet.ConfigSet()
+            cache[self.variant] = ret
+            cache.store(cachePath)
+        else:
+            shutil.rmtree(topdir)
+    return ret
