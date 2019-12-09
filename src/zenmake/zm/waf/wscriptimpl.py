@@ -222,6 +222,11 @@ def build(bld):
         bld.env = ConfigSet(cacheFile)
         bld.env.parent = rootEnv
 
+        if 'includes' in taskParams:
+            # Add the build directory path.
+            # It's needed to use config header with 'conftests'.
+            taskParams['includes'].append(bld.bldnode.abspath())
+
         if 'source' in taskParams:
             source = assist.handleTaskSourceParam(bld, taskParams)
             if not source:
@@ -236,8 +241,9 @@ def build(bld):
 
         bldParams = taskParams.copy()
         # Remove params that can conflict with waf in theory
-        dropKeys = (set(KNOWN_TASK_PARAM_NAMES) - assist.getUsedWafTaskKeys())
+        dropKeys = set(KNOWN_TASK_PARAM_NAMES) - assist.getUsedWafTaskKeys()
         dropKeys.update([k for k in bldParams if k[0] == '$' ])
+        dropKeys = tuple(dropKeys)
         for k in dropKeys:
             bldParams.pop(k, None)
 

@@ -92,6 +92,8 @@ taskscheme = {
             'autodefine' : { 'type': 'bool' },
             'file' :       { 'type': 'str' },
             'guard':       { 'type': 'str' },
+            'var':         { 'type': 'str' },
+            'checks':      { 'type': 'list' },
         },
     },
     'normalize-target-name' : { 'type': 'bool' },

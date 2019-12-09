@@ -34,11 +34,18 @@ readFile           = wafutils.readf
 hashOfStrs         = wafutils.h_list
 hashOfFunc         = wafutils.h_fun
 hexOfStr           = wafutils.to_hex
-normalizeForDefine = wafutils.quote_define_name
 substVars          = wafutils.subst_vars
 libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
 threading          = wafutils.threading
+
+def normalizeForDefine(s):
+    """
+	Converts a string into an identifier suitable for C defines.
+    """
+    if s[0].isdigit():
+        s = '_%s' % s
+    return wafutils.quote_define_name(s)
 
 def normalizeForFileName(s, spaceAsDash = False):
     """

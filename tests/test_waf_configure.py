@@ -20,7 +20,7 @@ from waflib.ConfigSet import ConfigSet
 from waflib.Errors import WafError
 import tests.common as cmn
 from zm.autodict import AutoDict
-from zm import toolchains, utils
+from zm import toolchains, utils, log
 from zm.waf import context, configure
 from zm.waf.configure import ConfigurationContext
 
@@ -126,6 +126,8 @@ def testsSetDirectEnv(cfgctx):
 
 def testRunConfTestsCheckPrograms(mocker, cfgctx):
 
+    mocker.patch('zm.log.info')
+
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
@@ -147,6 +149,8 @@ def testRunConfTestsCheckPrograms(mocker, cfgctx):
 
 def testRunConfTestsCheckSysLibs(mocker, cfgctx):
 
+    mocker.patch('zm.log.info')
+
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
@@ -160,13 +164,15 @@ def testRunConfTestsCheckSysLibs(mocker, cfgctx):
     ctx.runConfTests(buildtype, tasks)
 
     calls = [
-        mocker.call(lib = 'lib1', mandatory = False),
-        mocker.call(lib = 'lib2', mandatory = False),
+        mocker.call(lib = 'lib1', mandatory = False, msg = mocker.ANY),
+        mocker.call(lib = 'lib2', mandatory = False, msg = mocker.ANY),
     ]
 
     assert ctx.check.mock_calls == calls
 
 def testRunConfTestsCheckHeaders(mocker, cfgctx):
+
+    mocker.patch('zm.log.info')
 
     ctx = cfgctx
     buildtype = 'buildtype'
@@ -180,13 +186,15 @@ def testRunConfTestsCheckHeaders(mocker, cfgctx):
     ctx.runConfTests(buildtype, tasks)
 
     calls = [
-        mocker.call(header_name = 'header1', mandatory = False),
-        mocker.call(header_name = 'header2', mandatory = False),
+        mocker.call(header_name = 'header1', mandatory = False, msg = mocker.ANY),
+        mocker.call(header_name = 'header2', mandatory = False, msg = mocker.ANY),
     ]
 
     assert ctx.check.mock_calls == calls
 
 def testRunConfTestsCheckLibs(mocker, cfgctx):
+
+    mocker.patch('zm.log.info')
 
     ctx = cfgctx
     buildtype = 'buildtype'
@@ -200,15 +208,18 @@ def testRunConfTestsCheckLibs(mocker, cfgctx):
     ctx.check = mocker.MagicMock()
     ctx.runConfTests(buildtype, tasks)
 
+    msg = mocker.ANY
     calls = [
-        mocker.call(lib = 'lib1', mandatory = False),
-        mocker.call(lib = 'lib2', mandatory = False),
-        mocker.call(lib = 'lib3', define_name = 'HAVE_LIB_LIB3'),
+        mocker.call(lib = 'lib1', mandatory = False, msg = msg),
+        mocker.call(lib = 'lib2', mandatory = False, msg = msg),
+        mocker.call(lib = 'lib3', define_name = 'HAVE_LIB_LIB3', msg = msg),
     ]
 
     assert ctx.check.mock_calls == calls
 
 def testRunConfTestsWriteHeader(mocker, cfgctx):
+
+    mocker.patch('zm.log.info')
 
     ctx = cfgctx
     buildtype = 'buildtype'
@@ -224,11 +235,11 @@ def testRunConfTestsWriteHeader(mocker, cfgctx):
     ctx.runConfTests(buildtype, tasks)
 
     calls = [
-        mocker.call(joinpath(buildtype, 'some_task_config.h'),
+        mocker.call(joinpath(buildtype, 'some_task_config.h'), top = True,
                     guard = '_buildtype_some_task_config_h'.upper()),
-        mocker.call(joinpath(buildtype, 'file1'),
+        mocker.call(joinpath(buildtype, 'file1'), top = True,
                     guard = '_buildtype_file1'.upper()),
-        mocker.call(joinpath(buildtype, 'file2'),
+        mocker.call(joinpath(buildtype, 'file2'), top = True,
                     guard = 'myguard'),
     ]
 
@@ -239,18 +250,19 @@ def testRunConfTestsWriteHeader(mocker, cfgctx):
     ctx.runConfTests(buildtype, tasks)
 
     calls = [
-        mocker.call(joinpath(buildtype, 'some_task_config.h'),
+        mocker.call(joinpath(buildtype, 'some_task_config.h'), top = True,
                     guard = 'test_prj_buildtype_some_task_config_h'.upper()),
-        mocker.call(joinpath(buildtype, 'file1'),
+        mocker.call(joinpath(buildtype, 'file1'), top = True,
                     guard = 'test_prj_buildtype_file1'.upper()),
-        mocker.call(joinpath(buildtype, 'file2'),
+        mocker.call(joinpath(buildtype, 'file2'), top = True,
                     guard = 'myguard'),
     ]
 
     assert ctx.write_config_header.mock_calls == calls
 
+def testRunConfTestsUnknown(mocker, cfgctx):
 
-def testRunConfTestsUnknown(cfgctx):
+    mocker.patch('zm.log.info')
 
     ctx = cfgctx
     buildtype = 'buildtype'

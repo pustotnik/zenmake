@@ -8,7 +8,6 @@
 
 import os
 import shutil
-from collections import defaultdict
 
 # NOTICE:This module must import modules with original Waf context classes
 # before declaring their alter implementions.
@@ -16,17 +15,20 @@ from collections import defaultdict
 # using of the Waf such classes are created in the 'wscript' because this
 # file is loaded always after all Waf context classes.
 
-from waflib import ConfigSet, Options
+from waflib import ConfigSet
 from waflib.Context import Context as WafContext, create_context as createContext
 from waflib.Configure import ConfigurationContext as WafConfContext
 from waflib.Configure import conf
 from waflib import Errors as waferror
 from zm.autodict import AutoDict as _AutoDict
-from zm.pyutils import viewitems
+from zm.pyutils import maptype, viewitems, viewvalues
 from zm import utils, log, toolchains
 from zm.waf import assist
 
 joinpath = os.path.join
+
+CONF_CHECK_CACHE_FILE = 'conf_check_cache'
+CONF_CHECK_CACHE_KEY = 'conf-check-cache'
 
 def _confTestCheckByPyFunc(entity, **kwargs):
     cfgCtx    = kwargs['cfgCtx']
@@ -44,65 +46,50 @@ def _confTestCheckByPyFunc(entity, **kwargs):
         result = func(task = taskName, buildtype = buildtype)
 
     if not result:
-        cfgCtx.end_msg(result = 'failed', color = 'YELLOW')
+        cfgCtx.end_msg(result = 'no', color = 'YELLOW')
         if mandatory:
             cfgCtx.fatal('Checking by function %r failed' % func.__name__)
     else:
-        cfgCtx.end_msg('ok')
+        cfgCtx.end_msg('yes')
 
 def _confTestCheckPrograms(entity, **kwargs):
     cfgCtx = kwargs['cfgCtx']
 
     cfgCtx.setenv('')
-    called = kwargs['called'][id(cfgCtx.env)]
 
     names = utils.toList(entity.pop('names', []))
     funcArgs = entity
     funcArgs['path_list'] = utils.toList(entity.pop('paths', []))
 
     for name in names:
-        # It doesn't matter here that 'hash' can produce different result
-        # between python runnings.
-        _hash = hash( ('find_program', name, repr(sorted(funcArgs.items())) ) )
-        if _hash not in called:
-            cfgCtx.find_program(name, **funcArgs)
-            called.add(_hash)
-
-def _confTestCheck(entity, **kwargs):
-    cfgCtx = kwargs['cfgCtx']
-    taskParams = kwargs['taskParams']
-
-    cfgCtx.setenv(taskParams['$task.variant'])
-    called = kwargs['called'][id(cfgCtx.env)]
-    funcArgs = entity
-    _hash = hash( ('check', repr(sorted(funcArgs.items())) ) )
-    if _hash not in called:
-        cfgCtx.check(**funcArgs)
-        called.add(_hash)
+        # Method find_program caches result in the cfgCtx.env and
+        # therefore it's not needed to cache it here.
+        cfgCtx.find_program(name, **funcArgs)
 
 def _confTestCheckSysLibs(entity, **kwargs):
     taskParams = kwargs['taskParams']
 
     sysLibs = utils.toList(taskParams.get('sys-libs', []))
     funcArgs = entity
-    for lib in sysLibs:
-        funcArgs['lib'] = lib
-        _confTestCheck(funcArgs, **kwargs)
+    funcArgs['names'] = sysLibs
+    _confTestCheckLibs(funcArgs, **kwargs)
 
 def _confTestCheckHeaders(entity, **kwargs):
     headers = utils.toList(entity.pop('names', []))
     funcArgs = entity
     for header in headers:
+        funcArgs['msg'] = 'Checking for header %s' % header
         funcArgs['header_name'] = header
         _confTestCheck(funcArgs, **kwargs)
 
 def _confTestCheckLibs(entity, **kwargs):
     libs = utils.toList(entity.pop('names', []))
     autodefine = entity.pop('autodefine', False)
-    funcArgs = entity
     for lib in libs:
+        funcArgs = entity.copy()
+        funcArgs['msg'] = 'Checking for library %s' % lib
         funcArgs['lib'] = lib
-        if autodefine:
+        if autodefine and 'define_name' not in funcArgs:
             funcArgs['define_name'] = 'HAVE_LIB_' + lib.upper()
         _confTestCheck(funcArgs, **kwargs)
 
@@ -124,8 +111,75 @@ def _confTestWriteHeader(entity, **kwargs):
     projectName = cfgCtx.getbconf().projectName or ''
     guardname = utils.normalizeForDefine(projectName + '_' + fileName)
     entity['guard'] = entity.pop('guard', guardname)
+    # write the configuration header from the build directory
+    entity['top'] = True
 
     cfgCtx.write_config_header(fileName, **entity)
+
+def _confTestCheck(entity, **kwargs):
+    cfgCtx = kwargs['cfgCtx']
+    taskParams = kwargs['taskParams']
+
+    cfgCtx.setenv(taskParams['$task.variant'])
+
+    # _confTestCheck is used in loops so it's needed to save entity
+    # without changes
+    funcArgs = entity.copy()
+
+    #TODO: add as option
+    # if it is False then write-config-header doesn't write defines
+    #funcArgs['global_define'] = False
+
+    parallelChecks = funcArgs.pop('parallel-checks', None)
+
+    if parallelChecks is not None:
+        # funcArgs is shared so it can be changed later
+        parallelChecks.append(funcArgs)
+    else:
+        cfgCtx.check(**funcArgs)
+
+def _confTestCheckInParallel(entity, **kwargs):
+    cfgCtx     = kwargs['cfgCtx']
+    taskName   = kwargs['taskName']
+    taskParams = kwargs['taskParams']
+
+    cfgCtx.setenv(taskParams['$task.variant'])
+
+    checks = entity.pop('checks', [])
+    if not checks:
+        msg = "No checks for act 'parallel' in conftests for task %r" % taskName
+        log.warn(msg)
+        return
+
+    supportedActs = (
+        'check-sys-libs', 'check-headers',
+        'check-libs', 'check',
+    )
+
+    parallelCheckArgsList = []
+
+    for check in checks:
+        check['parallel-checks'] = parallelCheckArgsList
+        if check['act'] not in supportedActs:
+            msg = "act %r can not be used inside the act 'parallel'" % check['act']
+            msg += " for conftests in task %r!" % taskName
+            cfgCtx.fatal(msg)
+
+    _runConfChecks(checks, kwargs)
+    if not parallelCheckArgsList:
+        return
+
+    # It's necessary to remove any locks after previous serial checks
+    # because they are fake locks. See run_build in this file.
+    cfgCtx.confChecks['check-locks'].clear()
+
+    for args in parallelCheckArgsList:
+        args['msg'] = "  %s" % args['msg']
+
+    params = dict(
+        msg = 'Checking in parallel',
+    )
+    cfgCtx.multicheck(*parallelCheckArgsList, **params)
 
 _confTestFuncs = {
     'check-by-pyfunc'     : _confTestCheckByPyFunc,
@@ -134,13 +188,42 @@ _confTestFuncs = {
     'check-headers'       : _confTestCheckHeaders,
     'check-libs'          : _confTestCheckLibs,
     'check'               : _confTestCheck,
+    'parallel'            : _confTestCheckInParallel,
     'write-config-header' : _confTestWriteHeader,
 }
+
+def _runConfChecks(checks, funcArgs):
+    for entity in checks:
+        if callable(entity):
+            entity = {
+                'act' : 'check-by-pyfunc',
+                'func' : entity,
+            }
+        else:
+            # entity is changed in conf test func below
+            entity = entity.copy()
+        act = entity.pop('act', None)
+        func = _confTestFuncs.get(act, None)
+        if not func:
+            ctx = funcArgs['cfgCtx']
+            taskName = funcArgs['taskName']
+            ctx.fatal('unknown act %r for conftests in task %r!' %
+                      (act, taskName))
+
+        func(entity, **funcArgs)
 
 class ConfigurationContext(WafConfContext):
     """ Context for command 'configure' """
 
     # pylint: disable=no-member,attribute-defined-outside-init
+
+    def __init__(self, *args, **kwargs):
+        super(ConfigurationContext, self).__init__(*args, **kwargs)
+
+        self.confChecks = {}
+        self.confChecks['cache'] = None
+        self.confChecks['top-lock'] = utils.threading.Lock()
+        self.confChecks['check-locks'] = {}
 
     def _loadDetectedCompiler(self, lang):
         """
@@ -178,6 +261,11 @@ class ConfigurationContext(WafConfContext):
         super(ConfigurationContext, self).execute()
 
         assist.dumpZenMakeCmnConfSet(self.bconfManager)
+
+        cache = self.confChecks['cache']
+        if cache is not None:
+            cachePath = joinpath(self.cachedir.abspath(), CONF_CHECK_CACHE_FILE)
+            cache.store(cachePath)
 
     # override
     def post_recurse(self, node):
@@ -276,32 +364,18 @@ class ConfigurationContext(WafConfContext):
         Run supported configuration tests/checks
         """
 
-        called = defaultdict(set)
-
         for taskName, taskParams in viewitems(tasks):
             confTests = taskParams.get('conftests', [])
-            funcKWArgs = dict(
+            if not confTests:
+                continue
+            log.info('.. Checks for the %r:' % taskName)
+            funcArgs = dict(
                 cfgCtx = self,
                 buildtype = buildtype,
                 taskName = taskName,
                 taskParams = taskParams,
-                called = called,
             )
-            for entity in confTests:
-                if callable(entity):
-                    entity = {
-                        'act' : 'check-by-pyfunc',
-                        'func' : entity,
-                    }
-                else:
-                    entity = entity.copy()
-                act = entity.pop('act', None)
-                func = _confTestFuncs.get(act, None)
-                if not func:
-                    self.fatal('unknown act %r for conftests in task %r!' %
-                               (act, taskName))
-
-                func(entity, **funcKWArgs)
+            _runConfChecks(confTests, funcArgs)
 
         self.setenv('')
 
@@ -384,110 +458,183 @@ class ConfigurationContext(WafConfContext):
         taskParams['$real.target'] = realTarget
         taskParams['$runnable'] = runnable
 
-def _calcConfCheckDir(ctx, checkArgs):
+@conf
+def loadConfCheckCache(self):
+    """
+    Load cache data for conf checks.
+    """
+
+    cachePath = joinpath(self.cachedir.abspath(), CONF_CHECK_CACHE_FILE)
+    try:
+        cache = ConfigSet.ConfigSet(cachePath)
+    except EnvironmentError:
+        cache = ConfigSet.ConfigSet()
+
+    if 'checks' not in cache:
+        cache['checks'] = {}
+    checks = cache['checks']
+
+    # reset all but not 'id'
+    for v in viewvalues(checks):
+        if isinstance(v, maptype):
+            _new = { 'id' : v['id']}
+            v.clear()
+            v.update(_new)
+
+    return cache
+
+@conf
+def calcConfCheckHash(self, checkArgs):
+    """
+    Get hash for conf check
+    """
 
     buf = []
     for key in sorted(checkArgs.keys()):
+        if key == 'multicheck_mandatory':
+            continue
         v = checkArgs[key]
         if hasattr(v, '__call__'):
             buf.append(utils.hashOfFunc(v))
         else:
             buf.append(str(v))
+    # to ensure it's an unique id for current conf check
+    buf.append(self.variant)
+
     kwhash = utils.hashOfStrs(buf)
-    checkHash = utils.hexOfStr(kwhash)
+    return utils.hexOfStr(kwhash)
 
-    # can be called from conf.multicheck
-    lock = utils.threading.Lock()
-    with lock:
-        env = ctx.all_envs[''] # top env
-        if 'conf-check-id' not in env:
-            env['conf-check-id'] = {}
-        confCheckId = env['conf-check-id']
-        if checkHash not in confCheckId:
-            lastId = confCheckId.get('last-id', 0)
-            confCheckId['last-id'] = currentId = lastId + 1
-            confCheckId[checkHash] = currentId
-        else:
-            currentId = confCheckId[checkHash]
+@conf
+def getConfCheckCache(self, checkHash):
+    """
+    Get conf check cache by hash
+    """
 
-    isWindows = os.sep == '\\'
-    dirpath = ctx.bldnode.abspath() + os.sep + (not isWindows and '.' or '')
-    dirpath += 'cfgchk%d' % currentId
+    cache = self.confChecks['cache']
+    if cache is None:
+        self.confChecks['cache'] = cache = self.loadConfCheckCache()
+
+    checks = cache['checks']
+    if checkHash not in checks:
+        lastId = checks.get('last-id', 0)
+        checks['last-id'] = currentId = lastId + 1
+        checks[checkHash] = {}
+        checks[checkHash]['id'] = currentId
+
+    return checks[checkHash]
+
+def _calcConfCheckDir(ctx, checkId):
+
+    dirpath = ctx.bldnode.abspath() + os.sep
+    dirpath += '.cfgchk%d' % checkId
     return dirpath
+
+def _makeConfTestBld(ctx, checkArgs, topdir, bdir):
+    clsName = checkArgs.get('run_build_cls') or getattr(ctx, 'run_build_cls', 'build')
+    bld = createContext(clsName, top_dir = topdir, out_dir = bdir)
+
+    # avoid unnecessary directory
+    bld.variant = ''
+
+    bld.init_dirs()
+    bld.progress_bar = 0
+    bld.targets = '*'
+
+    bld.logger = ctx.logger
+    bld.all_envs.update(ctx.all_envs)
+    bld.env = checkArgs['env']
+
+    bld.kw = checkArgs # for function 'build_fun'
+    bld.conf = ctx
+    return bld
+
+class _RunBuildLock(object):
+    def __init__(self, lock):
+        self.lock = lock
+
+    def __enter__(self):
+        if self.lock:
+            return self.lock.__enter__()
+        return None
+
+    def __exit__(self, _type, value, traceback):
+        if self.lock:
+            self.lock.__exit__(_type, value, traceback)
 
 @conf
 def run_build(self, *k, **kw):
     """
 	Create a temporary build context to execute a build.
-    Alternative version of the waflib.Configure.run_build
+    It's alternative version of the waflib.Configure.run_build
     """
 
     # pylint: disable = invalid-name,unused-argument
 
-    topdir = _calcConfCheckDir(self, kw)
-
-    cachemode = kw.get('confcache', getattr(Options.options, 'confcache', None))
-
-    if not cachemode and os.path.exists(topdir):
-        shutil.rmtree(topdir)
-
     try:
-        os.makedirs(topdir)
-    except OSError:
-        pass
+        topCtx = self.multicheck_task.conf
+    except AttributeError:
+        topCtx = self
+        ctxLock = _RunBuildLock(None)
+        def makeCheckLock():
+            return _RunBuildLock(None)
+    else:
+        # It's called from cfgtask by conf.multicheck
+        # So it's needed to be locked
+        ctxLock = _RunBuildLock(topCtx.confChecks['top-lock'])
+        def makeCheckLock():
+            return _RunBuildLock(utils.threading.Lock())
 
-    try:
-        os.stat(topdir)
-    except OSError:
-        self.fatal('cannot use the configuration test folder %r' % topdir)
+    checkHash = topCtx.calcConfCheckHash(kw)
 
-    if cachemode:
-        cache = None
-        cachePath = joinpath(topdir, 'cache_run_build')
-        try:
-            cache = ConfigSet.ConfigSet(cachePath)
-        except EnvironmentError:
-            pass
-        else:
-            ret = cache[self.variant]
-            if isinstance(ret, str) and ret.startswith('Test does not build'):
-                self.fatal(ret)
-            return ret
+    with ctxLock: # global lock for topCtx
+        checkLocks = topCtx.confChecks['check-locks']
+        checkLock = checkLocks.setdefault(checkHash, makeCheckLock())
+        # it should be called with ctx lock
+        checkCache = topCtx.getConfCheckCache(checkHash)
 
-    bdir = joinpath(topdir, 'b')
-    if not os.path.exists(bdir):
-        os.makedirs(bdir)
+    with checkLock: # lock for current conf test only
 
-    clsName = kw.get('run_build_cls') or getattr(self, 'run_build_cls', 'build')
-    self.test_bld = bld = createContext(clsName, top_dir = topdir, out_dir = bdir)
-    bld.init_dirs()
-    bld.progress_bar = 0
-    bld.targets = '*'
+        # it should be called with checkLock otherwise cache will not work
+        if 'retval' in checkCache:
+            return checkCache['retval']
 
-    bld.logger = self.logger
-    bld.all_envs.update(self.all_envs)
-    bld.env = kw['env']
+        checkId = checkCache['id']
 
-    bld.kw = kw
-    bld.conf = self
-    kw['build_fun'](bld)
-    ret = -1
-    try:
-        try:
-            bld.compile()
-        except waferror.WafError:
-            import traceback
-            ret = 'Test does not build: %s' % traceback.format_exc()
-            self.fatal(ret)
-        else:
-            ret = getattr(bld, 'retval', 0)
-    finally:
-        if cachemode:
-            # cache the results each time
-            if not cache:
-                cache = ConfigSet.ConfigSet()
-            cache[self.variant] = ret
-            cache.store(cachePath)
-        else:
+        topdir = _calcConfCheckDir(topCtx, checkId)
+        if os.path.exists(topdir):
             shutil.rmtree(topdir)
+
+        try:
+            os.makedirs(topdir)
+        except OSError:
+            pass
+
+        try:
+            os.stat(topdir)
+        except OSError:
+            self.fatal('cannot use the configuration test folder %r' % topdir)
+
+        bdir = joinpath(topdir, 'b')
+        if not os.path.exists(bdir):
+            os.makedirs(bdir)
+
+        self.test_bld = bld = _makeConfTestBld(self, kw, topdir, bdir)
+
+        kw['build_fun'](bld)
+        ret = -1
+
+        try:
+            try:
+                bld.compile()
+            except waferror.WafError:
+                import traceback
+                ret = 'Conf test failed: %s' % traceback.format_exc()
+                self.fatal(ret)
+            else:
+                ret = getattr(bld, 'retval', 0)
+        finally:
+            shutil.rmtree(topdir)
+            with ctxLock:
+                checkCache['retval'] = ret
+
     return ret

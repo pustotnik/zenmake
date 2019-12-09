@@ -3,6 +3,13 @@
 #include "extra.h"
 #include "engine.h"
 
+#include "engine_config.h"
+
+#ifndef HAVE_IOSTREAM
+    // compiler error
+    no define HAVE_IOSTREAM
+#endif
+
 int calcSomething()
 {
 

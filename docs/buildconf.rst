@@ -647,10 +647,13 @@ taskparams
                 Check existence of programs from list in the ``names``.
                 Parameter ``paths`` can be used to set paths to find
                 these programs, but usually you don't need to use it.
+                Parameter ``var`` can be used to set 'define' name.
+                By default it's a first name from the ``names`` in upper case.
 
             ``act`` = ``check-sys-libs``
                 Check existence of all system libraries from
-                task parameter ``sys-libs``.
+                task parameter ``sys-libs``. If ``autodefine`` is set to True
+                it generates ``C/C++ define name`` like ``HAVE_LIB_SOMELIB``.
 
             ``act`` = ``check-headers``
                 Check existence of C/C++ headers from list in the ``names``.
@@ -667,6 +670,12 @@ taskparams
 
             ``act`` = ``check``
                 Just proxy to Waf common method ``check``.
+
+            ``act`` = ``parallel``
+                Run configuration tests from the parameter ``checks``
+                in parallel. Not all types of tests are supported.
+                Allowed tests are ``check-sys-libs``, ``check-headers``,
+                ``check-libs``, ``check``.
 
             ``act`` = ``write-config-header``
                 After all the configuration tests are executed, write a
@@ -701,13 +710,20 @@ taskparams
                     # do checking in function 'check'
                     check,
                     # Check libs from param 'sys-libs'
-                    dict(act = 'check-sys-libs'),
+                    #dict(act = 'check-sys-libs'),
                     dict(act = 'check-headers', names = 'cstdio', mandatory = True),
                     dict(act = 'check-headers', names = 'cstddef stdint.h', mandatory = False),
                     # Each lib will have define 'HAVE_LIB_<LIBNAME>' if autodefine = True
                     dict(act = 'check-libs', names = 'pthread', autodefine = True,
                                 mandatory = False),
                     dict(act = 'check-programs', names = 'python'),
+                    dict( act = 'parallel',
+                        checks = [
+                            dict(act = 'check-sys-libs'),
+                            dict(act = 'check-headers', names = 'stdlib.h iostream'),
+                            dict(act = 'check-headers', names = 'stdlibasd.h', mandatory = False),
+                        ],
+                    ),
 
                     #dict(act = 'write-config-header', file = 'myapp_config.h')
                     dict(act = 'write-config-header'),

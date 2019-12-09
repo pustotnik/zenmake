@@ -2,6 +2,13 @@
 #include "common.h"
 #include "extra.h"
 
+#include "extra_config.h"
+
+#ifndef HAVE_IOSTREAM
+    // compiler error
+    no define HAVE_IOSTREAM
+#endif
+
 int doubleSum(int a, int b)
 {
 

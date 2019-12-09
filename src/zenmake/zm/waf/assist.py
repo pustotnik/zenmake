@@ -290,11 +290,9 @@ def handleTaskIncludesParam(taskParams, rootdir, startdir):
     else:
         includes = []
 
-    # The includes='.' add the build directory path and the startdir.
-    # It's needed to use config header with 'conftests'.
+    # The includes='.' add the startdir.
     # To save the same order with the Waf 'export_includes'
     # it's inserted in front of the list.
-    #FIXME: check if it's possible to add only the build directory path
     includes.insert(0, '.')
     taskParams['includes'] = includes
 
@@ -414,7 +412,7 @@ def checkWafTasksForFeatures(taskParams):
     from waflib import Task
 
     # check only supported Waf features
-    features = TASK_WAF_MAIN_FEATURES & set(taskParams['features'])
+    features = tuple(TASK_WAF_MAIN_FEATURES & set(taskParams['features']))
     for feature in features:
         if feature not in Task.classes:
             msg = "Feature %r can not be processed for task %r." % \
