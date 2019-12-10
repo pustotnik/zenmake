@@ -484,20 +484,20 @@ def gatherEventsFromOutput(output):
             continue
 
         isWafTaskStarting = False
-        m = re.match(r"^\s*\[\s*\d+/(\d+)\s*\]\s+.+", line)
+        m = re.match(r"^\s*\[\s*-?\d+/(\d+)\s*\]\s+.+", line)
         if m:
             taskRealCount += 1
             taskMaxCount = int(m.group(1))
             isWafTaskStarting = True
 
-        m = re.match(r"^\s*\[\s*\d+/\d+\s*\]\s+Linking\s+.+\%s(lib)?([\w\-\s]+)" % sep, line)
+        m = re.match(r"^\s*\[\s*-?\d+/\d+\s*\]\s+Linking\s+.+\%s(lib)?([\w\-\s]+)" % sep, line)
         if m:
             task = m.group(2)
             cmdEvents.append(['linking', task])
             cmdIndexes['linking'][task] = len(cmdEvents) - 1
             continue
 
-        m = re.match(r"^\s*\[\s*\d+/\d+\s*\]\s+Running\s+command\s+.*?\'([\w\s.\-]+)\'$", line)
+        m = re.match(r"^\s*\[\s*-?\d+/\d+\s*\]\s+Running\s+command\s+.*?\'([\w\s.\-]+)\'$", line)
         if m:
             task = m.group(1)
             cmdEvents.append(['running', task])
