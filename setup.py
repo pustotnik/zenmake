@@ -41,7 +41,7 @@ SRC_URL    = REPO_URL
 ISSUES_URL = 'https://github.com/pustotnik/zenmake/issues'
 DOCS_URL = 'https://zenmake.readthedocs.io'
 
-DESCRIPTION = '%s - build system based on WAF' % CAP_APPNAME
+DESCRIPTION = '%s - build system based on the WAF' % CAP_APPNAME
 with open(os.path.join(here, "README.rst"), "r") as fh:
     LONG_DESCRIPTION = fh.read()
 
