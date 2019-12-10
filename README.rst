@@ -21,6 +21,7 @@ Main features
 - Building and running functional/unit tests including a possibility to
   build and run tests only on changes.
 - Running custom scripts during a build phase.
+- Build configs in sub directories.
 - Supported platforms: GNU/Linux, MacOS, MS Windows. Some other
   platforms like OpenBSD/FreeBSD should be work as well but they
   haven’t been tested.
