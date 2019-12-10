@@ -17,7 +17,7 @@ Main features
 - Distribution as zip application or as system package (pip).
 - Automatic build order and dependencies. (Thanks to Waf)
 - Automatic reconfiguring: no need to run command 'configure'.
-- Compiler autodetection. (Thanks to Waf_)
+- Compiler autodetection. (Thanks to Waf)
 - Building and running functional/unit tests including a possibility to
   build and run tests only on changes.
 - Running custom scripts during a build phase.
