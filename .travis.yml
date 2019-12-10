@@ -29,7 +29,7 @@ addons:
     - yasm
 
 # most problematic at first places
-matrix:
+jobs:
   include:
   - name: Python 2.7 on Linux
     python: 2.7
@@ -87,12 +87,12 @@ matrix:
   #  env:
   #    - PYENV_VERSION=3.5.5
   #    - NAME='Python 3.5 on macOS'
-  - name: Python 3.6 on macOS
-    os: osx
-    language: shell
-    env:
-      - PYENV_VERSION=3.6.5
-      - NAME='Python 3.6 on macOS'
+  #- name: Python 3.6 on macOS
+  #  os: osx
+  #  language: shell
+  #  env:
+  #    - PYENV_VERSION=3.6.5
+  #    - NAME='Python 3.6 on macOS'
   - name: Python 3.7 on macOS
     os: osx
     osx_image: xcode11
