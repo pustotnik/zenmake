@@ -9,10 +9,11 @@
 """
 
 import tests.common as cmn
-from waflib import Build, Context
+from waflib import Configure, Build, Context
 from zm import constants, starter
 
 def testAll():
+    assert constants.WAF_CONFIG_LOG == Configure.WAF_CONFIG_LOG
     assert constants.WAF_CACHE_DIRNAME == Build.CACHE_DIR
     assert constants.WAF_CACHE_NAMESUFFIX == Build.CACHE_SUFFIX
     assert set(['linux', 'windows', 'darwin']) <= set(constants.KNOWN_PLATFORMS)

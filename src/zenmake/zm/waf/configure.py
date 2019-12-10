@@ -20,6 +20,7 @@ from waflib.Context import Context as WafContext, create_context as createContex
 from waflib.Configure import ConfigurationContext as WafConfContext
 from waflib.Configure import conf
 from waflib import Errors as waferror
+from zm.constants import CONFTEST_DIR_PREFIX
 from zm.autodict import AutoDict as _AutoDict
 from zm.pyutils import maptype, viewitems, viewvalues
 from zm import utils, log, toolchains
@@ -526,7 +527,7 @@ def getConfCheckCache(self, checkHash):
 def _calcConfCheckDir(ctx, checkId):
 
     dirpath = ctx.bldnode.abspath() + os.sep
-    dirpath += '.cfgchk%d' % checkId
+    dirpath += '%s%d' % (CONFTEST_DIR_PREFIX, checkId)
     return dirpath
 
 def _makeConfTestBld(ctx, checkArgs, topdir, bdir):

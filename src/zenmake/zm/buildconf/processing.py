@@ -11,7 +11,7 @@ from collections import defaultdict
 from copy import deepcopy
 
 from zm.constants import PLATFORM, TASK_FEATURES_LANGS, TASK_WAF_FEATURES_MAP
-from zm.constants import CWD
+from zm.constants import CWD, INVALID_BUILDTYPES, CONFTEST_DIR_PREFIX
 from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeLogicError, ZenMakeConfError
 from zm.pyutils import stringtype, maptype, viewitems, viewvalues
@@ -63,6 +63,7 @@ class Config(object):
 
         # init/merge params including values from parent Config
         self._applyDefaults()
+        self._postValidateConf()
         self._makeBuildDirParams(buildroot)
         self._fixStartDirForConfPathParams()
         self._handleTaskNames() # must be called before merging
@@ -249,6 +250,21 @@ class Config(object):
         """
 
         loader.applyDefaults(self._conf, not self._parent, self.rootdir)
+
+    def _postValidateConf(self):
+
+        # check buildtype names
+
+        matrixBuildTypes = self._getMatrixBuildtypes()
+        buildtypes = list(matrixBuildTypes.keys())
+        buildtypes.extend(self._conf.buildtypes.keys())
+        buildtypes = tuple(set(buildtypes)) # make unique list
+        for buildtype in buildtypes:
+            if buildtype in INVALID_BUILDTYPES or buildtype.startswith(CONFTEST_DIR_PREFIX):
+                msg = "Error in the buildconf file %r:" % relpath(self.path, CWD)
+                msg += "\nName %r is invalid for a buildtype." % buildtype
+                msg += " Set a different name."
+                raise ZenMakeError(msg)
 
     def _handleTaskNames(self):
 
