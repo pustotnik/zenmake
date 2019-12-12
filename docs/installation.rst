@@ -75,13 +75,13 @@ Next step is optional. Switch to existing version, for example to 0.7.0::
     $ git checkout v0.7.0
 
 Here you can make symlink/alias/script to run zenmake.
-Alternatives is to run ZenMake from the current directory::
+Alternatives is to run ZenMake ::
 
-    $ src/zenmake/zmrun.py
+    $ <path-to-zenmake-repo>/src/zenmake/zmrun.py
 
 or::
 
-    $ python src/zenmake
+    $ python <path-to-zenmake-repo>/src/zenmake
 
 .. note::
     To use yaml build configs you need to install PyYAML
