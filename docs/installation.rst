@@ -75,6 +75,7 @@ Next step is optional. Switch to existing version, for example to 0.7.0::
     $ git checkout v0.7.0
 
 Here you can make symlink/alias/script to run zenmake.
+
 Other options to run ZenMake::
 
     $ <path-to-zenmake-repo>/src/zenmake/zmrun.py
