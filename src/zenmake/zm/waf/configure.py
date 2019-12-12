@@ -137,6 +137,9 @@ def _confTestCheck(entity, **kwargs):
         # funcArgs is shared so it can be changed later
         parallelChecks.append(funcArgs)
     else:
+        # It's necessary to remove any locks after previous parallel checks.
+        # See run_build in this file.
+        cfgCtx.confChecks['check-locks'].clear()
         cfgCtx.check(**funcArgs)
 
 def _confTestCheckInParallel(entity, **kwargs):
@@ -565,7 +568,7 @@ class _RunBuildLock(object):
 @conf
 def run_build(self, *k, **kw):
     """
-	Create a temporary build context to execute a build.
+    Create a temporary build context to execute a build.
     It's alternative version of the waflib.Configure.run_build
     """
 
