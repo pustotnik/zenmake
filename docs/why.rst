@@ -16,10 +16,10 @@ because I couldn’t find a build tool for Linux which is quick and easy to use,
 flexible, ready to use, with declarative configuration and suitable for my needs.
 I know about lots of build systems. I have read about almost all such modern and
 popular systems. And I have tried some of them. Eventually, I concluded that
-I had to try to make my own build tool. I had some experience in creating
-custom build tools based on WAF in my past work. So why not I thought?
+I had to try to make my own build tool. I have some experience creating custom
+build tools based on the WAF.
 I would do it mostly for myself, but I would be glad if my tool was useful
-for someone else.
+for others.
 
 The main purpose of this project is to make a build tool for most
 (but not exclusively) of simple use cases. By simple cases I mean when there is
@@ -35,37 +35,36 @@ opinion. I considered only build systems that can build C/C++ projects.
 It's one of the most popular cross-platform build systems nowadays. But
 I don't understand why this system is so popular. I have never liked its
 internal language - for me it's terrible. As far as I know, a lot of people think
-the same but they choose to use it because it’s popular and with good support
-for many platforms. But anyway CMake is too complicated and not easy to
-use.
+the same but they choose to use it because it's popular and with good support
+for many platforms. Also, CMake is too complicated.
 
 One more fact: a lot of people decided to migrate to Meson after
-Meson was created. And it means that Meson is better for them.
+Meson was created. It was probably because Meson was better for them.
 
 **Make**
 
-It’s a very old but still relevant build system. It has too many
-disadvantages and it has been replaced by more recent build systems
-in many cases. It is used as a backend for some other build systems,
+It's a very old but still relevant build system. However, it has too many
+disadvantages and it has been mostly replaced by more recent build systems.
+It is used as a backend for some other build systems,
 for example, by CMake.
 
 **WAF**
 
 WAF is a great build system and has a lot of capabilities. I like it
-and have some experience with it but for me it’s a meta build system. You
+and have some experience with it but for me it's a meta build system. You
 can build your projects only by WAF but it has a long learning curve and
 is not easy to use.
 
 **ninja**
 
-Well, I don’t know a lot about this system. I know that it is used as
+Well, I don't know a lot about this system. I know that it is used as
 a backend in Meson and CMake. And as far as I know ninja is not easy to
 use and requires a lot of effort.
 
 **Meson**
 
 It’s really not a bad build system which uses ninja as a backend to build.
-I have tried to use it but didn’t like some of its features:
+I have tried to use it but didn't like some of its features:
 
 -  It tries to be smart when it's not necessary.
 -  The tool uses an internal language which is like Python but not Python.

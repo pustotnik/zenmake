@@ -99,7 +99,7 @@ Using steps from `Via Git <installation-via-git_>`_ you can run::
     $ ./zenmake.pyz
     ...
 
-Resulting file ``zenmake.pyz`` can be used without the repository and pip.
+Resulting file ``zenmake.pyz`` can be run standalone without the repository and pip.
 However, PyYAML must be installed if you want to use yaml build configs.
 You can copy ``zenmake.pyz`` to the root of your project and distribute this
 file with your project. It can be used on any supported platform and doesn't
