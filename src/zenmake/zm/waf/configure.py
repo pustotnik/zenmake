@@ -137,9 +137,6 @@ def _confTestCheck(entity, **kwargs):
         # funcArgs is shared so it can be changed later
         parallelChecks.append(funcArgs)
     else:
-        # It's necessary to remove any locks after previous parallel checks.
-        # See run_build in this file.
-        cfgCtx.confChecks['check-locks'].clear()
         cfgCtx.check(**funcArgs)
 
 def _confTestCheckInParallel(entity, **kwargs):
@@ -184,6 +181,9 @@ def _confTestCheckInParallel(entity, **kwargs):
         msg = 'Checking in parallel',
     )
     cfgCtx.multicheck(*parallelCheckArgsList, **params)
+
+    # It's better to remove all locks after last parallel checks.
+    cfgCtx.confChecks['check-locks'].clear()
 
 _confTestFuncs = {
     'check-by-pyfunc'     : _confTestCheckByPyFunc,
@@ -578,12 +578,11 @@ def run_build(self, *k, **kw):
         topCtx = self.multicheck_task.conf
     except AttributeError:
         topCtx = self
-        ctxLock = _RunBuildLock(None)
-        def makeCheckLock():
-            return _RunBuildLock(None)
+        ctxLock = checkLock = _RunBuildLock(None)
     else:
         # It's called from cfgtask by conf.multicheck
         # So it's needed to be locked
+        checkLock = None
         ctxLock = _RunBuildLock(topCtx.confChecks['top-lock'])
         def makeCheckLock():
             return _RunBuildLock(utils.threading.Lock())
@@ -591,8 +590,9 @@ def run_build(self, *k, **kw):
     checkHash = topCtx.calcConfCheckHash(kw)
 
     with ctxLock: # global lock for topCtx
-        checkLocks = topCtx.confChecks['check-locks']
-        checkLock = checkLocks.setdefault(checkHash, makeCheckLock())
+        if checkLock is None:
+            checkLocks = topCtx.confChecks['check-locks']
+            checkLock = checkLocks.setdefault(checkHash, makeCheckLock())
         # it should be called with ctx lock
         checkCache = topCtx.getConfCheckCache(checkHash)
 
