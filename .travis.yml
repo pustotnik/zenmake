@@ -112,6 +112,8 @@ before_install:
       #eval "$(pyenv init -)"
       export PATH="$(pyenv root)/shims:${PATH}"
       #pyenv install --list
+      CFLAGS="-I$(brew --prefix openssl)/include" \
+      LDFLAGS="-L$(brew --prefix openssl)/lib" \
       pyenv install -s $PYENV_VERSION
       #pyenv versions
       # A manual check that the correct version of Python is running.
