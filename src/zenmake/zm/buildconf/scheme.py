@@ -94,6 +94,7 @@ taskscheme = {
             'guard':       { 'type': 'str' },
             'var':         { 'type': 'str' },
             'checks':      { 'type': 'list' },
+            'tryall' :     { 'type': 'bool' },
         },
     },
     'normalize-target-name' : { 'type': 'bool' },

@@ -15,7 +15,7 @@ import os
 import sys
 import pytest
 
-from waflib import Context, Options
+from waflib import Context, Options, Build
 from waflib.ConfigSet import ConfigSet
 from waflib.Errors import WafError
 import tests.common as cmn
@@ -32,9 +32,11 @@ class FakeConfig(object):
         self.projectName = ''
 
 @pytest.fixture
-def cfgctx(monkeypatch, mocker):
+def cfgctx(monkeypatch, mocker, tmpdir):
+
+    rundir = str(tmpdir.realpath())
     monkeypatch.setattr(Options, 'options', AutoDict())
-    cfgCtx = ConfigurationContext(run_dir = os.getcwd())
+    cfgCtx = ConfigurationContext(run_dir = rundir)
     setattr(cfgCtx, 'fakebconf', FakeConfig())
 
     cfgCtx.fatal = mocker.MagicMock(side_effect = WafError)
@@ -76,43 +78,9 @@ def cfgctx(monkeypatch, mocker):
     cfgCtx.start_msg = mocker.MagicMock()
     cfgCtx.end_msg = mocker.MagicMock()
 
-    return cfgCtx
-
-def getCfgCtxMock(mocker):
-
-    cfgCtx = mocker.MagicMock(all_envs = {})
-    self = cfgCtx
-    cfgCtx.fatal = mocker.MagicMock(side_effect = WafError)
-
-    def setenv(name, env = None):
-        self.variant = name
-        if name not in self.all_envs or env:
-            if not env:
-                env = ConfigSet()
-            else:
-                env = env.derive()
-            self.all_envs[name] = env
-
-    cfgCtx.setenv = mocker.MagicMock(side_effect = setenv)
-
-    def envProp(val = None):
-        if val is not None:
-            self.all_envs[self.variant] = val
-        return self.all_envs[self.variant]
-
-    type(cfgCtx).env = mocker.PropertyMock(side_effect = envProp)
-
-    def load(toolchain):
-        self = cfgCtx
-        env = self.all_envs[cfgCtx.variant]
-        for lang in ('c', 'c++'):
-            compilers = toolchains.CompilersInfo.compilers(lang)
-            envVar    = toolchains.CompilersInfo.varToSetCompiler(lang)
-            if toolchain in compilers:
-                env[envVar] = ['/usr/bin/%s' % toolchain]
-        env.loaded = 'loaded-' + toolchain
-
-    cfgCtx.load = mocker.MagicMock(side_effect = load)
+    cfgCtx.init_dirs()
+    cfgCtx.cachedir = cfgCtx.bldnode.make_node(Build.CACHE_DIR)
+    cfgCtx.cachedir.mkdir()
 
     return cfgCtx
 
@@ -163,9 +131,12 @@ def testRunConfTestsCheckSysLibs(mocker, cfgctx):
     ctx.check = mocker.MagicMock()
     ctx.runConfTests(buildtype, tasks)
 
+    ignoreArgs = ['msg', '$conf-test-hash']
+    ignoreArgs = { k: mocker.ANY for k in ignoreArgs }
+
     calls = [
-        mocker.call(lib = 'lib1', mandatory = False, msg = mocker.ANY),
-        mocker.call(lib = 'lib2', mandatory = False, msg = mocker.ANY),
+        mocker.call(lib = 'lib1', mandatory = False, **ignoreArgs),
+        mocker.call(lib = 'lib2', mandatory = False, **ignoreArgs),
     ]
 
     assert ctx.check.mock_calls == calls
@@ -185,9 +156,12 @@ def testRunConfTestsCheckHeaders(mocker, cfgctx):
     ctx.check = mocker.MagicMock()
     ctx.runConfTests(buildtype, tasks)
 
+    ignoreArgs = ['msg', '$conf-test-hash']
+    ignoreArgs = { k: mocker.ANY for k in ignoreArgs }
+
     calls = [
-        mocker.call(header_name = 'header1', mandatory = False, msg = mocker.ANY),
-        mocker.call(header_name = 'header2', mandatory = False, msg = mocker.ANY),
+        mocker.call(header_name = 'header1', mandatory = False, **ignoreArgs),
+        mocker.call(header_name = 'header2', mandatory = False, **ignoreArgs),
     ]
 
     assert ctx.check.mock_calls == calls
@@ -208,11 +182,13 @@ def testRunConfTestsCheckLibs(mocker, cfgctx):
     ctx.check = mocker.MagicMock()
     ctx.runConfTests(buildtype, tasks)
 
-    msg = mocker.ANY
+    ignoreArgs = ['msg', '$conf-test-hash']
+    ignoreArgs = { k: mocker.ANY for k in ignoreArgs }
+
     calls = [
-        mocker.call(lib = 'lib1', mandatory = False, msg = msg),
-        mocker.call(lib = 'lib2', mandatory = False, msg = msg),
-        mocker.call(lib = 'lib3', define_name = 'HAVE_LIB_LIB3', msg = msg),
+        mocker.call(lib = 'lib1', mandatory = False, **ignoreArgs),
+        mocker.call(lib = 'lib2', mandatory = False, **ignoreArgs),
+        mocker.call(lib = 'lib3', define_name = 'HAVE_LIB_LIB3', **ignoreArgs),
     ]
 
     assert ctx.check.mock_calls == calls

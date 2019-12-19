@@ -676,6 +676,9 @@ taskparams
                 in parallel. Not all types of tests are supported.
                 Allowed tests are ``check-sys-libs``, ``check-headers``,
                 ``check-libs``, ``check``.
+                If parameter ``tryall`` is True then all configuration tests
+                from the parameter ``checks`` will be executed despite of errors.
+                By default the ``tryall`` is True.
 
             ``act`` = ``write-config-header``
                 After all the configuration tests are executed, write a

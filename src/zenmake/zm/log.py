@@ -19,6 +19,9 @@ warn   = Logs.warn
 info   = Logs.info
 pprint = Logs.pprint
 
+makeMemLogger = Logs.make_mem_logger
+freeLogger = Logs.free_logger
+
 def enableColorsByCli(colorArg):
     """
     Set up log colors by arg from CLI
