@@ -158,6 +158,13 @@ def printOutputs(testSuit):
         if out:
             print('\n' + out)
 
+    configLog = joinpath(testSuit.cwd, 'build', 'out', 'config.log')
+    if not isfile(configLog):
+        configLog = joinpath(testSuit.cwd, '_build', 'out', 'config.log')
+    if isfile(configLog):
+        with open(configLog) as file:
+            print(file.read())
+
 def printErrorOnFailed(testSuit, request):
     rep_call = getattr(request.node, 'rep_call', None)
     if not rep_call or rep_call.failed:
