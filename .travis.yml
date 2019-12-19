@@ -111,7 +111,7 @@ before_install:
       #pip3 install --upgrade pip
       #eval "$(pyenv init -)"
       export PATH="$(pyenv root)/shims:${PATH}"
-      pyenv install --list
+      #pyenv install --list
       #CFLAGS="-I$(brew --prefix openssl)/include" \
       #LDFLAGS="-L$(brew --prefix openssl)/lib" \
       pyenv install -s $PYENV_VERSION
