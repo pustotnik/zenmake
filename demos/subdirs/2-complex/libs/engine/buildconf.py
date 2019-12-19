@@ -28,7 +28,7 @@ tasks = {
               checks = [
                     dict(act = 'check-headers', names = 'cstdio iostream'),
                     dict(act = 'check-headers', names = 'stdlib.h'),
-                    #dict(act = 'check-headers', names = 'stdlibasd.h', mandatory = False),
+                    dict(act = 'check-headers', names = 'stdlibasd.h', mandatory = False),
                     # for test only
                     dict(act = 'check-headers', names = 'iostream'),
                     dict(act = 'check-headers', names = 'iostream'),
