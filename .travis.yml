@@ -51,13 +51,13 @@ jobs:
     os: osx
     language: shell
     env:
-      - PYENV_VERSION=2.7.12
+      - PYENV_VERSION=2.7.17
       - NAME='Python 2.7 on macOS'
   - name: Python 3.4 on macOS
     os: osx
     language: shell
     env:
-      - PYENV_VERSION=3.4.8
+      - PYENV_VERSION=3.4.9
       - NAME='Python 3.4 on macOS'
   - name: PyPy (with python 3.5) on Linux
     # https://docs.travis-ci.com/user/languages/python/#pypy-support
@@ -91,14 +91,14 @@ jobs:
   #  os: osx
   #  language: shell
   #  env:
-  #    - PYENV_VERSION=3.6.5
+  #    - PYENV_VERSION=3.6.9
   #    - NAME='Python 3.6 on macOS'
   - name: Python 3.7 on macOS
     os: osx
     osx_image: xcode11
     language: shell
     env:
-      - PYENV_VERSION=3.7.2
+      - PYENV_VERSION=3.7.5
       - NAME='Python 3.7 on macOS'
 
 before_install:
@@ -121,7 +121,7 @@ before_install:
 
 install:
   - |
-      python -m pip install --upgrade pip
+      #python -m pip install --upgrade pip
       python -m pip install pyyaml
       python -m pip install pytest
       python -m pip install pytest-cov
