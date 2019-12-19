@@ -85,7 +85,7 @@ jobs:
     os: osx
     language: shell
     env:
-      - PYENV_VERSION=3.5.9
+      - PYENV_VERSION=3.5.8
       - NAME='Python 3.5 on macOS'
   #- name: Python 3.6 on macOS
   #  os: osx
@@ -111,7 +111,7 @@ before_install:
       #pip3 install --upgrade pip
       #eval "$(pyenv init -)"
       export PATH="$(pyenv root)/shims:${PATH}"
-      #pyenv install --list
+      pyenv install --list
       #CFLAGS="-I$(brew --prefix openssl)/include" \
       #LDFLAGS="-L$(brew --prefix openssl)/lib" \
       pyenv install -s $PYENV_VERSION
