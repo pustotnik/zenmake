@@ -37,6 +37,7 @@ def cfgctx(monkeypatch, mocker, tmpdir):
     rundir = str(tmpdir.realpath())
     monkeypatch.setattr(Options, 'options', AutoDict())
     cfgCtx = ConfigurationContext(run_dir = rundir)
+
     setattr(cfgCtx, 'fakebconf', FakeConfig())
 
     cfgCtx.fatal = mocker.MagicMock(side_effect = WafError)
@@ -78,7 +79,14 @@ def cfgctx(monkeypatch, mocker, tmpdir):
     cfgCtx.start_msg = mocker.MagicMock()
     cfgCtx.end_msg = mocker.MagicMock()
 
+    cfgCtx.top_dir = rundir
+    cfgCtx.out_dir = joinpath(rundir, 'out')
     cfgCtx.init_dirs()
+    assert cfgCtx.srcnode.abspath().startswith(rundir)
+    assert cfgCtx.bldnode.abspath().startswith(rundir)
+    cfgCtx.top_dir = None
+    cfgCtx.out_dir = None
+
     cfgCtx.cachedir = cfgCtx.bldnode.make_node(Build.CACHE_DIR)
     cfgCtx.cachedir.mkdir()
 
