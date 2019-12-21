@@ -8,6 +8,7 @@
 
 import os
 import shutil
+import traceback
 
 # NOTICE:This module must import modules with original Waf context classes
 # before declaring their alter implementions.
@@ -386,7 +387,6 @@ def run_build(self, *k, **checkArgs):
         try:
             bld.compile()
         except waferror.WafError:
-            import traceback
             ret = 'Conf test failed: %s' % traceback.format_exc()
             self.fatal(ret)
         else:
@@ -425,19 +425,41 @@ def _calcConfCheckHexHash(checkArgs, params):
     return utils.hexOfStr(utils.hashOfStrs(buff))
 
 def _confTestCheckByPyFunc(checkArgs, params):
+
+    # pylint: disable = deprecated-method, broad-except
+
+    import inspect
+
     cfgCtx    = params['cfgCtx']
     buildtype = params['buildtype']
     taskName  = params['taskName']
 
     func = checkArgs['func']
-    funcArgCount = func.__code__.co_argcount
+    try:
+        argsSpec = inspect.getfullargspec(func)
+    except AttributeError:
+        argsSpec = inspect.getargspec(func)
+
+    noFuncArgs = not any(argsSpec[0:3])
     mandatory = checkArgs.pop('mandatory', True)
 
     cfgCtx.start_msg('Checking by function %r' % func.__name__)
-    if funcArgCount == 0:
-        result = func()
-    else:
-        result = func(task = taskName, buildtype = buildtype)
+
+    try:
+        if noFuncArgs:
+            result = func()
+        else:
+            args = dict(task = taskName, buildtype = buildtype)
+            result = func(**args)
+    except Exception:
+        import sys
+        excInfo = sys.exc_info()
+        stack = traceback.extract_tb(excInfo[2])[-1::]
+
+        msg = "\nError in the function %r: " % func.__name__
+        msg += "\n%s: %s\n" % (excInfo[0].__name__, excInfo[1])
+        msg += "".join(traceback.format_list(stack))
+        raise error.ZenMakeError(msg)
 
     if not result:
         cfgCtx.end_msg(result = 'no', color = 'YELLOW')
@@ -551,17 +573,28 @@ def _confTestCheckInParallel(checkArgs, params):
 
     supportedActs = (
         'check-sys-libs', 'check-headers',
-        'check-libs', 'check',
+        'check-libs', #'check-by-pyfunc',
     )
 
     parallelCheckArgsList = []
     params['parallel-checks'] = parallelCheckArgsList
 
     for check in subchecks:
-        if check['act'] not in supportedActs:
-            msg = "act %r can not be used inside the act 'parallel'" % check['act']
-            msg += " for conftests in task %r!" % taskName
-            cfgCtx.fatal(msg)
+        errMsg = None
+        if isinstance(check, maptype):
+            act = check.get('act')
+            if not act:
+                errMsg = "Parameter 'act' not found in parallel test '%r'" % check
+            elif act not in supportedActs:
+                errMsg = "act %r can not be used inside the act 'parallel'" % act
+                errMsg += " for conftests in task %r!" % taskName
+        #elif callable(check):
+        #    pass
+        else:
+            errMsg = "Test '%r' is not supported." % check
+
+        if errMsg:
+            cfgCtx.fatal(errMsg)
 
     _runConfChecks(subchecks, params)
     params.pop('parallel-checks', None)
