@@ -47,6 +47,7 @@ class CfgCheckTask(Task.Task):
     def __init__(self, *args, **kwargs):
         Task.Task.__init__(self, *args, **kwargs)
 
+        self.stopRunnerOnError = True
         self.args = None
         self.conf = None
         self.bld = None
@@ -84,20 +85,28 @@ class CfgCheckTask(Task.Task):
         bld.logger = self.logger
         bld.cfgCtx = cfgCtx
         args = self.args
+
+        mandatory = args.get('mandatory', True)
+
+        retval = 0
+        args['mandatory'] = True
         try:
-            mandatory = args.get('mandatory', True)
-            args['mandatory'] = True
-            try:
-                bld.check(**args)
-            finally:
-                args['mandatory'] = mandatory
+            bld.check(**args)
         except Exception:
-            return 1
-        return 0
+            retval = 1
+        finally:
+            args['mandatory'] = mandatory
+
+        if retval != 0 and mandatory and self.stopRunnerOnError:
+            # say 'stop' to runner
+            self.bld.producer.stop = True
+
+        return retval
 
     def process(self):
 
         Task.Task.process(self)
+
         if 'msg' not in self.args:
             return
         with self.generator.bld.cmnLock:
@@ -117,7 +126,11 @@ class _RunnerBldCtx(object):
     # pylint: disable = invalid-name, missing-docstring
 
     def __init__(self, tasks):
-        self.keep = False
+
+        # Keep running all tasks until all tasks not processed
+        # and self.producer.stop == False
+        self.keep = True
+
         self.task_sigs = {}
         self.imp_sigs = {}
         self.progress_bar = 0
@@ -131,6 +144,29 @@ class _RunnerBldCtx(object):
     def to_log(self, *k, **kw):
         # pylint: disable = unused-argument
         return
+
+def _applyParallelTasksDeps(tasks):
+
+    idToTask = {}
+    for tsk in tasks:
+        if 'id' in tsk.args:
+            idToTask[tsk.args['id']] = tsk
+
+    def applyDeps(idToTask, task, before):
+        tasks = task.args.get('before' if before else 'after', [])
+        for key in utils.toList(tasks):
+            otherTask = idToTask.get(key, None)
+            if not otherTask:
+                raise ValueError('No test named %r' % key)
+            if before:
+                otherTask.run_after.add(task)
+            else:
+                task.run_after.add(otherTask)
+
+    # second pass to set dependencies with after_test/before_test
+    for tsk in tasks:
+        applyDeps(idToTask, tsk, before = True)
+        applyDeps(idToTask, tsk, before = False)
 
 @conf
 def checkInParallel(self, checkArgsList, **kwargs):
@@ -150,47 +186,32 @@ def checkInParallel(self, checkArgsList, **kwargs):
     self.env.DEFINE_COMMENTS = self.env.DEFINE_COMMENTS or {}
 
     tasks = []
-    bld = _RunnerBldCtx(tasks)
+    runnerCtx = _RunnerBldCtx(tasks)
 
-    bld.keep = kwargs.get('tryall', True)
+    tryall = kwargs.get('tryall', False)
 
-    idToTask = {}
     for i, args in enumerate(checkArgsList):
         args['$parallel-id'] = i
+
         checkTask = CfgCheckTask(env = None)
-        tasks.append(checkTask)
+        checkTask.stopRunnerOnError = not tryall
         checkTask.args = args
         checkTask.conf = self
-        checkTask.bld = bld # to use in task.log_display(task.generator.bld)
+        checkTask.bld = runnerCtx # to use in task.log_display(task.generator.bld)
 
         # bind a logger that will keep the info in memory
         checkTask.logger = log.makeMemLogger(str(id(checkTask)), self.logger)
 
-        if 'id' in args:
-            idToTask[args['id']] = checkTask
+        tasks.append(checkTask)
 
-    def applyDeps(idToTask, task, before):
-        tasks = task.args.get('before' if before else 'after', [])
-        for key in utils.toList(tasks):
-            otherTask = idToTask.get(key, None)
-            if not otherTask:
-                raise ValueError('No test named %r' % key)
-            if before:
-                otherTask.run_after.add(task)
-            else:
-                task.run_after.add(otherTask)
-
-    # second pass to set dependencies with after_test/before_test
-    for tsk in tasks:
-        applyDeps(idToTask, tsk, before = True)
-        applyDeps(idToTask, tsk, before = False)
+    _applyParallelTasksDeps(tasks)
 
     def getTasksGenerator():
         yield tasks
         while 1:
             yield []
 
-    bld.producer = scheduler = Runner.Parallel(bld, Options.options.jobs)
+    runnerCtx.producer = scheduler = Runner.Parallel(runnerCtx, Options.options.jobs)
     scheduler.biter = getTasksGenerator()
 
     self.end_msg('started')
@@ -202,15 +223,16 @@ def checkInParallel(self, checkArgsList, **kwargs):
 
     self.start_msg('-> processing test results')
 
-    for err in scheduler.error:
-        if not getattr(err, 'err_msg', None):
+    for tsk in scheduler.error:
+        if not getattr(tsk, 'err_msg', None):
             continue
-        self.to_log(err.err_msg)
+        self.to_log(tsk.err_msg)
         self.end_msg('fail', color = 'RED')
-        msg = 'There is an error in the library, read config.log for more information'
+        msg = 'There is an error in the Waf, read config.log for more information'
         raise waferror.WafError(msg)
 
-    failureCount = len([x for x in tasks if x.hasrun not in (Task.SUCCESS, Task.NOT_RUN)])
+    okStates = (Task.SUCCESS, Task.NOT_RUN)
+    failureCount = len([x for x in tasks if x.hasrun not in okStates])
 
     if failureCount:
         self.end_msg('%s test(s) failed' % failureCount, color = 'YELLOW')
@@ -218,19 +240,18 @@ def checkInParallel(self, checkArgsList, **kwargs):
         self.end_msg('all ok')
 
     for tsk in tasks:
-        if tsk.hasrun != Task.SUCCESS and tsk.args.get('mandatory', True):
-            self.fatal('One of the tests has failed, read config.log for more information')
-
         # in rare case we get "No handlers could be found for logger"
         log.freeLogger(tsk.logger)
 
-@conf
-def loadConfCheckCache(self):
+        if tsk.hasrun not in okStates and tsk.args.get('mandatory', True):
+            self.fatal('One of the tests has failed, read config.log for more information')
+
+def _loadConfCheckCache(cfgCtx):
     """
     Load cache data for conf checks.
     """
 
-    cachePath = joinpath(self.cachedir.abspath(), CONF_CHECK_CACHE_FILE)
+    cachePath = joinpath(cfgCtx.cachedir.abspath(), CONF_CHECK_CACHE_FILE)
     try:
         cache = ConfigSet.ConfigSet(cachePath)
     except EnvironmentError:
@@ -249,15 +270,14 @@ def loadConfCheckCache(self):
 
     return cache
 
-@conf
-def getConfCheckCache(self, checkHash):
+def _getConfCheckCache(cfgCtx, checkHash):
     """
     Get conf check cache by hash
     """
 
-    cache = self.confChecks['cache']
+    cache = cfgCtx.confChecks['cache']
     if cache is None:
-        self.confChecks['cache'] = cache = self.loadConfCheckCache()
+        cfgCtx.confChecks['cache'] = cache = _loadConfCheckCache(cfgCtx)
 
     checks = cache['checks']
     if checkHash not in checks:
@@ -370,7 +390,7 @@ def _calcConfCheckHexHash(checkArgs, params):
 
     hashVals = {}
     for k, v in viewitems(checkArgs):
-        if k in ('mandatory', ):
+        if k in ('mandatory', ) or k[0] == '$':
             continue
         hashVals[k] = v
     # just in case
@@ -484,7 +504,7 @@ def _confTestCheck(checkArgs, params):
     checkArgs = checkArgs.copy()
 
     hexHash = _calcConfCheckHexHash(checkArgs, params)
-    checkCache = cfgCtx.getConfCheckCache(hexHash)
+    checkCache = _getConfCheckCache(cfgCtx, hexHash)
     if 'retval' not in checkCache:
         # to use it without lock in threads we need to insert this key
         checkCache['retval'] = None

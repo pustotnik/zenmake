@@ -34,7 +34,7 @@ tasks = {
                     dict(act = 'check-headers', names = 'iostream'),
                     dict(act = 'check-headers', names = 'iostream'),
               ],
-              #tryall = False,
+              #tryall = True,
             ),
             dict( act = 'check-headers', names = 'string vector' ),
             dict(act = 'write-config-header'),
