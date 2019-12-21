@@ -45,9 +45,6 @@ These configuration tests in ``dict`` format:
         function for checking. In this way you can use parameter
         ``mandatory``.
 
-    ``act`` = ``check``
-        Just proxy to Waf common method ``check``.
-
     ``act`` = ``write-config-header``
         After all the configuration tests are executed, write a
         configuration header in the build directory.
@@ -66,7 +63,7 @@ These configuration tests in ``dict`` format:
         Run configuration tests from the parameter ``checks``
         in parallel. Not all types of tests are supported.
         Allowed tests are ``check-sys-libs``, ``check-headers``,
-        ``check-libs``, ``check``.
+        ``check-libs``.
 
         If parameter ``tryall`` is True then all configuration tests
         from the parameter ``checks`` will be executed despite of errors.

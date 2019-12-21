@@ -83,7 +83,7 @@ taskscheme = {
     'conftests' : {
         'type': 'list',
         'vars-type' : ('dict', 'func'),
-        #'dict-allow-unknown-keys' : False,
+        'dict-allow-unknown-keys' : False,
         'dict-vars' : {
             'act' :        { 'type': 'str' },
             'names' :      { 'type': ('str', 'list-of-strs') },

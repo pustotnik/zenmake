@@ -585,7 +585,8 @@ _confTestFuncs = {
     'check-sys-libs'      : _confTestCheckSysLibs,
     'check-headers'       : _confTestCheckHeaders,
     'check-libs'          : _confTestCheckLibs,
-    'check'               : _confTestCheck,
+    # explicit using of Waf 'check' is disabled
+    #'check'               : _confTestCheck,
     'parallel'            : _confTestCheckInParallel,
     'write-config-header' : _confTestWriteHeader,
 }
