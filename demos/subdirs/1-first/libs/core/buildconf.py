@@ -1,5 +1,5 @@
 
-def check():
+def check(**kwargs):
     # some checking
     return True
 

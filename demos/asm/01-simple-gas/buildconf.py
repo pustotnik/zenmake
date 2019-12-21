@@ -1,5 +1,5 @@
 
-def check():
+def check(**kwargs):
     import sys
     try:
         size = sys.maxint

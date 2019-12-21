@@ -24,7 +24,7 @@ from waflib.Tools.c_config import DEFKEYS
 from zm.constants import CONFTEST_DIR_PREFIX
 from zm.autodict import AutoDict as _AutoDict
 from zm.pyutils import maptype, viewitems, viewvalues
-from zm import utils, log, toolchains
+from zm import utils, log, toolchains, error
 from zm.waf import assist
 
 joinpath = os.path.join
@@ -157,16 +157,22 @@ def _applyParallelTasksDeps(tasks):
         for key in utils.toList(tasks):
             otherTask = idToTask.get(key, None)
             if not otherTask:
-                raise ValueError('No test named %r' % key)
+                raise error.ZenMakeConfError('No test named %r' % key)
             if before:
                 otherTask.run_after.add(task)
             else:
                 task.run_after.add(otherTask)
 
-    # second pass to set dependencies with after_test/before_test
+    # second pass to set dependencies with after/before
     for tsk in tasks:
         applyDeps(idToTask, tsk, before = True)
         applyDeps(idToTask, tsk, before = False)
+
+    # remove 'before' and 'after' from args to avoid matching with the same
+    # parameters for Waf Task.Task
+    for tsk in tasks:
+        tsk.args.pop('before', None)
+        tsk.args.pop('after', None)
 
 @conf
 def checkInParallel(self, checkArgsList, **kwargs):
@@ -215,7 +221,15 @@ def checkInParallel(self, checkArgsList, **kwargs):
     scheduler.biter = getTasksGenerator()
 
     self.end_msg('started')
-    scheduler.start()
+    try:
+        scheduler.start()
+    except waferror.WafError as ex:
+        if ex.msg.startswith('Task dependency cycle'):
+            msg = "Infinite recursion was detected in parallel tests."
+            msg += " Check all parameters 'before' and 'after'."
+            raise error.ZenMakeConfError(msg)
+        # it's a different error
+        raise
 
     # flush the logs in order into the config.log
     for tsk in tasks:
@@ -390,7 +404,7 @@ def _calcConfCheckHexHash(checkArgs, params):
 
     hashVals = {}
     for k, v in viewitems(checkArgs):
-        if k in ('mandatory', ) or k[0] == '$':
+        if k in ('mandatory', 'okmsg', 'errmsg') or k[0] == '$':
             continue
         hashVals[k] = v
     # just in case

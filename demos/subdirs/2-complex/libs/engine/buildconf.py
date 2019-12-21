@@ -1,5 +1,5 @@
 
-def check():
+def check(**kwargs):
     # some checking
     return True
 
@@ -26,8 +26,8 @@ tasks = {
             dict( act = 'check-headers', names = 'stdio.h iostream' ),
             dict( act = 'parallel',
               checks = [
-                    dict(act = 'check-headers', names = 'cstdio iostream'),
-                    dict(act = 'check-headers', names = 'stdlib.h'),
+                    dict(act = 'check-headers', names = 'cstdio iostream', id = 'first'),
+                    dict(act = 'check-headers', names = 'stdlib.h', after = 'first'),
                     dict(act = 'check-headers', names = 'stdlibasd.h', mandatory = False),
                     # for test only
                     dict(act = 'check-headers', names = 'iostream'),

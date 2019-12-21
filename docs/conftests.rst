@@ -12,8 +12,11 @@ in :ref:`task params<buildconf-taskparams>` is used. The value of the parameter
 can be a ``dict`` where ``act`` specifies some type of configuration test.
 Another possible value of the item is a python function that must return
 True/False on Success/Failure. Arguments for such a function can be
-absent or: ``task``, ``buildtype``. These tests are called on
-**configure** step (command **configure**).
+absent or: ``task``, ``buildtype``. It's better to use `**kwargs` in this
+function to have universal way to work with any input arguments.
+
+These tests can be run sequentially or in parallel (see ``act`` = ``parallel``).
+And they all are called on **configure** step (command **configure**).
 
 These configuration tests in ``dict`` format:
 
@@ -45,15 +48,6 @@ These configuration tests in ``dict`` format:
     ``act`` = ``check``
         Just proxy to Waf common method ``check``.
 
-    ``act`` = ``parallel``
-        Run configuration tests from the parameter ``checks``
-        in parallel. Not all types of tests are supported.
-        Allowed tests are ``check-sys-libs``, ``check-headers``,
-        ``check-libs``, ``check``.
-        If parameter ``tryall`` is True then all configuration tests
-        from the parameter ``checks`` will be executed despite of errors.
-        By default the ``tryall`` is False.
-
     ``act`` = ``write-config-header``
         After all the configuration tests are executed, write a
         configuration header in the build directory.
@@ -67,6 +61,20 @@ These configuration tests in ``dict`` format:
             #include "yourconfig.h"
 
         You can override file name by using parameter ``file``.
+
+    ``act`` = ``parallel``
+        Run configuration tests from the parameter ``checks``
+        in parallel. Not all types of tests are supported.
+        Allowed tests are ``check-sys-libs``, ``check-headers``,
+        ``check-libs``, ``check``.
+
+        If parameter ``tryall`` is True then all configuration tests
+        from the parameter ``checks`` will be executed despite of errors.
+        By default the ``tryall`` is False.
+
+        You can control order of tests here by using parameters ``before``
+        and ``after`` with a parameter ``id``. For example, one test can have
+        ``id = 'base'`` and then another test can have ``after = 'base'``.
 
 Any configuration test excepting ``write-config-header`` has parameter
 ``mandatory`` which is True by default.
@@ -96,9 +104,10 @@ Example in python format:
             dict(act = 'check-programs', names = 'python'),
             dict( act = 'parallel',
                 checks = [
-                    dict(act = 'check-sys-libs'),
+                    dict(act = 'check-sys-libs', id = 'syslibs'),
                     dict(act = 'check-headers', names = 'stdlib.h iostream'),
                     dict(act = 'check-headers', names = 'stdlibasd.h', mandatory = False),
+                    dict(act = 'check-headers', names = 'string', after = 'syslibs'),
                 ],
             ),
 
