@@ -14,6 +14,9 @@ from zm.utils import toList
 from zm.autodict import AutoDict as _AutoDict
 from zm.buildconf.scheme import confscheme, taskscheme, AnyAmountStrsKey, ANYAMOUNTSTRS_KEY
 
+class ZenMakeConfSubTypeError(ZenMakeConfTypeError):
+    """Invalid buildconf param type error"""
+
 class Validator(object):
     """
     Validator for structure of buidconf.
@@ -78,7 +81,11 @@ class Validator(object):
                 val = confnode
 
             try:
-                Validator._getHandler(_type)(val, schemeAttrs, fullkey)
+                handler = Validator._getHandler(_type)
+                handler(val, schemeAttrs, fullkey)
+            except ZenMakeConfSubTypeError as ex:
+                # it's an error from a sub type
+                raise
             except ZenMakeConfTypeError:
                 pass
             else:
@@ -151,7 +158,10 @@ class Validator(object):
                 msg = '%s Allowed values: %s' %(msg, str(allowed)[1:-1])
                 raise ZenMakeConfValueError(msg)
             if varsType:
-                handler(elem, _schemeAttrs, '%s.[%d]' % (fullkey, i))
+                try:
+                    handler(elem, _schemeAttrs, '%s.[%d]' % (fullkey, i))
+                except ZenMakeConfTypeError as ex:
+                    raise ZenMakeConfSubTypeError(ex = ex)
 
     @staticmethod
     def _handleFunc(confnode, _, fullkey):
@@ -190,7 +200,10 @@ class Validator(object):
         allowUnknownKeys = _getAttrValue(schemeAttrs, 'allow-unknown-keys',
                                          'dict', default = True)
 
-        Validator._validate(confnode, subscheme, fullkey, allowUnknownKeys)
+        try:
+            Validator._validate(confnode, subscheme, fullkey, allowUnknownKeys)
+        except ZenMakeConfTypeError as ex:
+            raise ZenMakeConfSubTypeError(ex = ex)
 
     @staticmethod
     def _handleVarsInDictWithKeysByList(confnode, schemeAttrs, fullkey):
@@ -242,14 +255,16 @@ class Validator(object):
                     _schemeAttrs[paramName] = param
 
         keysKind = schemeAttrs['keys-kind']
-        if keysKind == 'bylist':
-            Validator._handleVarsInDictWithKeysByList(confnode, _schemeAttrs,
-                                                      fullkey)
-        elif keysKind == 'anystr':
-            Validator._handleVarsInDictWithKeysAnyStr(confnode, _schemeAttrs,
-                                                      fullkey)
-        else:
-            raise NotImplementedError # pragma: no cover
+        args = (confnode, _schemeAttrs, fullkey)
+        try:
+            if keysKind == 'bylist':
+                Validator._handleVarsInDictWithKeysByList(*args)
+            elif keysKind == 'anystr':
+                Validator._handleVarsInDictWithKeysAnyStr(*args)
+            else:
+                raise NotImplementedError # pragma: no cover
+        except ZenMakeConfTypeError as ex:
+            raise ZenMakeConfSubTypeError(ex = ex)
 
     @staticmethod
     def _genFullKey(keyprefix, key):
