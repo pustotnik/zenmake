@@ -31,13 +31,18 @@ from zm.waf import assist
 joinpath = os.path.join
 
 CONFTEST_CACHE_FILE = 'conf_check_cache'
-CONFTEST_HASH_USE_ENV_KEYS = set(
+
+CONFTEST_HASH_USED_ENV_KEYS = set(
     ('DEST_BINFMT', 'DEST_CPU', 'DEST_OS')
 )
 for _var in toolchains.CompilersInfo.allVarsToSetCompiler():
-    CONFTEST_HASH_USE_ENV_KEYS.add(_var)
-    CONFTEST_HASH_USE_ENV_KEYS.add('%s_VERSION' % _var)
-    CONFTEST_HASH_USE_ENV_KEYS.add('%s_NAME' % _var)
+    CONFTEST_HASH_USED_ENV_KEYS.add(_var)
+    CONFTEST_HASH_USED_ENV_KEYS.add('%s_VERSION' % _var)
+    CONFTEST_HASH_USED_ENV_KEYS.add('%s_NAME' % _var)
+
+CONFTEST_HASH_IGNORED_FUNC_ARGS = set(
+    ('mandatory', 'okmsg', 'errmsg', 'id', 'before', 'after')
+)
 
 def _makeRunBuildBldCtx(ctx, checkArgs, topdir, bdir):
 
@@ -409,7 +414,7 @@ def _calcConfCheckHexHash(checkArgs, params):
 
     hashVals = {}
     for k, v in viewitems(checkArgs):
-        if k in ('mandatory', 'okmsg', 'errmsg') or k[0] == '$':
+        if k in CONFTEST_HASH_IGNORED_FUNC_ARGS or k[0] == '$':
             continue
         hashVals[k] = v
     # just in case
@@ -420,7 +425,7 @@ def _calcConfCheckHexHash(checkArgs, params):
     env = cfgCtx.env
     envStr = ''
     for k in sorted(env.keys()):
-        if k not in CONFTEST_HASH_USE_ENV_KEYS:
+        if k not in CONFTEST_HASH_USED_ENV_KEYS:
             # these keys are not significant for hash but can make cache misses
             continue
         val = env[k]
