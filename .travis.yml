@@ -47,6 +47,9 @@ jobs:
       - PATH=/c/Python37:/c/Python37/Scripts:$PATH
       - PYTHON_VER=3.7.2
       - NAME='Python 3.7 on Windows'
+    cache:
+      directories:
+        - $HOME/AppData/Local/Temp/chocolatey
   - name: Python 2.7 on macOS
     os: osx
     language: shell
