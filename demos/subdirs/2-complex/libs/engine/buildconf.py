@@ -1,7 +1,14 @@
 
-def check(**kwargs):
+def check():
     # some checking
     return True
+
+def check2(**kwargs):
+    task = kwargs['task']
+    buildtype = kwargs['buildtype']
+    # some checking
+    #return True
+    return False
 
 tasks = {
     'extra' : {
@@ -33,11 +40,15 @@ tasks = {
                     dict(act = 'check-headers', names = 'iostream'),
                     dict(act = 'check-headers', names = 'iostream'),
                     dict(act = 'check-headers', names = 'iostream'),
+                    check,
+                    dict(act = 'check-by-pyfunc', func = check2, mandatory = False),
               ],
               #tryall = True,
+              tryall = False,
+              #mandatory = False,
             ),
             dict( act = 'check-headers', names = 'string vector' ),
-            dict(act = 'write-config-header'),
+            dict( act = 'write-config-header'),
         ],
     },
     'extra-test' : {

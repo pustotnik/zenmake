@@ -10,8 +10,10 @@ libraries, headers, etc. To set configuration tests the parameter ``conftests``
 in :ref:`task params<buildconf-taskparams>` is used. The value of the parameter
 ``conftests`` must be a list of configuration tests. An item in the list
 can be a ``dict`` where ``act`` specifies some type of configuration test.
+
 Another possible value of the item is a python function that must return
-True/False on Success/Failure. Arguments for such a function can be
+True/False on Success/Failure. If this function raise some exception then it
+means the function returns False. Arguments for such a function can be
 absent or: ``task``, ``buildtype``. It's better to use `**kwargs` in this
 function to have universal way to work with any input arguments.
 
@@ -63,7 +65,11 @@ These configuration tests in ``dict`` format:
         Run configuration tests from the parameter ``checks``
         in parallel. Not all types of tests are supported.
         Allowed tests are ``check-sys-libs``, ``check-headers``,
-        ``check-libs``.
+        ``check-libs``, ``check-by-pyfunc``.
+
+        If you use ``check-by-pyfunc`` in ``checks`` you should understand that
+        python function must be thread safe. If you don't use any shared data
+        in this function you don't need to worry about concurrency.
 
         If parameter ``tryall`` is True then all configuration tests
         from the parameter ``checks`` will be executed despite of errors.
@@ -74,13 +80,16 @@ These configuration tests in ``dict`` format:
         ``id = 'base'`` and then another test can have ``after = 'base'``.
 
 Any configuration test excepting ``write-config-header`` has parameter
-``mandatory`` which is True by default.
+``mandatory`` which is True by default. It has effect for any tests inside ``checks``
+for parallel tests and for the whole bundle of parallel tests as well.
 
 Example in python format:
 
 .. code-block:: python
 
-    def check(task, buildtype):
+    def check(**kwargs):
+        task = kwargs['task']
+        buildtype = kwargs['buildtype']
         # some checking
         return True
 
@@ -106,6 +115,8 @@ Example in python format:
                     dict(act = 'check-headers', names = 'stdlibasd.h', mandatory = False),
                     dict(act = 'check-headers', names = 'string', after = 'syslibs'),
                 ],
+                mandatory = False,
+                #tryall = True,
             ),
 
             #dict(act = 'write-config-header', file = 'myapp_config.h')

@@ -24,13 +24,13 @@ from waflib import Errors as waferror
 from waflib.Tools.c_config import DEFKEYS
 from zm.constants import CONFTEST_DIR_PREFIX
 from zm.autodict import AutoDict as _AutoDict
-from zm.pyutils import maptype, viewitems, viewvalues
+from zm.pyutils import maptype, stringtype, viewitems, viewvalues
 from zm import utils, log, toolchains, error
 from zm.waf import assist
 
 joinpath = os.path.join
 
-CONF_CHECK_CACHE_FILE = 'conf_check_cache'
+CONFTEST_CACHE_FILE = 'conf_check_cache'
 CONFTEST_HASH_USE_ENV_KEYS = set(
     ('DEST_BINFMT', 'DEST_CPU', 'DEST_OS')
 )
@@ -38,6 +38,99 @@ for _var in toolchains.CompilersInfo.allVarsToSetCompiler():
     CONFTEST_HASH_USE_ENV_KEYS.add(_var)
     CONFTEST_HASH_USE_ENV_KEYS.add('%s_VERSION' % _var)
     CONFTEST_HASH_USE_ENV_KEYS.add('%s_NAME' % _var)
+
+def _makeRunBuildBldCtx(ctx, checkArgs, topdir, bdir):
+
+    bld = createContext('build', top_dir = topdir, out_dir = bdir)
+
+    # avoid unnecessary directory
+    bld.variant = ''
+
+    bld.init_dirs()
+    bld.progress_bar = 0
+    bld.targets = '*'
+
+    bld.logger = ctx.logger
+    bld.all_envs.update(ctx.all_envs)
+    bld.env = checkArgs['env']
+
+    # for function 'build_fun' only
+    bld.kw = checkArgs
+    bld.conf = ctx # it's used for bld.conf.to_log
+
+    return bld
+
+@conf
+def run_build(self, *k, **checkArgs):
+    """
+    Create a temporary build context to execute a build.
+    It's alternative version of the waflib.Configure.run_build and it can be
+    used only in ZenMake.
+    """
+
+    # pylint: disable = invalid-name,unused-argument
+
+    cfgCtx = self if isinstance(self, WafConfContext) else self.cfgCtx
+
+    # this function can not be called from conf.multicheck
+    assert not hasattr(self, 'multicheck_task')
+
+    checkHash = checkArgs['$conf-test-hash']
+    checkCache = cfgCtx.confChecks['cache']['checks'][checkHash]
+
+    retval = checkCache['retval']
+    if retval is not None:
+        if isinstance(retval, stringtype) and retval.startswith('Conf test failed'):
+            self.fatal(retval)
+        return retval
+
+    checkId = str(checkCache['id'])
+    if '$parallel-id' in checkArgs:
+        checkId = '%s.%s' % (checkId, checkArgs['$parallel-id'])
+
+    topdir = cfgCtx.bldnode.abspath() + os.sep
+    topdir += '%s%s' % (CONFTEST_DIR_PREFIX, checkId)
+
+    if os.path.exists(topdir):
+        shutil.rmtree(topdir)
+
+    try:
+        os.makedirs(topdir)
+    except OSError:
+        pass
+
+    try:
+        os.stat(topdir)
+    except OSError:
+        self.fatal('cannot use the configuration test folder %r' % topdir)
+
+    bdir = joinpath(topdir, 'b')
+    if not os.path.exists(bdir):
+        os.makedirs(bdir)
+
+    self.test_bld = bld = _makeRunBuildBldCtx(self, checkArgs, topdir, bdir)
+
+    checkArgs['build_fun'](bld)
+    ret = -1
+
+    try:
+        try:
+            bld.compile()
+        except waferror.WafError:
+            # TODO: add more info?
+            tsk = bld.producer.error[0]
+            errDetails = "\n[CODE]\n%s" % bld.kw['code']
+            errDetails += "\n[LAST COMMAND]\n%s" % tsk.last_cmd
+            ret = 'Conf test failed: %s' % errDetails
+
+            self.fatal(ret)
+        else:
+            ret = getattr(bld, 'retval', 0)
+    finally:
+        shutil.rmtree(topdir)
+        checkCache['retval'] = ret
+
+    return ret
 
 class CfgCheckTask(Task.Task):
     """
@@ -49,10 +142,10 @@ class CfgCheckTask(Task.Task):
         Task.Task.__init__(self, *args, **kwargs)
 
         self.stopRunnerOnError = True
-        self.args = None
         self.conf = None
         self.bld = None
         self.logger = None
+        self.call = None
 
     def display(self):
         return ''
@@ -85,14 +178,15 @@ class CfgCheckTask(Task.Task):
         bld.in_msg = 1 # suppress top-level start_msg
         bld.logger = self.logger
         bld.cfgCtx = cfgCtx
-        args = self.args
+
+        args = self.call['args']
+        func = getattr(bld, self.call['name'])
 
         mandatory = args.get('mandatory', True)
-
-        retval = 0
         args['mandatory'] = True
+        retval = 0
         try:
-            bld.check(**args)
+            func(**args)
         except Exception:
             retval = 1
         finally:
@@ -108,16 +202,18 @@ class CfgCheckTask(Task.Task):
 
         Task.Task.process(self)
 
-        if 'msg' not in self.args:
+        args = self.call['args']
+        if 'msg' not in args:
             return
+
         with self.generator.bld.cmnLock:
-            self.conf.start_msg(self.args['msg'])
+            self.conf.start_msg(args['msg'])
             if self.hasrun == Task.NOT_RUN:
                 self.conf.end_msg('test cancelled', 'YELLOW')
             elif self.hasrun != Task.SUCCESS:
-                self.conf.end_msg(self.args.get('errmsg', 'no'), 'YELLOW')
+                self.conf.end_msg(args.get('errmsg', 'no'), 'YELLOW')
             else:
-                self.conf.end_msg(self.args.get('okmsg', 'yes'), 'GREEN')
+                self.conf.end_msg(args.get('okmsg', 'yes'), 'GREEN')
 
 class _RunnerBldCtx(object):
     """
@@ -150,11 +246,12 @@ def _applyParallelTasksDeps(tasks):
 
     idToTask = {}
     for tsk in tasks:
-        if 'id' in tsk.args:
-            idToTask[tsk.args['id']] = tsk
+        args = tsk.call['args']
+        if 'id' in args:
+            idToTask[args['id']] = tsk
 
     def applyDeps(idToTask, task, before):
-        tasks = task.args.get('before' if before else 'after', [])
+        tasks = task.call['args'].get('before' if before else 'after', [])
         for key in utils.toList(tasks):
             otherTask = idToTask.get(key, None)
             if not otherTask:
@@ -172,8 +269,9 @@ def _applyParallelTasksDeps(tasks):
     # remove 'before' and 'after' from args to avoid matching with the same
     # parameters for Waf Task.Task
     for tsk in tasks:
-        tsk.args.pop('before', None)
-        tsk.args.pop('after', None)
+        args = tsk.call['args']
+        args.pop('before', None)
+        args.pop('after', None)
 
 @conf
 def checkInParallel(self, checkArgsList, **kwargs):
@@ -202,12 +300,13 @@ def checkInParallel(self, checkArgsList, **kwargs):
 
         checkTask = CfgCheckTask(env = None)
         checkTask.stopRunnerOnError = not tryall
-        checkTask.args = args
         checkTask.conf = self
         checkTask.bld = runnerCtx # to use in task.log_display(task.generator.bld)
 
         # bind a logger that will keep the info in memory
         checkTask.logger = log.makeMemLogger(str(id(checkTask)), self.logger)
+
+        checkTask.call = dict( name = args.pop('$func-name'), args = args)
 
         tasks.append(checkTask)
 
@@ -258,7 +357,7 @@ def checkInParallel(self, checkArgsList, **kwargs):
         # in rare case we get "No handlers could be found for logger"
         log.freeLogger(tsk.logger)
 
-        if tsk.hasrun not in okStates and tsk.args.get('mandatory', True):
+        if tsk.hasrun not in okStates and tsk.call['args'].get('mandatory', True):
             self.fatal('One of the tests has failed, read config.log for more information')
 
 def _loadConfCheckCache(cfgCtx):
@@ -266,7 +365,7 @@ def _loadConfCheckCache(cfgCtx):
     Load cache data for conf checks.
     """
 
-    cachePath = joinpath(cfgCtx.cachedir.abspath(), CONF_CHECK_CACHE_FILE)
+    cachePath = joinpath(cfgCtx.cachedir.abspath(), CONFTEST_CACHE_FILE)
     try:
         cache = ConfigSet.ConfigSet(cachePath)
     except EnvironmentError:
@@ -303,100 +402,6 @@ def _getConfCheckCache(cfgCtx, checkHash):
 
     return checks[checkHash]
 
-def _calcConfCheckDir(ctx, checkId):
-
-    dirpath = ctx.bldnode.abspath() + os.sep
-    dirpath += '%s%s' % (CONFTEST_DIR_PREFIX, checkId)
-    return dirpath
-
-def _makeConfTestBld(ctx, checkArgs, topdir, bdir):
-
-    bld = createContext('build', top_dir = topdir, out_dir = bdir)
-
-    # avoid unnecessary directory
-    bld.variant = ''
-
-    bld.init_dirs()
-    bld.progress_bar = 0
-    bld.targets = '*'
-
-    bld.logger = ctx.logger
-    bld.all_envs.update(ctx.all_envs)
-    bld.env = checkArgs['env']
-
-    # for function 'build_fun' only
-    bld.kw = checkArgs
-    bld.conf = ctx # it's used for bld.conf.to_log
-
-    return bld
-
-@conf
-def run_build(self, *k, **checkArgs):
-    """
-    Create a temporary build context to execute a build.
-    It's alternative version of the waflib.Configure.run_build and it can be
-    used only in ZenMake.
-    """
-
-    # pylint: disable = invalid-name,unused-argument
-
-    if isinstance(self, WafConfContext):
-        cfgCtx = self
-    else:
-        # self is a BuildContext
-        cfgCtx = self.cfgCtx
-
-    # this function can not be called from conf.multicheck
-    assert not hasattr(self, 'multicheck_task')
-
-    checkHash = checkArgs['$conf-test-hash']
-    checkCache = cfgCtx.confChecks['cache']['checks'][checkHash]
-
-    retval = checkCache['retval']
-    if retval is not None:
-        return retval
-
-    checkId = str(checkCache['id'])
-    if '$parallel-id' in checkArgs:
-        checkId = '%s.%s' % (checkId, checkArgs['$parallel-id'])
-
-    topdir = _calcConfCheckDir(cfgCtx, checkId)
-    if os.path.exists(topdir):
-        shutil.rmtree(topdir)
-
-    try:
-        os.makedirs(topdir)
-    except OSError:
-        pass
-
-    try:
-        os.stat(topdir)
-    except OSError:
-        self.fatal('cannot use the configuration test folder %r' % topdir)
-
-    bdir = joinpath(topdir, 'b')
-    if not os.path.exists(bdir):
-        os.makedirs(bdir)
-
-    self.test_bld = bld = _makeConfTestBld(self, checkArgs, topdir, bdir)
-
-    checkArgs['build_fun'](bld)
-    ret = -1
-
-    try:
-        try:
-            bld.compile()
-        except waferror.WafError:
-            ret = 'Conf test failed: %s' % traceback.format_exc()
-            self.fatal(ret)
-        else:
-            ret = getattr(bld, 'retval', 0)
-    finally:
-        shutil.rmtree(topdir)
-        checkCache['retval'] = ret
-
-    return ret
-
 def _calcConfCheckHexHash(checkArgs, params):
 
     cfgCtx = params['cfgCtx']
@@ -424,6 +429,58 @@ def _calcConfCheckHexHash(checkArgs, params):
 
     return utils.hexOfStr(utils.hashOfStrs(buff))
 
+@conf
+def checkByPyFunc(self, **kwargs):
+    """
+    Run configuration test by python function
+    """
+
+    # pylint: disable = broad-except
+
+    func = kwargs['func']
+    args = kwargs['args']
+
+    self.start_msg(kwargs['msg'])
+
+    withException = False
+    try:
+        if args:
+            result = func(**args)
+        else:
+            result = func()
+    except Exception:
+        result = False
+        withException = True
+
+    if result:
+        self.end_msg('yes')
+        return
+
+    self.end_msg(result = 'no', color = 'YELLOW')
+
+    msg = "\nChecking by function %r failed: " % func.__name__
+
+    if withException:
+        import sys
+        excInfo = sys.exc_info()
+        stack = traceback.extract_tb(excInfo[2])[-1::]
+        msg += "\n%s: %s\n" % (excInfo[0].__name__, excInfo[1])
+        msg += "".join(traceback.format_list(stack))
+    else:
+        msg += "function returned %s" % str(result)
+
+    if log.verbose() > 1:
+        # save to log and raise exception
+        self.fatal(msg)
+
+    try:
+        # save to log but don't allow exception
+        self.fatal(msg)
+    except waferror.ConfigurationError:
+        pass
+
+    self.fatal('The configuration failed')
+
 def _confTestCheckByPyFunc(checkArgs, params):
 
     # pylint: disable = deprecated-method, broad-except
@@ -434,6 +491,8 @@ def _confTestCheckByPyFunc(checkArgs, params):
     buildtype = params['buildtype']
     taskName  = params['taskName']
 
+    checkArgs = checkArgs.copy()
+
     func = checkArgs['func']
     try:
         argsSpec = inspect.getfullargspec(func)
@@ -441,32 +500,19 @@ def _confTestCheckByPyFunc(checkArgs, params):
         argsSpec = inspect.getargspec(func)
 
     noFuncArgs = not any(argsSpec[0:3])
-    mandatory = checkArgs.pop('mandatory', True)
+    args = dict(task = taskName, buildtype = buildtype)
 
-    cfgCtx.start_msg('Checking by function %r' % func.__name__)
+    checkArgs['args'] = None if noFuncArgs else args
+    checkArgs['msg'] = 'Checking by function %r' % func.__name__
 
-    try:
-        if noFuncArgs:
-            result = func()
-        else:
-            args = dict(task = taskName, buildtype = buildtype)
-            result = func(**args)
-    except Exception:
-        import sys
-        excInfo = sys.exc_info()
-        stack = traceback.extract_tb(excInfo[2])[-1::]
+    parallelChecks = params.get('parallel-checks', None)
 
-        msg = "\nError in the function %r: " % func.__name__
-        msg += "\n%s: %s\n" % (excInfo[0].__name__, excInfo[1])
-        msg += "".join(traceback.format_list(stack))
-        raise error.ZenMakeError(msg)
-
-    if not result:
-        cfgCtx.end_msg(result = 'no', color = 'YELLOW')
-        if mandatory:
-            cfgCtx.fatal('Checking by function %r failed' % func.__name__)
+    if parallelChecks is not None:
+        # checkArgs is shared so it can be changed later
+        checkArgs['$func-name'] = 'checkByPyFunc'
+        parallelChecks.append(checkArgs)
     else:
-        cfgCtx.end_msg('yes')
+        cfgCtx.checkByPyFunc(**checkArgs)
 
 def _confTestCheckPrograms(checkArgs, params):
     cfgCtx = params['cfgCtx']
@@ -554,6 +600,7 @@ def _confTestCheck(checkArgs, params):
 
     if parallelChecks is not None:
         # checkArgs is shared so it can be changed later
+        checkArgs['$func-name'] = 'check'
         parallelChecks.append(checkArgs)
     else:
         cfgCtx.check(**checkArgs)
@@ -573,7 +620,7 @@ def _confTestCheckInParallel(checkArgs, params):
 
     supportedActs = (
         'check-sys-libs', 'check-headers',
-        'check-libs', #'check-by-pyfunc',
+        'check-libs', 'check-by-pyfunc',
     )
 
     parallelCheckArgsList = []
@@ -588,15 +635,15 @@ def _confTestCheckInParallel(checkArgs, params):
             elif act not in supportedActs:
                 errMsg = "act %r can not be used inside the act 'parallel'" % act
                 errMsg += " for conftests in task %r!" % taskName
-        #elif callable(check):
-        #    pass
+        elif callable(check):
+            pass
         else:
             errMsg = "Test '%r' is not supported." % check
 
         if errMsg:
             cfgCtx.fatal(errMsg)
 
-    _runConfChecks(subchecks, params)
+    _handleConfChecks(subchecks, params)
     params.pop('parallel-checks', None)
 
     if not parallelCheckArgsList:
@@ -624,7 +671,7 @@ _confTestFuncs = {
     'write-config-header' : _confTestWriteHeader,
 }
 
-def _runConfChecks(checks, params):
+def _handleConfChecks(checks, params):
     for checkArgs in checks:
         if callable(checkArgs):
             checkArgs = {
@@ -635,13 +682,20 @@ def _runConfChecks(checks, params):
             # checkArgs is changed in conf test func below
             checkArgs = checkArgs.copy()
 
+        ctx = params['cfgCtx']
+        taskName = params['taskName']
+
         act = checkArgs.pop('act', None)
-        func = _confTestFuncs.get(act, None)
+        if act is None:
+            msg = "No act in the configuration test %r for task %r!" \
+                    % (checkArgs, taskName)
+            ctx.fatal(msg)
+
+        func = _confTestFuncs.get(act)
         if not func:
-            ctx = params['cfgCtx']
-            taskName = params['taskName']
-            ctx.fatal('unknown act %r for conftests in task %r!' %
-                      (act, taskName))
+            msg = "Unknown act %r in the configuration test %r for task %r!" \
+                    % (act, checkArgs, taskName)
+            ctx.fatal(msg)
 
         func(checkArgs, params)
 
@@ -695,7 +749,7 @@ class ConfigurationContext(WafConfContext):
 
         cache = self.confChecks['cache']
         if cache is not None:
-            cachePath = joinpath(self.cachedir.abspath(), CONF_CHECK_CACHE_FILE)
+            cachePath = joinpath(self.cachedir.abspath(), CONFTEST_CACHE_FILE)
             cache.store(cachePath)
 
     # override
@@ -806,7 +860,7 @@ class ConfigurationContext(WafConfContext):
                 taskName = taskName,
                 taskParams = taskParams,
             )
-            _runConfChecks(confTests, params)
+            _handleConfChecks(confTests, params)
 
         self.setenv('')
 
@@ -814,7 +868,7 @@ class ConfigurationContext(WafConfContext):
         """
         Handle every known task param that can be handled at configure stage.
         It is better for common performance because command 'configure' is used
-        rarely then 'build'.
+        rarely than command 'build'.
         """
 
         btypeDir = bconf.selectedBuildTypeDir
