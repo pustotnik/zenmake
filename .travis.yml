@@ -27,6 +27,11 @@ addons:
     - bison
     - nasm
     - yasm
+    - libboost-all-dev
+  homebrew:
+    packages:
+      - boost
+      - boost-python
 
 # most problematic at first places
 jobs:
@@ -109,6 +114,7 @@ before_install:
     if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
       # by default choco installs last version of python
       choco install python --version $PYTHON_VER
+      choco install boost-msvc-14.1
     elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       #set -ex
       #pip3 install --upgrade pip

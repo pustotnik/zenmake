@@ -1,4 +1,9 @@
 
+import os
+import sys
+
+iswin32 = os.sep == '\\' or sys.platform == 'win32' or os.name == 'nt'
+
 options = {
     #'color': 'no',
     'jobs' : { 'build' : 4 },
@@ -14,6 +19,17 @@ tasks = {
         'export-includes' : True,
         'export-defines' : True,
         'install-path' : False,
+        'conftests'  : [
+            dict( act = 'parallel',
+              checks = [
+                    dict(act = 'check-headers', names = 'cstdio iostream', id = 'first'),
+                    dict(act = 'check-headers', names = 'stdlib.h', after = 'first'),
+                    dict(act = 'check-headers', names = 'stdlibasd.h', mandatory = False),
+                    dict(act = 'check-libs', names = 'boost_random', mandatory = not iswin32),
+              ],
+              tryall = True,
+            ),
+        ],
     },
     'stlib' : {
         'features' : 'stlib',
