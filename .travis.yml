@@ -50,7 +50,7 @@ jobs:
     language: shell
     env:
       - PATH=/c/Python37:/c/Python37/Scripts:$PATH
-      - PYTHON_VER=3.7.2
+      - PYTHON_VER=3.7.4
       - NAME='Python 3.7 on Windows'
     cache:
       directories:
