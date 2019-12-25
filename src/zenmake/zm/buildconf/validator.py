@@ -127,6 +127,8 @@ class Validator(object):
 
         _getAttrValue = Validator._getAttrValue
         allowed = _getAttrValue(schemeAttrs, 'allowed', 'str', default = None)
+        if callable(allowed):
+            allowed = allowed(confnode, fullkey)
         if allowed is not None and confnode not in allowed:
             msg = "Value `%r` is invalid for the param %r." % (confnode, fullkey)
             msg = '%s Allowed values: %r' %(msg, allowed)
@@ -151,6 +153,9 @@ class Validator(object):
             handler = Validator._getHandler(varsType)
             _schemeAttrs = dict(schemeAttrs)
             _schemeAttrs['type'] = varsType
+
+        if callable(allowed):
+            allowed = allowed(confnode, fullkey)
 
         for i, elem in enumerate(confnode):
             if allowed is not None and elem not in allowed:
@@ -181,6 +186,8 @@ class Validator(object):
 
         _getAttrValue = Validator._getAttrValue
         allowed = _getAttrValue(schemeAttrs, 'allowed', 'list-of-strs', default = None)
+        if callable(allowed):
+            allowed = allowed(confnode, fullkey)
         for elem in confnode:
             if not isinstance(elem, stringtype):
                 raiseInvalidTypeErr(elem)
@@ -199,6 +206,9 @@ class Validator(object):
         subscheme = _getAttrValue(schemeAttrs, 'vars', 'dict')
         allowUnknownKeys = _getAttrValue(schemeAttrs, 'allow-unknown-keys',
                                          'dict', default = True)
+
+        if callable(subscheme):
+            subscheme = subscheme(confnode, fullkey)
 
         try:
             Validator._validate(confnode, subscheme, fullkey, allowUnknownKeys)
@@ -277,8 +287,10 @@ class Validator(object):
             confnode = conf.get(key, None)
             if confnode is None:
                 continue
-            typeName = schemeAttrs['type']
             fullKey = Validator._genFullKey(keyprefix, key)
+            if callable(schemeAttrs):
+                schemeAttrs = schemeAttrs(confnode, fullKey)
+            typeName = schemeAttrs['type']
             Validator._getHandler(typeName)(confnode, schemeAttrs, fullKey)
             _handledKeys.append(key)
         return _handledKeys

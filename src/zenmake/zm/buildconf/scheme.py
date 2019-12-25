@@ -8,6 +8,7 @@
 
 from zm import toolchains
 from zm.constants import KNOWN_PLATFORMS
+from zm.pyutils import stringtype
 from zm.cli import COMMAND_NAMES, OPTION_NAMES
 
 KNOWN_TOOLCHAIN_KINDS = ['auto-' + lang \
@@ -32,6 +33,81 @@ ANYAMOUNTSTRS_KEY = AnyAmountStrsKey()
 
 def _genSameSchemeDict(keys, scheme):
     return { k:scheme for k in keys }
+
+def _genConfTestsScheme(confnode, fullkey):
+
+    # pylint: disable = unused-argument
+
+    scheme = {
+        'type': 'list',
+        'vars-type' : ('dict', 'func'),
+        'dict-allow-unknown-keys' : False,
+        'dict-vars' : _genConfTestsDictVarsScheme
+    }
+
+    return scheme
+
+_actToVars = {
+    'check-by-pyfunc' : {
+        'func': { 'type': 'func' },
+    },
+    'check-programs' : {
+        'names' : { 'type': ('str', 'list-of-strs') },
+        'paths' : { 'type': ('str', 'list-of-strs') },
+        'var':    { 'type': 'str' },
+    },
+    'check-headers' : {
+        'names' :   { 'type': ('str', 'list-of-strs') },
+        'defines' : { 'type': ('str', 'list-of-strs') },
+    },
+    'check-libs' : {
+        'names' :      { 'type': ('str', 'list-of-strs') },
+        'autodefine' : { 'type': 'bool' },
+        'defines' :    { 'type': ('str', 'list-of-strs') },
+    },
+    'check-sys-libs' : {
+        'autodefine' : { 'type': 'bool' },
+        'defines' :    { 'type': ('str', 'list-of-strs') },
+    },
+    'check-code' : {
+        'label' :   { 'type': 'str' },
+        'text' :    { 'type': 'str' },
+        'file' :    { 'type': 'str' },
+        'defname' : { 'type': 'str' },
+        'defines' : { 'type': ('str', 'list-of-strs') },
+        'execute' : { 'type': 'bool' },
+    },
+    'parallel' : {
+        'tryall' : { 'type': 'bool' },
+        'checks' : _genConfTestsScheme,
+    },
+    'write-config-header' : {
+        'file' : { 'type': 'str' },
+        'guard': { 'type': 'str' },
+    },
+}
+
+def _genConfTestsDictVarsScheme(confnode, fullkey):
+
+    schemeDictVars = {
+        'act' :       {
+            'type': 'str',
+            'allowed' : _actToVars.keys(),
+        },
+        'mandatory' : { 'type': 'bool' },
+    }
+
+    if fullkey.split('.')[-2] == 'checks':
+        schemeDictVars.update({
+            'id' :     { 'type': 'str' },
+            'before' : { 'type': 'str' },
+            'after' :  { 'type': 'str' },
+        })
+
+    act = confnode.get('act', '')
+    if isinstance(act, stringtype):
+        schemeDictVars.update(_actToVars.get(act, {}))
+    return schemeDictVars
 
 taskscheme = {
     'target' :      { 'type': 'str' },
@@ -80,42 +156,7 @@ taskscheme = {
             'shell' : { 'type': 'bool' },
         },
     },
-    'conftests' : {
-        'type': 'list',
-        'vars-type' : ('dict', 'func'),
-        'dict-allow-unknown-keys' : False,
-        'dict-vars' : {
-            'act' :        { 'type': 'str' },
-            'names' :      { 'type': ('str', 'list-of-strs') },
-            'paths' :      { 'type': ('str', 'list-of-strs') },
-            'mandatory' :  { 'type': 'bool' },
-            'autodefine' : { 'type': 'bool' },
-            'file' :       { 'type': 'str' },
-            'guard':       { 'type': 'str' },
-            'var':         { 'type': 'str' },
-            'func':        { 'type': 'func' },
-            'tryall' :     { 'type': 'bool' },
-            'checks':      {
-                'type': 'list',
-                'vars-type' : ('dict', 'func'),
-                'dict-allow-unknown-keys' : False,
-                'dict-vars' : {
-                    'act' :        { 'type': 'str' },
-                    'names' :      { 'type': ('str', 'list-of-strs') },
-                    'paths' :      { 'type': ('str', 'list-of-strs') },
-                    'mandatory' :  { 'type': 'bool' },
-                    'autodefine' : { 'type': 'bool' },
-                    'file' :       { 'type': 'str' },
-                    'guard':       { 'type': 'str' },
-                    'var':         { 'type': 'str' },
-                    'id' :         { 'type': 'str' },
-                    'before' :     { 'type': 'str' },
-                    'after' :      { 'type': 'str' },
-                    'func':        { 'type': 'func' },
-                },
-            },
-        },
-    },
+    'conftests' : _genConfTestsScheme,
     'normalize-target-name' : { 'type': 'bool' },
     'object-file-counter' : { 'type': 'int' },
 }
@@ -225,3 +266,4 @@ confscheme = {
 
 KNOWN_TASK_PARAM_NAMES = taskscheme.keys()
 KNOWN_CONF_PARAM_NAMES = confscheme.keys()
+KNOWN_CONFTEST_ACTS = _actToVars.keys()

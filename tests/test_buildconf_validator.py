@@ -15,7 +15,7 @@ import pytest
 from zm.error import *
 from zm.constants import KNOWN_PLATFORMS
 import tests.common as cmn
-from zm.buildconf.scheme import KNOWN_TOOLCHAIN_KINDS
+from zm.buildconf.scheme import KNOWN_TOOLCHAIN_KINDS, KNOWN_CONFTEST_ACTS
 from zm.buildconf.validator import Validator
 
 validator = Validator()
@@ -302,10 +302,10 @@ class TestSuite(object):
         confnode['conftests'] = []
         validator.validate(buildconf)
 
-        confnode['conftests'] = [ { 'act' : 'check', } ]
+        confnode['conftests'] = [ { 'act' : 'check-headers', } ]
         validator.validate(buildconf)
         self._checkParamsAsStr(buildconf, confnode['conftests'][0],
-                               ['act', 'file'])
+                               ['act'], KNOWN_CONFTEST_ACTS)
         self._checkParamsAsStrOrListOfStrs(buildconf, confnode['conftests'][0],
                                ['names'])
         self._validateBoolValues(buildconf, confnode['conftests'][0], 'mandatory')

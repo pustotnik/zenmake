@@ -27,7 +27,7 @@ from tests import ZENMAKE_DIR
 
 _tempdirs = []
 
-def randomstr(length = 20, withDigits = False):
+def randomstr(length = 16, withDigits = False):
     letters = string.ascii_lowercase
     if withDigits:
         letters += string.digits
