@@ -92,7 +92,7 @@ def _genConfTestsDictVarsScheme(confnode, fullkey):
     schemeDictVars = {
         'act' :       {
             'type': 'str',
-            'allowed' : _actToVars.keys(),
+            'allowed' : set(_actToVars.keys()),
         },
         'mandatory' : { 'type': 'bool' },
     }
@@ -264,6 +264,6 @@ confscheme = {
     },
 }
 
-KNOWN_TASK_PARAM_NAMES = taskscheme.keys()
-KNOWN_CONF_PARAM_NAMES = confscheme.keys()
-KNOWN_CONFTEST_ACTS = _actToVars.keys()
+KNOWN_TASK_PARAM_NAMES = set(taskscheme.keys())
+KNOWN_CONF_PARAM_NAMES = set(confscheme.keys())
+KNOWN_CONFTEST_ACTS = set(_actToVars.keys())

@@ -43,7 +43,7 @@ These configuration tests in ``dict`` format:
 
     ``act`` = ``check-code``
         Provide piece of code for the test. Code can be provided with
-        parameter ``text`` as plane text or with parameter ``file`` as a path to
+        parameter ``text`` as a plane text or with parameter ``file`` as a path to
         file with code. This path can be absolute or relative to
         the :ref:`startdir<buildconf-startdir>`.
 

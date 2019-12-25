@@ -242,7 +242,7 @@ class Config(object):
 
         #TODO: move to tests
         # check all params were processed
-        assert mergedParams == set(KNOWN_CONF_PARAM_NAMES)
+        assert mergedParams == KNOWN_CONF_PARAM_NAMES
 
     def _applyDefaults(self):
         """

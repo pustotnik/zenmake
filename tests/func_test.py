@@ -29,6 +29,7 @@ from waflib.ConfigSet import ConfigSet
 import tests.common as cmn
 from zm import starter
 from zm import pyutils, cli, utils, zipapp, version
+from zm.pyutils import viewitems
 from zm.waf import launcher, assist
 from zm.autodict import AutoDict
 from zm.buildconf import loader as bconfloader
@@ -105,7 +106,7 @@ def getZmExecutables():
     tmpdir = cmn.SHARED_TMP_DIR
     zipAppFile = joinpath(tmpdir, zipapp.ZIPAPP_NAME)
     if _zmExes:
-        return _zmExes.keys()
+        return list(_zmExes.keys())
 
     _zmExes['normal'] = [PYTHON_EXE, ZM_BIN]
 
@@ -122,7 +123,7 @@ def getZmExecutables():
     # we should specify python executable. Otherwise default system python
     # will be used.
     _zmExes['zipapp'] = [PYTHON_EXE, zipAppFile]
-    return _zmExes.keys()
+    return list(_zmExes.keys())
 
 def runZm(self, cmdline, env = None):
 
@@ -294,7 +295,7 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
     isLinux = PLATFORM == 'linux'
 
     tasks = getBuildTasks(confManager)
-    for taskName, taskParams in tasks.items():
+    for taskName, taskParams in viewitems(tasks):
 
         handleTaskFeatures(testSuit, taskParams)
         features = taskParams['features']
@@ -921,7 +922,7 @@ class TestInstall(object):
         targets = set()
         processConfHandlerWithCLI(self, cmdLine)
         tasks = getBuildTasks(self.confManager)
-        for taskName, taskParams in tasks.items():
+        for taskName, taskParams in viewitems(tasks):
 
             handleTaskFeatures(self, taskParams)
             features = taskParams['features']
