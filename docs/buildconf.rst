@@ -58,6 +58,8 @@ some custom purposes.
 
 Below is the detailed description of each buildconf variable.
 
+.. _buildconf-startdir:
+
 startdir
 """"""""
     A start path for all paths in a buildconf.

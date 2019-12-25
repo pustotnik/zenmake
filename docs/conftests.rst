@@ -22,25 +22,47 @@ And they all are called on **configure** step (command **configure**).
 
 These configuration tests in ``dict`` format:
 
+    ``act`` = ``check-headers``
+        Check existence of C/C++ headers from list in the ``names``.
+
+        Parameter ``defines`` can be used to set additional ``C/C++ defines``
+        to use in compiling of the test.
+
+    ``act`` = ``check-libs``
+        Check existence of the system libraries from list in
+        the ``names``. If ``autodefine`` is set to True it generates
+        ``C/C++ define name`` like ``HAVE_LIB_SOMELIB``.
+
+        Parameter ``defines`` can be used to set additional ``C/C++ defines``
+        to use in compiling of the test.
+
+    ``act`` = ``check-sys-libs``
+        Check existence of all system libraries from
+        task parameter ``sys-libs``. All parameters for the act ``check-libs``
+        excluding ``names`` can be used here.
+
+    ``act`` = ``check-code``
+        Provide piece of code for the test. Code can be provided with
+        parameter ``text`` as plane text or with parameter ``file`` as a path to
+        file with code. This path can be absolute or relative to
+        the :ref:`startdir<buildconf-startdir>`.
+
+        Parameter ``label`` can be used to mark message of the test.
+        If parameter ``execute`` is True it means that the resulting binary
+        will be executed.
+
+        Parameter ``defname`` is a name of ``C/C++ define`` to set
+        when the test is over.
+
+        Parameter ``defines`` can be used to set additional ``C/C++ defines``
+        to use in compiling of the test.
+
     ``act`` = ``check-programs``
         Check existence of programs from list in the ``names``.
         Parameter ``paths`` can be used to set paths to find
         these programs, but usually you don't need to use it.
         Parameter ``var`` can be used to set 'define' name.
         By default it's a first name from the ``names`` in upper case.
-
-    ``act`` = ``check-sys-libs``
-        Check existence of all system libraries from
-        task parameter ``sys-libs``. If ``autodefine`` is set to True
-        it generates ``C/C++ define name`` like ``HAVE_LIB_SOMELIB``.
-
-    ``act`` = ``check-headers``
-        Check existence of C/C++ headers from list in the ``names``.
-
-    ``act`` = ``check-libs``
-        Check existence of the system libraries from list in
-        the ``names``. If ``autodefine`` is set to True it generates
-        ``C/C++ define name`` like ``HAVE_LIB_SOMELIB``.
 
     ``act`` = ``check-by-pyfunc``
         Check by python function. It'a another way to use python
@@ -79,8 +101,8 @@ These configuration tests in ``dict`` format:
         and ``after`` with a parameter ``id``. For example, one test can have
         ``id = 'base'`` and then another test can have ``after = 'base'``.
 
-Any configuration test excepting ``write-config-header`` has parameter
-``mandatory`` which is True by default. It has effect for any tests inside ``checks``
+Any configuration test has parameter ``mandatory`` which is True by default.
+It also has effect for any test inside ``checks``
 for parallel tests and for the whole bundle of parallel tests as well.
 
 Example in python format:

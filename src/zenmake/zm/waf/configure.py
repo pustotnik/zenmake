@@ -41,7 +41,7 @@ for _var in toolchains.CompilersInfo.allVarsToSetCompiler():
     CONFTEST_HASH_USED_ENV_KEYS.add('%s_NAME' % _var)
 
 CONFTEST_HASH_IGNORED_FUNC_ARGS = set(
-    ('mandatory', 'okmsg', 'errmsg', 'id', 'before', 'after')
+    ('mandatory', 'msg', 'okmsg', 'errmsg', 'id', 'before', 'after')
 )
 
 def _makeRunBuildBldCtx(ctx, checkArgs, topdir, bdir):
@@ -557,6 +557,48 @@ def _confTestCheckHeaders(checkArgs, params):
         checkArgs['header_name'] = header
         _confTestCheck(checkArgs, params)
 
+def _confTestCheckCode(checkArgs, params):
+
+    cfgCtx = params['cfgCtx']
+    taskName = params['taskName']
+
+    msg = 'Checking code snippet'
+    label = checkArgs.pop('label', None)
+    if label is not None:
+        msg += " %r" % label
+
+    checkArgs['msg'] = msg
+
+    text = checkArgs.pop('text', None)
+    file = checkArgs.pop('file', None)
+
+    if all((text is None, file is None)):
+        msg = "Neither 'text' nor 'file' exists in a conf test"
+        msg += " with act = 'check-code' for task %r" % taskName
+        cfgCtx.fatal(msg)
+
+    if text is not None:
+        checkArgs['fragment'] = text
+        _confTestCheck(checkArgs, params)
+
+    if file is not None:
+        bconf = cfgCtx.getbconf()
+        startdir = bconf.confPaths.startdir
+        path = joinpath(startdir, utils.getNativePath(file))
+        if not os.path.isfile(path):
+            msg = "Error in declaration of a conf test "
+            msg += "with act = 'check-code' for task %r:" % taskName
+            msg += "\nFile %r doesn't exist in the directory %r" % (file, startdir)
+            cfgCtx.fatal(msg)
+
+        cfgCtx.monitFiles.append(path)
+
+        with open(path, 'r') as file:
+            text = file.read()
+
+        checkArgs['fragment'] = text
+        _confTestCheck(checkArgs, params)
+
 def _confTestWriteHeader(checkArgs, params):
 
     buildtype  = params['buildtype']
@@ -601,6 +643,10 @@ def _confTestCheck(checkArgs, params):
     # if it is False then write-config-header doesn't write defines
     #checkArgs['global_define'] = False
 
+    defname = checkArgs.pop('defname', None)
+    if defname is not None:
+        checkArgs['define_name'] = defname
+
     parallelChecks = params.get('parallel-checks', None)
 
     if parallelChecks is not None:
@@ -625,7 +671,7 @@ def _confTestCheckInParallel(checkArgs, params):
 
     supportedActs = (
         'check-sys-libs', 'check-headers',
-        'check-libs', 'check-by-pyfunc',
+        'check-libs', 'check-by-pyfunc', 'check-code',
     )
 
     parallelCheckArgsList = []
@@ -670,6 +716,7 @@ _confTestFuncs = {
     'check-sys-libs'      : _confTestCheckSysLibs,
     'check-headers'       : _confTestCheckHeaders,
     'check-libs'          : _confTestCheckLibs,
+    'check-code'          : _confTestCheckCode,
     # explicit using of Waf 'check' is disabled
     #'check'               : _confTestCheck,
     'parallel'            : _confTestCheckInParallel,
@@ -714,6 +761,7 @@ class ConfigurationContext(WafConfContext):
 
         self.confChecks = {}
         self.confChecks['cache'] = None
+        self.monitFiles = []
 
     def _loadDetectedCompiler(self, lang):
         """
@@ -750,7 +798,9 @@ class ConfigurationContext(WafConfContext):
 
         super(ConfigurationContext, self).execute()
 
-        assist.dumpZenMakeCmnConfSet(self.bconfManager)
+        self.monitFiles.extend([x.path for x in self.bconfManager.configs])
+        filePath = self.bconfManager.root.confPaths.zmcmnconfset
+        assist.dumpZenMakeCmnConfSet(self.monitFiles, filePath)
 
         cache = self.confChecks['cache']
         if cache is not None:

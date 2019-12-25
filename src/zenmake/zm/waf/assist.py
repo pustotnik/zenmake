@@ -39,7 +39,7 @@ def getUsedWafTaskKeys():
     ''' Get used Waf task keys '''
     return _usedWafTaskKeys
 
-def dumpZenMakeCmnConfSet(bconfManager):
+def dumpZenMakeCmnConfSet(monitfiles, filepath):
     """
     Dump ZenMake common ConfigSet file with some things like files
     monitored for changes.
@@ -49,7 +49,7 @@ def dumpZenMakeCmnConfSet(bconfManager):
 
     zmCmn.zmversion = version.current()
 
-    zmCmn.monitfiles = [x.path for x in bconfManager.configs]
+    zmCmn.monitfiles = sorted(set(monitfiles))
     zmCmn.monithash  = 0
 
     for file in zmCmn.monitfiles:
@@ -64,7 +64,7 @@ def dumpZenMakeCmnConfSet(bconfManager):
     for name in envVarNames:
         zmCmn.toolenvs[name] = os.environ.get(name, '')
 
-    zmCmn.store(bconfManager.root.confPaths.zmcmnconfset)
+    zmCmn.store(filepath)
 
 def loadZenMakeCmnConfSet(bconfPaths):
     """

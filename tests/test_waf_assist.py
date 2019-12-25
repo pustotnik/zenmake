@@ -45,9 +45,11 @@ def testDumpZenMakeCommonFile(tmpdir):
         AutoDict(path = str(buildconffile)),
         AutoDict(path = str(buildconffile2)),
     ]
+    
+    monitFiles = [x.path for x in fakeConfManager.configs]
 
     assert not os.path.exists(fakeConfPaths.zmcmnconfset)
-    assist.dumpZenMakeCmnConfSet(fakeConfManager)
+    assist.dumpZenMakeCmnConfSet(monitFiles, fakeConfPaths.zmcmnconfset)
     assert os.path.isfile(fakeConfPaths.zmcmnconfset)
 
     cfgenv = ConfigSet(fakeConfPaths.zmcmnconfset)
