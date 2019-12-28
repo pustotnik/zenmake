@@ -69,7 +69,7 @@ Lines  Description
 20     Specify g++ compiler (from gcc).
 21     Specify C++ compiler flags.
 23     Special case: specify default build type that is used when no build
-       type was specifying for ZenMake command.
+       type was specified for ZenMake command.
 =====  =======================================================================
 
 In case of using YAML the file ``buildconf.yaml`` with the same values as above

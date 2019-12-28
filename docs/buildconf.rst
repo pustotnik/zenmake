@@ -22,14 +22,14 @@ Simplified scheme of buildconf:
     buildroot_ = path
     realbuildroot_ = path
     project_ = { ... }
-    features_ = { ... }
+    :ref:`buildconf-features` = { ... }
     options_ = { ... }
     tasks_ = { name: taskparams_ }
     buildtypes_ = { name: taskparams_ }
     toolchains_ = { name: parameters }
     platforms_ = { name: parameters }
     matrix_ = [ { for: {...}, set: taskparams_ }, ... ]
-    subdirs_ = [] or 'all'/'auto'/'' or True/False
+    :ref:`buildconf-subdirs` = []
 
 .. _buildconf-dict-def:
 
@@ -101,6 +101,8 @@ project
            directory by default.
     :version: The version of the project. It's empty by default.
               It's used as default value for ``ver-num`` field if not empty.
+
+.. _buildconf-features:
 
 features
 """"""""
