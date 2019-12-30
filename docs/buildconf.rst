@@ -114,6 +114,15 @@ features
                  It's ``True`` by default. Usually you don't need to change
                  this value.
 
+    :monitor-files: Set extra file paths to check changes in them. You can use
+                    additional files with your buildconf file(s). For example
+                    it can be extra python module with some tools. But in this
+                    case ZenMake doesn't know about such files when it checks
+                    buildconf file(s) for changes to detect if it must call
+                    command ``configure`` for feature ``autoconfig``. You
+                    can add such files to this variable and ZenMake will check
+                    them for changes as it does so for regular buildconf file(s).
+
 options
 """"""""
     A `dict <buildconf-dict-def_>`_ array with default values for command

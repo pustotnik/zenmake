@@ -584,11 +584,14 @@ def _confTestCheckCode(checkArgs, params):
     if file is not None:
         bconf = cfgCtx.getbconf()
         startdir = bconf.confPaths.startdir
-        path = joinpath(startdir, utils.getNativePath(file))
+        file = utils.getNativePath(file)
+        path = joinpath(startdir, file)
         if not os.path.isfile(path):
             msg = "Error in declaration of a conf test "
             msg += "with act = 'check-code' for task %r:" % taskName
-            msg += "\nFile %r doesn't exist in the directory %r" % (file, startdir)
+            msg += "\nFile %r doesn't exist" % file
+            if not os.path.abspath(file):
+                msg += " in the directory %r" % startdir
             cfgCtx.fatal(msg)
 
         cfgCtx.monitFiles.append(path)
@@ -898,6 +901,29 @@ class ConfigurationContext(WafConfContext):
 
         assert 'zmtasks' not in taskEnv
         return taskEnv
+
+    def addExtraMonitFiles(self, bconf):
+        """
+        Add extra file paths to monitor for autoconfig feature
+        """
+
+        files = bconf.features.get('monitor-files', [])
+        if not files:
+            return
+
+        files = utils.toList(files)
+        startdir = bconf.confPaths.startdir
+        for file in files:
+            file = utils.getNativePath(file)
+            path = joinpath(startdir, file)
+            if not os.path.isfile(path):
+                msg = "Error in the file %r:\n" % bconf.path
+                msg += "File path %r " % file
+                msg += "from the features.monitor-files doesn't exist"
+                if not os.path.abspath(file):
+                    msg += " in the directory %r" % startdir
+                self.fatal(msg)
+            self.monitFiles.append(path)
 
     def runConfTests(self, buildtype, tasks):
         """

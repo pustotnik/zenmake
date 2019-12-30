@@ -180,6 +180,7 @@ confscheme = {
         'allow-unknown-keys' : False,
         'vars' : {
             'autoconfig' : { 'type': 'bool' },
+            'monitor-files' : { 'type': ('str', 'list-of-strs') },
         },
     },
     'options' : {

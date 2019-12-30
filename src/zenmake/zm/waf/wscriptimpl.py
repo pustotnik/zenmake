@@ -162,6 +162,8 @@ def configure(conf):
     # switch current env to the root env
     conf.setenv('')
 
+    conf.addExtraMonitFiles(bconf)
+
     # gather tasks in subdirs
     subdirs = bconf.subdirs
     if subdirs:

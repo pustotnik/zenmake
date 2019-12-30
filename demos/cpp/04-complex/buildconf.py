@@ -1,13 +1,14 @@
 
-import os
-import sys
-
-iswin32 = os.sep == '\\' or sys.platform == 'win32' or os.name == 'nt'
+from buildconf_tools import *
 
 options = {
     #'color': 'no',
     'jobs' : { 'build' : 4 },
     'progress' : {'any': False, 'build': True },
+}
+
+features = {
+    'monitor-files' : 'buildconf_tools.py'
 }
 
 tasks = {
