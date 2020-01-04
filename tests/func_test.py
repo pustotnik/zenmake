@@ -766,6 +766,11 @@ class TestIndyCmd(object):
     def allZmExe(self, request):
         self.zmExe = _zmExes[request.param]
 
+        def teardown():
+            printErrorOnFailed(self, request)
+
+        request.addfinalizer(teardown)
+
     def testZipAppCmd(self, tmpdir):
         cmdLine = ['zipapp']
         self.cwd = str(tmpdir.realpath())
