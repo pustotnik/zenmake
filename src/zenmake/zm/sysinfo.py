@@ -6,8 +6,58 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+import os
+import tempfile
+import shutil
+import atexit
+
+from waflib.Configure import ConfigurationContext as WafConfContext, WAF_CONFIG_LOG
 from zm.constants import PLATFORM
+from zm import log
 from zm.cmd import Command as _Command
+
+_tempdirs = []
+
+def _delTmpDirs():
+    for path in _tempdirs:
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+    del _tempdirs[:]
+
+atexit.register(_delTmpDirs)
+
+class ConfContext(WafConfContext):
+    """ Special version of ConfigurationContext """
+
+    def __init__(self, *args, **kwargs):
+
+        path = tempfile.mkdtemp(prefix = 'zm.')
+        _tempdirs.append(path)
+
+        kwargs['run_dir'] = path
+        super(ConfContext, self).__init__(*args, **kwargs)
+
+        self.top_dir = path
+        self.out_dir = os.path.join(path, 'b')
+
+    def prepare_env(self, env):
+        pass
+
+    def start_msg(self, *k, **kw):
+        pass
+
+    def end_msg(self, *k, **kw):
+        pass
+
+    def prepare(self):
+        """
+        Make ready to use
+        """
+
+        self.init_dirs()
+
+        path = os.path.join(self.bldnode.abspath(), WAF_CONFIG_LOG)
+        self.logger = log.makeLogger(path, 'cfg')
 
 def gatherSysInfo():
     """
@@ -30,10 +80,8 @@ def gatherSysInfo():
     info.append('Python implementation: %s' % _platform.python_implementation())
 
     compilers = [
-        _AutoDict(header = 'GCC:', bin = 'gcc', verargs = ['--version']),
-        _AutoDict(header = 'CLANG:', bin = 'clang', verargs = ['--version']),
-        #TODO: find a way to detect msvc
-        #_AutoDict(header = 'MSVC:', bin = 'cl', verargs = []),
+        _AutoDict(header = 'GCC', bin = 'gcc', verargs = ['--version']),
+        _AutoDict(header = 'CLANG', bin = 'clang', verargs = ['--version']),
     ]
     for compiler in compilers:
         _bin = find_executable(compiler.bin)
@@ -44,6 +92,27 @@ def gatherSysInfo():
         else:
             ver = 'not recognized'
         info.append('%s: %s' % (compiler.header, ver))
+
+    from waflib import Context, Utils
+    from waflib import Errors as waferror
+
+    if Utils.winreg is not None:
+        msvcModule = Context.load_tool('msvc')
+
+        cfgCtx = None
+        try:
+            cfgCtx = ConfContext()
+            cfgCtx.prepare()
+            version = msvcModule.detect_msvc(cfgCtx)[1]
+        except waferror.ConfigurationError:
+            version = 'not recognized'
+        finally:
+            if cfgCtx:
+                cfgCtx.finalize()
+    else:
+        version = 'not recognized'
+
+    info.append('%s: %s' % ('MSVC', version))
 
     return info
 
