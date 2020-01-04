@@ -67,6 +67,8 @@ def gatherSysInfo():
     import subprocess
     import platform as _platform
     from distutils.spawn import find_executable
+    from waflib import Context, Utils
+    from waflib import Errors as waferror
     from zm.autodict import AutoDict as _AutoDict
 
     info = []
@@ -92,9 +94,6 @@ def gatherSysInfo():
         else:
             ver = 'not recognized'
         info.append('%s: %s' % (compiler.header, ver))
-
-    from waflib import Context, Utils
-    from waflib import Errors as waferror
 
     if Utils.winreg is not None:
         msvcModule = Context.load_tool('msvc')

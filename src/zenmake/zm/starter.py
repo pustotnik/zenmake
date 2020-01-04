@@ -44,6 +44,9 @@ def runIndyCmd(cmd):
     if cmd.name not in _indyCmd:
         raise NotImplementedError('Unknown command')
 
+    from zm.waf import wrappers
+    wrappers.setup()
+
     moduleName = _indyCmd[cmd.name]
     module = loadPyModule(moduleName, withImport = True)
     return module.Command().run(cmd.args)
