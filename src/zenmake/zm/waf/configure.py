@@ -2,8 +2,12 @@
 #
 
 """
- Copyright (c) 2019, Alexander Magola. All rights reserved.
+ Copyright (c) 2019 Alexander Magola. All rights reserved.
  license: BSD 3-Clause License, see LICENSE for more details.
+
+ Some portions derived from Thomas Nagy's Waf code
+ Waf is Copyright (c) 2005-2019 Thomas Nagy
+
 """
 
 import os

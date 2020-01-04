@@ -2,7 +2,7 @@
 #
 
 """
- Copyright (c) 2019, Alexander Magola. All rights reserved.
+ Copyright (c) 2019 Alexander Magola. All rights reserved.
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
@@ -12,7 +12,7 @@ from zm.utils import platform as _platform
 APPNAME = 'zenmake'
 CAP_APPNAME = 'ZenMake'
 AUTHOR = 'Alexander Magola'
-COPYRIGHT_ONE_LINE = '2019, %s' % AUTHOR
+COPYRIGHT_ONE_LINE = '2019, 2020 %s' % AUTHOR
 
 DEFAULT_BUILDROOTNAME = 'build'
 BUILDOUTNAME = 'out'
