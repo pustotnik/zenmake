@@ -44,9 +44,6 @@ def runIndyCmd(cmd):
     if cmd.name not in _indyCmd:
         raise NotImplementedError('Unknown command')
 
-    from zm.waf import wrappers
-    wrappers.setup()
-
     moduleName = _indyCmd[cmd.name]
     module = loadPyModule(moduleName, withImport = True)
     return module.Command().run(cmd.args)
@@ -91,7 +88,12 @@ def run():
     cmd = None
 
     try:
-        # We cannot to know if buildconf is changed if buildroot is unknown.
+
+        # set up waf wrappers
+        from zm.waf import wrappers
+        wrappers.setup()
+
+        # We cannot to know if buildconf is changed while buildroot is unknown.
         # This information is stored in the file that is located in buildroot.
         # But buildroot can be set on the command line and we must to parse CLI
         # before processing of buildconf.

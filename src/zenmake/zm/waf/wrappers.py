@@ -193,7 +193,7 @@ def getFileExtensions(src):
         ret.add(path[path.rfind('.') + 1:])
     return ret
 
-#TODO: remove when this patch appears in the Waf
+#TODO: remove it when this patch appears in the Waf
 # See https://gitlab.com/ita1024/waf/issues/2272
 if Utils.is_win32:
     # pylint: disable = wrong-import-position, ungrouped-imports

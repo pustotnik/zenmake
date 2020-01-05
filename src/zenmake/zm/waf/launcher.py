@@ -199,9 +199,6 @@ def run(cwd, cmd, wafCmdLine, bconfManager):
 
     _setWafMainModule(bconf.rootdir)
 
-    from zm.waf import wrappers
-    wrappers.setup()
-
     # Load waf add-ons to support the custom waf features
     from zm.waf import addons
     addons.loadAllAddOns()
