@@ -40,7 +40,7 @@ _commands = [
     ),
     _Command(
         name = 'configure',
-        aliases = ['cnf'],
+        aliases = ['cnf', 'cfg'],
         description = 'configure project',
     ),
     _Command(
@@ -167,16 +167,20 @@ _options = [
         runcmd = 'distclean',
     ),
     _Option(
-        names = ['-t', '--build-tests'],
-        dest = 'buildTests',
+        names = ['-t', '--with-tests'],
+        dest = 'withTests',
         choices = ('yes', 'no'),
-        commands = ['build', 'test'],
-        help = 'build tests',
+        const = 'yes', # it enables use of option as flag
+        nargs = '?', # it's necessary with use of 'const'
+        commands = ['configure', 'build', 'test'],
+        help = 'include tests',
     ),
     _Option(
         names = ['-T', '--run-tests'],
         dest = 'runTests',
         choices = ('all', 'on-changes', 'none'),
+        const = 'all', # it enables use of option as flag
+        nargs = '?', # it's necessary with use of 'const'
         commands = ['build', 'test'],
         help = 'run tests',
     ),
@@ -247,8 +251,8 @@ def _getReadyOptDefaults():
     return {
         'verbose': 0,
         'color': os.environ.get('NOCOLOR', '') and 'no' or 'auto',
-        'build-tests': { 'any': 'no',   'test' : 'yes' },
-        'run-tests'  : { 'any': 'none', 'test' : 'all' },
+        'with-tests' : { 'any': 'no',   'test' : 'yes' },
+        'run-tests' : { 'any': 'none', 'test' : 'all' },
         'destdir' : {
             'any': os.environ.get('DESTDIR', ''),
             'zipapp' : os.environ.get('DESTDIR', '.'),
@@ -425,8 +429,8 @@ class CmdLineParser(object):
             target.add_argument(*opt.names, **kwargs)
 
     def _postParse(self, parsedArgs):
-        if hasattr(parsedArgs, 'buildTests'):
-            parsedArgs.buildTests = parsedArgs.buildTests == 'yes'
+        if hasattr(parsedArgs, 'withTests'):
+            parsedArgs.withTests = parsedArgs.withTests == 'yes'
 
     def _fillCmdInfo(self, parsedArgs):
         args = _AutoDict(vars(parsedArgs))

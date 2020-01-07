@@ -104,7 +104,7 @@ class TestSuite(object):
             'distclean': False,
             'tasks': [],
             'verbose': 0,
-            'buildTests': False,
+            'withTests': False,
             'runTests': 'none',
             'bindir' : None,
             'libdir' : None,
@@ -157,8 +157,8 @@ class TestSuite(object):
                 wafArgs = ['distclean', CMDNAME] + CMNOPTS,
             ),
             dict(
-                args = [CMDNAME, '--build-tests', 'yes'],
-                expectedArgsUpdate = {'buildTests': True},
+                args = [CMDNAME, '--with-tests', 'yes'],
+                expectedArgsUpdate = {'withTests': True},
                 wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
@@ -212,7 +212,7 @@ class TestSuite(object):
             'distclean': False,
             'tasks': [],
             'verbose': 0,
-            'buildTests': True,
+            'withTests': True,
             'runTests': 'all',
             'buildroot' : None,
         }
@@ -262,8 +262,8 @@ class TestSuite(object):
                 wafArgs = ['distclean', 'build', CMDNAME] + CMNOPTS,
             ),
             dict(
-                args = [CMDNAME, '--build-tests', 'no'],
-                expectedArgsUpdate = {'buildTests': False},
+                args = [CMDNAME, '--with-tests', 'no'],
+                expectedArgsUpdate = {'withTests': False},
                 wafArgs = ['build', CMDNAME] + CMNOPTS,
             ),
             dict(
@@ -312,6 +312,7 @@ class TestSuite(object):
             'color': 'auto',
             'distclean': False,
             'verbose': 0,
+            'withTests': False,
             'bindir' : None,
             'libdir' : None,
             'prefix' : cli.DEFAULT_PREFIX,
