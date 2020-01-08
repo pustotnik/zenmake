@@ -156,7 +156,7 @@ wrapBldCtxAutoConf.onlyRunMethod = False
 
 def wrapUtilsGetProcess(_):
     """
-    Wrap Utils.get_process to have possibility of running from a zip package.
+    Wrap Utils.get_process to make it possible to run from a zip package.
     """
 
     from zm import WAF_DIR

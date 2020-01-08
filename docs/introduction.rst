@@ -22,7 +22,7 @@ Main features
     - Automatic build order and dependencies. (Thanks to Waf_)
     - Automatic reconfiguring: no need to run command 'configure'.
     - Compiler autodetection. (Thanks to Waf_)
-    - Building and running functional/unit tests including a possibility to
+    - Building and running functional/unit tests including an ability to
       build and run tests only on changes. Details are :ref:`here<buildtests>`.
     - Running custom scripts during a build phase.
     - Build configs in sub directories.
