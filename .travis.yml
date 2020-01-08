@@ -33,7 +33,7 @@ addons:
       - boost
       - boost-python
 
-# most problematic at first places
+# most problematic jobs are at first places
 jobs:
   include:
   - name: Python 2.7 on Linux
@@ -133,7 +133,7 @@ before_install:
 install:
   - |
       #python -m pip install --upgrade pip
-      python -m pip install pyyaml
+      python -m pip install 'pyyaml<5.3'
       python -m pip install pytest
       python -m pip install pytest-cov
       python -m pip install pytest-mock
