@@ -112,6 +112,7 @@ tasks = {
             'timeout' : 10, # in seconds, Python 3 only
             'shell'   : False,
         },
+        'conftests' : [ dict(act = 'check-headers', names = 'vector'), ]
     },
     'shlibmain-test' : {
         'features' : 'cxxprogram test',

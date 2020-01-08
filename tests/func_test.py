@@ -645,7 +645,7 @@ class TestFeatureTest(object):
     def _checkFeatureRTAllVariants(self, cmdLines):
 
         if cmdLines[0]:
-            events = self._runAndGather(cmdLines[0], False)
+            events = self._runAndGather(cmdLines[0], True)
             indexes = events['build']['indexes']
 
             assert len(indexes['linking']) == 4
@@ -708,11 +708,11 @@ class TestFeatureTest(object):
         checkMsgInOutput('Tests of shlibmain ...', output, 1)
 
     def testCmdBuildBTNoRTNone(self, projects):
-        cmdLine = ['build', '--build-tests', 'no', '--run-tests', 'none']
+        cmdLine = ['build', '--with-tests', 'no', '--run-tests', 'none']
         self._checkFeatureBTNoRTNone(cmdLine)
 
     def testCmdBuildBTYesRTNone(self, projects):
-        cmdLine = ['build', '--build-tests', 'yes', '--run-tests', 'none']
+        cmdLine = ['build', '--with-tests', 'yes', '--run-tests', 'none']
         self._checkFeatureBTYesRTNone(cmdLine)
 
         # clean
@@ -727,20 +727,20 @@ class TestFeatureTest(object):
     def testCmdBuildRTAllVariants(self, projects):
 
         self._checkFeatureRTAllVariants([
-            ['build', '--build-tests', 'no', '--run-tests', 'all'],
-            ['build', '--build-tests', 'yes', '--run-tests', 'all'],
-            ['build', '--build-tests', 'yes', '--run-tests', 'on-changes'],
+            ['build', '--with-tests', 'no', '--run-tests', 'all'],
+            ['build', '--with-tests', 'yes', '--run-tests', 'all'],
+            ['build', '--with-tests', 'yes', '--run-tests', 'on-changes'],
         ])
 
     def testCmdTest(self, projects):
         self._checkFeatureRTAllVariants([ None, ['test'], None ])
 
     def testCmdTestBTNoRTNone(self, projects):
-        cmdLine = ['test', '--build-tests', 'no', '--run-tests', 'none']
+        cmdLine = ['test', '--with-tests', 'no', '--run-tests', 'none']
         self._checkFeatureBTNoRTNone(cmdLine)
 
     def testCmdTestBTYesRTNone(self, projects):
-        cmdLine = ['test', '--build-tests', 'yes', '--run-tests', 'none']
+        cmdLine = ['test', '--with-tests', 'yes', '--run-tests', 'none']
         self._checkFeatureBTYesRTNone(cmdLine)
 
         # clean
@@ -755,9 +755,9 @@ class TestFeatureTest(object):
     def testCmdTestRTAllVariants(self, projects):
 
         self._checkFeatureRTAllVariants([
-            ['test', '--build-tests', 'no', '--run-tests', 'all'],
-            ['test', '--build-tests', 'yes', '--run-tests', 'all'],
-            ['test', '--build-tests', 'yes', '--run-tests', 'on-changes'],
+            ['test', '--with-tests', 'no', '--run-tests', 'all'],
+            ['test', '--with-tests', 'yes', '--run-tests', 'all'],
+            ['test', '--with-tests', 'yes', '--run-tests', 'on-changes'],
         ])
 
 class TestIndyCmd(object):

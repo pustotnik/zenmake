@@ -30,6 +30,7 @@ def _isBuildTypeNotConfigured(bconfMngr):
     zmcachedir = rootbconf.confPaths.zmcachedir
 
     for bconf in bconfMngr.configs:
+        # Check that all tasks have conf cache files
         for taskName in bconf.taskNames:
             taskVariant = assist.makeTaskVariantName(buildtype, taskName)
             fname = assist.makeCacheConfFileName(zmcachedir, taskVariant)

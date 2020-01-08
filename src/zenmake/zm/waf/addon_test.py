@@ -14,8 +14,8 @@ from collections import deque
 from waflib.TaskGen import feature, after
 from waflib import Build, Task
 from waflib.Build import BuildContext
-from zm.pyutils import viewitems, viewvalues
-from zm import log, cli, error
+from zm.pyutils import viewitems
+from zm import log, cli, error, utils
 from zm.autodict import AutoDict as _AutoDict
 from zm.waf.addons import precmd, postcmd
 
@@ -24,11 +24,14 @@ from zm.waf.addons import precmd, postcmd
 # from the 'build' to the 'test'.
 _shared = _AutoDict(
 
-    buildTests = False,
+    withTests = False,
     runTestsOnChanges = False,
 
     # tasks from buildconf
     confTasks = None,
+
+    # names of test tasks
+    testTaskNames = None,
 
     #task items to use in 'test' stage
     taskItems = {},
@@ -56,7 +59,7 @@ class TaskItem(object):
         self.deps = []
 
     def weight(self):
-        """ Get 'weight' of item. It can be used to sort. """
+        """ Get 'weight' of item. It can be used for sorting. """
 
         if not self.deps:
             return 1
@@ -90,25 +93,51 @@ def postOpt(ctx):
     _shared.runTestsOnChanges = False
     if 'runTests' in cliArgs:
         _shared.runTestsOnChanges = cliArgs.runTests == 'on-changes'
-    if 'buildTests' in cliArgs:
-        _shared.buildTests = cliArgs.buildTests
+    if 'withTests' in cliArgs:
+        _shared.withTests = cliArgs.withTests
 
 def _isSuitableForRunCmd(taskParams):
     return taskParams['$runnable'] or taskParams.get('run', None)
+
+@precmd('configure', beforeAddOn = ['runcmd'])
+def preConf(conf):
+    """ Preconfigure tasks """
+
+    tasks = conf.getbconf().tasks
+
+    testTaskNames = []
+    for name, params in viewitems(tasks):
+        features = utils.toList(params.get('features', []))
+
+        if 'test' in features:
+            testTaskNames.append(name)
+
+    _shared.testsFound = bool(testTaskNames)
+    _shared.testTaskNames = testTaskNames
+
+    if _shared.withTests:
+        if not _shared.testsFound:
+            log.warn('There are no tests to configure')
+        return
+
+    # Remove test tasks
+    for name in testTaskNames:
+        tasks.pop(name, None)
 
 @postcmd('configure', beforeAddOn = ['runcmd'])
 def postConf(conf):
     """ Configure tasks """
 
+    if not _shared.withTests or not _shared.testsFound:
+        return
+
     tasks = conf.getbconf().tasks
 
-    for params in viewvalues(tasks):
+    for name in _shared.testTaskNames:
+        params = tasks[name]
         features = params['features']
-
-        if 'test' not in features:
-            continue
-
         assert isinstance(features, list)
+
         # Adding 'runcmd' in the features here forces add-on 'runcmd' to
         # handle param 'run' in tasks with 'test'.
         # Even library can be marked as a test but it can not be executed
@@ -128,9 +157,10 @@ def preBuild(bld):
     buildtype = bld.validateVariant()
 
     tasks = bld.getTasks(buildtype)
+
     _shared.confTasks = tasks.copy()
     _shared.testsFound = False
-    ignoredBuildTasks = []
+    ignoredTasks = []
     for name, params in viewitems(tasks):
 
         features = params['features']
@@ -142,13 +172,16 @@ def preBuild(bld):
         # Otherwise all tests will be executed in 'build' command.
         params['features'] = [ x for x in features if x != 'runcmd' ]
 
-        if not _shared.buildTests:
-            ignoredBuildTasks.append(name)
+        if not _shared.withTests:
+            ignoredTasks.append(name)
 
         _shared.testsFound = True
 
-    for k in ignoredBuildTasks:
+    for k in ignoredTasks:
         tasks.pop(k, None)
+
+    if _shared.withTests and not _shared.testsFound:
+        log.warn('There are no tests to build')
 
 @postcmd('build')
 def postBuild(bld):
@@ -161,7 +194,11 @@ def postBuild(bld):
     runTests = False
     if 'runTests' in cli.selected.args:
         runTests = cli.selected.args.runTests
-        runTests = _shared.testsFound and runTests and runTests != 'none'
+        runTests = runTests and runTests != 'none'
+        if runTests and not _shared.testsFound:
+            log.warn('There are no tests to run')
+
+        runTests = _shared.testsFound and runTests
 
     if not runTests:
         # Prevent running of command 'test' after the current command by
@@ -227,7 +264,7 @@ def watchChanges(tgen):
 def applyFeatureTest(tgen):
     """ Some stuff for the feature 'test' """
 
-    if not _shared.buildTests:
+    if not _shared.withTests:
         # Ignore all build tasks for tests in this case
         for task in tgen.tasks:
             task.runnable_status = lambda: Task.SKIP_ME
@@ -322,6 +359,21 @@ class TestContext(BuildContext):
         if task.hasrun != Task.SUCCESS:
             if task.hasrun == Task.CRASHED:
                 msg = 'Test %r failed with exit code %r' % (task.name, task.err_code)
+            elif task.hasrun == Task.EXCEPTION:
+                msg = task.format_error()
+                if not log.verbose():
+                    # Make a shorter message without a full traceback
+
+                    msgLines = [x for x in msg.splitlines() if x] # remove empty lines
+                    msg = ''
+                    for line in msgLines:
+                        if line.startswith('WafError:'):
+                            msg = line[9:].strip()
+                            break
+
+                    # last non-empty string contains some message of a python exception
+                    msg += '\n  ' + msgLines[-1]
+                    msg = "Test %r failed:\n  %s" % (task.name, msg)
             else:
                 msg = task.format_error()
             raise error.ZenMakeError(msg)
