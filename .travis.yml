@@ -133,7 +133,16 @@ before_install:
 install:
   - |
       #python -m pip install --upgrade pip
-      python -m pip install 'pyyaml<5.3'
+      if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
+        PYTHON_VERSION=`python -c "import sys; print(''.join([str(x) for x in sys.version_info[:2]]))"`
+        if [[ "$PYTHON_VERSION" == "34" ]]; then
+          python -m pip install 'pyyaml<5.3'
+        else
+          python -m pip install pyyaml
+        fi
+      else
+        python -m pip install pyyaml
+      fi
       python -m pip install pytest
       python -m pip install pytest-cov
       python -m pip install pytest-mock
