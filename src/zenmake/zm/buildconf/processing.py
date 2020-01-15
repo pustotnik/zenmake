@@ -143,8 +143,8 @@ class Config(object):
             # 'includes'
             fixPathParam(taskparams, 'includes', startdir)
             fixPathParam(taskparams, 'export-includes', startdir)
-            # 'sys-lib-path'
-            fixPathParam(taskparams, 'sys-lib-path', startdir)
+            # 'libpath'
+            fixPathParam(taskparams, 'libpath', startdir)
             # 'run'
             fixRunParam(taskparams, startdir)
 

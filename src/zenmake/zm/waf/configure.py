@@ -972,8 +972,8 @@ class ConfigurationContext(WafConfContext):
         targetPath = joinpath(btypeDir, target)
 
         assist.handleTaskIncludesParam(taskParams, rootdir, startdir)
+        assist.handleTaskLibPathParam(taskParams, rootdir, startdir)
         assist.handleTaskExportDefinesParam(taskParams)
-        assist.handleTaskCommonPathParam(taskParams, 'sys-lib-path', rootdir, startdir)
 
         kwargs = dict(
             name     = taskName,
@@ -987,7 +987,7 @@ class ConfigurationContext(WafConfContext):
             ('rpath','rpath', 'tolist'),
             ('use', 'use', 'tolist'),
             ('includes', 'includes', None),
-            ('sys-lib-path', 'libpath', None),
+            ('libpath', 'libpath', None),
             ('ver-num', 'vnum', None),
             ('export-includes', 'export_includes', None),
             ('export-defines', 'export_defines', None),

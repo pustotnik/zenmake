@@ -402,14 +402,14 @@ taskparams
 
             'sys-libs' : 'm rt'
 
-    sys-lib-path
-        One or more paths to find system libraries. Usually you don't need to
+    libpath
+        One or more additional paths to find libraries. Usually you don't need to
         set it.
         Example:
 
         .. code-block:: python
 
-            'sys-lib-path' : '/usr/lib'
+            'libpath' : '/local/lib'
 
     rpath
         One or more paths to hard-code into the binary during

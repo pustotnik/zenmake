@@ -113,7 +113,7 @@ taskscheme = {
     'target' :      { 'type': 'str' },
     'features' :    { 'type': ('str', 'list-of-strs') },
     'sys-libs' :    { 'type': ('str', 'list-of-strs') },
-    'sys-lib-path': { 'type': ('str', 'list-of-strs') },
+    'libpath':      { 'type': ('str', 'list-of-strs') },
     'rpath' :       { 'type': ('str', 'list-of-strs') },
     'use' :         { 'type': ('str', 'list-of-strs') },
     'ver-num' :     { 'type': 'str' },

@@ -233,7 +233,7 @@ def validateConfTaskFeatures(taskParams, validFeatures):
     taskParams['features'] = features
     return features
 
-def _makeTaskPathParam(param, rootdir, startdir):
+def _makeTaskPathParam(param, rootdir, startdir, relative = True):
     """
     Make correct param with path(s) according to param and task stardir
     """
@@ -254,22 +254,27 @@ def _makeTaskPathParam(param, rootdir, startdir):
         path = utils.getNativePath(path)
         if not isabs(path):
             path = joinpath(_startdir, path)
-        # make path relative to the task startdir
-        path = normpath(relpath(path, startdir))
+        if relative:
+            # make path relative to the task startdir
+            path = normpath(relpath(path, startdir))
         result.append(path)
 
     return result
 
-def handleTaskCommonPathParam(taskParams, paramName, rootdir, startdir):
+def handleTaskLibPathParam(taskParams, rootdir, startdir):
     """
-    Make valid value of the paramName in the taskParams for build task
+    Make valid 'libpath' for build task
     """
 
+    paramName = 'libpath'
     param = taskParams.get(paramName, None)
     if param is None:
         return
 
-    taskParams[paramName] = _makeTaskPathParam(param, rootdir, startdir)
+    # Waf doesn't change 'libpath' relative to current ctx.path as for 'includes'.
+    # So we use absolute paths here.
+    taskParams[paramName] = _makeTaskPathParam(
+                param, rootdir, startdir, relative = False)
 
 def handleTaskIncludesParam(taskParams, rootdir, startdir):
     """
