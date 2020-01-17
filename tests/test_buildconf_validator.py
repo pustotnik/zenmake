@@ -301,7 +301,7 @@ class TestSuite(object):
                                ['toolchain'], KNOWN_TOOLCHAIN_KINDS)
 
         paramNames = (
-            'features', 'sys-libs', 'sys-lib-path', 'rpath', 'use', 'includes',
+            'features', 'sys-libs', 'libpath', 'rpath', 'use', 'includes',
             'cflags', 'cxxflags', 'cppflags', 'linkflags', 'defines',
         )
         self._checkParamsAsStrOrListOfStrs(buildconf, confnode, paramNames)
