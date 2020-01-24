@@ -10,7 +10,7 @@ import os
 from collections import defaultdict
 from copy import deepcopy
 
-from zm.constants import PLATFORM, TASK_FEATURES_LANGS, TASK_WAF_FEATURES_MAP
+from zm.constants import PLATFORM, KNOWN_PLATFORMS, TASK_FEATURES_LANGS, TASK_WAF_FEATURES_MAP
 from zm.constants import CWD, INVALID_BUILDTYPES, CONFTEST_DIR_PREFIX
 from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeLogicError, ZenMakeConfError
@@ -305,19 +305,34 @@ class Config(object):
     def _handleMatrixBuildtypes(self):
         destPlatform = PLATFORM
         matrixBuildTypes = defaultdict(set)
-        for entry in self._conf.matrix:
-            condition = entry.get('for', {})
+
+        def handleCondition(entry, name):
+            condition = entry.get(name, {})
             buildtypes = utils.toList(condition.get('buildtype', []))
             platforms = utils.toList(condition.get('platform', []))
+
             if buildtypes:
-                if destPlatform in platforms:
-                    matrixBuildTypes[destPlatform].update(buildtypes)
-                elif not platforms:
+                if not platforms:
                     matrixBuildTypes['all'].update(buildtypes)
+                elif name == 'for' and destPlatform in platforms:
+                    matrixBuildTypes[destPlatform].update(buildtypes)
+                elif name == 'not-for' and destPlatform not in platforms:
+                    matrixBuildTypes[destPlatform].update(buildtypes)
+
+            return platforms
+
+        for entry in self._conf.matrix:
+
+            enabledPlatforms = handleCondition(entry, 'for')
+            disabledPlatforms = handleCondition(entry, 'not-for')
 
             defaultBuildType = entry.get('set', {}).get('default-buildtype', None)
             if defaultBuildType is not None:
-                if not platforms or destPlatform in platforms:
+                if not enabledPlatforms:
+                    enabledPlatforms = KNOWN_PLATFORMS
+
+                enabledPlatforms = set(enabledPlatforms) - set(disabledPlatforms)
+                if destPlatform in enabledPlatforms:
                     matrixBuildTypes['default'] = defaultBuildType
 
         self._meta.matrix.buildtypes = matrixBuildTypes
@@ -628,7 +643,10 @@ class Config(object):
         if buildtype in self._meta.tasks:
             return self._meta.tasks[buildtype]
 
+        knownPlatforms = set(KNOWN_PLATFORMS)
         allTaskNames = self.taskNames
+        destPlatform = PLATFORM
+
         tasks = {}
 
         for taskName in tuple(allTaskNames):
@@ -639,30 +657,53 @@ class Config(object):
             # 2. Copy/replace exising params of selected buildtype from 'buildtypes'
             task.update(self._conf.buildtypes.get(buildtype, {}))
 
-        destPlatform = PLATFORM
-        for entry in self._conf.matrix:
-            condition = entry.get('for', None)
+        def getMatrixCondition(entry, name):
+            condition = entry.get(name, None)
+            result = dict( condition = condition )
+
             if condition is None:
-                log.warn("WARN: In buildconf.matrix found item without 'for'. "
+                if name == 'for':
+                    result['tasks'] = allTaskNames
+                else: # if name == 'not-for'
+                    assert name == 'not-for'
+                    result['tasks'] = set()
+                return result
+
+            buildtypes = set(utils.toList(condition.get('buildtype', [])))
+            platforms = set(utils.toList(condition.get('platform', [])))
+            tasks = set(utils.toList(condition.get('task', [])))
+
+            if not platforms:
+                platforms = knownPlatforms
+            if not buildtypes:
+                buildtypes = self.supportedBuildTypes
+
+            if destPlatform in platforms and buildtype in buildtypes:
+                if not tasks:
+                    tasks = set(allTaskNames)
+                tasks &= allTaskNames # use tasks from current config only
+                result['tasks'] = tasks
+            else:
+                result['tasks'] = set()
+
+            return result
+
+        for entry in self._conf.matrix:
+
+            enabled = getMatrixCondition(entry, 'for')
+            disabled = getMatrixCondition(entry, 'not-for')
+
+            if enabled['condition'] is None and disabled['condition'] is None:
+                log.warn("WARN: buildconf.matrix has an item without 'for' and 'not-for'. "
                          "It's probably a mistake.")
-                condition = {}
+
+            enabledTasks = tuple(enabled['tasks'])
+            disabledTasks = disabled['tasks']
             params = entry.get('set', {})
 
-            condTasks = utils.toList(condition.get('task', []))
-            condBuildtypes = utils.toList(condition.get('buildtype', []))
-            condPlatforms = utils.toList(condition.get('platform', []))
-
-            if condBuildtypes and buildtype not in condBuildtypes:
-                continue
-            if condPlatforms and destPlatform not in condPlatforms:
-                continue
-
-            if not condTasks:
-                condTasks = allTaskNames
-            else:
-                condTasks = set(condTasks) & allTaskNames
-
-            for taskName in tuple(condTasks):
+            for taskName in enabledTasks:
+                if taskName in disabledTasks:
+                    continue
                 task = tasks.setdefault(taskName, {})
                 task.update(params)
                 task.pop('default-buildtype', None)

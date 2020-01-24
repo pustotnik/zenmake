@@ -243,8 +243,18 @@ confscheme = {
     'matrix' : {
         'type' : 'list',
         'vars-type' : 'dict',
+        'dict-allow-unknown-keys' : False,
         'dict-vars' : {
             'for' : {
+                'type': 'dict',
+                'allow-unknown-keys' : False,
+                'vars' : {
+                    'task' : { 'type': ('str', 'list-of-strs') },
+                    'buildtype' : { 'type': ('str', 'list-of-strs') },
+                    'platform' : { 'type': ('str', 'list-of-strs') },
+                },
+            },
+            'not-for' : {
                 'type': 'dict',
                 'allow-unknown-keys' : False,
                 'vars' : {

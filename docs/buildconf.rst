@@ -261,9 +261,15 @@ platforms
 matrix
 """"""
     This variable describes extra/alternative way to set up build tasks.
-    It's a list of `dicts <buildconf-dict-def_>`_ with two variables:
-    ``set`` and ``for``. Variable ``for`` describes conditions for parameters
-    in variable ``set``. Variable ``for`` is a dict with variables:
+    It's a list of `dicts <buildconf-dict-def_>`_ with variables:
+    ``set`` and ``for`` and/or ``not-for``.
+    Variables ``for`` and ``not-for`` describe conditions for parameters
+    in variable ``set``. The variable ``for`` is like a ``if a`` and the variable
+    ``not-for`` is like a ``if not b`` where ``a`` and ``b`` are some conditions.
+    When both of them exist in the same item
+    they are like a ``if a and if not b``. In the case of the same condition
+    in both of them the variable ``not-for`` has higher priority.
+    Each this variable is a dict with one or more keys:
 
     :task:      Build task name or list of build task names.
                 It can be existing task(s) from tasks_ or new.
@@ -277,13 +283,13 @@ matrix
 
     Other features of matrix:
 
-    - If some variable is not specified in ``for`` it means that this is for
-      all possible values of this kind of condition. For example if no ``task``
-      it means for all existing tasks.
+    - If some variable is not specified in ``for``/``not-for`` it means that
+      this is for all possible values of this kind of condition. For example
+      if no ``task`` it means for all existing tasks.
     - Matrix overrides all values defined in tasks_ and buildtypes_
       if they are matching.
     - Items in ``set`` with the same names and the same conditions in ``for``
-      override items defined before.
+      and ``not-for`` override items defined before.
     - When ``set`` is empty or not defined it does nothing.
 
     You can use only ``matrix`` without tasks_ and buildtypes_ if you want.
@@ -305,7 +311,8 @@ matrix
               linkflags: -Wl,--as-needed
               default-buildtype: release-gcc
 
-          - for: { buildtype: release-gcc, platform: linux }
+          - for: { buildtype: release-gcc }
+            not-for : { platform : windows }
             set: { cxxflags: -fPIC -O3 }
 
           - for: { buildtype: [debug-clang, release-clang], platform: linux darwin }
