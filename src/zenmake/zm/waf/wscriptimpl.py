@@ -119,17 +119,6 @@ def configure(conf):
         # not desirable here)
         conf.setDirectEnv(taskVariant, baseEnv)
 
-    # run conf checkers
-    conf.runConfTests(buildtype, tasks)
-
-    # Configure tasks
-    for taskName, taskParams in viewitems(tasks):
-
-        # It's not needed anymore.
-        taskParams.pop('conftests', None)
-
-        taskVariant = taskParams['$task.variant']
-
         # Create env for task from root env with cleanup
         taskEnv = conf.makeTaskEnv(taskVariant)
 
@@ -142,6 +131,18 @@ def configure(conf):
 
         # configure all possible task params
         conf.configureTaskParams(bconf, taskParams)
+
+    # run conf checkers
+    conf.runConfTests(buildtype, tasks)
+
+    # save envs
+    for taskName, taskParams in viewitems(tasks):
+
+        # It's not needed anymore.
+        taskParams.pop('conftests', None)
+
+        taskVariant = taskParams['$task.variant']
+        conf.setenv(taskVariant)
 
         # Waf always loads all *_cache.py files in directory 'c4che' during
         # build step. So it loads all stored variants even though they

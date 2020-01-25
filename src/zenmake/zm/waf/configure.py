@@ -540,6 +540,7 @@ def _confTestCheckSysLibs(checkArgs, params):
     taskParams = params['taskParams']
 
     sysLibs = utils.toList(taskParams.get('sys-libs', []))
+    sysLibs.extend(utils.toList(taskParams.get('lib', [])))
     checkArgs['names'] = sysLibs
     _confTestCheckLibs(checkArgs, params)
 
@@ -653,6 +654,14 @@ def _confTestCheck(checkArgs, params):
     defname = checkArgs.pop('defname', None)
     if defname is not None:
         checkArgs['define_name'] = defname
+
+    libpath = taskParams.get('libpath', None)
+    if libpath:
+        checkArgs['libpath'] = libpath
+
+    includes = taskParams.get('includes', None)
+    if includes:
+        checkArgs['includes'] = includes
 
     parallelChecks = params.get('parallel-checks', None)
 
