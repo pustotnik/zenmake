@@ -23,7 +23,7 @@ Main features
 - Running custom scripts during a build phase.
 - Build configs in sub directories.
 - Supported platforms: GNU/Linux, MacOS, MS Windows. Some other
-  platforms like OpenBSD/FreeBSD should be work as well but it
+  platforms like OpenBSD/FreeBSD should work as well but it
   hasn't been tested.
 - Supported languages:
 
