@@ -134,7 +134,7 @@ def findConfFile(dpath, fname = None):
             return name
     return None
 
-def load(dirpath = None, filename = None, check = True):
+def load(dirpath = None, filename = None):
     """
     Load buildconf.
     Param 'dirpath' is optional param that is used as directory
@@ -167,8 +167,5 @@ def load(dirpath = None, filename = None, check = True):
         module = _loadYaml(joinpath(dirpath, filename))
     else:
         module = loadPyModule('zm.buildconf.fakeconf')
-
-    if check:
-        validate(module)
 
     return module

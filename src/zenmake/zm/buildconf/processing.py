@@ -814,8 +814,7 @@ class ConfManager(object):
                   % relpath(dirpath, CWD)
             raise ZenMakeError(msg)
 
-        buildconf = loader.load(check = False, dirpath = dirpath,
-                                filename = filename)
+        buildconf = loader.load(dirpath, filename)
 
         #TODO: optimize to validate only if buildconf files were changed
         #if assist.isBuildConfChanged(buildconf, buildroot) or _isDevVersion():

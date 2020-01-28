@@ -105,8 +105,8 @@ def testLoad(capsys, monkeypatch, tmpdir):
     import sys
     from zm.waf.assist import isBuildConfFake
 
-    buildconf = bconfloader.load(check = False)
-    buildconf = bconfloader.load(check = True)
+    buildconf = bconfloader.load()
+    bconfloader.validate(buildconf)
     # It should be fake
     assert isBuildConfFake(buildconf)
 
@@ -120,6 +120,7 @@ def testLoad(capsys, monkeypatch, tmpdir):
     monkeypatch.setattr(buildconf, 'tasks', 'something')
     with pytest.raises(SystemExit) as cm:
         buildconf = bconfloader.load()
+        bconfloader.validate(buildconf)
     captured = capsys.readouterr()
     assert cm.value.code
     assert captured.err
@@ -132,10 +133,12 @@ def testLoad(capsys, monkeypatch, tmpdir):
             break
 
     buildconf = bconfloader.load(dirpath = prjdir)
+    bconfloader.validate(buildconf)
     assert not isBuildConfFake(buildconf)
 
     monkeypatch.syspath_prepend(os.path.abspath(prjdir))
     buildconf = bconfloader.load()
+    bconfloader.validate(buildconf)
     assert not isBuildConfFake(buildconf)
 
     # find first real buildconf.yaml
@@ -146,10 +149,12 @@ def testLoad(capsys, monkeypatch, tmpdir):
             break
 
     buildconf = bconfloader.load(dirpath = prjdir)
+    bconfloader.validate(buildconf)
     assert not isBuildConfFake(buildconf)
 
     monkeypatch.syspath_prepend(os.path.abspath(prjdir))
     buildconf = bconfloader.load()
+    bconfloader.validate(buildconf)
     assert not isBuildConfFake(buildconf)
 
     testdir = tmpdir.mkdir("load.yaml")
