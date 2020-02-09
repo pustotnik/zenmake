@@ -7,6 +7,7 @@
 """
 
 import os
+import sys
 import tempfile
 import shutil
 import atexit
@@ -63,6 +64,9 @@ def gatherSysInfo():
     """
     Gather some useful system info.
     """
+
+    # Check that waf wrappers are loaded
+    assert 'zm.waf.wrappers' in sys.modules
 
     import subprocess
     import platform as _platform

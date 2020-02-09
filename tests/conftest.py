@@ -48,6 +48,7 @@ def testingBuildConf():
     return AutoDict(vars(buildconf))
 
 def pytest_report_header(config):
+    from zm.waf import wrappers
     from zm import sysinfo
     sysinfo.printSysInfo()
     return ""

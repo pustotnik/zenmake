@@ -199,3 +199,5 @@ def setup():
     Build.BuildContext.execute = wrapBldCtxAutoConf(Build.BuildContext.execute)
     for ctxCls in (Build.CleanContext, Build.ListContext):
         ctxCls.execute = wrapBldCtxNoLockInTop(ctxCls.execute)
+
+setup()

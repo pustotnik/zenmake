@@ -83,15 +83,15 @@ def run():
 
     try:
 
-        # force loading *feature*_init modules before CLI
         # pylint: disable = unused-import
-        from zm import features
-        # pylint: enable = unused-import
 
-        # set up waf wrappers
+        # force loading *feature*_init modules before CLI
+        from zm import features
+        # load waf wrappers
         # some indy commands rely on them too
         from zm.waf import wrappers
-        wrappers.setup()
+
+        # pylint: enable = unused-import
 
         # We cannot to know if buildconf is changed while buildroot is unknown.
         # This information is stored in the file that is located in buildroot.
