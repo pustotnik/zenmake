@@ -14,6 +14,7 @@
 #
 from os import path
 import sys
+import sphinx
 
 HERE = path.dirname(path.abspath(__file__))
 ZENMAKE_DIR = path.join(path.pardir, 'src', 'zenmake')
@@ -39,7 +40,7 @@ release = _t(_ver.current())
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-# needs_sphinx = '1.0'
+needs_sphinx = '1.5'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -119,6 +120,10 @@ html_context = {
         '_static/theme_overrides.css',  # fix wide tables in RTD theme
     ],
 }
+
+if sphinx.version_info[0] >= 2:
+    # https://github.com/readthedocs/sphinx_rtd_theme/issues/766
+    html4_writer=True
 
 # sphinx_bootstrap_theme
 #import sphinx_bootstrap_theme
