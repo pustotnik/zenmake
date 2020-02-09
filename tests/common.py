@@ -1,7 +1,7 @@
 # coding=utf-8
 #
 
-# pylint: skip-file
+# pylint: disable = missing-docstring, invalid-name, bad-continuation
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
@@ -23,7 +23,9 @@ except ImportError:
     from io import StringIO
 from zm import utils
 from zm import pyutils
-from tests import ZENMAKE_DIR
+import tests
+
+ZENMAKE_DIR = tests.ZENMAKE_DIR
 
 _tempdirs = []
 

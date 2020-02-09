@@ -12,159 +12,51 @@ from zm.error import ZenMakeError
 from zm.autodict import AutoDict as _AutoDict
 from zm.pyutils import maptype
 from zm.constants import PLATFORM
-from zm.utils import loadPyModule
 
-_langinfo = {
-    # 'env.var' - environment variable to set compiler
-    # 'env.flagvars' - env flag variables that have effect from system environment
-    # 'cfgenv.vars' - WAF ConfigSet variables that is used on 'configure' step
-    'c' : {
-        'env.var'      : 'CC',
-        'env.flagvars' : ('CFLAGS', 'CPPFLAGS', 'LDFLAGS', 'LINKFLAGS'),
-        'cfgenv.vars'  : ('CFLAGS', 'CPPFLAGS', 'LDFLAGS', 'LINKFLAGS', 'DEFINES'),
-        'compiler.list' : {
-            'module' : 'waflib.Tools.compiler_c',
-            'var'    : 'c_compiler',
-        },
-    },
-    'c++' : {
-        'env.var'   : 'CXX',
-        'env.flagvars' : ('CXXFLAGS', 'CPPFLAGS', 'LDFLAGS', 'LINKFLAGS'),
-        'cfgenv.vars'  : ('CXXFLAGS', 'CPPFLAGS', 'LDFLAGS', 'LINKFLAGS', 'DEFINES'),
-        'compiler.list' : {
-            'module' : 'waflib.Tools.compiler_cxx',
-            'var'    : 'cxx_compiler',
-        },
-    },
-    'asm' : {
-        'env.var'      : 'AS',
-        'env.flagvars' : ('ASFLAGS', 'ASLINKFLAGS', 'LDFLAGS'),
-        'cfgenv.vars'  : ('ASFLAGS', 'ASLINK', 'ASLINKFLAGS', 'DEFINES'),
-        'compiler.list' : {
-            'table' : {
-                'default':['gas', 'nasm'],
-            },
-        },
-    },
-}
+# to change outside in modules for task features
+langTable = {}
 
 # private cache
 _cache = _AutoDict()
 
-class CompilersInfo(object):
+def get(lang, platform = PLATFORM):
     """
-    Class for getting some compiler info for supported compilers
+    Return toolchains tuple for selected language for current platform
     """
 
-    __slots__ = ()
+    if not lang or lang not in langTable:
+        raise ZenMakeError("Compiler for feature '%s' is not supported" % lang)
 
-    @staticmethod
-    def allFlagVars():
-        """
-        For all compilers return list of all env flag variables that have effect
-        from system environment.
-        """
+    toolchains = _cache[platform][lang].get('toolchains')
+    if toolchains:
+        return toolchains
 
-        _vars = _cache.get('all.env.flag.vars', [])
-        if _vars:
-            return _vars
+    table = langTable[lang]
+    if table is None or not isinstance(table, maptype):
+        # Code of Waf was changed
+        raise NotImplementedError()
 
-        for info in _langinfo.values():
-            _vars.extend(info['env.flagvars'])
-        _vars = list(set(_vars))
-        _cache['all.env.flag.vars'] = _vars
-        return _vars
+    if platform == 'all':
+        toolchains = tuple(set(itertools.chain(*table.values())))
+    else:
+        _platform = platform
+        if platform == 'windows':
+            _platform = 'win32'
+        toolchains = table.get(_platform, table['default'])
 
-    @staticmethod
-    def allCfgEnvVars():
-        """
-        For all compilers return list of all WAF ConfigSet variables
-        that is used on 'configure' step.
-        """
+    _cache[platform][lang].toolchains = toolchains
+    return toolchains
 
-        _vars = _cache.get('all.cfg.env.vars', [])
-        if _vars:
-            return _vars
+def getAll(platform = PLATFORM):
+    """
+    Return tuple of unique compiler names supported on selected platform
+    """
 
-        for info in _langinfo.values():
-            _vars.extend(info['cfgenv.vars'])
-        _vars = list(set(_vars))
-        _cache['all.cfg.env.vars'] = _vars
-        return _vars
+    toolchains = _cache[platform].get('all-toolchains')
+    if toolchains:
+        return toolchains
 
-    @staticmethod
-    def allLangs():
-        """
-        Return list of all supported programming languages.
-        """
-
-        return _langinfo.keys()
-
-    @staticmethod
-    def allVarsToSetCompiler():
-        """
-        Return combined list of all environment variables to set compiler.
-        """
-
-        return [ x['env.var'] for x in _langinfo.values() ]
-
-    @staticmethod
-    def compilers(lang, platform = PLATFORM):
-        """
-        Return compilers set for selected language for current platform
-        """
-
-        if not lang or lang not in _langinfo:
-            raise ZenMakeError("Compiler for language '%s' is not supported" % lang)
-
-        compilers = _cache[platform][lang].get('compilers', [])
-        if compilers:
-            return compilers
-
-        getterInfo = _langinfo[lang]['compiler.list']
-        table = getterInfo.get('table')
-        if not table:
-            # load chosen module
-            module = loadPyModule(getterInfo['module'])
-            # and process var
-            table = getattr(module, getterInfo['var'], None)
-
-        if table is None or not isinstance(table, maptype):
-            # Code of Waf was changed
-            raise NotImplementedError()
-
-        if platform == 'all':
-            compilers = list(set(itertools.chain(*table.values())))
-        else:
-            _platform = platform
-            if platform == 'windows':
-                _platform = 'win32'
-            compilers = table.get(_platform, table['default'])
-
-        _cache[platform][lang].compilers = compilers
-        return compilers
-
-    @staticmethod
-    def allCompilers(platform = PLATFORM):
-        """
-        Return list of unique compiler names supported on selected platform
-        """
-
-        compilers = _cache[platform].get('all.compilers', [])
-        if compilers:
-            return compilers
-
-        compilers = [ c for l in _langinfo for c in CompilersInfo.compilers(l, platform) ]
-        compilers = list(set(compilers))
-        _cache[platform]['all.compilers'] = compilers
-        return compilers
-
-    @staticmethod
-    def varToSetCompiler(lang):
-        """
-        For selected language return environment variable to set compiler.
-        """
-
-        if not lang or lang not in _langinfo:
-            raise ZenMakeError("Compiler for '%s' is not supported" % lang)
-        return _langinfo[lang]['env.var']
+    toolchains = [ c for l in langTable for c in get(l, platform) ]
+    toolchains = tuple(set(toolchains))
+    _cache[platform]['all-toolchains'] = toolchains
+    return toolchains

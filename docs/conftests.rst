@@ -20,6 +20,9 @@ function to have universal way to work with any input arguments.
 These tests can be run sequentially or in parallel (see ``act`` = ``parallel``).
 And they all are called on **configure** step (command **configure**).
 
+When it's possible results of the same configuration tests are cached
+but not between runnings of ZenMake.
+
 These configuration tests in ``dict`` format:
 
     ``act`` = ``check-headers``

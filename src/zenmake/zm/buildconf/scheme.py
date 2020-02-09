@@ -6,30 +6,11 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-from zm import toolchains
 from zm.constants import KNOWN_PLATFORMS
 from zm.pyutils import stringtype
-from zm.cli import COMMAND_NAMES, OPTION_NAMES
-
-KNOWN_TOOLCHAIN_KINDS = ['auto-' + lang \
-                            for lang in toolchains.CompilersInfo.allLangs()]
-KNOWN_TOOLCHAIN_KINDS += toolchains.CompilersInfo.allCompilers(platform = 'all')
-
-class AnyAmountStrsKey(object):
-    """ Any amount of string keys"""
-    __slots__ = ()
-
-    def __eq__(self, other):
-        if not isinstance(other, AnyAmountStrsKey):
-            # don't attempt to compare against unrelated types
-            return NotImplemented # pragma: no cover
-        return True
-
-    def __hash__(self):
-        # necessary for instances to behave sanely in dicts and sets.
-        return hash(self.__class__)
-
-ANYAMOUNTSTRS_KEY = AnyAmountStrsKey()
+from zm.cli import config as cliConfig
+from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY
+from zm.features import ConfValidation
 
 def _genSameSchemeDict(keys, scheme):
     return { k:scheme for k in keys }
@@ -38,6 +19,7 @@ def _genConfTestsScheme(confnode, fullkey):
 
     # pylint: disable = unused-argument
 
+    # conf tests are in a list where each item has own scheme according 'act'
     scheme = {
         'type': 'list',
         'vars-type' : ('dict', 'func'),
@@ -89,6 +71,7 @@ _actToVars = {
 
 def _genConfTestsDictVarsScheme(confnode, fullkey):
 
+    # common params for any conf test
     schemeDictVars = {
         'act' :       {
             'type': 'str',
@@ -97,7 +80,9 @@ def _genConfTestsDictVarsScheme(confnode, fullkey):
         'mandatory' : { 'type': 'bool' },
     }
 
-    if fullkey.split('.')[-2] == 'checks':
+    keyParts = fullkey.split('.')
+    if keyParts[-2] == 'checks':
+        # add specific params for parallel conf tests
         schemeDictVars.update({
             'id' :     { 'type': 'str' },
             'before' : { 'type': 'str' },
@@ -106,70 +91,53 @@ def _genConfTestsDictVarsScheme(confnode, fullkey):
 
     act = confnode.get('act', '')
     if isinstance(act, stringtype):
+        # add params specific for this act
         schemeDictVars.update(_actToVars.get(act, {}))
     return schemeDictVars
 
 taskscheme = {
     'target' :      { 'type': 'str' },
     'features' :    { 'type': ('str', 'list-of-strs') },
-    'sys-libs' :    { 'type': ('str', 'list-of-strs') },
-    'libpath':      { 'type': ('str', 'list-of-strs') },
-    'rpath' :       { 'type': ('str', 'list-of-strs') },
     'use' :         { 'type': ('str', 'list-of-strs') },
-    'ver-num' :     { 'type': 'str' },
-    'includes':     { 'type': ('str', 'list-of-strs') },
     'source' :      {
         'type': ('str', 'list-of-strs', 'dict'),
         'dict-allow-unknown-keys' : False,
         'dict-vars' : {
-            'include' :    { 'type': 'str' },
-            'exclude' :    { 'type': 'str' },
+            'include' :    { 'type': ('str', 'list-of-strs') },
+            'exclude' :    { 'type': ('str', 'list-of-strs') },
             'ignorecase' : { 'type': 'bool' },
         },
     },
-    'toolchain' : {
-        'type': ('str', 'list-of-strs'),
-        'allowed' : KNOWN_TOOLCHAIN_KINDS,
-    },
-    'asflags' :   { 'type': ('str', 'list-of-strs') },
-    'aslinkflags' : { 'type': ('str', 'list-of-strs') },
-    'cflags' :    { 'type': ('str', 'list-of-strs') },
-    'cxxflags' :  { 'type': ('str', 'list-of-strs') },
-    'cppflags' :  { 'type': ('str', 'list-of-strs') },
-    'linkflags' : { 'type': ('str', 'list-of-strs') },
-    'defines' :   { 'type': ('str', 'list-of-strs') },
-    'export-includes' : { 'type': ('bool', 'str', 'list-of-strs') },
-    'export-defines' :  { 'type': ('bool', 'str', 'list-of-strs') },
+    'toolchain' : { 'type': ('str', 'list-of-strs') },
     'install-path' : { 'type': ('bool', 'str') },
-    'run' :       {
-        'type' : 'dict',
-        'allow-unknown-keys' : False,
-        'vars' : {
-            'cmd' : { 'type': ('str', 'func') },
-            'cwd' : { 'type': 'str' },
-            'env' : {
-                'type': 'dict',
-                'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
-            },
-            'repeat' : { 'type': 'int' },
-            'timeout' : { 'type': 'int' },
-            'shell' : { 'type': 'bool' },
-        },
-    },
     'conftests' : _genConfTestsScheme,
     'normalize-target-name' : { 'type': 'bool' },
-    'object-file-counter' : { 'type': 'int' },
 }
 
-_optionsOptDictTypeScheme = _genSameSchemeDict(list(COMMAND_NAMES) + ['any'], {
-    'type' : ('bool', 'int', 'str'),
-})
+taskscheme.update(ConfValidation.getTaskSchemeSpecs())
 
-_optionsOptScheme = _genSameSchemeDict(OPTION_NAMES, {
-    'type' : ('bool', 'int', 'str', 'dict'),
-    'allow-unknown-keys' : False,
-    'dict-vars' : _optionsOptDictTypeScheme,
-})
+def _genOptionsVarsScheme(confnode, fullkey):
+
+    # pylint: disable = unused-argument
+
+    cmdNames = [ x.name for x in cliConfig.commands ]
+    optNames = [ x.names[-1].replace('-', '', 2) for x in cliConfig.options ]
+
+    optionsOptDictTypeScheme = _genSameSchemeDict(
+        cmdNames + ['any'],
+        { 'type' : ('bool', 'int', 'str'), }
+    )
+
+    scheme = _genSameSchemeDict(
+        optNames,
+        {
+            'type' : ('bool', 'int', 'str', 'dict'),
+            'allow-unknown-keys' : False,
+            'dict-vars' : optionsOptDictTypeScheme,
+        }
+    )
+
+    return scheme
 
 confscheme = {
     'startdir' : { 'type': 'str' },
@@ -186,7 +154,7 @@ confscheme = {
     'options' : {
         'type' : 'dict',
         'allow-unknown-keys' : False,
-        'vars' : _optionsOptScheme,
+        'vars' : _genOptionsVarsScheme,
     },
     'subdirs' : {
         'type' : 'list-of-strs',
@@ -223,10 +191,7 @@ confscheme = {
         'vars-type' : 'dict',
         'vars-allow-unknown-keys' : False,
         'vars' : {
-            'kind' : {
-                'type': 'str',
-                'allowed' : KNOWN_TOOLCHAIN_KINDS,
-            },
+            'kind' : { 'type': 'str' },
             ANYAMOUNTSTRS_KEY : { 'type' : 'str' },
         },
     },

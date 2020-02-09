@@ -347,34 +347,48 @@ taskparams
         It describes type of the build task. Can be one value or list
         of values. Supported values:
 
-        :cstlib:
-            Means that result of the task is a static library for C code.
-        :cshlib:
-            Means that result of the task is a shared library for C code.
-        :cprogram:
-            Means that result of the task is an executable file for C code.
-        :cxxstlib:
-            Means that result of the task is a static library for C++ code.
-        :cxxshlib:
-            Means that result of the task is a shared library for C++ code.
-        :cxxprogram:
-            Means that result of the task is an executable file for C++ code.
         :c:
-            Means that the task has a C code. Optional.
+            Means that the task has a C code. Optional in most cases.
+            Also it's a 'lang' feature for C language.
         :cxx:
-            Means that the task has a C++ code. Optional.
+            Means that the task has a C++ code. Optional in most cases.
+            Also it's a 'lang' feature for C++ language.
+        :asm:
+            Means that the task has an Assembler code. Optional in most cases.
+            Also it's a 'lang' feature for Assembler language.
+        :<lang>stlib:
+            Means that result of the task is a static library for the <lang> code.
+            For example: ``cstlib``, ``cxxstlib``, etc.
+        :<lang>shlib:
+            Means that result of the task is a shared library for the <lang> code.
+            For example: ``cshlib``, ``cxxshlib``, etc.
+        :<lang>program:
+            Means that result of the task is an executable file for the <lang> code.
+            For example: ``cprogram``, ``cxxprogram``, etc.
         :stlib:
-            Means that result of the task is a static library. Type of code
+            Means that result of the task is a static library. It's a special
+            alies where type of code
             is detected by file extensions found in
             `source <buildconf-taskparams-source_>`_.
+            Be careful - it's slower than using of form <lang>stlib,
+            e.g. ``cstlib``, ``cxxstlib``, etc.
+            Also see note below.
         :shlib:
-            Means that result of the task is a shared library. Type of code
+            Means that result of the task is a shared library. It's a special
+            alies where type of code
             is detected by file extensions found in
             `source <buildconf-taskparams-source_>`_.
+            Be careful - it's slower than using of form <lang>shlib,
+            e.g. ``cshlib``, ``cxxshlib``, etc.
+            Also see note below.
         :program:
-            Means that result of the task is an executable file. Type of code
+            Means that result of the task is an executable file. It's a special
+            alies where type of code
             is detected by file extensions found in
             `source <buildconf-taskparams-source_>`_.
+            Be careful - it's slower than using of form <lang>program,
+            e.g. ``cprogram``, ``cxxprogram``, etc.
+            Also see note below.
         :runcmd:
             Means that the task has parameter ``run`` and should run some
             command. It's optional because ZenMake detects this feature
@@ -388,9 +402,27 @@ taskparams
 
         Some features can be mixed. For example ``cxxprogram`` can be mixed
         with ``c`` for C/C++ mixed build tasks. But ``cxxshlib`` cannot be
-        mixed for example with ``cxxprogram``. Using of features ``c`` or ``cxx``
-        doesn't make sense without \*stlib/\*shlib/\*program features.
+        mixed for example with ``cxxprogram``. Using of such features as
+        ``c`` or ``cxx`` doesn't make sense without
+        \*stlib/\*shlib/\*program features in most cases.
         Features ``runcmd`` and ``test`` can be mixed with any feature.
+
+        .. note::
+
+            If you use any of alieses ``stlib``, ``shlib``, ``program``
+            (don't confuse with features in form of <lang>stlib,
+            <lang>shlib, <lang>program) and
+            patterns in `source <buildconf-taskparams-source_>`_ then you cannot
+            use patterns without specifying file extension at the end of
+            each pattern in the parameter 'include'.
+
+            .. code-block:: python
+
+                'source' :  { 'include': '**/*.cpp' }             # correct
+                'source' :  { 'include': ['**/*.c', '**/*.cpp'] } # correct
+                'source' :  { 'include': '**' }                   # incorrect
+
+            If you don't use these alieses you can use any patterns.
 
     target
         Name of resulting file. The target will have different extension and
@@ -465,6 +497,7 @@ taskparams
               not regular expressions.
             - The symbol ``**`` enable recursion. Complex folder hierarchies may
               take a lot of time, so use with care.
+            - The '..' sequence does not represent the parent directory.
 
         So such a ``dict`` can contain fields:
 
@@ -493,6 +526,9 @@ taskparams
             # or
             'source' :  { 'include': '**/*.cpp' }
 
+            # get all *.c and *.cpp files in the 'startdir' recursively
+            'source' :  { 'include': ['**/*.c', '**/*.cpp'] }
+
             # get all *.cpp files in the 'startdir'/mylib recursively
             'source' :  dict( include = 'mylib/**/*.cpp' )
 
@@ -518,17 +554,20 @@ taskparams
         ``auto-*`` where ``*`` is programming language, for example
         ``auto-c`` or ``auto-c++``.
 
-        | Known names for C: ``gcc``, ``clang``, ``msvc``, ``icc``, ``xlc``,
-                             ``suncc``, ``irixcc``.
-        | Known names for C++: ``g++``, ``clang++``, ``msvc``, ``icpc``,
-                               ``xlc++``, ``sunc++``.
-        | Known names for Assembler: ``gas``, ``nasm``.
+        | Known names for C: ``auto-c``, ``gcc``, ``clang``, ``msvc``,
+                             ``icc``, ``xlc``, ``suncc``, ``irixcc``.
+        | Known names for C++: ``auto-c++``, ``g++``, ``clang++``, ``msvc``,
+                               ``icpc``, ``xlc++``, ``sunc++``.
+        | Known names for Assembler: ``auto-asm``, ``gas``, ``nasm``.
 
         .. note::
 
-            If no toolchain was given ZenMake tries to set ``auto-*`` itself by
-            values of `features <buildconf-taskparams-features_>`_. But
-            feature with autodetecting of language by file extensions cannot
+            If you don't set ``toolchain`` then ZenMake will try to
+            set ``auto-*`` itself
+            according values in `features <buildconf-taskparams-features_>`_.
+
+        ..
+            But feature with autodetecting of language by file extensions cannot
             be used for autodetecting of correct ``auto-*``. For example with
             ``cxxshlib`` ZenMake can set ``auto-c++`` itself but not
             with ``shlib``.

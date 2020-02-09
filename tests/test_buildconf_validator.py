@@ -1,7 +1,9 @@
 # coding=utf-8
 #
 
-# pylint: skip-file
+# pylint: disable = wildcard-import, unused-wildcard-import
+# pylint: disable = missing-docstring, invalid-name, bad-continuation
+# pylint: disable = no-member, attribute-defined-outside-init
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
@@ -10,14 +12,13 @@
 
 import os
 from collections import defaultdict
-import shutil
 import pytest
 from zm.error import *
 from zm.constants import KNOWN_PLATFORMS
 from zm.pyutils import stringtype, viewitems
-import tests.common as cmn
-from zm.buildconf.scheme import KNOWN_TOOLCHAIN_KINDS, KNOWN_CONFTEST_ACTS
+from zm.buildconf.scheme import KNOWN_CONFTEST_ACTS
 from zm.buildconf.validator import Validator
+import tests.common as cmn
 
 validator = Validator()
 
@@ -28,6 +29,8 @@ class FakeBuildConf:
 class TestSuite(object):
 
     def saveparam(func):
+        # pylint: disable = no-self-argument
+
         def wrapper(self, *args, **kwargs):
 
             confnode = kwargs.get('confnode') or args[1]
@@ -39,13 +42,14 @@ class TestSuite(object):
                 old[param] = confnode[param]
 
             try:
+                # pylint: disable = not-callable
                 func(self, *args, **kwargs)
             finally:
                 for k, v in viewitems(old):
                     confnode[k] = v
         return wrapper
 
-    def _validateBoolValues(self, buildconf, confnode, param, validVals = None):
+    def _validateBoolValues(self, buildconf, confnode, param, _ = None):
         confnode[param] = True
         validator.validate(buildconf)
         confnode[param] = False
@@ -111,7 +115,8 @@ class TestSuite(object):
 
     def _validateFuncValues(self, buildconf, confnode, param, validVals = None):
         if not validVals:
-            def f(): pass
+            def f():
+                pass
             confnode[param] = f
             validator.validate(buildconf)
             confnode[param] = lambda: 1
@@ -297,9 +302,6 @@ class TestSuite(object):
         )
         self._checkParamsAsStr(buildconf, confnode, paramNames)
 
-        self._checkParamsAsStrOrListOfStrs(buildconf, confnode,
-                               ['toolchain'], KNOWN_TOOLCHAIN_KINDS)
-
         paramNames = (
             'features', 'sys-libs', 'libpath', 'rpath', 'use', 'includes',
             'cflags', 'cxxflags', 'cppflags', 'linkflags', 'defines',
@@ -445,8 +447,6 @@ class TestSuite(object):
             buildconf.toolchains[tool] = {}
             validator.validate(buildconf)
             self._checkParamAsDict(buildconf, buildconf.toolchains, tool)
-            self._checkParamsAsStr(buildconf, buildconf.toolchains[tool],
-                               ['kind'], KNOWN_TOOLCHAIN_KINDS)
             paramNames = [cmn.randomstr() for i in range(10)]
             for param in paramNames:
                 assert param != 'kind'
@@ -460,9 +460,6 @@ class TestSuite(object):
         setattr(buildconf, 'buildtypes', {
             'testbtype' : {}
         })
-
-        self._checkParamsAsStrOrListOfStrs(buildconf, buildconf.buildtypes['testbtype'],
-                               ['toolchain'], KNOWN_TOOLCHAIN_KINDS + toolNames)
 
     def testValidateParamPlatforms(self):
 

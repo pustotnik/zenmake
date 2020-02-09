@@ -17,18 +17,12 @@ from waflib import Task
 from zm.pyutils import viewitems
 from zm import log, error
 from zm.constants import PLATFORM, EXE_FILE_EXTS
-from zm.waf.addons import postcmd
+from zm.features import postcmd
 
 if PLATFORM == 'windows':
     CMDFILE_EXTS = EXE_FILE_EXTS + '.py,.pl'
 else:
     CMDFILE_EXTS = EXE_FILE_EXTS
-
-@postcmd('options')
-def postOpt(ctx):
-    """ Extra init after wscript.options """
-
-    ctx.validUserTaskFeatures.add('runcmd')
 
 def _processCmdLine(conf, cwd, shell, cmdArgs):
     """ Get and process 'cmd' at 'configure' stage """

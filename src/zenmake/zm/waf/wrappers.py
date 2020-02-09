@@ -12,8 +12,7 @@ import subprocess
 
 from waflib import Options, Context, Configure, Utils
 from waflib.ConfigSet import ConfigSet
-from zm import log, utils
-from zm.pyutils import stringtype
+from zm import log
 from zm.pypkg import PkgPath
 from zm.waf import assist, launcher
 
@@ -65,6 +64,7 @@ def _handleNoLockInTop(ctx, envGetter):
 
     # It's needed to rerun command to apply changes in Context otherwise
     # Waf won't work correctly.
+    # TODO: try to find a way without rerun of command
     launcher.runCommand(ctx.bconfManager, ctx.cmd)
     return True
 
@@ -174,26 +174,6 @@ def wrapUtilsGetProcess(_):
 
     return execute
 
-def getFileExtensions(src):
-    """
-    Returns the file extensions for the list of files given as input
-
-    :param src: files to process
-    :list src: list of string or :py:class:`waflib.Node.Node`
-    :return: list of file extensions
-    :rtype: set of strings
-	"""
-
-    # This implementation gives more optimal result for using in
-    # waflib.Tools.c_aliases.sniff_features
-
-    ret = set()
-    for path in utils.toList(src):
-        if not isinstance(path, stringtype):
-            path = path.name
-        ret.add(path[path.rfind('.') + 1:])
-    return ret
-
 #TODO: remove it when this patch appears in the Waf
 # See https://gitlab.com/ita1024/waf/issues/2272
 if Utils.is_win32:
@@ -213,9 +193,6 @@ def setup():
     """ Setup some wrappers for Waf """
 
     Utils.get_process = wrapUtilsGetProcess(Utils.get_process)
-
-    from waflib.Tools import c_aliases
-    c_aliases.get_extensions = getFileExtensions
 
     from waflib import Build
 

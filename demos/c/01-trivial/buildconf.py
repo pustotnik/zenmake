@@ -1,7 +1,8 @@
 
 tasks = {
     'test' : {
-        'features'  : 'cprogram',
+        #'features'  : 'cprogram',
+        'features'  : 'program',
         'source'    : 'test.c',
     },
 }

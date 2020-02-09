@@ -13,16 +13,20 @@
 
 import os
 import sys
+from copy import deepcopy
 import pytest
 
 from waflib import Context, Options, Build
 from waflib.ConfigSet import ConfigSet
 from waflib.Errors import WafError
-import tests.common as cmn
 from zm.autodict import AutoDict
 from zm import toolchains, utils, log
+from zm.error import *
 from zm.waf import context, configure
+from zm.buildconf.processing import Config as BuildConfig
 from zm.waf.configure import ConfigurationContext
+from zm.features import ToolchainVars, c, cxx
+from tests.common import asRealConf
 
 joinpath = os.path.join
 
@@ -67,9 +71,9 @@ def cfgctx(monkeypatch, mocker, tmpdir):
     def load(toolchain):
         self = cfgCtx
         env = self.all_envs[cfgCtx.variant]
-        for lang in ('c', 'c++'):
-            compilers = toolchains.CompilersInfo.compilers(lang)
-            envVar    = toolchains.CompilersInfo.varToSetCompiler(lang)
+        for lang in ('c', 'cxx'):
+            compilers = toolchains.get(lang)
+            envVar    = ToolchainVars.varToSetToolchain(lang)
             if toolchain in compilers:
                 env[envVar] = ['/usr/bin/%s' % toolchain]
         env.loaded = 'loaded-' + toolchain
@@ -258,6 +262,78 @@ def testRunConfTestsUnknown(mocker, cfgctx):
     with pytest.raises(WafError):
         ctx.runConfTests(buildtype, tasks)
 
+def _checkToolchainNames(ctx, buildconf, buildtype, expected):
+    bconf = BuildConfig(asRealConf(buildconf))
+    bconf.applyBuildType(buildtype)
+    assert sorted(ctx.getToolchainNames(bconf)) == sorted(expected)
+
+def testToolchainNames(testingBuildConf, cfgctx):
+
+    ctx = cfgctx
+
+    buildconf = testingBuildConf
+
+    # CASE: invalid use
+    bconf = BuildConfig(asRealConf(buildconf))
+    with pytest.raises(ZenMakeLogicError):
+        _ = ctx.getToolchainNames(bconf)
+
+    buildconf.buildtypes['debug-gxx'] = {}
+    buildconf.buildtypes.default = 'debug-gxx'
+    buildtype = 'debug-gxx'
+
+    # CASE: just empty toolchains
+    buildconf = deepcopy(testingBuildConf)
+    buildconf.tasks.test1.param1 = '111'
+    buildconf.tasks.test2.param2 = '222'
+    bconf = BuildConfig(asRealConf(buildconf))
+    bconf.applyBuildType(buildtype)
+    # it returns tuple but it can return list so we check by len
+    assert len(ctx.getToolchainNames(bconf)) == 0
+
+    # CASE: tasks with the same toolchain
+    buildconf = deepcopy(testingBuildConf)
+    buildconf.tasks.test1.toolchain = 'gxx'
+    buildconf.tasks.test2.toolchain = 'gxx'
+    _checkToolchainNames(ctx, buildconf, buildtype, ['gxx'])
+
+    # CASE: tasks with different toolchains
+    buildconf = deepcopy(testingBuildConf)
+    buildconf.tasks.test1.toolchain = 'gxx'
+    buildconf.tasks.test2.toolchain = 'lgxx'
+    _checkToolchainNames(ctx, buildconf, buildtype, ['gxx', 'lgxx'])
+
+    ### matrix
+
+    # CASE: empty toolchains in matrix
+    buildconf = deepcopy(testingBuildConf)
+    buildconf.matrix = [
+        {
+            'for' : { 'task' : 'test1' },
+            'set' : { 'param1' : '11', 'param2' : '22' }
+        },
+    ]
+    bconf = BuildConfig(asRealConf(buildconf))
+    bconf.applyBuildType(buildtype)
+    # it returns tuple but it can return list so we check by len
+    assert len(ctx.getToolchainNames(bconf)) == 0
+
+    # CASE: tasks in matrix with the same toolchain
+    buildconf = deepcopy(testingBuildConf)
+    buildconf.matrix = [
+        { 'for' : { 'task' : 'test1' }, 'set' : { 'toolchain' : 'gxx' } },
+        { 'for' : { 'task' : 'test2' }, 'set' : { 'toolchain' : 'gxx' } },
+    ]
+    _checkToolchainNames(ctx, buildconf, buildtype, ['gxx'])
+
+    # CASE: tasks in matrix with the different toolchains
+    buildconf = deepcopy(testingBuildConf)
+    buildconf.matrix = [
+        { 'for' : { 'task' : 'test1' }, 'set' : { 'toolchain' : 'gxx' } },
+        { 'for' : { 'task' : 'test2' }, 'set' : { 'toolchain' : 'lgxx' } },
+    ]
+    _checkToolchainNames(ctx, buildconf, buildtype, ['gxx', 'lgxx'])
+
 def testLoadToolchains(mocker, cfgctx):
 
     ctx = cfgctx
@@ -266,28 +342,36 @@ def testLoadToolchains(mocker, cfgctx):
     bconf = AutoDict()
     env = AutoDict()
 
+    def setToolchains(bconf, toolchainNames):
+        ctx.validToolchainNames = set(toolchainNames)
+        ctx.validToolchainNames.update(set(bconf.customToolchains.keys()))
+        bconf.tasks = AutoDict()
+        for i, name in enumerate(toolchainNames):
+            bconf.tasks['task%d' % i].toolchain = name
+
     #with pytest.raises(WafError):
     #    ctx.loadToolchains(bconf, env)
 
     # load existing tools by name
+    toolchainNames = ['gcc', 'g++', 'g++']
+    setToolchains(bconf, toolchainNames)
     bconf.customToolchains = {}
-    bconf.toolchainNames = ['gcc', 'g++', 'g++']
     toolchainsEnvs = ctx.loadToolchains(bconf, env)
-    for name in bconf.toolchainNames:
+    for name in toolchainNames:
         assert name in toolchainsEnvs
         assert toolchainsEnvs[name].loaded == 'loaded-' + name
     assert ctx.variant == 'old'
 
     # auto load existing tool by lang
     bconf.customToolchains = {}
-    bconf.toolchainNames = ['auto-c', 'auto-c++']
+    toolchainNames = ['auto-c', 'auto-c++']
+    setToolchains(bconf, toolchainNames)
     toolchainsEnvs = ctx.loadToolchains(bconf, env)
     assert toolchainsEnvs
-    for name in bconf.toolchainNames:
+    for name in toolchainNames:
         assert name in toolchainsEnvs
-        lang = name[5:]
-        envVar = toolchains.CompilersInfo.varToSetCompiler(lang)
-        #compilers = toolchains.CompilersInfo.compilers(lang)
+        lang = name[5:].replace('+', 'x')
+        envVar = ToolchainVars.varToSetToolchain(lang)
         assert envVar in toolchainsEnvs[name]
         assert toolchainsEnvs[name][envVar]
 
@@ -300,7 +384,8 @@ def testLoadToolchains(mocker, cfgctx):
             'vars' : { 'CXX' : 'some_path/g++'} ,
         })
     }
-    bconf.toolchainNames = ['local-g++', 'g++']
+    toolchainNames = ['local-g++', 'g++']
+    setToolchains(bconf, toolchainNames)
     toolchainsEnvs = ctx.loadToolchains(bconf, env)
     assert toolchainsEnvs['g++'].loaded == 'loaded-g++'
     assert toolchainsEnvs['local-g++'].loaded == 'loaded-g++'

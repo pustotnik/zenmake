@@ -1,7 +1,9 @@
 # coding=utf-8
 #
 
-# pylint: skip-file
+# pylint: disable = wildcard-import, unused-wildcard-import
+# pylint: disable = missing-docstring, invalid-name, bad-continuation
+# pylint: disable = too-many-statements, protected-access, unused-variable
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
@@ -11,15 +13,14 @@
 import os
 from copy import deepcopy
 import pytest
-from tests.common import asRealConf, randomstr
-from zm.buildconf.processing import Config as BuildConfig
-from zm.buildconf.processing import ConfManager as BuildConfManager
-from zm.buildconf.paths import ConfPaths as BuildConfPaths
-from zm import toolchains, utils
-from zm.buildconf import loader as bconfloader
+
 from zm.autodict import AutoDict
 from zm.error import *
 from zm.constants import *
+from zm import utils
+from zm.features import ToolchainVars
+from zm.buildconf.processing import Config as BuildConfig
+from tests.common import asRealConf, randomstr
 
 joinpath = os.path.join
 
@@ -365,8 +366,6 @@ class TestSuite(object):
         self._checkTasks(buildconf, buildtype, expected)
 
         # CASE: influence of compiler flags from system environment
-        cinfo = toolchains.CompilersInfo
-
         buildconf = deepcopy(testingBuildConf)
         buildconf.tasks.test1.param1 = '111'
         buildconf.tasks.test2.param2 = '222'
@@ -374,7 +373,7 @@ class TestSuite(object):
         testOldVal = 'val1 val2'
         testNewVal = 'val11 val22'
         testNewValAsList = utils.toList(testNewVal)
-        flagVars = cinfo.allFlagVars()
+        flagVars = ToolchainVars.allFlagVars()
         for var in flagVars:
             param = var.lower()
             buildconf.buildtypes.mybuildtype = { param : testOldVal }
@@ -390,11 +389,10 @@ class TestSuite(object):
             monkeypatch.delenv(var, raising = False)
 
         # CASE: influence of compiler var from system environment
-        cinfo = toolchains.CompilersInfo
         buildconf = deepcopy(testingBuildConf)
         testOldVal = 'old-compiler'
         testNewVal = 'new-compiler'
-        toolchainVars = cinfo.allVarsToSetCompiler()
+        toolchainVars = ToolchainVars.allVarsToSetToolchain()
         for var in toolchainVars:
             param = var.lower()
             buildconf.tasks.test1.features = ''
@@ -409,8 +407,8 @@ class TestSuite(object):
             self._checkTasks(buildconf, buildtype, expected)
             monkeypatch.delenv(var, raising = False)
 
-    def testTasksMatrix(self, testingBuildConf, monkeypatch):
-        clicmd = AutoDict()
+    def testTasksMatrix(self, testingBuildConf):
+
         buildtype = 'mybt'
         baseMatrix = [
             { 'for' : { 'buildtype' : 'mybt' }  },
@@ -527,85 +525,11 @@ class TestSuite(object):
             't4': {'p5': '1', 'p6': '2', 'p3': '3'},
         })
 
-    def _checkToolchainNames(self, buildconf, buildtype, expected):
-        bconf = BuildConfig(asRealConf(buildconf))
-        bconf.applyBuildType(buildtype)
-        assert sorted(bconf.toolchainNames) == sorted(expected)
-        # to force covering of cache
-        assert sorted(bconf.toolchainNames) == sorted(expected)
-
-    def testToolchainNames(self, testingBuildConf):
-
-        buildconf = testingBuildConf
-
-        # CASE: invalid use
-        bconf = BuildConfig(asRealConf(buildconf))
-        with pytest.raises(ZenMakeLogicError):
-            empty = bconf.toolchainNames
-
-        buildconf.buildtypes['debug-gxx'] = {}
-        buildconf.buildtypes.default = 'debug-gxx'
-        buildtype = 'debug-gxx'
-
-        # CASE: just empty toolchains
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.tasks.test1.param1 = '111'
-        buildconf.tasks.test2.param2 = '222'
-        bconf = BuildConfig(asRealConf(buildconf))
-        bconf.applyBuildType(buildtype)
-        # it returns tuple but it can return list so we check by len
-        assert len(bconf.toolchainNames) == 0
-
-        # CASE: tasks with the same toolchain
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.tasks.test1.toolchain = 'gxx'
-        buildconf.tasks.test2.toolchain = 'gxx'
-        self._checkToolchainNames(buildconf, buildtype, ['gxx'])
-
-        # CASE: tasks with different toolchains
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.tasks.test1.toolchain = 'gxx'
-        buildconf.tasks.test2.toolchain = 'lgxx'
-        self._checkToolchainNames(buildconf, buildtype, ['gxx', 'lgxx'])
-
-        ### matrix
-
-        # CASE: empty toolchains in matrix
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.matrix = [
-            {
-                'for' : { 'task' : 'test1' },
-                'set' : { 'param1' : '11', 'param2' : '22' }
-            },
-        ]
-        bconf = BuildConfig(asRealConf(buildconf))
-        bconf.applyBuildType(buildtype)
-        # it returns tuple but it can return list so we check by len
-        assert len(bconf.toolchainNames) == 0
-
-        # CASE: tasks in matrix with the same toolchain
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.matrix = [
-            { 'for' : { 'task' : 'test1' }, 'set' : { 'toolchain' : 'gxx' } },
-            { 'for' : { 'task' : 'test2' }, 'set' : { 'toolchain' : 'gxx' } },
-        ]
-        self._checkToolchainNames(buildconf, buildtype, ['gxx'])
-
-        # CASE: tasks in matrix with the different toolchains
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.matrix = [
-            { 'for' : { 'task' : 'test1' }, 'set' : { 'toolchain' : 'gxx' } },
-            { 'for' : { 'task' : 'test2' }, 'set' : { 'toolchain' : 'lgxx' } },
-        ]
-        self._checkToolchainNames(buildconf, buildtype, ['gxx', 'lgxx'])
-
     def testCustomToolchains(self, testingBuildConf, capsys):
         buildconf = testingBuildConf
 
         buildconf.buildtypes['debug-gxx'] = {}
         buildconf.buildtypes.default = 'debug-gxx'
-        clicmd = AutoDict()
-        clicmd.args.buildtype = 'debug-gxx'
 
         # CASE: no custom toolchains
         buildconf = deepcopy(testingBuildConf)

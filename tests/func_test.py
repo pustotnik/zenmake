@@ -35,8 +35,8 @@ from zm.autodict import AutoDict
 from zm.buildconf import loader as bconfloader
 from zm.buildconf.processing import ConfManager as BuildConfManager
 from zm.constants import ZENMAKE_CMN_CFGSET_FILENAME, PLATFORM, APPNAME
-from zm.constants import TASK_WAF_MAIN_FEATURES, BUILDCONF_FILENAMES
-from zm.toolchains import CompilersInfo
+from zm.constants import BUILDCONF_FILENAMES
+from zm.features import TASK_TARGET_FEATURES, ToolchainVars
 from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES
 
 joinpath = os.path.join
@@ -254,12 +254,9 @@ def getTargetPattern(env, features):
     return fileNamePattern, kind
 
 def handleTaskFeatures(testSuit, taskParams):
-    assist.detectConfTaskFeatures(taskParams)
-    if 'source' in taskParams:
-        ctx = Context.Context(run_dir = testSuit.cwd)
-        setattr(ctx, 'bconfManager', testSuit.confManager)
-        taskParams['source'] = assist.handleTaskSourceParam(ctx, taskParams)
-    assist.handleTaskFeaturesAlieses(taskParams)
+    ctx = Context.Context(run_dir = testSuit.cwd)
+    setattr(ctx, 'bconfManager', testSuit.confManager)
+    assist.detectTaskFeatures(ctx, taskParams)
     assert isinstance(taskParams['features'], list)
 
 def getBuildTasks(confManager):
@@ -304,8 +301,8 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
             # ignore test tasks
             continue
 
-        if not [ x for x in features if x in TASK_WAF_MAIN_FEATURES ]:
-            # check only with features from TASK_WAF_MAIN_FEATURES
+        if not [ x for x in features if x in TASK_TARGET_FEATURES ]:
+            # check only TASK_TARGET_FEATURES
             continue
 
         taskEnv = getTaskEnv(testSuit, taskName)
@@ -797,7 +794,7 @@ class TestIndyCmd(object):
 @pytest.mark.usefixtures("unsetEnviron")
 class TestAutoconfig(object):
 
-    cinfo = CompilersInfo
+    tvars = ToolchainVars
 
     @pytest.fixture(params = getZmExecutables())
     def allZmExe(self, request):
@@ -819,7 +816,7 @@ class TestAutoconfig(object):
 
         self.testdir = os.path.abspath(joinpath(self.cwd, os.pardir))
 
-    @pytest.fixture(params = cinfo.allFlagVars() + cinfo.allVarsToSetCompiler())
+    @pytest.fixture(params = tvars.allFlagVars() + tvars.allVarsToSetToolchain())
     def toolEnvVar(self, request):
         self.toolEnvVar = request.param
 
@@ -936,8 +933,8 @@ class TestInstall(object):
                 # ignore tests
                 continue
 
-            if not [ x for x in features if x in TASK_WAF_MAIN_FEATURES ]:
-                # check only with features from TASK_WAF_MAIN_FEATURES
+            if not [ x for x in features if x in TASK_TARGET_FEATURES ]:
+                # check only with features from TASK_TARGET_FEATURES
                 continue
 
             taskEnv = getTaskEnv(self, taskName)

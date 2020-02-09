@@ -5,9 +5,9 @@
 Commands
 =====================
 
-Here are some descriptions of main commands. List of all commands with
-a short description can be gotten with
-``zenmake help`` or ``zenmake --help``. To get help on selected command you
+Here are some descriptions of main commands. You can get the list of the all
+commands with a short description by ``zenmake help`` or ``zenmake --help``.
+To get help on selected command you
 can use ``zenmake help <selected command>`` or
 ``zenmake <selected comman> --help``. Some commands have short alieses.
 For example you can use ``bld`` instead of ``build`` or ``dc``

@@ -11,7 +11,7 @@ import sys
 import re
 
 from waflib import Utils as wafutils
-from zm import pyutils as _pyutils
+from zm.pyutils import stringtype
 
 WINDOWS_RESERVED_FILENAMES = (
     'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5',
@@ -66,7 +66,7 @@ def toList(val):
     Converts a string argument to a list by splitting it by spaces.
     Returns the object if not a string
     """
-    if isinstance(val, _pyutils.stringtype):
+    if isinstance(val, stringtype):
         return val.split()
     return val
 

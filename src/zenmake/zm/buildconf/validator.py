@@ -12,7 +12,8 @@ from zm.error import ZenMakeConfError, ZenMakeConfTypeError, ZenMakeConfValueErr
 from zm.pyutils import maptype, stringtype, viewitems, viewvalues
 from zm.utils import toList
 from zm.autodict import AutoDict as _AutoDict
-from zm.buildconf.scheme import confscheme, taskscheme, AnyAmountStrsKey, ANYAMOUNTSTRS_KEY
+from zm.buildconf.schemeutils import AnyAmountStrsKey
+from zm.buildconf.scheme import confscheme
 
 class ZenMakeConfSubTypeError(ZenMakeConfTypeError):
     """Invalid buildconf param type error"""
@@ -64,7 +65,6 @@ class Validator(object):
     def _handleComplex(confnode, schemeAttrs, fullkey):
 
         types = schemeAttrs['type']
-        handlerArgs = (confnode, schemeAttrs, fullkey)
         valToList = False
         _types = types
 
@@ -83,7 +83,7 @@ class Validator(object):
             try:
                 handler = Validator._getHandler(_type)
                 handler(val, schemeAttrs, fullkey)
-            except ZenMakeConfSubTypeError as ex:
+            except ZenMakeConfSubTypeError:
                 # it's an error from a sub type
                 raise
             except ZenMakeConfTypeError:
@@ -338,15 +338,6 @@ class Validator(object):
         _scheme = deepcopy(confscheme)
 
         btypesVars = _scheme['buildtypes']['vars']
-
-        # set allowed values for toolchain in tasks and buildtypes
-        btypesNamed = btypesVars[ANYAMOUNTSTRS_KEY]['vars']
-        if 'toolchains' in _conf and isinstance(_conf['toolchains'], maptype):
-            # make copy of list
-            allowed = list(taskscheme['toolchain']['allowed'])
-            allowed.extend(_conf['toolchains'].keys())
-            _scheme['tasks']['vars']['toolchain']['allowed'] = allowed
-            btypesNamed['toolchain']['allowed'] = allowed
 
         # set allowed values for buildtypes.default
         allowed = []

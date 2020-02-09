@@ -6,8 +6,6 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-import os
-
 from waflib.Build import BuildContext as WafBuildContext
 from zm import log
 from zm.waf.context import ctxmethod
@@ -41,17 +39,3 @@ def _getTasks(self, buildtype):
 
     zmtasks = self.env.zmtasks
     return zmtasks['all'][buildtype]
-
-@ctxmethod(WafBuildContext, 'getTaskPathNode')
-def _getTaskPathNode(self, taskStartDir):
-
-    cache = self.zmcache().bldpath
-    if taskStartDir in cache:
-        return cache[taskStartDir]
-
-    bconf = self.getbconf()
-    taskPath = os.path.abspath(os.path.join(bconf.rootdir, taskStartDir))
-    pathNode = self.root.make_node(taskPath)
-
-    cache[taskStartDir] = pathNode
-    return pathNode

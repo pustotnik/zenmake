@@ -1,9 +1,9 @@
 # coding=utf-8
 #
 
-# _pylint: skip-file
-# pylint: disable = wildcard-import, unused-wildcard-import, unused-import
+# pylint: disable = wildcard-import, unused-wildcard-import
 # pylint: disable = missing-docstring, invalid-name, bad-continuation
+# pylint: disable = too-many-statements
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
@@ -12,15 +12,14 @@
 
 import os
 from copy import deepcopy
-import pytest
 from waflib.ConfigSet import ConfigSet
 from waflib import Context
-from waflib.Errors import WafError
-import tests.common as cmn
-from zm import toolchains, utils
+from zm import utils
 from zm.waf import assist
 from zm.autodict import AutoDict
 from zm.constants import *
+from zm.features import ToolchainVars
+import tests.common as cmn
 
 joinpath = os.path.join
 abspath = os.path.abspath
@@ -45,7 +44,7 @@ def testDumpZenMakeCommonFile(tmpdir):
         AutoDict(path = str(buildconffile)),
         AutoDict(path = str(buildconffile2)),
     ]
-    
+
     monitFiles = [x.path for x in fakeConfManager.configs]
 
     assert not os.path.exists(fakeConfPaths.zmcmnconfset)
@@ -63,8 +62,8 @@ def testDumpZenMakeCommonFile(tmpdir):
     assert cfgenv.monithash == _hash
 
     assert 'toolenvs' in cfgenv
-    cinfo = toolchains.CompilersInfo
-    envVarNames = cinfo.allFlagVars() + cinfo.allVarsToSetCompiler()
+    tvars = ToolchainVars
+    envVarNames = tvars.allFlagVars() + tvars.allVarsToSetToolchain()
     for name in envVarNames:
         assert name in cfgenv.toolenvs
 
@@ -130,7 +129,7 @@ def testDeepCopyEnv():
     assert newenv.test2 == 'test2'
 
 def testSetTaskEnvVars():
-    cfgEnvVars = toolchains.CompilersInfo.allCfgEnvVars()
+    cfgEnvVars = ToolchainVars.allCfgEnvVars()
 
     taskParamsFixture = []
     for var in cfgEnvVars:
@@ -148,24 +147,25 @@ def testSetTaskEnvVars():
             assert envkey in env
             assert env[envkey] == utils.toList(val)
 
-def testDetectConfTaskFeatures():
+def testDetectTaskFeatures():
     taskParams = {}
-    assert assist.detectConfTaskFeatures(taskParams) == []
+    ctx = Context.Context(run_dir = os.getcwd())
+    assert assist.detectTaskFeatures(ctx, taskParams) == []
 
     taskParams = { 'features' : '' }
-    assert assist.detectConfTaskFeatures(taskParams) == []
+    assert assist.detectTaskFeatures(ctx, taskParams) == []
 
     for ftype in ('stlib', 'shlib', 'program'):
         for lang in ('c', 'cxx'):
             fulltype = '%s%s' % (lang, ftype)
 
             taskParams = { 'features' : fulltype }
-            assert sorted(assist.detectConfTaskFeatures(taskParams)) == sorted([
+            assert sorted(assist.detectTaskFeatures(ctx, taskParams)) == sorted([
                 lang, fulltype
             ])
 
             taskParams = { 'features' : [lang, fulltype] }
-            assert sorted(assist.detectConfTaskFeatures(taskParams)) == sorted([
+            assert sorted(assist.detectTaskFeatures(ctx, taskParams)) == sorted([
                 lang, fulltype
             ])
 
@@ -236,114 +236,111 @@ def testHandleTaskIncludesParam():
                                         taskParams['export-includes']['paths'])
                 assert _taskParams['export-includes'] == exportPaths
 
-def testHandleTaskSourceParam(mocker):
+def testHandleTaskSourceParam(tmpdir, mocker):
 
-    cwd = os.getcwd()
-    ctx = Context.Context(run_dir = cwd) # ctx.path = Node(run_dir)
+    """
+    ./src/..
+    ./zm/buildconf.py
 
-    bconf = AutoDict(rootdir = abspath(joinpath(cwd, '..')), path = cwd)
+    cwd = ./zm
+    bconf.rootdir = .
+    bconf.path = ./zm
+    """
+
+    rootdir = tmpdir
+    cwd = tmpdir.mkdir("zm")
+    srcroot = tmpdir.mkdir("src")
+    srcroot.join('some', '2', "trash.txt").write("content", ensure = True)
+    srcroot.join('some', '2', "main.c").write("content", ensure = True)
+    srcroot.join('some', '2', "test.c").write("content", ensure = True)
+    srcroot.join('some', '2', "test.h").write("content", ensure = True)
+    srcroot.join('some', '2', "main.cpp").write("content", ensure = True)
+    srcroot.join('some', '2', "test.cpp").write("content", ensure = True)
+    srcroot.join('some', '1', "Test.cpp").write("content", ensure = True)
+
+
+    ctx = Context.Context(run_dir = str(cwd)) # ctx.path = Node(run_dir)
+
+    bconf = AutoDict(rootdir = str(rootdir), path = str(cwd))
     def getbconf():
         return bconf
     ctx.getbconf = mocker.MagicMock(side_effect = getbconf)
 
-    nodes = []
-    def finddir(path):
-        node = ctx.path.make_node(path)
-        node.ant_glob = mocker.MagicMock(return_value = 'wildcard')
-        node.find_node = mocker.MagicMock(return_value = 'file')
-        nodes.append(node)
-        return node
-    ctx.path.find_dir = mocker.MagicMock(side_effect = finddir)
-
-    taskParams = {}
-    src = assist.handleTaskSourceParam(ctx, taskParams)
+    # empty
+    srcParams = {}
+    src = assist.handleTaskSourceParam(ctx, srcParams)
     assert src == []
 
     # find with wildcard
 
-    taskParams = {
-        'source' : dict( startdir = 'asdf', ),
-    }
-    srcParams = taskParams['source']
+    srcParams = dict( startdir = 'src', )
     realStartDir = abspath(joinpath(bconf.rootdir, srcParams['startdir']))
 
     # case 1
-    del nodes[:]
     srcParams['include'] = 'some/**/*.cpp'
-    rv = assist.handleTaskSourceParam(ctx, taskParams)
-    assert rv == 'wildcard'
-    assert len(nodes) == 1
-    assert nodes[0].abspath() == realStartDir
-    assert nodes[0].ant_glob.mock_calls == [
-        mocker.call(incl = 'some/**/*.cpp', excl = '',
-                ignorecase = False, remove = mocker.ANY)
-    ]
+    for _ in range(2): # to check with cache
+        rv = assist.handleTaskSourceParam(ctx, srcParams)
+        assert sorted([x.abspath() for x in rv]) == sorted([
+            joinpath(realStartDir, 'some', '2', 'main.cpp'),
+            joinpath(realStartDir, 'some', '2', 'test.cpp'),
+            joinpath(realStartDir, 'some', '1', 'Test.cpp'),
+        ])
 
     # case 2
-    del nodes[:]
-    srcParams['include'] = 's/**/*.cpp'
-    srcParams['exclude'] = 'd/**/.cpp'
-    rv = assist.handleTaskSourceParam(ctx, taskParams)
-    assert rv == 'wildcard'
-    assert len(nodes) == 1
-    assert nodes[0].abspath() == realStartDir
-    assert nodes[0].ant_glob.mock_calls == [
-        mocker.call(incl = 's/**/*.cpp', excl = 'd/**/.cpp',
-                ignorecase = False, remove = mocker.ANY),
-    ]
+    srcParams['include'] = '**/*.cpp'
+    srcParams['exclude'] = '**/*test*'
+    for _ in range(2): # to check with cache
+        rv = assist.handleTaskSourceParam(ctx, srcParams)
+        assert sorted([x.abspath() for x in rv]) == sorted([
+            joinpath(realStartDir, 'some', '2', 'main.cpp'),
+            joinpath(realStartDir, 'some', '1', 'Test.cpp'),
+        ])
 
     # case 3
-    del nodes[:]
-    srcParams.pop('exclude', None)
-    srcParams['include'] = 's/**/*.cpp'
+    srcParams['include'] = '**/*.cpp **/*.c'
+    srcParams['exclude'] = '**/*test*'
     srcParams['ignorecase'] = True
-    rv = assist.handleTaskSourceParam(ctx, taskParams)
-    assert rv == 'wildcard'
-    assert len(nodes) == 1
-    assert nodes[0].abspath() == realStartDir
-    assert nodes[0].ant_glob.mock_calls == [
-        mocker.call(incl = 's/**/*.cpp', excl = '',
-                ignorecase = True, remove = mocker.ANY),
-    ]
+    for _ in range(2): # to check with cache
+        rv = assist.handleTaskSourceParam(ctx, srcParams)
+        assert sorted([x.abspath() for x in rv]) == sorted([
+            joinpath(realStartDir, 'some', '2', 'main.c'),
+            joinpath(realStartDir, 'some', '2', 'main.cpp'),
+        ])
 
     # find as is
-    taskParams = {
-        'source' : dict( startdir = joinpath(cwd, '123'), ),
-    }
-    srcParams = taskParams['source']
-    realStartDir = abspath(joinpath(bconf.rootdir, srcParams['startdir']))
 
     # case 4
-    del nodes[:]
-    srcParams['paths'] = 'a.c'
-    rv = assist.handleTaskSourceParam(ctx, taskParams)
-    assert rv == ['file']
-    assert len(nodes) == 1
-    assert nodes[0].abspath() == realStartDir
-    assert nodes[0].find_node.mock_calls == [
-        mocker.call('a.c'),
-    ]
+    srcParams['paths'] = 'some/2/main.c'
+    for _ in range(2): # to check with cache
+        rv = assist.handleTaskSourceParam(ctx, srcParams)
+        assert sorted([x.abspath() for x in rv]) == sorted([
+            joinpath(realStartDir, 'some', '2', 'main.c'),
+        ])
 
     # case 5
-    del nodes[:]
-    srcParams['paths'] = 'a.c b.c'
-    rv = assist.handleTaskSourceParam(ctx, taskParams)
-    assert rv == ['file', 'file']
-    assert len(nodes) == 1
-    assert nodes[0].abspath() == realStartDir
-    assert nodes[0].find_node.mock_calls == [
-        mocker.call('a.c'),
-        mocker.call('b.c'),
-    ]
+    srcParams['paths'] = 'some/2/main.c some/2/test.c'
+    for _ in range(2): # to check with cache
+        rv = assist.handleTaskSourceParam(ctx, srcParams)
+        assert sorted([x.abspath() for x in rv]) == sorted([
+            joinpath(realStartDir, 'some', '2', 'main.c'),
+            joinpath(realStartDir, 'some', '2', 'test.c'),
+        ])
+
+    # case 6
+    srcParams['paths'] = ['some/2/main.c', 'some/1/Test.cpp']
+    for _ in range(2): # to check with cache
+        rv = assist.handleTaskSourceParam(ctx, srcParams)
+        assert sorted([x.abspath() for x in rv]) == sorted([
+            joinpath(realStartDir, 'some', '2', 'main.c'),
+            joinpath(realStartDir, 'some', '1', 'Test.cpp'),
+        ])
 
 def testDistclean(tmpdir, monkeypatch):
 
     buildroot = tmpdir.mkdir("build")
-    trashfile = buildroot.join("trash.txt")
-    trashfile.write("content")
+    buildroot.join("trash.txt").write("content")
     startdir = tmpdir.mkdir("project")
-    trashfile = startdir.join("trash2.txt")
-    trashfile.write("content2")
+    startdir.join("trash2.txt").write("content2")
 
     fakeConfPaths = AutoDict()
     fakeConfPaths.buildroot = str(buildroot.realpath())

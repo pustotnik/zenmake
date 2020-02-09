@@ -17,8 +17,10 @@ import traceback
 from waflib import Options, Context, Errors
 from zm import WAF_DIR
 #from zm.constants import BUILDCONF_FILENAMES
+from zm.constants import WAF_LOCKFILE
+from zm.pyutils import viewvalues
 from zm import log, utils
-from zm.waf import wscriptimpl
+from zm.waf import wscriptimpl, assist
 
 #pylint: disable=unused-import
 # These modules must be just imported
@@ -90,6 +92,22 @@ def _setWafMainModule(rootdir):
     fakename = 'fakeconfname'
     Context.g_module.root_path = joinpath(rootdir, fakename)
 
+def _prepareAndLoadFeatures(bconfManager):
+
+    from zm.features import loadFeatures
+
+    ctx = Context.Context()
+    setattr(ctx, 'bconfManager', bconfManager)
+
+    # process all actual features from buildconf(s)
+    for bconf in bconfManager.configs:
+        for taskParams in viewvalues(bconf.tasks):
+            assist.detectTaskFeatures(ctx, taskParams)
+            assist.validateConfTaskFeatures(taskParams)
+
+    # load modules for all actual features from buildconf(s)
+    loadFeatures(bconfManager)
+
 def setWscriptVars(module, bconf):
     """
     Set wscript vars: top, out, APPNAME, VERSION
@@ -120,6 +138,9 @@ def runCommand(bconfManager, cmdName):
     """
     Executes a single Waf command.
     """
+
+    #FIXME: fix the problem with verbose and other global options.
+    # See demos/cpp/04-complex
 
     ctx = Context.create_context(cmdName)
     ctx.log_timer = utils.Timer()
@@ -169,10 +190,18 @@ def run(cwd, cmd, wafCmdLine, bconfManager):
     bconf = bconfManager.root
     bconfPaths = bconf.confPaths
 
+    # set up waf wrappers
+    from zm.waf import wrappers
+    wrappers.setup()
+
+    # use of Options.lockfile is not enough
+    os.environ['WAFLOCK'] = WAF_LOCKFILE
+    Options.lockfile = WAF_LOCKFILE
+
     # Store current directory before any chdir
     Context.waf_dir = WAF_DIR
     Context.launch_dir = cwd
-    Context.run_dir = bconfPaths.startdir
+    Context.run_dir = bconfPaths.startdir # == bconf.rootdir if bconf == bconfManager.root
     Context.out_dir = bconfPaths.buildout
 
     # ZenMake doesn't use lockfile in a project root
@@ -199,14 +228,16 @@ def run(cwd, cmd, wafCmdLine, bconfManager):
 
     _setWafMainModule(bconf.rootdir)
 
-    # Load waf add-ons to support the custom waf features
-    from zm.waf import addons
-    addons.loadAllAddOns()
-
-    verbose = cmd.args.verbose
+    cliArgs = cmd.args
+    verbose = cliArgs.verbose
 
     #pylint: disable=broad-except
     try:
+
+        if 'buildtype' in cliArgs:
+            assist.initBuildType(bconfManager, cliArgs.buildtype)
+            _prepareAndLoadFeatures(bconfManager)
+
         setupAndRunCommands(wafCmdLine, bconfManager)
     except Errors.WafError as ex:
         if verbose > 1:

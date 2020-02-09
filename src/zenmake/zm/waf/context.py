@@ -10,7 +10,6 @@ import os
 
 from waflib.Context import Context as WafContext
 from waflib.ConfigSet import ConfigSet
-from zm.constants import TASK_WAF_ALIESES, TASK_WAF_MAIN_FEATURES, TASK_FEATURES_LANGS
 from zm.autodict import AutoDict as _AutoDict
 from zm import utils, error
 from zm.waf import wscriptimpl
@@ -38,10 +37,6 @@ def ctxmethod(ctxClass, methodName = None, wrap = False):
 
 # Context is the base class for all other context classes and it is not auto
 # registering class. So it cannot be just declared for extending/changing.
-
-# Valid task features for user in buildconf
-WafContext.validUserTaskFeatures = TASK_WAF_MAIN_FEATURES | TASK_FEATURES_LANGS \
-    | set(TASK_WAF_ALIESES)
 
 @ctxmethod(WafContext, 'getbconf')
 def _getCtxBuildConf(ctx):
@@ -74,7 +69,6 @@ def _contextRecurse(ctx, dirs, name = None, mandatory = True, once = True, encod
         if not bconf:
             continue
 
-        #node = ctx.root.find_node(bconf.path)
         node = ctx.root.make_node(joinpath(dirpath, 'virtual-buildconf'))
         funcName = name or ctx.fun
 
@@ -98,6 +92,20 @@ def _contextRecurse(ctx, dirs, name = None, mandatory = True, once = True, encod
             func(ctx)
         finally:
             ctx.post_recurse(node)
+
+@ctxmethod(WafContext, 'getTaskPathNode')
+def _getTaskPathNode(self, taskStartDir):
+
+    cache = self.zmcache().ctxpath
+    if taskStartDir in cache:
+        return cache[taskStartDir]
+
+    bconf = self.getbconf()
+    taskPath = os.path.abspath(os.path.join(bconf.rootdir, taskStartDir))
+    pathNode = self.root.make_node(taskPath)
+
+    cache[taskStartDir] = pathNode
+    return pathNode
 
 @ctxmethod(WafContext, 'loadTasksFromFileCache')
 def _loadTasksFromFileCache(ctx, cachefile):

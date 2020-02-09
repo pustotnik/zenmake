@@ -25,87 +25,93 @@ Object of ParsedCommand with current command after last parsing of command line
 """
 selected = None
 
-class _Command(_AutoDict):
+"""
+Contains configurable 'commands', 'options' and 'posargs'
+"""
+config = _AutoDict()
+
+class Command(_AutoDict):
+    """ Class to setup a command for CLI """
+
     def __init__(self, *args, **kwargs):
-        super(_Command, self).__init__(*args, **kwargs)
+        super(Command, self).__init__(*args, **kwargs)
         self.setdefault('aliases', [])
         self.setdefault('usageTextTempl', "%s [options]")
 
 # Declarative list of commands in CLI
-_commands = [
-    _Command(
+config.commands = [
+    Command(
         name = 'help',
         description = 'show help for a given topic or a help overview',
         usageTextTempl = "%s [command/topic]",
     ),
-    _Command(
+    Command(
         name = 'configure',
         aliases = ['cnf', 'cfg'],
         description = 'configure project',
     ),
-    _Command(
+    Command(
         name = 'build',
         aliases = ['bld'],
         description = 'build project',
         usageTextTempl = "%s [options] [task [task] ... ]",
     ),
-    _Command(
+    Command(
         name = 'test',
         description = 'build and run tests',
         usageTextTempl = "%s [options] [task [task] ... ]",
     ),
-    _Command(
+    Command(
         name = 'clean',
         aliases = ['c'],
         description = 'clean project',
     ),
-    _Command(
+    Command(
         name = 'distclean',
         aliases = ['dc'],
         description = 'removes the build directory with everything in it',
     ),
-    _Command(
+    Command(
         name = 'install',
         description = 'installs the targets on the system',
     ),
-    _Command(
+    Command(
         name = 'uninstall',
         description = 'removes the targets installed',
     ),
-    _Command(
+    Command(
         name = 'zipapp',
         description = 'make executable zip archive of %s' % APPNAME,
     ),
-    _Command(
+    Command(
         name = 'version',
         aliases = ['ver'],
         description = 'print version of %s' % APPNAME,
     ),
-    _Command(
+    Command(
         name = 'sysinfo',
         description = 'print some system info useful for diagnostic reasons',
     ),
 ]
 
-# map: cmd name/alies -> _Command
+# map: cmd name/alies -> Command
 def _makeCmdNameMap():
     cmdNameMap = {}
-    for cmd in _commands:
+    for cmd in config.commands:
         cmdNameMap[cmd.name] = cmd
         for alias in cmd.aliases:
             cmdNameMap[alias] = cmd
     return cmdNameMap
 
-_cmdNameMap = _makeCmdNameMap()
-
-class _PosArg(_AutoDict):
+class PosArg(_AutoDict):
+    """ Class to setup positional param for CLI """
 
     NOTARGPARSE_FIELDS = ('name', 'commands')
 
 # Declarative list of positional args after command name in CLI
-_posargs = [
+config.posargs = [
     # global options that are used before command in cmd line
-    _PosArg(
+    PosArg(
         name = 'tasks',
         nargs = '*', # it means this arg is optional
         default = [],
@@ -114,12 +120,13 @@ _posargs = [
     ),
 ]
 
-class _Option(_AutoDict):
+class Option(_AutoDict):
+    """ Class to setup an option for CLI """
 
     NOTARGPARSE_FIELDS = ('names', 'commands', 'runcmd', 'isglobal')
 
     def __init__(self, *args, **kwargs):
-        super(_Option, self).__init__(*args, **kwargs)
+        super(Option, self).__init__(*args, **kwargs)
         self.setdefault('isglobal', False)
         self.setdefault('commands', [])
         self.setdefault('action', 'store')
@@ -131,114 +138,93 @@ class _Option(_AutoDict):
 # Special param 'runcmd' is used to declare option that runs another command
 # before current. There is no need to set 'action' in that case. And it can not
 # be used for global options, of course.
-_options = [
+config.options = [
     # global options that are used before command in cmd line
-    _Option(
+    Option(
         names = ['-h', '--help'],
         isglobal = True,
         action = 'help',
         help = 'show this help message and exit',
     ),
     # command options
-    _Option(
+    Option(
         names = ['-h', '--help'],
         action = 'help',
-        commands = [x.name for x in _commands], # for all commands
+        commands = [x.name for x in config.commands], # for all commands
         help = 'show this help message for command and exit',
     ),
-    _Option(
+    Option(
         names = ['-b', '--buildtype'],
         commands = ['configure', 'build', 'clean', 'test', 'install', 'uninstall'],
         help = 'set the build type',
     ),
-    _Option(
+    Option(
         names = ['-g', '--configure'],
         commands = ['build', 'test', 'install'],
         runcmd = 'configure',
     ),
-    _Option(
+    Option(
         names = ['-c', '--clean'],
         commands = ['build', 'test', 'install'],
         runcmd = 'clean',
     ),
-    _Option(
+    Option(
         names = ['-d', '--distclean'],
         commands = ['configure', 'build', 'test', 'install'],
         runcmd = 'distclean',
     ),
-    _Option(
-        names = ['-t', '--with-tests'],
-        dest = 'withTests',
-        choices = ('yes', 'no'),
-        const = 'yes', # it enables use of option as flag
-        nargs = '?', # it's necessary with use of 'const'
-        commands = ['configure', 'build', 'test'],
-        help = 'include tests',
-    ),
-    _Option(
-        names = ['-T', '--run-tests'],
-        dest = 'runTests',
-        choices = ('all', 'on-changes', 'none'),
-        const = 'all', # it enables use of option as flag
-        nargs = '?', # it's necessary with use of 'const'
-        commands = ['build', 'test'],
-        help = 'run tests',
-    ),
-    _Option(
+    Option(
         names = ['-j', '--jobs'],
         type = int,
         commands = ['build', 'test', 'install'],
         help = 'amount of parallel jobs',
     ),
-    _Option(
+    Option(
         names = ['-p', '--progress'],
         action = "store_true",
         commands = ['build', 'test', 'install', 'uninstall'],
         help = 'progress bar',
     ),
-    _Option(
+    Option(
         names = ['--destdir'],
         commands = ['zipapp', 'install', 'uninstall'],
         help = 'destination directory',
     ),
-    _Option(
+    Option(
         names = ['-o', '--buildroot'],
         commands = ['configure', 'build', 'test', 'clean',
                     'distclean', 'install', 'uninstall'],
         help = "build directory for the project",
     ),
-    _Option(
+    Option(
         names = ['--prefix'],
         commands = ['configure', 'build', 'install', 'uninstall'],
         help = 'installation prefix',
     ),
-    _Option(
+    Option(
         names = ['--bindir'],
         commands = ['configure', 'build', 'install', 'uninstall'],
         help = 'installation bin directory [ ${PREFIX}/bin ]',
     ),
-    _Option(
+    Option(
         names = ['--libdir'],
         commands = ['configure', 'build', 'install', 'uninstall'],
         help = 'installation lib directory [ ${PREFIX}/lib[64] ]',
     ),
-    _Option(
+    Option(
         names = ['-v', '--verbose'],
         action = "count",
-        commands = [x.name for x in _commands if x.name != 'help'],
+        commands = [x.name for x in config.commands if x.name != 'help'],
         help = 'verbosity level -v -vv or -vvv',
     ),
-    _Option(
+    Option(
         names = ['--color'],
         choices = ('yes', 'no', 'auto'),
-        commands = [x.name for x in _commands \
+        commands = [x.name for x in config.commands \
                             if x.name not in ('version', 'sysinfo')],
         help = 'whether to use colors (yes/no/auto)',
     ),
 ]
-
-COMMAND_NAMES = ( x.name for x in _commands )
-OPTION_NAMES = ( x.names[-1].replace('-', '', 2) for x in _options )
 
 DEFAULT_PREFIX = '/usr/local/'
 if PLATFORM == 'windows':
@@ -247,12 +233,16 @@ if PLATFORM == 'windows':
     # windows preserves the case, but gettempdir does not
     DEFAULT_PREFIX = d[0].upper() + d[1:]
 
+config.optdefaults = {
+    'verbose': 0,
+}
+
 def _getReadyOptDefaults():
-    return {
-        'verbose': 0,
+
+    # These params should be obtained only before parsing but
+    # not when current python has loaded.
+    config.optdefaults.update({
         'color': os.environ.get('NOCOLOR', '') and 'no' or 'auto',
-        'with-tests' : { 'any': 'no',   'test' : 'yes' },
-        'run-tests' : { 'any': 'none', 'test' : 'all' },
         'destdir' : {
             'any': os.environ.get('DESTDIR', ''),
             'zipapp' : os.environ.get('DESTDIR', '.'),
@@ -261,7 +251,9 @@ def _getReadyOptDefaults():
         'prefix' : os.environ.get('PREFIX', '') or DEFAULT_PREFIX,
         'bindir' : os.environ.get('BINDIR', None),
         'libdir' : os.environ.get('LIBDIR', None),
-    }
+    })
+
+    return config.optdefaults
 
 class CmdLineParser(object):
     """
@@ -271,7 +263,7 @@ class CmdLineParser(object):
 
     __slots__ = (
         '_defaults', '_options', '_command', '_wafCmdLine',
-        '_parser', '_commandHelps'
+        '_parser', '_commandHelps', '_cmdNameMap'
     )
 
     def __init__(self, progName, defaults):
@@ -285,6 +277,7 @@ class CmdLineParser(object):
         self._wafCmdLine = []
 
         self._setupOptions()
+        self._cmdNameMap = _makeCmdNameMap()
 
         class MyHelpFormatter(argparse.HelpFormatter):
             """ Some customization"""
@@ -313,7 +306,7 @@ class CmdLineParser(object):
 
         commandHelps = _AutoDict()
         helpCmd = None
-        for cmd in _commands:
+        for cmd in config.commands:
             commandHelps[cmd.name] = _AutoDict()
             cmdHelpInfo = commandHelps[cmd.name]
             cmdHelpInfo.usage = self._makeCmdUsageText(progName, cmd)
@@ -338,7 +331,7 @@ class CmdLineParser(object):
         # special case for 'help' command
         if helpCmd is None:
             raise ZenMakeLogicError("Programming error: no command "
-                                    "'help' in _commands") # pragma: no cover
+                                    "'help' in config.commands") # pragma: no cover
         cmd = helpCmd
         kwargs = commandHelps[cmd.name]
         kwargs['add_help'] = True
@@ -348,11 +341,8 @@ class CmdLineParser(object):
         self._commandHelps = commandHelps
 
     def _setupOptions(self):
-        self._options = []
-
         # make independent copy
-        for opt in _options:
-            self._options.append(_Option(opt))
+        self._options = list(config.options)
 
     def _getOptionDefault(self, opt, cmd  = None):
         optName = opt.names[-1].replace('-', '', 2)
@@ -378,7 +368,7 @@ class CmdLineParser(object):
             self._parser.print_help()
             return True
 
-        _topic = _cmdNameMap.get(topic, None)
+        _topic = self._cmdNameMap.get(topic, None)
         if _topic:
             _topic = _topic.name
 
@@ -390,11 +380,11 @@ class CmdLineParser(object):
         return True
 
     def _addCmdPosArgs(self, target, cmd):
-        posargs = [x for x in _posargs if cmd.name in x.commands]
+        posargs = [x for x in config.posargs if cmd.name in x.commands]
         for arg in posargs:
             kwargs = _AutoDict()
             for k, v in viewitems(arg):
-                if v is None or k in _PosArg.NOTARGPARSE_FIELDS:
+                if v is None or k in PosArg.NOTARGPARSE_FIELDS:
                     continue
                 kwargs[k] = v
             target.add_argument(arg.name, **kwargs)
@@ -418,7 +408,7 @@ class CmdLineParser(object):
                         % (opt.runcmd, cmd.name)
             else:
                 for k, v in viewitems(opt):
-                    if v is None or k in _Option.NOTARGPARSE_FIELDS:
+                    if v is None or k in Option.NOTARGPARSE_FIELDS:
                         continue
                     kwargs[k] = v
                 default = self._getOptionDefault(opt, cmd)
@@ -428,13 +418,9 @@ class CmdLineParser(object):
 
             target.add_argument(*opt.names, **kwargs)
 
-    def _postParse(self, parsedArgs):
-        if hasattr(parsedArgs, 'withTests'):
-            parsedArgs.withTests = parsedArgs.withTests == 'yes'
-
     def _fillCmdInfo(self, parsedArgs):
         args = _AutoDict(vars(parsedArgs))
-        cmd = _cmdNameMap[args.pop('command')]
+        cmd = self._cmdNameMap[args.pop('command')]
         self._command = ParsedCommand(
             name = cmd.name,
             args = args,
@@ -449,7 +435,7 @@ class CmdLineParser(object):
         cmdline = [self._command.name]
 
         # self._command.args is AutoDict and it means that it'll create
-        # nonexistent keys in it, so we need to make copy
+        # nonexistent keys in it, so we need to make a copy
         options = _AutoDict(self._command.args)
 
         if self._command.name == 'test':
@@ -485,7 +471,7 @@ class CmdLineParser(object):
 
         # simple hack to set default command
         if not args or not [ x for x in args if not x.startswith('-') ]:
-            optHelp = _options[0]
+            optHelp = self._options[0]
             assert optHelp.action == 'help'
             # don't show help for default command
             if not any(x in optHelp.names for x in args):
@@ -493,8 +479,7 @@ class CmdLineParser(object):
 
         # parse
         args = self._parser.parse_args(args)
-        cmd = _cmdNameMap[args.command]
-        self._postParse(args)
+        cmd = self._cmdNameMap[args.command]
 
         if cmd.name == 'help':
             self._fillCmdInfo(args)

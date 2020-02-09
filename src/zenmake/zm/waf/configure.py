@@ -30,6 +30,8 @@ from zm.constants import CONFTEST_DIR_PREFIX
 from zm.autodict import AutoDict as _AutoDict
 from zm.pyutils import maptype, stringtype, viewitems, viewvalues
 from zm import utils, log, toolchains, error
+from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
+from zm.features import ToolchainVars, loadTools
 from zm.waf import assist
 
 joinpath = os.path.join
@@ -39,7 +41,7 @@ CONFTEST_CACHE_FILE = 'conf_check_cache'
 CONFTEST_HASH_USED_ENV_KEYS = set(
     ('DEST_BINFMT', 'DEST_CPU', 'DEST_OS')
 )
-for _var in toolchains.CompilersInfo.allVarsToSetCompiler():
+for _var in ToolchainVars.allVarsToSetToolchain():
     CONFTEST_HASH_USED_ENV_KEYS.add(_var)
     CONFTEST_HASH_USED_ENV_KEYS.add('%s_VERSION' % _var)
     CONFTEST_HASH_USED_ENV_KEYS.add('%s_NAME' % _var)
@@ -726,6 +728,8 @@ def _confTestCheckInParallel(checkArgs, params):
 
     cfgCtx.checkInParallel(parallelCheckArgsList, **params)
 
+# TODO: move specific conf tests to the features/
+
 _confTestFuncs = {
     'check-by-pyfunc'     : _confTestCheckByPyFunc,
     'check-programs'      : _confTestCheckPrograms,
@@ -779,19 +783,42 @@ class ConfigurationContext(WafConfContext):
         self.confChecks['cache'] = None
         self.monitFiles = []
 
+        self.validToolchainNames = assist.getValidPreDefinedToolchainNames()
+
+    def _checkToolchainNames(self, bconf):
+
+        # Each bconf has own customToolchains
+        if bconf.customToolchains:
+            validNames = self.validToolchainNames.union(bconf.customToolchains.keys())
+        else:
+            validNames = self.validToolchainNames
+
+        for taskName, taskParams in viewitems(bconf.tasks):
+            tool = taskParams.get('toolchain')
+            if not tool:
+                continue
+            names = utils.toList(tool)
+            taskParams['toolchain'] = names # small optimization
+            for name in names:
+                if name not in validNames:
+                    msg = 'Toolchain %r in the task %r is not valid.' % (name, taskName)
+                    msg += ' Valid toolchains: %r' % list(validNames)
+                    raise error.ZenMakeConfError(msg)
+
     def _loadDetectedCompiler(self, lang):
         """
         Load auto detected compiler by its lang
         """
 
-        compilers = toolchains.CompilersInfo.compilers(lang)
-        envVar    = toolchains.CompilersInfo.varToSetCompiler(lang)
+        compilers = toolchains.get(lang)
+        envVar    = ToolchainVars.varToSetToolchain(lang)
 
         for compiler in compilers:
             self.env.stash()
             self.start_msg('Checking for %r' % compiler)
             try:
-                self.load(compiler)
+                # try to load
+                loadTools(self, compiler)
             except waferror.ConfigurationError:
                 self.env.revert()
                 self.end_msg(False)
@@ -835,12 +862,41 @@ class ConfigurationContext(WafConfContext):
         self.variant = name
         self.all_envs[name] = env
 
+    def getToolchainNames(self, bconf):
+        """
+        Get unique names of all toolchains from current build tasks
+        """
+
+        # gather unique names
+        _toolchains = set()
+        for taskParams in viewvalues(bconf.tasks):
+            tool = taskParams.get('toolchain')
+            if tool:
+                _toolchains |= set(utils.toList(tool))
+            else:
+                features = utils.toList(taskParams.get('features', []))
+                atools = set()
+                for feature in features:
+                    lang = TASK_TARGET_FEATURES_TO_LANG.get(feature)
+                    if not lang and feature in TASK_LANG_FEATURES:
+                        lang = feature
+                    if lang:
+                        atools.add('auto-' + lang.replace('x', '+'))
+                if atools:
+                    _toolchains |= atools
+                    taskParams['toolchain'] = list(atools)
+
+        return tuple(_toolchains)
+
     def loadToolchains(self, bconf, copyFromEnv):
         """
         Load all selected toolchains
         """
 
-        if not bconf.toolchainNames and bconf.tasks:
+        self._checkToolchainNames(bconf)
+        toolchainNames = self.getToolchainNames(bconf)
+
+        if not toolchainNames and bconf.tasks:
             log.warn("No toolchains found. Is buildconf correct?")
 
         toolchainsEnvs = self.zmcache().toolchain.setdefault('envs', {})
@@ -861,12 +917,12 @@ class ConfigurationContext(WafConfContext):
 
             if toolchain.startswith('auto-'):
                 lang = toolchain[5:]
-                self._loadDetectedCompiler(lang)
+                self._loadDetectedCompiler(lang.replace('+', 'x'))
             else:
-                self.load(toolchain)
+                loadTools(self, toolchain)
             toolchainsEnvs[toolname] = self.env
 
-        for toolchain in bconf.toolchainNames:
+        for toolchain in toolchainNames:
             loadToolchain(toolchain)
 
         # switch to old env due to calls of 'loadToolchain'
@@ -969,9 +1025,6 @@ class ConfigurationContext(WafConfContext):
         rootdir  = bconf.rootdir
         startdir = bconf.startdir
         taskName = taskParams['name']
-
-        assist.detectConfTaskFeatures(taskParams)
-        assist.validateConfTaskFeatures(taskParams, self.validUserTaskFeatures)
         features = taskParams['features']
 
         normalizeTarget = taskParams.get('normalize-target-name', False)

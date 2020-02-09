@@ -17,7 +17,12 @@ from waflib.Build import BuildContext
 from zm.pyutils import viewitems
 from zm import log, cli, error, utils
 from zm.autodict import AutoDict as _AutoDict
-from zm.waf.addons import precmd, postcmd
+from zm.features import precmd, postcmd
+
+# This module relies on module 'runcmd'. So module 'runcmd' must be loaded.
+# pylint: disable = unused-import
+from zm.features import runcmd
+# pylint: enable = unused-import
 
 # Command 'test' is always called with the command 'build' in the same
 # process. So shared variable can be used to send data
@@ -87,23 +92,27 @@ class TaskItem(object):
 def postOpt(ctx):
     """ Extra init after wscript.options """
 
-    ctx.validUserTaskFeatures.add('test')
-
     cliArgs = cli.selected.args
     _shared.runTestsOnChanges = False
     if 'runTests' in cliArgs:
         _shared.runTestsOnChanges = cliArgs.runTests == 'on-changes'
     if 'withTests' in cliArgs:
-        _shared.withTests = cliArgs.withTests
+        _shared.withTests = cliArgs.withTests == 'yes'
+
+    # init array of test task names for each bconf
+    _shared.testTaskNames = [None] * len(ctx.bconfManager.configs)
 
 def _isSuitableForRunCmd(taskParams):
     return taskParams['$runnable'] or taskParams.get('run', None)
 
-@precmd('configure', beforeAddOn = ['runcmd'])
+@precmd('configure', before = ['runcmd'])
 def preConf(conf):
     """ Preconfigure tasks """
 
-    tasks = conf.getbconf().tasks
+    bconfIndex = conf.bconfManager.configIndex(conf.path.abspath())
+    bconf = conf.bconfManager.configs[bconfIndex]
+
+    tasks = bconf.tasks
 
     testTaskNames = []
     for name, params in viewitems(tasks):
@@ -112,11 +121,16 @@ def preConf(conf):
         if 'test' in features:
             testTaskNames.append(name)
 
-    _shared.testsFound = bool(testTaskNames)
-    _shared.testTaskNames = testTaskNames
+    # preConf can be called recursively
+    if not _shared.testsFound:
+        _shared.testsFound = bool(testTaskNames)
+
+    assert not _shared.testTaskNames[bconfIndex]
+    _shared.testTaskNames[bconfIndex] = testTaskNames
 
     if _shared.withTests:
-        if not _shared.testsFound:
+        allPreConfigured = all(x is not None for x in _shared.testTaskNames)
+        if allPreConfigured and not _shared.testsFound:
             log.warn('There are no tests to configure')
         return
 
@@ -124,23 +138,30 @@ def preConf(conf):
     for name in testTaskNames:
         tasks.pop(name, None)
 
-@postcmd('configure', beforeAddOn = ['runcmd'])
+@postcmd('configure', before = ['runcmd'])
 def postConf(conf):
     """ Configure tasks """
 
-    if not _shared.withTests or not _shared.testsFound:
+    if not _shared.withTests:
         return
 
-    tasks = conf.getbconf().tasks
+    bconfIndex = conf.bconfManager.configIndex(conf.path.abspath())
 
-    for name in _shared.testTaskNames:
+    testTaskNames = _shared.testTaskNames[bconfIndex]
+    assert testTaskNames is not None
+    if not testTaskNames:
+        return
+
+    bconf = conf.bconfManager.configs[bconfIndex]
+    tasks = bconf.tasks
+
+    for name in testTaskNames:
         params = tasks[name]
         features = params['features']
-        assert isinstance(features, list)
 
-        # Adding 'runcmd' in the features here forces add-on 'runcmd' to
+        # Adding 'runcmd' in the features here forces feature 'runcmd' to
         # handle param 'run' in tasks with 'test'.
-        # Even library can be marked as a test but it can not be executed
+        # Even a library can be marked as a test but it can not be executed
         # and therefore here is selection of tasks to execute by some conditions.
         if _isSuitableForRunCmd(params):
             if 'runcmd' not in features:
@@ -148,7 +169,7 @@ def postConf(conf):
 
         params['deep_inputs'] = True
 
-@precmd('build', beforeAddOn = ['runcmd'])
+@precmd('build', before = ['runcmd'])
 def preBuild(bld):
     """
     Preprocess zm.waf.wscriptimpl.build

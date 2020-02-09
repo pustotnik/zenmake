@@ -1,7 +1,9 @@
 # coding=utf-8
 #
 
-# pylint: skip-file
+# pylint: disable = wildcard-import, unused-wildcard-import, unused-import
+# pylint: disable = missing-docstring, invalid-name, bad-continuation
+# pylint: disable = no-member, attribute-defined-outside-init
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
@@ -82,7 +84,7 @@ class TestSuite(object):
         assert ecode != 0
 
     def testHelpForCmds(self, capsys):
-        for cmd in cli._commands:
+        for cmd in cli.config.commands:
             args = ['help', cmd.name]
             ecode, out, err = self._parseHelpArgs(args, capsys)
             assert ecode == 0
@@ -104,7 +106,7 @@ class TestSuite(object):
             'distclean': False,
             'tasks': [],
             'verbose': 0,
-            'withTests': False,
+            'withTests': 'no',
             'runTests': 'none',
             'bindir' : None,
             'libdir' : None,
@@ -158,7 +160,7 @@ class TestSuite(object):
             ),
             dict(
                 args = [CMDNAME, '--with-tests', 'yes'],
-                expectedArgsUpdate = {'withTests': True},
+                expectedArgsUpdate = {'withTests': 'yes'},
                 wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
@@ -212,7 +214,7 @@ class TestSuite(object):
             'distclean': False,
             'tasks': [],
             'verbose': 0,
-            'withTests': True,
+            'withTests': 'yes',
             'runTests': 'all',
             'buildroot' : None,
         }
@@ -263,7 +265,7 @@ class TestSuite(object):
             ),
             dict(
                 args = [CMDNAME, '--with-tests', 'no'],
-                expectedArgsUpdate = {'withTests': False},
+                expectedArgsUpdate = {'withTests': 'no'},
                 wafArgs = ['build', CMDNAME] + CMNOPTS,
             ),
             dict(
@@ -312,7 +314,7 @@ class TestSuite(object):
             'color': 'auto',
             'distclean': False,
             'verbose': 0,
-            'withTests': False,
+            'withTests': 'no',
             'bindir' : None,
             'libdir' : None,
             'prefix' : cli.DEFAULT_PREFIX,

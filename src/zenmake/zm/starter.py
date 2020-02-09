@@ -7,13 +7,12 @@
 """
 
 import sys
-import os
 from os import path
 if sys.hexversion < 0x2070000:
     raise ImportError('Python >= 2.7 is required')
 
 #pylint: disable=wrong-import-position
-from zm.constants import WAF_LOCKFILE, CWD
+from zm.constants import CWD
 
 joinpath = path.join
 
@@ -74,11 +73,6 @@ def run():
     Prepare and run ZenMake and Waf with ZenMake stuffs
     """
 
-    # use of Options.lockfile is not enough
-    os.environ['WAFLOCK'] = WAF_LOCKFILE
-    from waflib import Options
-    Options.lockfile = WAF_LOCKFILE
-
     # process buildconf and CLI
     from zm import log, error
     from zm.buildconf.processing import ConfManager as BuildConfManager
@@ -89,9 +83,10 @@ def run():
 
     try:
 
-        # set up waf wrappers
-        from zm.waf import wrappers
-        wrappers.setup()
+        # force loading *feature*_init modules before CLI
+        # pylint: disable = unused-import
+        from zm import features
+        # pylint: enable = unused-import
 
         # We cannot to know if buildconf is changed while buildroot is unknown.
         # This information is stored in the file that is located in buildroot.
@@ -104,6 +99,10 @@ def run():
 
         if cmd.name in _indyCmd:
             return runIndyCmd(cmd)
+
+        # Init color mode for logs. It's necessary because such an initialization
+        # in waflib.Options.OptionsContext.init_logs happens too late.
+        log.enableColorsByCli(cmd.args.color)
 
         if noBuildConf:
             log.error('Config buildconf.py/.yaml not found. Check one '

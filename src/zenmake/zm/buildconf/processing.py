@@ -10,14 +10,15 @@ import os
 from collections import defaultdict
 from copy import deepcopy
 
-from zm.constants import PLATFORM, KNOWN_PLATFORMS, TASK_FEATURES_LANGS, TASK_WAF_FEATURES_MAP
+from zm.constants import PLATFORM, KNOWN_PLATFORMS
 from zm.constants import CWD, INVALID_BUILDTYPES, CONFTEST_DIR_PREFIX
 from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeLogicError, ZenMakeConfError
 from zm.pyutils import stringtype, maptype, viewitems, viewvalues
-from zm import utils, toolchains, log
+from zm import utils, log
 from zm.buildconf import loader
 from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES
+from zm.features import ToolchainVars
 
 joinpath = os.path.join
 abspath  = os.path.abspath
@@ -25,6 +26,9 @@ normpath = os.path.normpath
 dirname  = os.path.dirname
 relpath  = os.path.relpath
 isabs    = os.path.isabs
+isdir    = os.path.isdir
+
+toList = utils.toList
 
 #def _isDevVersion():
 #    """
@@ -123,7 +127,12 @@ class Config(object):
             if isinstance(param, maptype):
                 param['startdir'] = startdir
             else:
-                taskparams['source'] = dict(startdir = startdir, paths = param)
+                param = dict(startdir = startdir, paths = param)
+                taskparams['source'] = param
+            # premake lists to avoid conversions later
+            for arg in ('include', 'exclude', 'paths'):
+                if arg in param:
+                    param[arg] = tuple(toList(param[arg]))
 
         def fixPathParam(taskparams, paramname, startdir):
             param = taskparams.get(paramname, None)
@@ -270,15 +279,14 @@ class Config(object):
 
         names = list(self._conf.tasks.keys())
         for entry in self._conf.matrix:
-            names.extend(utils.toList(entry.get('for', {}).get('task', [])))
+            names.extend(toList(entry.get('for', {}).get('task', [])))
         names = set(names)
         self._meta.tasknames = names
 
     def _handleTasksEnvVars(self, tasks):
 
-        cinfo         = toolchains.CompilersInfo
-        flagVars      = cinfo.allFlagVars()
-        toolchainVars = cinfo.allVarsToSetCompiler()
+        flagVars      = ToolchainVars.allFlagVars()
+        toolchainVars = ToolchainVars.allVarsToSetToolchain()
 
         for taskParams in viewvalues(tasks):
             # handle flags
@@ -289,10 +297,10 @@ class Config(object):
 
                 paramName = var.lower()
 
-                #current = utils.toList(taskParams.get(paramName, []))
+                #current = toList(taskParams.get(paramName, []))
                 # FIXME: should we add or replace? change docs on behavior change
-                #taskParams[paramName] = current + utils.toList(envVal)
-                taskParams[paramName] = utils.toList(envVal)
+                #taskParams[paramName] = current + toList(envVal)
+                taskParams[paramName] = toList(envVal)
 
             # handle toolchains
             for var in toolchainVars:
@@ -308,8 +316,8 @@ class Config(object):
 
         def handleCondition(entry, name):
             condition = entry.get(name, {})
-            buildtypes = utils.toList(condition.get('buildtype', []))
-            platforms = utils.toList(condition.get('platform', []))
+            buildtypes = toList(condition.get('buildtype', []))
+            platforms = toList(condition.get('platform', []))
 
             if buildtypes:
                 if not platforms:
@@ -361,7 +369,7 @@ class Config(object):
         if destPlatform in platforms:
             platformFound = True
             supported = platforms[destPlatform].get('valid', [])
-            supported = utils.toList(supported)
+            supported = toList(supported)
         else:
             supported = self._conf.buildtypes.keys()
         supported = set(supported)
@@ -609,7 +617,6 @@ class Config(object):
         bconfdir = self.confdir
         dirs = [fixpath(bconfdir, x) for x in subdirs]
 
-        isdir = os.path.isdir
         for i, fullpath in enumerate(dirs):
             if not isdir(fullpath):
                 msg = "Error in the buildconf file %r:" % relpath(self.path, CWD)
@@ -669,9 +676,9 @@ class Config(object):
                     result['tasks'] = set()
                 return result
 
-            buildtypes = set(utils.toList(condition.get('buildtype', [])))
-            platforms = set(utils.toList(condition.get('platform', [])))
-            tasks = set(utils.toList(condition.get('task', [])))
+            buildtypes = set(toList(condition.get('buildtype', [])))
+            platforms = set(toList(condition.get('platform', [])))
+            tasks = set(toList(condition.get('task', [])))
 
             if not platforms:
                 platforms = knownPlatforms
@@ -713,40 +720,6 @@ class Config(object):
 
         self._meta.tasks[buildtype] = tasks
         return tasks
-
-    @property
-    def toolchainNames(self):
-        """
-        Get unique names of all toolchains from current build tasks
-        """
-
-        if 'names' in self._meta.toolchains:
-            return self._meta.toolchains.names
-
-        self._checkBuildTypeIsSet()
-
-        # gather unique names
-        _toolchains = set()
-        for taskParams in viewvalues(self.tasks):
-            tool = taskParams.get('toolchain', None)
-            if tool:
-                _toolchains |= set(utils.toList(tool))
-            else:
-                features = utils.toList(taskParams.get('features', []))
-                atools = set()
-                for feature in features:
-                    lang = TASK_WAF_FEATURES_MAP.get(feature, None)
-                    if not lang and feature in TASK_FEATURES_LANGS:
-                        lang = feature
-                    if lang:
-                        atools.add('auto-' + lang.replace('x', '+'))
-                if atools:
-                    _toolchains |= atools
-                    taskParams['toolchain'] = list(atools)
-
-        _toolchains = tuple(_toolchains)
-        self._meta.toolchains.names = _toolchains
-        return _toolchains
 
     @property
     def customToolchains(self):

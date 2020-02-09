@@ -13,12 +13,13 @@ import re
 from copy import deepcopy
 
 from waflib.ConfigSet import ConfigSet
-from waflib.Tools.c_aliases import set_features as setFeatures
 from zm.pyutils import stringtype
-from zm import utils, toolchains, log, version
+from zm import utils, log, version, toolchains
 from zm.error import ZenMakeError
-from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, CWD, TASK_WAF_MAIN_FEATURES, \
-                         TASK_WAF_ALIESES, TASK_WAF_FEATURES_MAP
+from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, CWD, TASK_FEATURE_ALIESES, PLATFORM
+from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
+from zm.features import SUPPORTED_TASK_FEATURES, resolveAliesesInFeatures
+from zm.features import ToolchainVars, getLoadedFeatures
 
 joinpath = os.path.join
 normpath = os.path.normpath
@@ -31,6 +32,8 @@ _usedWafTaskKeys = set([
     'install_path',
 ])
 
+_srcCache = {}
+
 def registerUsedWafTaskKeys(keys):
     ''' Register used Waf task keys '''
     _usedWafTaskKeys.update(keys)
@@ -38,6 +41,14 @@ def registerUsedWafTaskKeys(keys):
 def getUsedWafTaskKeys():
     ''' Get used Waf task keys '''
     return _usedWafTaskKeys
+
+def getAllToolchainEnvVarNames():
+    ''' Get all significant env vars for supported toolchains '''
+
+    envVarNames = ToolchainVars.allFlagVars() + ToolchainVars.allVarsToSetToolchain()
+    envVarNames += ('BUILDROOT',)
+
+    return envVarNames
 
 def dumpZenMakeCmnConfSet(monitfiles, filepath):
     """
@@ -56,11 +67,8 @@ def dumpZenMakeCmnConfSet(monitfiles, filepath):
         zmCmn.monithash = utils.hashOfStrs((zmCmn.monithash,
                                             utils.readFile(file, 'rb')))
 
-    cinfo = toolchains.CompilersInfo
-    envVarNames = cinfo.allFlagVars() + cinfo.allVarsToSetCompiler()
-    envVarNames.append('BUILDROOT')
-
     zmCmn.toolenvs = {}
+    envVarNames = getAllToolchainEnvVarNames()
     for name in envVarNames:
         zmCmn.toolenvs[name] = os.environ.get(name, '')
 
@@ -182,13 +190,23 @@ def setTaskToolchainEnvVars(env, taskParams):
     Set up some env vars for build task such as compiler flags
     """
 
-    cfgEnvVars = toolchains.CompilersInfo.allCfgEnvVars()
+    cfgEnvVars = ToolchainVars.allCfgEnvVars()
     for var in cfgEnvVars:
         val = taskParams.get(var.lower(), None)
         if val:
             # Waf has some usefull predefined env vars for some compilers
             # so here we add values, not replace them.
             env[var] += utils.toList(val)
+
+def getValidPreDefinedToolchainNames():
+    """
+    Return set of valid names of predefined toolchains (without custom toolchains)
+    """
+
+    langs = set(getLoadedFeatures()).intersection(ToolchainVars.allLangs())
+    validNames = {'auto-' + lang.replace('x', '+') for lang in langs}
+    validNames.update(toolchains.getAll(platform = PLATFORM))
+    return validNames
 
 def getTaskNamesWithDeps(tasks, names):
     """
@@ -203,27 +221,65 @@ def getTaskNamesWithDeps(tasks, names):
 
     return result
 
-def detectConfTaskFeatures(taskParams):
+def aliesInFeatures(features):
+    """ Return True if any alies exists in features """
+
+    return bool(TASK_FEATURE_ALIESES.intersection(features))
+
+def detectTaskFeatures(ctx, taskParams):
     """
     Detect all features for task
+    Param 'ctx' is used only if an alies exists in features.
     """
-    features = utils.toList(taskParams.get('features', []))
-    detected = [ TASK_WAF_FEATURES_MAP.get(x, '') for x in features ]
 
+    features = utils.toList(taskParams.get('features', []))
+    if aliesInFeatures(features):
+        features = handleTaskFeatureAlieses(ctx, features, taskParams.get('source'))
+
+    detected = [ TASK_TARGET_FEATURES_TO_LANG.get(x, '') for x in features ]
     features = detected + features
+
     features = utils.uniqueListWithOrder(features)
     if '' in features:
         features.remove('')
     taskParams['features'] = features
+
     return features
 
-def validateConfTaskFeatures(taskParams, validFeatures):
+_RE_EXT_AT_THE_END = re.compile(r'\.\w+$')
+
+def handleTaskFeatureAlieses(ctx, features, source):
+    """
+    Detect features for alieses 'stlib', 'shlib', 'program' and 'objects'
+    """
+
+    if source is None:
+        return features
+
+    assert source
+
+    if source.get('paths') is None:
+        patterns = utils.toList(source.get('include', ''))
+        #ignorecase = source.get('ignorecase', False)
+        #if ignorecase:
+        #    patterns = [x.lower() for x in patterns]
+
+        for pattern in patterns:
+            if not _RE_EXT_AT_THE_END.search(pattern):
+                msg = "Pattern %r in 'source'" % pattern
+                msg += " must have some file extension at the end."
+                raise ZenMakeError(msg)
+
+    source = handleTaskSourceParam(ctx, source)
+    return resolveAliesesInFeatures(source, features)
+
+def validateConfTaskFeatures(taskParams):
     """
     Check all features are valid and remove unsupported features
     """
 
     features = taskParams['features']
-    unknown = [x for x in features if x not in validFeatures]
+    unknown = [x for x in features if x not in SUPPORTED_TASK_FEATURES]
     if unknown:
         for val in unknown:
             features.remove(val)
@@ -335,14 +391,18 @@ def handleTaskExportDefinesParam(taskParams):
 
     taskParams['export-defines'] = utils.toList(exportDefines)
 
-def handleTaskSourceParam(ctx, taskParams):
+def handleTaskSourceParam(ctx, src):
     """
     Get valid 'source' for build task
     """
 
-    src = taskParams.get('source')
     if not src:
         return []
+
+    cacheKey = hash( repr(sorted(src.items())) )
+    cached = _srcCache.get(cacheKey)
+    if cached is not None:
+        return [ctx.root.make_node(x) for x in cached]
 
     bconf = ctx.getbconf()
     startdir = joinpath(bconf.rootdir, src['startdir'])
@@ -368,46 +428,19 @@ def handleTaskSourceParam(ctx, taskParams):
                 msg = "Error in the buildconf file %r:" % relpath(bconf.path, CWD)
                 msg += "\nFile %r from the 'source' not found." % file
                 raise ZenMakeError(msg)
+    else:
+        result = srcDirNode.ant_glob(
+            incl = src.get('include', ''),
+            excl = src.get('exclude', ''),
+            ignorecase = src.get('ignorecase', False),
+            #FIXME: Waf says: Calling ant_glob on build folders is
+            # dangerous. Such a case can be seen if build
+            # the demos/cpp/002-simple
+            remove = False,
+        )
 
-        return result
-
-    return srcDirNode.ant_glob(
-        incl = src.get('include', ''),
-        excl = src.get('exclude', ''),
-        ignorecase = src.get('ignorecase', False),
-        #FIXME: Waf says: Calling ant_glob on build folders is
-        # dangerous. Such a case can be seen if build
-        # the demos/cpp/002-simple
-        remove = False,
-    )
-
-def handleTaskFeaturesAlieses(taskParams):
-    """
-    Detect features for alieses 'stlib', 'shlib', 'program' and 'objects'
-    """
-
-    features = utils.toList(taskParams.get('features', []))
-    source = taskParams.get('source', None)
-    if source is None:
-        taskParams['features'] = features
-        return
-
-    assert source
-
-    found = False
-    alieses = set(TASK_WAF_ALIESES)
-    kwargs = dict( source = source )
-    for feature in features:
-        if feature not in alieses:
-            continue
-        found = True
-        setFeatures(kwargs, feature)
-
-    if not found:
-        return
-
-    features.extend(kwargs['features'])
-    taskParams['features'] = [ x for x in features if x not in alieses]
+    _srcCache[cacheKey] = [x.abspath() for x in result]
+    return result
 
 def checkWafTasksForFeatures(taskParams):
     """
@@ -417,7 +450,7 @@ def checkWafTasksForFeatures(taskParams):
     from waflib import Task
 
     # check only supported Waf features
-    features = tuple(TASK_WAF_MAIN_FEATURES & set(taskParams['features']))
+    features = tuple(TASK_TARGET_FEATURES & set(taskParams['features']))
     for feature in features:
         if feature not in Task.classes:
             msg = "Feature %r can not be processed for task %r." % \
@@ -471,10 +504,9 @@ def distclean(bconfPaths):
     """
 
     verbose = 1
-    import zm.cli as cli
+    from zm import cli
     cmd = cli.selected
     if cmd:
-        log.enableColorsByCli(cmd.args.color)
         verbose = cmd.args.verbose
 
     fullclean(bconfPaths, verbose)
@@ -514,11 +546,8 @@ def areToolchainEnvVarsAreChanged(zmCmnConfSet):
     Detect that current toolchain env vars are changed.
     """
 
-    cinfo = toolchains.CompilersInfo
-    envVarNames = cinfo.allFlagVars() + cinfo.allVarsToSetCompiler()
-    envVarNames.append('BUILDROOT')
-
     lastEnvVars = zmCmnConfSet.toolenvs
+    envVarNames = getAllToolchainEnvVarNames()
     for name in envVarNames:
         if name not in lastEnvVars:
             return True

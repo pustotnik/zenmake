@@ -29,27 +29,8 @@ BUILDCONF_FILENAMES = ['%s%s' % (BUILDCONF_NAME, x) for x in BUILDCONF_EXTS]
 
 INVALID_BUILDTYPES = (WAF_CONFIG_LOG, WAF_CACHE_DIRNAME, WAF_LOCKFILE)
 
-TASK_WAF_ALIESES = ('stlib', 'shlib', 'program', 'objects')
-TASK_WAF_FEATURES_MAP = {
-    'cstlib' : 'c',
-    'cshlib' : 'c',
-    'cprogram' : 'c',
-    'cxxstlib' : 'cxx',
-    'cxxshlib' : 'cxx',
-    'cxxprogram' : 'cxx',
-    'asmstlib' : 'asm',
-    'asmshlib' : 'asm',
-    'asmprogram' : 'asm',
-    'dstlib' : 'd',
-    'dshlib' : 'd',
-    'dprogram' : 'd',
-    'fcstlib' : 'fc',
-    'fcshlib' : 'fc',
-    'fcprogram' : 'fc',
-}
-
-TASK_WAF_MAIN_FEATURES = set(TASK_WAF_FEATURES_MAP.keys())
-TASK_FEATURES_LANGS = set(TASK_WAF_FEATURES_MAP.values())
+TASK_TARGET_KINDS = frozenset(('stlib', 'shlib', 'program'))
+TASK_FEATURE_ALIESES = frozenset(('stlib', 'shlib', 'program', 'objects'))
 
 CWD = os.getcwd()
 PLATFORM = _platform()

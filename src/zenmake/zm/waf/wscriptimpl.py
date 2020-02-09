@@ -25,7 +25,7 @@ from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext
 from zm.pyutils import viewitems
 from zm.utils import toList
-from zm import cli, error
+from zm import cli, error, log
 from zm.waf import assist
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
 
@@ -60,8 +60,9 @@ def init(ctx):
 
     # Next code only for command with 'buildtype' param
 
-    assert id(ctx.bconfManager.root) == id(ctx.getbconf())
-    buildtype = assist.initBuildType(ctx.bconfManager, cliArgs.buildtype)
+    bconf = ctx.getbconf()
+    assert id(ctx.bconfManager.root) == id(bconf)
+    buildtype = bconf.selectedBuildType
 
     setattr(BuildContext, 'variant', buildtype)
 
@@ -73,6 +74,7 @@ def configure(conf):
     """
 
     bconf = conf.getbconf()
+    tasks = bconf.tasks
 
     if not bconf.parent: # for top-level conf only
         # set/fix vars PREFIX, BINDIR, LIBDIR
@@ -85,7 +87,6 @@ def configure(conf):
 
     zmcachedir = bconf.confPaths.zmcachedir
     buildtype = bconf.selectedBuildType
-    tasks = bconf.tasks
 
     # Prepare task envs based on toolchains envs
     for taskName, taskParams in viewitems(tasks):
@@ -203,7 +204,9 @@ def build(bld):
 
     bldPathNode = bld.path
 
+    # tasks from bconf cannot be used here
     tasks = bld.getTasks(buildtype)
+
     allowedTasks = cli.selected.args.tasks
     if allowedTasks:
         allowedTasks = set(assist.getTaskNamesWithDeps(tasks, allowedTasks))
@@ -231,7 +234,7 @@ def build(bld):
             taskParams['includes'].append(bld.bldnode.abspath())
 
         if 'source' in taskParams:
-            source = assist.handleTaskSourceParam(bld, taskParams)
+            source = assist.handleTaskSourceParam(bld, taskParams['source'])
             if not source:
                 msg = "No source files found for task %r." % taskName
                 msg += " Nothing to build. Check config(s) and/or file(s)."
@@ -239,7 +242,6 @@ def build(bld):
 
             taskParams['source'] = source
 
-        assist.handleTaskFeaturesAlieses(taskParams)
         assist.checkWafTasksForFeatures(taskParams)
 
         bldParams = taskParams.copy()
@@ -262,6 +264,15 @@ def build(bld):
     # It's neccesary to return to original variant otherwise WAF won't find
     # correct path at the end of the building step.
     bld.variant = buildtype
+
+def test(_):
+    """
+    It is special stub for the case when a project has no tests but
+    user has called the command 'test'.
+    This function is not called if module for the feature 'test' is loaded.
+    """
+
+    log.warn("There are no tests to build and run")
 
 def distclean(ctx):
     """

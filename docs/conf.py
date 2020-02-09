@@ -49,7 +49,7 @@ extensions = [
     #'sphinx.ext.ifconfig',
     #'sphinx.ext.viewcode',
     #'sphinx.ext.intersphinx',
-    'sphinxcontrib.spelling',
+    #'sphinxcontrib.spelling',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
