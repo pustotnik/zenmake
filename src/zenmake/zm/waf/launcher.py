@@ -190,10 +190,6 @@ def run(cwd, cmd, wafCmdLine, bconfManager):
     bconf = bconfManager.root
     bconfPaths = bconf.confPaths
 
-    # set up waf wrappers
-    from zm.waf import wrappers
-    wrappers.setup()
-
     # use of Options.lockfile is not enough
     os.environ['WAFLOCK'] = WAF_LOCKFILE
     Options.lockfile = WAF_LOCKFILE

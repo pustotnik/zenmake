@@ -88,6 +88,11 @@ def run():
         from zm import features
         # pylint: enable = unused-import
 
+        # set up waf wrappers
+        # some indy commands rely on them too
+        from zm.waf import wrappers
+        wrappers.setup()
+
         # We cannot to know if buildconf is changed while buildroot is unknown.
         # This information is stored in the file that is located in buildroot.
         # But buildroot can be set on the command line and we must to parse CLI
