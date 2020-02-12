@@ -142,6 +142,13 @@ options
             any: false
             build: true
 
+    .. note::
+        Selected command here is a command that is used on command line.
+        It means if you set some option for command ``build`` and zenmake calls
+        the command ``configure`` before this command itself then this option will
+        be applied for both ``configure`` and ``build``. In other words it's
+        like you run this command with this option on command line.
+
 tasks
 """""
     A `dict <buildconf-dict-def_>`_ with build tasks. Each task has own

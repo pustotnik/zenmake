@@ -21,7 +21,8 @@ from zm.autodict import AutoDict as _AutoDict
 ParsedCommand = namedtuple('ParsedCommand', 'name, args')
 
 """
-Object of ParsedCommand with current command after last parsing of command line
+Object of ParsedCommand with current command after last parsing of command line.
+This variable can be changed outside and is used to get CLI command and args.
 """
 selected = None
 
@@ -138,6 +139,7 @@ class Option(_AutoDict):
 # Special param 'runcmd' is used to declare option that runs another command
 # before current. There is no need to set 'action' in that case. And it can not
 # be used for global options, of course.
+# See also *_init.py in zm.features for extra options
 config.options = [
     # global options that are used before command in cmd line
     Option(
@@ -216,6 +218,20 @@ config.options = [
         action = "count",
         commands = [x.name for x in config.commands if x.name != 'help'],
         help = 'verbosity level -v -vv or -vvv',
+    ),
+    Option(
+        names = ['-A', '--verbose-configure'],
+        dest = 'verboseConfigure',
+        action = "count",
+        commands = ['configure', 'build', 'install', 'uninstall', 'test'],
+        help = 'verbosity level -A -AA or -AAA for configure stage',
+    ),
+    Option(
+        names = ['-B', '--verbose-build'],
+        dest = 'verboseBuild',
+        action = "count",
+        commands = ['build', 'install', 'uninstall', 'test'],
+        help = 'verbosity level -B -BB or -BBB for build stage',
     ),
     Option(
         names = ['--color'],
@@ -478,14 +494,14 @@ class CmdLineParser(object):
                 args.insert(0, defaultCmd)
 
         # parse
-        args = self._parser.parse_args(args)
-        cmd = self._cmdNameMap[args.command]
+        parsedArgs = self._parser.parse_args(args)
+        cmd = self._cmdNameMap[parsedArgs.command]
 
         if cmd.name == 'help':
-            self._fillCmdInfo(args)
-            sys.exit(not self._showHelp(self._commandHelps, args.topic))
+            self._fillCmdInfo(parsedArgs)
+            sys.exit(not self._showHelp(self._commandHelps, parsedArgs.topic))
 
-        self._fillCmdInfo(args)
+        self._fillCmdInfo(parsedArgs)
         self._fillWafCmdLine()
         return self._command
 

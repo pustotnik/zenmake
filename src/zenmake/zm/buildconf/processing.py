@@ -132,7 +132,7 @@ class Config(object):
             # premake lists to avoid conversions later
             for arg in ('include', 'exclude', 'paths'):
                 if arg in param:
-                    param[arg] = tuple(toList(param[arg]))
+                    param[arg] = toList(param[arg])
 
         def fixPathParam(taskparams, paramname, startdir):
             param = taskparams.get(paramname, None)

@@ -31,7 +31,13 @@ def enableColorsByCli(colorArg):
     Logs.enable_colors(setup)
 
 def verbose():
-    """
-    Wrapper of Logs.verbose
-    """
+    """ Get value of Logs.verbose """
     return Logs.verbose
+
+def setVerbose(value):
+    """ Set value of Logs.verbose """
+    Logs.verbose = value
+
+def setZones(zones):
+    """ Set value of Logs.zones """
+    Logs.zones = zones

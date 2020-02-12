@@ -85,11 +85,12 @@ def run():
 
         # pylint: disable = unused-import
 
+        # load and set waf wrappers
+        # some indy commands depend on them too
+        from zm.waf import wrappers
+
         # force loading *feature*_init modules before CLI
         from zm import features
-        # load waf wrappers
-        # some indy commands rely on them too
-        from zm.waf import wrappers
 
         # pylint: enable = unused-import
 
@@ -106,7 +107,7 @@ def run():
             return runIndyCmd(cmd)
 
         # Init color mode for logs. It's necessary because such an initialization
-        # in waflib.Options.OptionsContext.init_logs happens too late.
+        # in waf.options.OptionsContext.init_logs happens too late.
         log.enableColorsByCli(cmd.args.color)
 
         if noBuildConf:

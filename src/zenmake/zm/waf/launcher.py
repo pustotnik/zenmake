@@ -19,8 +19,9 @@ from zm import WAF_DIR
 #from zm.constants import BUILDCONF_FILENAMES
 from zm.constants import WAF_LOCKFILE
 from zm.pyutils import viewvalues
-from zm import log, utils
+from zm import log, utils, cli
 from zm.waf import wscriptimpl, assist
+from zm.waf.options import setupOptionVerbose
 
 #pylint: disable=unused-import
 # These modules must be just imported
@@ -139,8 +140,19 @@ def runCommand(bconfManager, cmdName):
     Executes a single Waf command.
     """
 
-    #FIXME: fix the problem with verbose and other global options.
-    # See demos/cpp/04-complex
+    cliArgs = cli.selected.args
+
+    verbose = None
+    if cmdName == 'configure':
+        verbose = cliArgs.get('verboseConfigure')
+    elif cmdName == 'build':
+        verbose = cliArgs.get('verboseBuild')
+    if verbose is None:
+        verbose = cliArgs.verbose
+
+    if Options.options.verbose != verbose:
+        Options.options.verbose = verbose
+        setupOptionVerbose(Options.options)
 
     ctx = Context.create_context(cmdName)
     ctx.log_timer = utils.Timer()

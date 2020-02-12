@@ -34,6 +34,11 @@ from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
 from zm.features import ToolchainVars, loadTools
 from zm.waf import assist
 
+#pylint: disable=unused-import
+# This module must be just imported
+from zm.waf import options
+#pylint: enable=unused-import
+
 joinpath = os.path.join
 
 CONFTEST_CACHE_FILE = 'conf_check_cache'
