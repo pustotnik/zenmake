@@ -69,6 +69,7 @@ def gatherSysInfo():
     assert 'zm.waf.wrappers' in sys.modules
 
     import subprocess
+    import multiprocessing
     import platform as _platform
     from distutils.spawn import find_executable
     from waflib import Context, Utils
@@ -79,6 +80,7 @@ def gatherSysInfo():
 
     info.append('= System information =')
     info.append('CPU name: %s' % _platform.processor())
+    info.append('Number of CPUs: %s' % multiprocessing.cpu_count())
     info.append('Bit architecture: %s' % _platform.architecture()[0])
     info.append('Platform: %s' % PLATFORM)
     info.append('Platform id string: %s' % _platform.platform())
