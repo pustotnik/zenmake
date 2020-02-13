@@ -146,14 +146,15 @@ install:
       python -m pip install pytest
       python -m pip install pytest-cov
       python -m pip install pytest-mock
+      python -m pip install pytest-xdist
       python -m pip install coveralls
 
 script:
   - |
-    python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=2
+    python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=2 -n auto
     RESULT=$?
     if [[ $RESULT -eq 0 ]]; then
-      python -m pytest tests -v -k "zipapp" --maxfail=2
+      python -m pytest tests -v -k "zipapp" --maxfail=2 -n auto
     else
       exit $RESULT
     fi
