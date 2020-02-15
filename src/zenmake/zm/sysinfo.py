@@ -87,37 +87,48 @@ def gatherSysInfo():
     info.append('Python version: %s' % _platform.python_version())
     info.append('Python implementation: %s' % _platform.python_implementation())
 
+    info.append('--------------------')
+    info.append('Detected toolchains:')
+
+    def getMsvcVersion():
+        if Utils.winreg is not None:
+            msvcModule = Context.load_tool('msvc')
+
+            cfgCtx = None
+            try:
+                cfgCtx = ConfContext()
+                cfgCtx.prepare()
+                version = msvcModule.detect_msvc(cfgCtx)[1]
+            except waferror.ConfigurationError:
+                version = 'not recognized'
+            finally:
+                if cfgCtx:
+                    cfgCtx.finalize()
+        else:
+            version = 'not recognized'
+        return version
+
     compilers = [
         _AutoDict(header = 'GCC', bin = 'gcc', verargs = ['--version']),
         _AutoDict(header = 'CLANG', bin = 'clang', verargs = ['--version']),
+        _AutoDict(header = 'MSVC', func = getMsvcVersion),
+        _AutoDict(header = 'DMD', bin = 'dmd', verargs = ['--version']),
+        _AutoDict(header = 'LDC', bin = 'ldc2', verargs = ['--version']),
+        _AutoDict(header = 'GDC', bin = 'gdc', verargs = ['--version']),
     ]
+
     for compiler in compilers:
-        _bin = find_executable(compiler.bin)
-        if _bin:
-            ver = subprocess.check_output([_bin] + compiler.verargs,
-                                          universal_newlines = True)
-            ver = ver.split('\n')[0]
+        if 'func' in compiler:
+            ver = compiler.func()
         else:
-            ver = 'not recognized'
+            _bin = find_executable(compiler.bin)
+            if _bin:
+                ver = subprocess.check_output([_bin] + compiler.verargs,
+                                              universal_newlines = True)
+                ver = ver.split('\n')[0]
+            else:
+                ver = 'not recognized'
         info.append('%s: %s' % (compiler.header, ver))
-
-    if Utils.winreg is not None:
-        msvcModule = Context.load_tool('msvc')
-
-        cfgCtx = None
-        try:
-            cfgCtx = ConfContext()
-            cfgCtx.prepare()
-            version = msvcModule.detect_msvc(cfgCtx)[1]
-        except waferror.ConfigurationError:
-            version = 'not recognized'
-        finally:
-            if cfgCtx:
-                cfgCtx.finalize()
-    else:
-        version = 'not recognized'
-
-    info.append('%s: %s' % ('MSVC', version))
 
     return info
 
