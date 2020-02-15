@@ -19,6 +19,11 @@ compiler:
   - clang
   - gcc
 
+d:
+  - dmd
+  - gdc
+  - ldc
+
 addons:
   apt:
     #update: true
@@ -32,6 +37,8 @@ addons:
     packages:
       - boost
       - boost-python
+      - dmd
+      - ldc
 
 # most problematic jobs are at first places
 jobs:
