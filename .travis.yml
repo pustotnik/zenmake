@@ -151,11 +151,12 @@ install:
 
 script:
   - |
-    if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
-      PARALLEL="-n auto"
-    else
-      PARALLEL=""
-    fi
+    #if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
+    #  PARALLEL="-n auto"
+    #else
+    #  PARALLEL=""
+    #fi
+    PARALLEL=""
     python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=2 $PARALLEL
     RESULT=$?
     if [[ $RESULT -eq 0 ]]; then
