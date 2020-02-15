@@ -19,11 +19,6 @@ compiler:
   - clang
   - gcc
 
-d:
-  - dmd
-  - gdc
-  - ldc
-
 addons:
   apt:
     #update: true
@@ -32,6 +27,8 @@ addons:
     - bison
     - nasm
     - yasm
+    - gdc
+    - ldc
     - libboost-all-dev
   homebrew:
     packages:
@@ -153,21 +150,16 @@ install:
       python -m pip install pytest
       python -m pip install pytest-cov
       python -m pip install pytest-mock
-      python -m pip install pytest-xdist
       python -m pip install coveralls
 
 script:
   - |
-    #if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
-    #  PARALLEL="-n auto"
-    #else
-    #  PARALLEL=""
-    #fi
-    PARALLEL=""
-    python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=2 $PARALLEL
+    # pytest-xdist is too unstable and has no effect on travis ci
+
+    python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=2
     RESULT=$?
     if [[ $RESULT -eq 0 ]]; then
-      python -m pytest tests -v -k "zipapp" --maxfail=2 $PARALLEL
+      python -m pytest tests -v -k "zipapp" --maxfail=2
     else
       exit $RESULT
     fi
