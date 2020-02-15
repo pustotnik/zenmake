@@ -17,9 +17,9 @@ import pytest
 
 from waflib.ConfigSet import ConfigSet
 from waflib.Context import Context
-import tests.common as cmn
 from zm.autodict import AutoDict
 from zm.waf import context
+import tests.common as cmn
 
 def testLoadTasksFromCache(tmpdir):
 

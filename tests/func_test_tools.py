@@ -24,7 +24,7 @@ from waflib import Context
 from waflib.ConfigSet import ConfigSet
 from zm import starter
 from zm import pyutils, utils, zipapp
-from zm.pyutils import viewitems
+from zm.pyutils import viewitems, viewvalues
 from zm.waf import assist
 from zm.autodict import AutoDict
 from zm.buildconf import loader as bconfloader
@@ -126,9 +126,7 @@ def setupTest(self, request, tmpdir):
     projectDirName = 'prj'
 
     # On windows with pytest it gets too long path
-    #useAltTmpTestDir = PLATFORM == 'windows'
-    useAltTmpTestDir = False
-    #TODO: check on windows !!!
+    useAltTmpTestDir = PLATFORM == 'windows'
 
     if useAltTmpTestDir:
         projectDirName = '_' # shortest name
@@ -159,9 +157,15 @@ def setupTest(self, request, tmpdir):
     self.cwd = joinpath(tmptestDir, os.sep.join(testPathParts[2:]))
     self.projectConf = bconfloader.load(dirpath = self.cwd)
 
-def processConfHandlerWithCLI(testSuit, cmdLine):
+def processConfManagerWithCLI(testSuit, cmdLine):
     cmdLine = list(cmdLine)
     cmdLine.insert(0, APPNAME)
+
+    try:
+        if testSuit.cmdLine == cmdLine:
+            return testSuit.confManager
+    except AttributeError:
+        pass
 
     cmd, _ = starter.handleCLI(cmdLine, True, None)
     cliBuildRoot = cmd.args.get('buildroot', None)
@@ -173,6 +177,9 @@ def processConfHandlerWithCLI(testSuit, cmdLine):
 
     cmd, _ = starter.handleCLI(cmdLine, False, confManager.root.options)
     assist.initBuildType(confManager, cmd.args.buildtype)
+
+    testSuit.cmdLine = cmdLine
+    return testSuit.confManager
 
 def getTaskEnv(testSuit, taskName):
     bconf = testSuit.confManager.root
@@ -217,7 +224,7 @@ def getBuildTasks(confManager):
                 taskParams['ver-num'] = prjver
     return tasks
 
-def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
+def obtainBuildTargets(testSuit, cmdLine, withTests = False):
 
     def makeConfDict(conf, deep):
         result = AutoDict()
@@ -231,8 +238,9 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
 
     _conf = makeConfDict(testSuit.projectConf, deep = True)
 
-    # checks for target files
-    processConfHandlerWithCLI(testSuit, cmdLine)
+    result = {}
+
+    processConfManagerWithCLI(testSuit, cmdLine)
     confManager = testSuit.confManager
     buildtype = confManager.root.selectedBuildType
     buildout = confManager.root.confPaths.buildout
@@ -250,13 +258,17 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
             continue
 
         if not [ x for x in features if x in TASK_TARGET_FEATURES ]:
-            # check only TASK_TARGET_FEATURES
+            # use only TASK_TARGET_FEATURES
             continue
 
+        info = {}
         taskEnv = getTaskEnv(testSuit, taskName)
         fpattern, targetKind = getTargetPattern(taskEnv, features)
         target = taskParams.get('target', taskName)
         targetdir = joinpath(buildout, buildtype)
+
+        info['targets-required'] = []
+        info['targets-one-of'] = []
 
         if targetKind == 'shlib':
             targetpath = joinpath(targetdir, fpattern % target)
@@ -264,39 +276,62 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False):
             if verNum:
                 nums = verNum.split('.')
                 alttarget = target + '-' + nums[0]
-                paths = [targetpath,
+                info['targets-one-of'] = [targetpath,
                     joinpath(targetdir, fpattern % alttarget)]
-                if resultExists:
-                    assert any(isfile(x) for x in paths)
-                else:
-                    assert all(not isfile(x) for x in paths)
 
                 if isLinux:
                     targetpath1 = targetpath + '.' + nums[0]
                     targetpath2 = targetpath + '.' + verNum
-                    assert isfile(targetpath1) == resultExists
-                    assert isfile(targetpath2) == resultExists
+                    info['targets-required'] += [targetpath1, targetpath2]
+
                 elif targetpath.endswith('.dylib'):
                     fname = fpattern % (target + '.' + nums[0])
-                    assert isfile(joinpath(targetdir, fname)) == resultExists
+                    info['targets-required'].append(joinpath(targetdir, fname))
                     fname = fpattern % (target + '.' + verNum)
-                    assert isfile(joinpath(targetdir, fname)) == resultExists
+                    info['targets-required'].append(joinpath(targetdir, fname))
             else:
-                assert isfile(targetpath) == resultExists
+                info['targets-required'].append(targetpath)
 
             if isWindows:
                 targetpath = joinpath(targetdir, '%s.lib' % target)
-                assert isfile(targetpath) == resultExists
+                info['targets-required'].append(targetpath)
         else:
             targetpath = joinpath(targetdir, fpattern % target)
-            assert isfile(targetpath) == resultExists
+            info['targets-required'].append(targetpath)
 
-        if targetKind == 'exe' and resultExists:
-            targetpath = joinpath(targetdir, fpattern % target)
-            assert os.access(targetpath, os.X_OK)
+        info['kind'] = targetKind
+        result[taskName] = info
 
-    # check original buildconf was not changed
+     # check original buildconf was not changed
     assert _conf == makeConfDict(testSuit.projectConf, deep = False)
+
+    return result
+
+def checkBuildTargets(targets, resultExists, fakeBuild = False):
+
+    for targetsInfo in viewvalues(targets):
+
+        kind = targetsInfo['kind']
+        targets = targetsInfo['targets-required']
+        for target in targets:
+            assert isfile(target) == resultExists
+
+        if kind == 'exe' and resultExists and not fakeBuild:
+            assert len(targets) == 1
+            assert os.access(targets[0], os.X_OK)
+
+        targets = targetsInfo['targets-one-of']
+        if targets:
+            if resultExists:
+                assert any(isfile(x) for x in targets)
+            else:
+                assert all(not isfile(x) for x in targets)
+
+def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False,
+                                                       fakeBuild = False):
+
+    targets = obtainBuildTargets(testSuit, cmdLine, withTests)
+    checkBuildTargets(targets, resultExists, fakeBuild)
 
 def gatherEventsFromOutput(output):
 

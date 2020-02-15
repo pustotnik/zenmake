@@ -265,7 +265,7 @@ def testRunConfTestsUnknown(mocker, cfgctx):
 def _checkToolchainNames(ctx, buildconf, buildtype, expected):
     bconf = BuildConfig(asRealConf(buildconf))
     bconf.applyBuildType(buildtype)
-    assert sorted(ctx.getToolchainNames(bconf)) == sorted(expected)
+    assert sorted(ctx.handleToolchainNames(bconf)) == sorted(expected)
 
 def testToolchainNames(testingBuildConf, cfgctx):
 
@@ -276,7 +276,7 @@ def testToolchainNames(testingBuildConf, cfgctx):
     # CASE: invalid use
     bconf = BuildConfig(asRealConf(buildconf))
     with pytest.raises(ZenMakeLogicError):
-        _ = ctx.getToolchainNames(bconf)
+        _ = ctx.handleToolchainNames(bconf)
 
     buildconf.buildtypes['debug-gxx'] = {}
     buildconf.buildtypes.default = 'debug-gxx'
@@ -289,7 +289,7 @@ def testToolchainNames(testingBuildConf, cfgctx):
     bconf = BuildConfig(asRealConf(buildconf))
     bconf.applyBuildType(buildtype)
     # it returns tuple but it can return list so we check by len
-    assert len(ctx.getToolchainNames(bconf)) == 0
+    assert len(ctx.handleToolchainNames(bconf)) == 0
 
     # CASE: tasks with the same toolchain
     buildconf = deepcopy(testingBuildConf)
@@ -316,7 +316,7 @@ def testToolchainNames(testingBuildConf, cfgctx):
     bconf = BuildConfig(asRealConf(buildconf))
     bconf.applyBuildType(buildtype)
     # it returns tuple but it can return list so we check by len
-    assert len(ctx.getToolchainNames(bconf)) == 0
+    assert len(ctx.handleToolchainNames(bconf)) == 0
 
     # CASE: tasks in matrix with the same toolchain
     buildconf = deepcopy(testingBuildConf)

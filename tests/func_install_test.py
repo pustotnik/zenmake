@@ -56,7 +56,7 @@ class TestInstall(object):
         isWindows = PLATFORM == 'windows'
 
         targets = set()
-        processConfHandlerWithCLI(self, cmdLine)
+        processConfManagerWithCLI(self, cmdLine)
         tasks = getBuildTasks(self.confManager)
         for taskName, taskParams in viewitems(tasks):
 

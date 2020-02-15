@@ -18,7 +18,6 @@ from zm.autodict import AutoDict
 from zm.error import *
 from zm.constants import *
 from zm import utils
-from zm.features import ToolchainVars
 from zm.buildconf.processing import Config as BuildConfig
 from tests.common import asRealConf, randomstr
 
@@ -299,7 +298,7 @@ class TestSuite(object):
         # to force covering of cache
         assert bconf.tasks == expected
 
-    def testTasks(self, testingBuildConf, monkeypatch):
+    def testTasks(self, testingBuildConf):
         buildconf = testingBuildConf
 
         # CASE: invalid use
@@ -364,48 +363,6 @@ class TestSuite(object):
         assert expected.test1.toolchain == 'gcc'
         assert expected.test2.toolchain == 'gcc'
         self._checkTasks(buildconf, buildtype, expected)
-
-        # CASE: influence of compiler flags from system environment
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.tasks.test1.param1 = '111'
-        buildconf.tasks.test2.param2 = '222'
-
-        testOldVal = 'val1 val2'
-        testNewVal = 'val11 val22'
-        testNewValAsList = utils.toList(testNewVal)
-        flagVars = ToolchainVars.allFlagVars()
-        for var in flagVars:
-            param = var.lower()
-            buildconf.buildtypes.mybuildtype = { param : testOldVal }
-            expected = deepcopy(buildconf.tasks)
-            for task in expected:
-                expected[task].update({ param : testNewValAsList })
-            # self checking
-            assert expected.test1[param] == testNewValAsList
-            assert expected.test2[param] == testNewValAsList
-
-            monkeypatch.setenv(var, testNewVal)
-            self._checkTasks(buildconf, buildtype, expected)
-            monkeypatch.delenv(var, raising = False)
-
-        # CASE: influence of compiler var from system environment
-        buildconf = deepcopy(testingBuildConf)
-        testOldVal = 'old-compiler'
-        testNewVal = 'new-compiler'
-        toolchainVars = ToolchainVars.allVarsToSetToolchain()
-        for var in toolchainVars:
-            param = var.lower()
-            buildconf.tasks.test1.features = ''
-            buildconf.tasks.test1.toolchain = testOldVal
-            buildconf.tasks.test2.features = param
-            buildconf.tasks.test2.toolchain = testOldVal
-            expected = deepcopy(buildconf.tasks)
-            expected.test1.toolchain = testOldVal
-            expected.test2.toolchain = testNewVal
-
-            monkeypatch.setenv(var, testNewVal)
-            self._checkTasks(buildconf, buildtype, expected)
-            monkeypatch.delenv(var, raising = False)
 
     def testTasksMatrix(self, testingBuildConf):
 

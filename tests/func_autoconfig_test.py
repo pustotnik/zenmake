@@ -53,16 +53,18 @@ class TestAutoconfig(object):
 
     def testEnvVars(self, allZmExe, project, toolEnvVar):
 
+        env = { 'ZENMAKE_TESTING_MODE' : '1' }
+
         # first run
         cmdLine = ['build']
-        returncode, stdout, _ = runZm(self, cmdLine)
+        returncode, stdout, _ = runZm(self, cmdLine, env)
         assert returncode == 0
 
         # then it should be checked
 
         # Such a way breaks building but here is testing of reacting, not building.
-        os.environ[self.toolEnvVar] = cmn.randomstr()
-        _, stdout, _ = runZm(self, cmdLine)
+        env[self.toolEnvVar] = cmn.randomstr()
+        _, stdout, _ = runZm(self, cmdLine, env)
         assert "Setting top to" in stdout
         assert "Setting out to" in stdout
 

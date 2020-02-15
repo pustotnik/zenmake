@@ -127,8 +127,8 @@ def configure(conf):
         # creates the new object and it is not really needed here
         conf.setDirectEnv(taskVariant, taskEnv)
 
-        # set toolchain env variables
-        assist.setTaskToolchainEnvVars(conf.env, taskParams)
+        # set task env variables
+        assist.setTaskEnvVars(conf.env, taskParams)
 
         # configure all possible task params
         conf.configureTaskParams(bconf, taskParams)

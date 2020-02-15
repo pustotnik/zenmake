@@ -10,10 +10,11 @@
 
 import os
 import re
+import shlex
 from copy import deepcopy
 
 from waflib.ConfigSet import ConfigSet
-from zm.pyutils import stringtype
+from zm.pyutils import viewitems, stringtype
 from zm import utils, log, version, toolchains
 from zm.error import ZenMakeError
 from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, CWD, TASK_FEATURE_ALIESES, PLATFORM
@@ -185,18 +186,47 @@ def applyInstallPaths(env, clicmd):
         if not isabs(val):
             env[var] = '/' + val
 
-def setTaskToolchainEnvVars(env, taskParams):
+def setTaskEnvVars(env, taskParams):
     """
     Set up some env vars for build task such as compiler flags
     """
 
+    # Right order:
+    # waf env + bconf + sys env
+
+    _gathered = {}
+
+    # all Waf env vars that can be set from buildconf params
     cfgEnvVars = ToolchainVars.allCfgEnvVars()
+    # read flags from the buildconf
     for var in cfgEnvVars:
-        val = taskParams.get(var.lower(), None)
+        paramName = var.lower()
+        val = taskParams.get(paramName)
         if val:
-            # Waf has some usefull predefined env vars for some compilers
-            # so here we add values, not replace them.
-            env[var] += utils.toList(val)
+            _gathered[var] = utils.toList(val)
+
+    # get all system env flag vars
+    flagVars = ToolchainVars.allFlagVars()
+    # read flags from the system environment
+    for var in flagVars:
+        val = os.environ.get(var, None)
+        #print(var, val)
+        if not val:
+            continue
+
+        paramName = var.lower()
+        _gathered[var] = _gathered.get(var, []) + shlex.split(val)
+
+    # merge with the waf env vars
+    for var, val in viewitems(_gathered):
+        # Waf has some usefull predefined env vars for some compilers
+        # so here we add values, not replace them.
+        val = env[var] + val
+
+        # remove duplicates: keep only last unique value in the list
+        val = utils.uniqueListWithOrder(reversed(val))
+        val.reverse()
+        env[var] = val
 
 def getValidPreDefinedToolchainNames():
     """

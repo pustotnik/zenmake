@@ -154,7 +154,7 @@ class TestBase(object):
         assert not os.path.exists(self.confPaths.buildroot)
 
     @pytest.mark.skipif(PLATFORM == 'windows',
-                        reason = 'I have no useful windows installation for tests')
+                        reason = 'No useful windows installation for tests')
     def testCustomToolchain(self, customtoolchains):
 
         cmdLine = ['build']

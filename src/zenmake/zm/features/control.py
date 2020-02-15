@@ -248,9 +248,8 @@ def _initHooks():
         for funcMeta in hooksInfo.funcs:
             funcMeta.func(ctx)
 
-    def wrap(method):
+    def wrap(method, methodName):
         def execute(ctx):
-            methodName = method.__name__
             callHooks(_hooks[methodName].pre, ctx)
             method(ctx)
             callHooks(_hooks[methodName].post, ctx)
@@ -263,7 +262,7 @@ def _initHooks():
             pre  = HooksInfo( funcs = [], sorted = set() ),
             post = HooksInfo( funcs = [], sorted = set() )
         )
-        setattr(wscript, cmd, wrap(getattr(wscript, cmd)))
+        setattr(wscript, cmd, wrap(getattr(wscript, cmd), cmd))
 
     _cache['hooks-are-ready'] = True
 

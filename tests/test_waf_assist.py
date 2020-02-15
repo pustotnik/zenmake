@@ -141,7 +141,7 @@ def testSetTaskEnvVars():
 
     for taskParams in taskParamsFixture:
         env = ConfigSet()
-        assist.setTaskToolchainEnvVars(env, taskParams)
+        assist.setTaskEnvVars(env, taskParams)
         for key, val in taskParams.items():
             envkey = key.upper()
             assert envkey in env

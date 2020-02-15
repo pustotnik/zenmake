@@ -19,7 +19,7 @@ from zm.pypkg import PkgPath
 
 joinpath = os.path.join
 
-def testUnfoldPath():
+def testUnfoldPath(monkeypatch):
     # it should be always absolute path
     cwd = os.getcwd()
 
@@ -33,7 +33,7 @@ def testUnfoldPath():
     assert joinpath(cwd, relpath) == path
     assert os.path.isabs(utils.unfoldPath(abspath, relpath))
 
-    os.environ['ABC'] = 'qwerty'
+    monkeypatch.setenv('ABC', 'qwerty')
 
     assert joinpath(cwd, 'qwerty', relpath) == \
                     utils.unfoldPath(cwd, joinpath('$ABC', relpath))

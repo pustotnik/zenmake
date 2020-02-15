@@ -7,6 +7,7 @@
 """
 
 import sys
+import os
 from os import path
 if sys.hexversion < 0x2070000:
     raise ImportError('Python >= 2.7 is required')
@@ -68,6 +69,24 @@ def findTopLevelBuildConfDir(startdir):
 
     return found
 
+def loadTesting():
+    """
+    Check if it's testing mode and load testing mode if it's necessary
+    """
+
+    # Special flag for ZenMake testing
+    testing = os.environ.get('ZENMAKE_TESTING_MODE', '')
+    try:
+        # value from os.environ is a string but it may be a digit
+        if testing:
+            testing = int(testing)
+    except ValueError:
+        pass
+
+    if testing:
+        # pylint: disable = unused-import
+        import zm.testing
+
 def run():
     """
     Prepare and run ZenMake and Waf with ZenMake stuffs
@@ -93,6 +112,8 @@ def run():
         from zm import features
 
         # pylint: enable = unused-import
+
+        loadTesting()
 
         # We cannot to know if buildconf is changed while buildroot is unknown.
         # This information is stored in the file that is located in buildroot.

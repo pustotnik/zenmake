@@ -11,18 +11,23 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+import os
+import fnmatch
 import pytest
 
+from zm import utils
+from zm.features import ToolchainVars
+from zm.testing import loadFromJson
 from tests.func_test_tools import *
 
 @pytest.mark.usefixtures("unsetEnviron")
-class TestBuildRoot(object):
+class TestParams(object):
 
     @pytest.fixture(params = getZmExecutables(), autouse = True)
     def allZmExe(self, request):
         self.zmExe = zmExes[request.param]
 
-    @pytest.fixture(params = [joinpath('c', '02-simple'), joinpath('cpp', '02-simple')])
+    @pytest.fixture(params = [joinpath('c', '02-simple'), joinpath('cpp', '04-complex')])
     def project(self, request, tmpdir):
 
         def teardown():
@@ -31,18 +36,135 @@ class TestBuildRoot(object):
         request.addfinalizer(teardown)
         setupTest(self, request, tmpdir)
 
-    def testInCLI(self, project):
+        return request.param
 
+    def testBuildRootInCLI(self, project):
+
+        env = { 'ZENMAKE_TESTING_MODE' : '1' }
         cmdLine = ['build', '-o', '_bld']
-        assert runZm(self, cmdLine)[0] == 0
-        checkBuildResults(self, cmdLine, True)
+        assert runZm(self, cmdLine, env)[0] == 0
+        checkBuildResults(self, cmdLine, resultExists = True, fakeBuild = True)
         assert self.confPaths.buildroot == joinpath(self.confPaths.buildconfdir, '_bld')
 
-    def testInEnv(self, project, monkeypatch):
+    def testBuildRootInEnv(self, project, monkeypatch):
 
-        monkeypatch.setenv('BUILDROOT', '_bld_')
-        env = { 'BUILDROOT' : '_bld_' }
+        monkeypatch.setenv('BUILDROOT', '_bld_') # for checkBuildResults
+
+        env = { 'BUILDROOT' : '_bld_', 'ZENMAKE_TESTING_MODE' : '1' }
         cmdLine = ['build']
         assert runZm(self, cmdLine, env)[0] == 0
-        checkBuildResults(self, cmdLine, True)
+        checkBuildResults(self, cmdLine, resultExists = True, fakeBuild = True)
         assert self.confPaths.buildroot == joinpath(self.confPaths.buildconfdir, '_bld_')
+
+    @pytest.mark.skipif(PLATFORM != 'linux',
+                        reason = "It's enough to test on linux only")
+    def testToolchainVars(self, project):
+
+        projectLang = os.path.split(project)[-2].replace('p', 'x')
+        fixture = {
+            'c' : {
+                'gcc': {
+                    'compflags' : '',
+                    'linkflags' : '',
+                    'ldflags'   : '-Wl,-rpath,.',
+                },
+                'clang': {
+                    'compflags' : '-O1 -g',
+                    'linkflags' : '-Wl,-rpath,. ',
+                    'ldflags'   : '',
+                },
+            },
+            'cxx': {
+                'g++': {
+                    'compflags' : '-O2 -Wall',
+                    'linkflags' : '-Wl,-rpath,. -Wl,--as-needed',
+                    'ldflags'   : '-fsanitize=address',
+                },
+                'clang++': {
+                    'compflags' : '-O3 -Wall -Wextra',
+                    'linkflags' : '-Wl,--as-needed -fsanitize=address',
+                    'ldflags'   : '-Wl,-rpath,.',
+                },
+            },
+        }
+
+        def formExpectedFlags(flags):
+            flags = utils.uniqueListWithOrder(reversed(flags))
+            flags.reverse()
+            return flags
+
+        env = { 'ZENMAKE_TESTING_MODE' : '1' }
+        cmdLine = ['build']
+        envToolVar = ToolchainVars.varToSetToolchain(projectLang)
+        compFlagsName = projectLang.upper() + 'FLAGS'
+
+        # invalid name
+        toolchain = 'invalid'
+        env[envToolVar] = toolchain
+        assert runZm(self, cmdLine, env)[0] != 0
+
+        prjfixture = fixture[projectLang]
+
+        for toolchain, flags in prjfixture.items():
+
+            env[envToolVar] = toolchain
+            env[compFlagsName] = flags['compflags']
+            env['LINKFLAGS'] = flags['linkflags']
+            env['LDFLAGS'] = flags['ldflags']
+
+            assert runZm(self, cmdLine, env)[0] == 0
+
+            targets = obtainBuildTargets(self, cmdLine)
+            checkBuildTargets(targets, resultExists = True, fakeBuild = True)
+
+            confManager = processConfManagerWithCLI(self, cmdLine)
+            buildout = confManager.root.confPaths.buildout
+
+            paths = []
+            patterns = '.* c4che config.log'.split()
+            for root, dirs, files in os.walk(buildout):
+                ignore = set()
+                for pattern in patterns:
+                    for name in fnmatch.filter(dirs, pattern):
+                        dirs.remove(name) # don't visit sub directories
+                    for name in fnmatch.filter(files, pattern):
+                        ignore.add(name)
+
+                paths += [os.path.join(root, x) for x in files if x not in ignore]
+
+            for path in paths:
+                with open(path, 'r') as f:
+                    data = loadFromJson(f.read())
+                zmTaskName = data['tgen-name']
+                usedEnv = data['env']
+                zmtasks = usedEnv['zmtasks']['all']
+                buildtype = list(zmtasks.keys())[0]
+                zmtasks = zmtasks[buildtype]
+                taskParams = zmtasks[zmTaskName]
+                features = taskParams['features']
+                targetKind = getTargetPattern(usedEnv, features)[1]
+
+                # check toolchain
+                assert usedEnv[envToolVar] == [toolchain]
+
+                isLink = data['is-link']
+                if not isLink:
+                    # check CFLAGS/CXXFLAGS
+                    sysEnvFlags = env[compFlagsName].split()
+                    bconfFlags = utils.toList(taskParams.get(compFlagsName.lower(), []))
+                    expectedFlags = formExpectedFlags(bconfFlags + sysEnvFlags)
+                    if targetKind == 'shlib':
+                        # Waf adds this flag itself
+                        expectedFlags += ['-fPIC']
+                    assert usedEnv.get(compFlagsName, []) == expectedFlags
+                else:
+                    # check LINKFLAGS/LDFLAGS
+                    for flagsName in ('linkflags', 'ldflags'):
+                        sysEnvFlags = env[flagsName.upper()].split()
+                        bconfFlags = utils.toList(taskParams.get(flagsName, []))
+                        expectedFlags = formExpectedFlags(bconfFlags + sysEnvFlags)
+                        if targetKind == 'shlib' and flagsName == 'linkflags':
+                            # Waf adds this flag itself
+                            expectedFlags += ['-shared']
+
+                        assert usedEnv.get(flagsName.upper(), []) == expectedFlags

@@ -799,14 +799,10 @@ class ConfigurationContext(WafConfContext):
             validNames = self.validToolchainNames
 
         for taskName, taskParams in viewitems(bconf.tasks):
-            tool = taskParams.get('toolchain')
-            if not tool:
-                continue
-            names = utils.toList(tool)
-            taskParams['toolchain'] = names # small optimization
+            names = taskParams['toolchain']
             for name in names:
                 if name not in validNames:
-                    msg = 'Toolchain %r in the task %r is not valid.' % (name, taskName)
+                    msg = 'Toolchain %r for the task %r is not valid.' % (name, taskName)
                     msg += ' Valid toolchains: %r' % list(validNames)
                     raise error.ZenMakeConfError(msg)
 
@@ -867,19 +863,35 @@ class ConfigurationContext(WafConfContext):
         self.variant = name
         self.all_envs[name] = env
 
-    def getToolchainNames(self, bconf):
+    def handleToolchainNames(self, bconf):
         """
-        Get unique names of all toolchains from current build tasks
+        Handle all toolchains from current build tasks.
+        Returns unique names of all toolchains.
         """
 
-        # gather unique names
-        _toolchains = set()
+        toolchainVars = ToolchainVars.allVarsToSetToolchain()
+
+        toolchainNames = set()
         for taskParams in viewvalues(bconf.tasks):
-            tool = taskParams.get('toolchain')
-            if tool:
-                _toolchains |= set(utils.toList(tool))
+
+            features = utils.toList(taskParams.get('features', []))
+
+            _toolchains = []
+            # handle toolchains from OS env
+            for var in toolchainVars:
+                toolchain = os.environ.get(var, None)
+                if toolchain and var.lower() in features:
+                    _toolchains.append(toolchain)
+            if _toolchains:
+                taskParams['toolchain'] = _toolchains
             else:
-                features = utils.toList(taskParams.get('features', []))
+                _toolchains = utils.toList(taskParams.get('toolchain', []))
+                taskParams['toolchain'] = _toolchains
+
+            if _toolchains:
+                toolchainNames |= set(_toolchains)
+            else:
+                # try to use auto-*
                 atools = set()
                 for feature in features:
                     lang = TASK_TARGET_FEATURES_TO_LANG.get(feature)
@@ -888,18 +900,18 @@ class ConfigurationContext(WafConfContext):
                     if lang:
                         atools.add('auto-' + lang.replace('x', '+'))
                 if atools:
-                    _toolchains |= atools
+                    toolchainNames |= atools
                     taskParams['toolchain'] = list(atools)
 
-        return tuple(_toolchains)
+        return tuple(toolchainNames)
 
     def loadToolchains(self, bconf, copyFromEnv):
         """
         Load all selected toolchains
         """
 
+        toolchainNames = self.handleToolchainNames(bconf)
         self._checkToolchainNames(bconf)
-        toolchainNames = self.getToolchainNames(bconf)
 
         if not toolchainNames and bconf.tasks:
             log.warn("No toolchains found. Is buildconf correct?")
@@ -955,6 +967,7 @@ class ConfigurationContext(WafConfContext):
             cache['fcachetasks'] = fcachedTasks
 
         # merge with tasks from file cache
+        fcachedTasks = fcachedTasks.get('all', {})
         for btype, tasks in viewitems(fcachedTasks):
             btypeTasks = env.zmtasks.all[btype]
             btypeTasks.update(tasks)

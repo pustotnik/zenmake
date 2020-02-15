@@ -18,7 +18,6 @@ from zm.pyutils import stringtype, maptype, viewitems, viewvalues
 from zm import utils, log
 from zm.buildconf import loader
 from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES
-from zm.features import ToolchainVars
 
 joinpath = os.path.join
 abspath  = os.path.abspath
@@ -282,33 +281,6 @@ class Config(object):
             names.extend(toList(entry.get('for', {}).get('task', [])))
         names = set(names)
         self._meta.tasknames = names
-
-    def _handleTasksEnvVars(self, tasks):
-
-        flagVars      = ToolchainVars.allFlagVars()
-        toolchainVars = ToolchainVars.allVarsToSetToolchain()
-
-        for taskParams in viewvalues(tasks):
-            # handle flags
-            for var in flagVars:
-                envVal = os.environ.get(var, None)
-                if not envVal:
-                    continue
-
-                paramName = var.lower()
-
-                #current = toList(taskParams.get(paramName, []))
-                # FIXME: should we add or replace? change docs on behavior change
-                #taskParams[paramName] = current + toList(envVal)
-                taskParams[paramName] = toList(envVal)
-
-            # handle toolchains
-            for var in toolchainVars:
-                toolchain = os.environ.get(var, None)
-                if not toolchain:
-                    continue
-                if var.lower() in taskParams.get('features', ''):
-                    taskParams['toolchain'] = toolchain
 
     def _handleMatrixBuildtypes(self):
         destPlatform = PLATFORM
@@ -716,7 +688,6 @@ class Config(object):
                 task.pop('default-buildtype', None)
 
         self._fixTaskPathParamsToStartDir(tasks)
-        self._handleTasksEnvVars(tasks)
 
         self._meta.tasks[buildtype] = tasks
         return tasks
