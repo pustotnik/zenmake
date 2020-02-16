@@ -53,10 +53,10 @@ matrix = [
             'sys-libs' : 'boost_timer',
         }
     },
-    # Special case for boost on windows
-    # This setup for boost installed on windows as C:\local\boost_1_67_0
+    # Special case for a boost on windows
+    # This setup for a boost installed on windows as C:\local\boost_1_67_0
     # For example, command 'choco install boost-msvc-14.1' produces such an installation.
-    # To run program linked with boost dlls OS Windows needs to know path to dir
+    # OS Windows needs to know path to dir with boost dlls to run program linked 
     # with boost dlls. In console it can be made like this:
     # set PATH=C:\local\boost_1_67_0\lib64-msvc-14.1;%PATH%
     {

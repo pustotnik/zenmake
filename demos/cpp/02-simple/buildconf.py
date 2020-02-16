@@ -1,6 +1,4 @@
 
-srcroot = 'src'
-
 tasks = {
     'test' : {
         'features' : 'cxxprogram',
