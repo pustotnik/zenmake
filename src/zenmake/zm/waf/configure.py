@@ -31,7 +31,7 @@ from zm.autodict import AutoDict as _AutoDict
 from zm.pyutils import maptype, stringtype, viewitems, viewvalues
 from zm import utils, log, toolchains, error
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
-from zm.features import ToolchainVars, loadTools
+from zm.features import ToolchainVars, loadTool
 from zm.waf import assist
 
 #pylint: disable=unused-import
@@ -811,15 +811,19 @@ class ConfigurationContext(WafConfContext):
         Load auto detected compiler by its lang
         """
 
+        lang = lang.replace('+', 'x')
+        displayedLang = lang.replace('x', '+').upper()
+
         compilers = toolchains.get(lang)
         envVar    = ToolchainVars.varToSetToolchain(lang)
 
+        self.msg('Autodetecting toolchain ...', '%s language' % displayedLang)
         for compiler in compilers:
             self.env.stash()
             self.start_msg('Checking for %r' % compiler)
             try:
                 # try to load
-                loadTools(self, compiler)
+                loadTool(self, compiler)
             except waferror.ConfigurationError:
                 self.env.revert()
                 self.end_msg(False)
@@ -831,7 +835,7 @@ class ConfigurationContext(WafConfContext):
                 self.env.revert()
                 self.end_msg(False)
         else:
-            self.fatal('could not configure a %s compiler!' % lang.upper())
+            self.fatal('could not configure a %s toolchain!' % displayedLang)
 
     # override
     def execute(self):
@@ -934,9 +938,9 @@ class ConfigurationContext(WafConfContext):
 
             if toolchain.startswith('auto-'):
                 lang = toolchain[5:]
-                self._loadDetectedCompiler(lang.replace('+', 'x'))
+                self._loadDetectedCompiler(lang)
             else:
-                loadTools(self, toolchain)
+                loadTool(self, toolchain)
             toolchainsEnvs[toolname] = self.env
 
         for toolchain in toolchainNames:

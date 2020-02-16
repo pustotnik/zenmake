@@ -60,3 +60,24 @@ def getAll(platform = PLATFORM):
     toolchains = tuple(set(toolchains))
     _cache[platform]['all-toolchains'] = toolchains
     return toolchains
+
+def getLang(toolchain):
+    """
+    Get language for selected toolchain.
+    Returns None if not found
+    """
+
+    if not toolchain:
+        return None
+
+    toolToLang = _cache.get('toolchain-to-lang')
+
+    if not toolToLang:
+        toolToLang = {}
+        for lang in langTable:
+            toolchains = get(lang)
+            for tool in toolchains:
+                toolToLang[tool] = lang
+        _cache['toolchain-to-lang'] = toolToLang
+
+    return toolToLang.get(toolchain)
