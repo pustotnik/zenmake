@@ -210,7 +210,6 @@ def setTaskEnvVars(env, taskParams):
     # read flags from the system environment
     for var in flagVars:
         val = os.environ.get(var, None)
-        #print(var, val)
         if not val:
             continue
 
@@ -234,7 +233,7 @@ def getValidPreDefinedToolchainNames():
     """
 
     langs = set(getLoadedFeatures()).intersection(ToolchainVars.allLangs())
-    validNames = {'auto-' + lang.replace('x', '+') for lang in langs}
+    validNames = {'auto-' + lang.replace('xx', '++') for lang in langs}
     validNames.update(toolchains.getAll(platform = PLATFORM))
     return validNames
 

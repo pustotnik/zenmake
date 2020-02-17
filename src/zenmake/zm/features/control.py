@@ -11,14 +11,12 @@
 import os
 from collections import namedtuple
 
-from waflib import Errors as waferror
 from zm.constants import TASK_TARGET_KINDS, TASK_FEATURE_ALIESES
 from zm.pyutils import stringtype, viewvalues
 from zm.autodict import AutoDict as _AutoDict
 from zm.pypkg import PkgPath
 from zm.utils import loadPyModule, toList, getNativePath
 from zm.error import ZenMakeError
-from zm.toolchains import getLang as getLangOfToolchain
 
 # private cache
 _cache = _AutoDict()
@@ -357,45 +355,7 @@ def getLoadedFeatures():
     Get names of loaded features
     """
 
-    return _cache.get('feature-modules', {}).keys()
-
-def loadTool(ctx, tool, quiet = False):
-    """
-    Load tool/toolchain from Waf or another places
-    """
-
-    wrapMsg = None
-    if ctx.cmd == 'configure':
-        # it's 'configure' stage
-        wrapMsg = 'Checking for %r' % tool
-
-    if quiet:
-        try:
-            ctx.in_msg += 1
-        except AttributeError:
-            ctx.in_msg = 1
-
-    try:
-        if wrapMsg:
-            try:
-                ctx.start_msg(wrapMsg)
-                ctx.load(tool)
-            except waferror.ConfigurationError:
-                ctx.end_msg(False)
-                raise
-            else:
-                endMsg = True
-                lang = getLangOfToolchain(tool)
-                if lang:
-                    var = lang.upper()
-                    if ctx.env[var]:
-                        endMsg = ctx.env.get_flat(var)
-                ctx.end_msg(endMsg)
-        else:
-            ctx.load(tool)
-    finally:
-        if quiet:
-            ctx.in_msg -= 1
+    return tuple(_cache.get('feature-modules', {}).keys())
 
 class ConfValidation(object):
     """

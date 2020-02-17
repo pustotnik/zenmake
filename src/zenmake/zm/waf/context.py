@@ -7,14 +7,24 @@
 """
 
 import os
+import sys
+from importlib import import_module as importModule
 
+from waflib import Context as WafContextModule
 from waflib.Context import Context as WafContext
 from waflib.ConfigSet import ConfigSet
+from zm import ZENMAKE_DIR, WAF_DIR
 from zm.autodict import AutoDict as _AutoDict
 from zm import utils, error
 from zm.waf import wscriptimpl
 
 joinpath = os.path.join
+
+DEFAULT_TOOLDIRS = [
+    joinpath(ZENMAKE_DIR, 'zm', 'tools'),
+    joinpath(ZENMAKE_DIR, 'waf', 'waflib', 'Tools'),
+    joinpath(ZENMAKE_DIR, 'waf', 'waflib', 'extras'),
+]
 
 def ctxmethod(ctxClass, methodName = None, wrap = False):
     """
@@ -127,3 +137,69 @@ def _loadTasksFromFileCache(ctx, cachefile):
         pass
 
     return result
+
+def loadTool(tool, tooldirs = None, withSysPath = True):
+    """
+    Alternative version of WafContextModule.load_tool
+    """
+
+    if tool == 'java':
+        tool = 'javaw'
+    else:
+        tool = tool.replace('++', 'xx')
+
+    oldSysPath = sys.path
+
+    if not withSysPath:
+        sys.path = []
+        if not tooldirs:
+            sys.path = [WAF_DIR]
+
+    if not tooldirs:
+        tooldirs = DEFAULT_TOOLDIRS
+    sys.path = tooldirs + sys.path
+
+    module = None
+    try:
+        module = importModule(tool)
+        WafContext.tools[tool] = module
+    except ImportError as ex:
+        toolsSysPath = list(sys.path)
+        ex.toolsSysPath = toolsSysPath
+        # for Waf
+        ex.waf_sys_path = toolsSysPath
+        raise
+    finally:
+        sys.path = oldSysPath
+
+    return module
+
+def _wafLoadTool(tool, tooldir = None, ctx = None, with_sys_path = True):
+    # pylint: disable = invalid-name, unused-argument
+    return loadTool(tool, tooldir, with_sys_path)
+
+WafContextModule.load_tool = _wafLoadTool
+
+@ctxmethod(WafContext, 'loadTool')
+def _loadToolWitFunc(ctx, tool, tooldirs = None, callFunc = None, withSysPath = True):
+
+    module = loadTool(tool, tooldirs, withSysPath)
+    func = getattr(module, callFunc or ctx.fun, None)
+    if func:
+        func(ctx)
+
+    return module
+
+@ctxmethod(WafContext, 'load')
+def _loadTools(ctx, tools, *args, **kwargs):
+    """ This function is for compatibility with Waf """
+
+    # pylint: disable = unused-argument
+
+    tools = utils.toList(tools)
+    tooldirs = utils.toList(kwargs.get('tooldir', ''))
+    withSysPath = kwargs.get('with_sys_path', True)
+    callFunc = kwargs.get('name', None)
+
+    for tool in tools:
+        _loadToolWitFunc(ctx, tool, tooldirs, callFunc, withSysPath)

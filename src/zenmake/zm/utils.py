@@ -9,6 +9,7 @@
 import os
 import sys
 import re
+from importlib import import_module as importModule
 
 from waflib import Utils as wafutils
 from zm.pyutils import stringtype
@@ -179,8 +180,7 @@ def loadPyModule(name, dirpath = None, withImport = True):
     """
 
     if withImport:
-        import importlib
-        loadModule = importlib.import_module
+        loadModule = importModule
     else:
         loadModule = _loadPyModuleWithoutImport
 

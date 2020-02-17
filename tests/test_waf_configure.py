@@ -68,7 +68,8 @@ def cfgctx(monkeypatch, mocker, tmpdir):
         return cfgCtx.fakebconf
     cfgCtx.getbconf = mocker.MagicMock(side_effect = getbconf)
 
-    def load(toolchain):
+    def loadTool(toolchain, tooldirs = None, withSysPath = True):
+        # pylint: disable = unused-argument
         self = cfgCtx
         env = self.all_envs[cfgCtx.variant]
         for lang in ('c', 'cxx'):
@@ -78,7 +79,7 @@ def cfgctx(monkeypatch, mocker, tmpdir):
                 env[envVar] = ['/usr/bin/%s' % toolchain]
         env.loaded = 'loaded-' + toolchain
 
-    cfgCtx.load = mocker.MagicMock(side_effect = load)
+    cfgCtx.loadTool = mocker.MagicMock(side_effect = loadTool)
 
     cfgCtx.start_msg = mocker.MagicMock()
     cfgCtx.end_msg = mocker.MagicMock()
@@ -393,7 +394,7 @@ def testLoadToolchains(mocker, cfgctx):
 
     # errors
     ctx.zmcache().clear()
-    ctx.load = mocker.MagicMock(side_effect = WafError)
+    ctx.loadTool = mocker.MagicMock(side_effect = WafError)
     bconf.customToolchains = {}
     bconf.toolchainNames = ['auto-c', 'auto-c++']
     with pytest.raises(WafError):

@@ -11,6 +11,7 @@
 """
 
 import os
+import sys
 import shutil
 import traceback
 
@@ -31,12 +32,12 @@ from zm.autodict import AutoDict as _AutoDict
 from zm.pyutils import maptype, stringtype, viewitems, viewvalues
 from zm import utils, log, toolchains, error
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
-from zm.features import ToolchainVars, loadTool
+from zm.features import ToolchainVars
 from zm.waf import assist
 
 #pylint: disable=unused-import
-# This module must be just imported
-from zm.waf import options
+# This modules must be just imported
+from zm.waf import options, context
 #pylint: enable=unused-import
 
 joinpath = os.path.join
@@ -477,7 +478,6 @@ def checkByPyFunc(self, **kwargs):
     msg = "\nChecking by function %r failed: " % func.__name__
 
     if withException:
-        import sys
         excInfo = sys.exc_info()
         stack = traceback.extract_tb(excInfo[2])[-1::]
         msg += "\n%s: %s\n" % (excInfo[0].__name__, excInfo[1])
@@ -784,11 +784,38 @@ class ConfigurationContext(WafConfContext):
     def __init__(self, *args, **kwargs):
         super(ConfigurationContext, self).__init__(*args, **kwargs)
 
+        self._loadedTools = {}
         self.confChecks = {}
         self.confChecks['cache'] = None
         self.monitFiles = []
 
         self.validToolchainNames = assist.getValidPreDefinedToolchainNames()
+
+    def _loadTool(self, tool, tooldirs = None, withSysPath = True):
+
+        module = self._loadedTools.get(tool)
+        if module:
+            return module
+
+        try:
+            module = context.loadTool(tool, tooldirs, withSysPath)
+        except ImportError as ex:
+            paths = getattr(ex, 'toolsSysPath', sys.path)
+            msg = 'Could not load the tool %r' % tool
+            msg += ' from %r\n%s' % (paths, ex)
+            self.fatal(msg)
+
+        func = getattr(module, 'configure', None)
+        if func and callable(func):
+            # Here is false-positive of pylint
+            # See https://github.com/PyCQA/pylint/issues/1493
+            # pylint: disable = not-callable
+            func(self)
+
+        self._loadedTools[tool] = module
+        self.tools.append({'tool' : tool, 'tooldir' : tooldirs, 'funs' : None})
+
+        return module
 
     def _checkToolchainNames(self, bconf):
 
@@ -811,8 +838,8 @@ class ConfigurationContext(WafConfContext):
         Load auto detected compiler by its lang
         """
 
-        lang = lang.replace('+', 'x')
-        displayedLang = lang.replace('x', '+').upper()
+        lang = lang.replace('++', 'xx')
+        displayedLang = lang.replace('xx', '++').upper()
 
         compilers = toolchains.get(lang)
         envVar    = ToolchainVars.varToSetToolchain(lang)
@@ -820,20 +847,16 @@ class ConfigurationContext(WafConfContext):
         self.msg('Autodetecting toolchain ...', '%s language' % displayedLang)
         for compiler in compilers:
             self.env.stash()
-            self.start_msg('Checking for %r' % compiler)
             try:
                 # try to load
-                loadTool(self, compiler)
+                self.loadTool(compiler)
             except waferror.ConfigurationError:
                 self.env.revert()
-                self.end_msg(False)
             else:
                 if self.env[envVar]:
-                    self.end_msg(self.env.get_flat(envVar))
                     self.env.commit()
                     break
                 self.env.revert()
-                self.end_msg(False)
         else:
             self.fatal('could not configure a %s toolchain!' % displayedLang)
 
@@ -902,12 +925,48 @@ class ConfigurationContext(WafConfContext):
                     if not lang and feature in TASK_LANG_FEATURES:
                         lang = feature
                     if lang:
-                        atools.add('auto-' + lang.replace('x', '+'))
+                        atools.add('auto-' + lang.replace('xx', '++'))
                 if atools:
                     toolchainNames |= atools
                     taskParams['toolchain'] = list(atools)
 
         return tuple(toolchainNames)
+
+    def loadTool(self, tool, tooldirs = None, withSysPath = True, quiet = False):
+        """
+        Load tool/toolchain from Waf or another places
+        Version of loadTool for configure context.
+        """
+
+        wrapMsg = 'Checking for %r' % tool
+
+        if quiet:
+            try:
+                self.in_msg += 1
+            except AttributeError:
+                self.in_msg = 1
+
+        module = None
+        try:
+            try:
+                self.start_msg(wrapMsg)
+                module = self._loadTool(tool, tooldirs, withSysPath = withSysPath)
+            except waferror.ConfigurationError:
+                self.end_msg(False)
+                raise
+            else:
+                endMsg = True
+                lang = toolchains.getLang(tool)
+                if lang:
+                    var = lang.upper()
+                    if self.env[var]:
+                        endMsg = self.env.get_flat(var)
+                self.end_msg(endMsg)
+        finally:
+            if quiet:
+                self.in_msg -= 1
+
+        return module
 
     def loadToolchains(self, bconf, copyFromEnv):
         """
@@ -940,7 +999,7 @@ class ConfigurationContext(WafConfContext):
                 lang = toolchain[5:]
                 self._loadDetectedCompiler(lang)
             else:
-                loadTool(self, toolchain)
+                self.loadTool(toolchain)
             toolchainsEnvs[toolname] = self.env
 
         for toolchain in toolchainNames:
