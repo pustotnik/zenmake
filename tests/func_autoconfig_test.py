@@ -31,7 +31,7 @@ class TestAutoconfig(object):
     def allZmExe(self, request):
         self.zmExe = zmExes[request.param]
 
-    @pytest.fixture(params = [joinpath('cpp', '02-simple')])
+    @pytest.fixture(params = [joinpath('c', '01-trivial')])
     def project(self, request, tmpdir):
 
         self.testdir = None
@@ -47,7 +47,7 @@ class TestAutoconfig(object):
 
         self.testdir = os.path.abspath(joinpath(self.cwd, os.pardir))
 
-    @pytest.fixture(params = tvars.allFlagVars() + tvars.allVarsToSetToolchain())
+    @pytest.fixture(params = tvars.allSysFlagVars() + tvars.allSysVarsToSetToolchain())
     def toolEnvVar(self, request):
         self.toolEnvVar = request.param
 

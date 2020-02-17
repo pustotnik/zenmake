@@ -46,7 +46,8 @@ def getUsedWafTaskKeys():
 def getAllToolchainEnvVarNames():
     ''' Get all significant env vars for supported toolchains '''
 
-    envVarNames = ToolchainVars.allFlagVars() + ToolchainVars.allVarsToSetToolchain()
+    envVarNames = ToolchainVars.allSysFlagVars()
+    envVarNames += ToolchainVars.allSysVarsToSetToolchain()
     envVarNames += ('BUILDROOT',)
 
     return envVarNames
@@ -197,22 +198,23 @@ def setTaskEnvVars(env, taskParams):
     _gathered = {}
 
     # all Waf env vars that can be set from buildconf params
-    cfgEnvVars = ToolchainVars.allCfgEnvVars()
+    cfgFlagVars = ToolchainVars.allCfgFlagVars()
     # read flags from the buildconf
-    for var in cfgEnvVars:
+    for var in cfgFlagVars:
         paramName = var.lower()
         val = taskParams.get(paramName)
         if val:
             _gathered[var] = utils.toList(val)
 
     # get all system env flag vars
-    flagVars = ToolchainVars.allFlagVars()
+    sysFlagVars = ToolchainVars.allSysFlagVars()
     # read flags from the system environment
-    for var in flagVars:
+    for var in sysFlagVars:
         val = os.environ.get(var, None)
         if not val:
             continue
 
+        # bconf + sys env
         paramName = var.lower()
         _gathered[var] = _gathered.get(var, []) + shlex.split(val)
 
@@ -220,6 +222,8 @@ def setTaskEnvVars(env, taskParams):
     for var, val in viewitems(_gathered):
         # Waf has some usefull predefined env vars for some compilers
         # so here we add values, not replace them.
+
+        # waf env + (bconf + sys env)
         val = env[var] + val
 
         # remove duplicates: keep only last unique value in the list

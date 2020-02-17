@@ -22,12 +22,15 @@ TASK_FEATURES_SETUP = {
 }
 
 TOOLCHAIN_VARS = {
-    # 'env-var' - environment variable to set compiler
-    # 'env-flagvars' - env flag variables that have effect from system environment
-    # 'cfgenv-vars' - WAF ConfigSet variables that are used on 'configure' step
+    # 'sysenv-var' - environment variable to set compiler
+    # 'cfgenv-var' - WAF ConfigSet variable to get/set compiler
+    # 'sysenv-flagvars' - env flag variables that have effect from system environment
+    # 'cfgenv-flagvars' - WAF ConfigSet variables that are used on 'configure' step
+    # and translated from buildconf vars
     'asm' : {
-        'env-var'      : 'AS',
-        'env-flagvars' : ('ASFLAGS', 'ASLINKFLAGS', 'LDFLAGS'),
-        'cfgenv-vars'  : ('ASFLAGS', 'ASLINK', 'ASLINKFLAGS', 'DEFINES'),
+        'sysenv-var'      : 'AS',
+        'cfgenv-var'      : 'AS',
+        'sysenv-flagvars' : ('ASFLAGS', 'ASLINKFLAGS', 'LDFLAGS'),
+        'cfgenv-flagvars' : ('ASFLAGS', 'ASLINKFLAGS', 'LDFLAGS', 'DEFINES'),
     },
 }

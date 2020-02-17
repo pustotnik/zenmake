@@ -47,7 +47,7 @@ CONFTEST_CACHE_FILE = 'conf_check_cache'
 CONFTEST_HASH_USED_ENV_KEYS = set(
     ('DEST_BINFMT', 'DEST_CPU', 'DEST_OS')
 )
-for _var in ToolchainVars.allVarsToSetToolchain():
+for _var in ToolchainVars.allCfgVarsToSetToolchain():
     CONFTEST_HASH_USED_ENV_KEYS.add(_var)
     CONFTEST_HASH_USED_ENV_KEYS.add('%s_VERSION' % _var)
     CONFTEST_HASH_USED_ENV_KEYS.add('%s_NAME' % _var)
@@ -842,7 +842,7 @@ class ConfigurationContext(WafConfContext):
         displayedLang = lang.replace('xx', '++').upper()
 
         compilers = toolchains.get(lang)
-        envVar    = ToolchainVars.varToSetToolchain(lang)
+        cfgVar    = ToolchainVars.cfgVarToSetToolchain(lang)
 
         self.msg('Autodetecting toolchain ...', '%s language' % displayedLang)
         for compiler in compilers:
@@ -853,7 +853,7 @@ class ConfigurationContext(WafConfContext):
             except waferror.ConfigurationError:
                 self.env.revert()
             else:
-                if self.env[envVar]:
+                if self.env[cfgVar]:
                     self.env.commit()
                     break
                 self.env.revert()
@@ -896,7 +896,7 @@ class ConfigurationContext(WafConfContext):
         Returns unique names of all toolchains.
         """
 
-        toolchainVars = ToolchainVars.allVarsToSetToolchain()
+        toolchainVars = ToolchainVars.allSysVarsToSetToolchain()
 
         toolchainNames = set()
         for taskParams in viewvalues(bconf.tasks):
@@ -907,8 +907,12 @@ class ConfigurationContext(WafConfContext):
             # handle toolchains from OS env
             for var in toolchainVars:
                 toolchain = os.environ.get(var, None)
-                if toolchain and var.lower() in features:
+                if not toolchain:
+                    continue
+                lang = toolchains.getLang(toolchain)
+                if lang and lang in features:
                     _toolchains.append(toolchain)
+
             if _toolchains:
                 taskParams['toolchain'] = _toolchains
             else:
@@ -958,7 +962,7 @@ class ConfigurationContext(WafConfContext):
                 endMsg = True
                 lang = toolchains.getLang(tool)
                 if lang:
-                    var = lang.upper()
+                    var = ToolchainVars.cfgVarToSetToolchain(lang)
                     if self.env[var]:
                         endMsg = self.env.get_flat(var)
                 self.end_msg(endMsg)

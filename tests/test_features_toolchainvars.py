@@ -13,12 +13,26 @@ import pytest
 from zm.error import ZenMakeError
 from zm.features import ToolchainVars
 
-SUPPORTED_LANGS = ['c', 'cxx', 'asm']
+LANGMAP = {
+    'sys': {
+        'c'   : 'CC',
+        'cxx' : 'CXX',
+        'asm' : 'AS',
+        #'d'   : 'DC',
+    },
+    'cfg' : {
+        'c'   : 'CC',
+        'cxx' : 'CXX',
+        'asm' : 'AS',
+        #'d'   : 'D',
+    },
+}
+SUPPORTED_LANGS = list(LANGMAP['sys'].keys())
 
-def testAllFlagVars():
-    gottenVars = ToolchainVars.allFlagVars()
+def testAllSysFlagVars():
+    gottenVars = ToolchainVars.allSysFlagVars()
     # to force covering of cache
-    _gottenVars = ToolchainVars.allFlagVars()
+    _gottenVars = ToolchainVars.allSysFlagVars()
     assert _gottenVars == gottenVars
     requiredVars = set([
         'CPPFLAGS', 'CXXFLAGS', 'LDFLAGS', 'CFLAGS', 'LINKFLAGS',
@@ -26,10 +40,10 @@ def testAllFlagVars():
     ])
     assert requiredVars <= set(gottenVars)
 
-def testAllCfgEnvVars():
-    gottenVars = ToolchainVars.allCfgEnvVars()
+def testAllCfgFlagVars():
+    gottenVars = ToolchainVars.allCfgFlagVars()
     # to force covering of cache
-    _gottenVars = ToolchainVars.allCfgEnvVars()
+    _gottenVars = ToolchainVars.allCfgFlagVars()
     assert _gottenVars == gottenVars
     requiredVars = set([
         'CPPFLAGS', 'CFLAGS', 'LINKFLAGS', 'CXXFLAGS',
@@ -40,25 +54,36 @@ def testAllCfgEnvVars():
 def testAllLangs():
     assert sorted(ToolchainVars.allLangs()) == sorted(SUPPORTED_LANGS)
 
-def testAllVarsToSetToolchain():
-    gottenVars = ToolchainVars.allVarsToSetToolchain()
+def testAllSysVarsToSetToolchain():
+    gottenVars = ToolchainVars.allSysVarsToSetToolchain()
     # to force covering of cache
-    _gottenVars = ToolchainVars.allVarsToSetToolchain()
+    _gottenVars = ToolchainVars.allSysVarsToSetToolchain()
     assert _gottenVars == gottenVars
-    requiredVars = ['CC', 'CXX', 'AS']
+    requiredVars = LANGMAP['sys'].values()
+    assert sorted(requiredVars) == sorted(gottenVars)
+
+def testAllCfgVarsToSetToolchain():
+    gottenVars = ToolchainVars.allCfgVarsToSetToolchain()
+    # to force covering of cache
+    _gottenVars = ToolchainVars.allCfgVarsToSetToolchain()
+    assert _gottenVars == gottenVars
+    requiredVars = LANGMAP['cfg'].values()
     assert sorted(requiredVars) == sorted(gottenVars)
 
 def testVarToSetToolchain():
-    LANGMAP = {
-        'c'   : 'CC',
-        'cxx' : 'CXX',
-        'asm' : 'AS',
-    }
-    for lang in SUPPORTED_LANGS:
-        gottenVar = ToolchainVars.varToSetToolchain(lang)
-        assert gottenVar == LANGMAP[lang]
 
-    with pytest.raises(ZenMakeError):
-        ToolchainVars.varToSetToolchain('')
-    with pytest.raises(ZenMakeError):
-        ToolchainVars.varToSetToolchain('invalid lang')
+    for tag in ('sys', 'cfg'):
+        langMap = LANGMAP[tag]
+        if tag == 'sys':
+            testFunc = ToolchainVars.sysVarToSetToolchain
+        else:
+            testFunc = ToolchainVars.cfgVarToSetToolchain
+
+        for lang in SUPPORTED_LANGS:
+            gottenVar = testFunc(lang)
+            assert gottenVar == langMap[lang]
+
+        with pytest.raises(ZenMakeError):
+            testFunc('')
+        with pytest.raises(ZenMakeError):
+            testFunc('invalid lang')

@@ -63,7 +63,7 @@ def testDumpZenMakeCommonFile(tmpdir):
 
     assert 'toolenvs' in cfgenv
     tvars = ToolchainVars
-    envVarNames = tvars.allFlagVars() + tvars.allVarsToSetToolchain()
+    envVarNames = tvars.allSysFlagVars() + tvars.allSysVarsToSetToolchain()
     for name in envVarNames:
         assert name in cfgenv.toolenvs
 
@@ -129,7 +129,7 @@ def testDeepCopyEnv():
     assert newenv.test2 == 'test2'
 
 def testSetTaskEnvVars():
-    cfgEnvVars = ToolchainVars.allCfgEnvVars()
+    cfgEnvVars = ToolchainVars.allCfgFlagVars()
 
     taskParamsFixture = []
     for var in cfgEnvVars:

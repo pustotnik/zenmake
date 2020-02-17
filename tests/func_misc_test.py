@@ -95,19 +95,20 @@ class TestParams(object):
 
         env = { 'ZENMAKE_TESTING_MODE' : '1' }
         cmdLine = ['build']
-        envToolVar = ToolchainVars.varToSetToolchain(projectLang)
+        sysEnvToolVar = ToolchainVars.sysVarToSetToolchain(projectLang)
+        cfgEnvToolVar = ToolchainVars.cfgVarToSetToolchain(projectLang)
         compFlagsName = projectLang.upper() + 'FLAGS'
 
         # invalid name
         toolchain = 'invalid'
-        env[envToolVar] = toolchain
+        env[sysEnvToolVar] = toolchain
         assert runZm(self, cmdLine, env)[0] != 0
 
         prjfixture = fixture[projectLang]
 
         for toolchain, flags in prjfixture.items():
 
-            env[envToolVar] = toolchain
+            env[sysEnvToolVar] = toolchain
             env[compFlagsName] = flags['compflags']
             env['LINKFLAGS'] = flags['linkflags']
             env['LDFLAGS'] = flags['ldflags']
@@ -145,7 +146,7 @@ class TestParams(object):
                 targetKind = getTargetPattern(usedEnv, features)[1]
 
                 # check toolchain
-                assert usedEnv[envToolVar] == [toolchain]
+                assert usedEnv[cfgEnvToolVar] == [toolchain]
 
                 isLink = data['is-link']
                 if not isLink:

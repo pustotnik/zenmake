@@ -9,5 +9,5 @@
 from zm import toolchains
 
 toolchains.langTable['asm'] = {
-    'default':('gas', 'nasm'),
+    'default': ('gas', 'nasm'),
 }

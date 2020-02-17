@@ -17,17 +17,20 @@ TASK_FEATURES_SETUP = {
     'c' : {
         'target-kinds' : TASK_TARGET_KINDS,
         'alieses' : TASK_FEATURE_ALIESES,
-        'file-extensions' : ('.c', ),
+        'file-extensions' : ('.c', '.C',),
     },
 }
 
 TOOLCHAIN_VARS = {
-    # 'env-var' - environment variable to set compiler
-    # 'env-flagvars' - env flag variables that have effect from system environment
-    # 'cfgenv-vars' - WAF ConfigSet variables that are used on 'configure' step
+    # 'sysenv-var' - environment variable to set compiler
+    # 'cfgenv-var' - WAF ConfigSet variable to get/set compiler
+    # 'sysenv-flagvars' - env flag variables that have effect from system environment
+    # 'cfgenv-flagvars' - WAF ConfigSet variables that are used on 'configure' step
+    # and translated from buildconf vars
     'c' : {
-        'env-var'      : 'CC',
-        'env-flagvars' : ('CFLAGS', 'CPPFLAGS', 'LDFLAGS', 'LINKFLAGS'),
-        'cfgenv-vars'  : ('CFLAGS', 'CPPFLAGS', 'LDFLAGS', 'LINKFLAGS', 'DEFINES'),
+        'sysenv-var'      : 'CC',
+        'cfgenv-var'      : 'CC',
+        'sysenv-flagvars' : ('CFLAGS', 'CPPFLAGS', 'LDFLAGS', 'LINKFLAGS'),
+        'cfgenv-flagvars' : ('CFLAGS', 'CPPFLAGS', 'LDFLAGS', 'LINKFLAGS', 'DEFINES'),
     },
 }

@@ -21,32 +21,39 @@ from zm.error import ZenMakeError
 # private cache
 _cache = _AutoDict()
 
+def _cached(cacheName):
+    """ Decorator to use private cache """
+
+    def decorator(method):
+        def execute():
+            _vars = _cache.get(cacheName)
+            if _vars:
+                return _vars
+            _vars = method()
+            _cache[cacheName] = _vars
+            return _vars
+        return execute
+
+    return decorator
+
 #######################################################################
 ## Base
 
 MODULE_NAME_PREFIX = __name__[0:__name__.rfind('.') + 1]
 CURRENT_MODULE_NAME = __name__[__name__.rfind('.') + 1:]
 
+@_cached('module-names')
 def _allModuleNames():
     """ Return list of all existent module names """
-
-    names = _cache.get('module-names')
-    if names:
-        return names
 
     pkgPath = PkgPath(os.path.dirname(os.path.abspath(__file__)))
     fnames = pkgPath.files()
     names = [ x for x in fnames if x.endswith('.py') ]
     names = [ x[:-3] for x in names if x not in ('__init__', CURRENT_MODULE_NAME) ]
-
-    _cache['module-names'] = names
     return names
 
+@_cached('init-modules')
 def _getInitModules():
-
-    modules = _cache.get('init-modules')
-    if modules:
-        return modules
 
     names = _allModuleNames()
     names = [ x for x in names if x.endswith('_init') ]
@@ -56,7 +63,6 @@ def _getInitModules():
         moduleName = MODULE_NAME_PREFIX + name
         modules.append(loadPyModule(moduleName, withImport = True))
 
-    _cache['init-modules'] = modules
     return modules
 
 def _generateFeaturesMap():
@@ -382,42 +388,30 @@ class ToolchainVars(object):
     __slots__ = ()
 
     @staticmethod
-    def allFlagVars():
+    @_cached('all-sysenv-flagvars')
+    def allSysFlagVars():
         """
         For all toolchains return tuple of all env flag variables that have effect
         from system environment.
         """
 
-        cacheName = 'all-env-flag-vars'
-        _vars = _cache.get(cacheName)
-        if _vars:
-            return _vars
-
         _vars = []
         for info in TOOLCHAIN_VARS.values():
-            _vars.extend(info['env-flagvars'])
-        _vars = tuple(set(_vars))
-        _cache[cacheName] = _vars
-        return _vars
+            _vars.extend(info['sysenv-flagvars'])
+        return tuple(set(_vars))
 
     @staticmethod
-    def allCfgEnvVars():
+    @_cached('all-cfgenv-flagvars')
+    def allCfgFlagVars():
         """
-        For all toolchains return tuple of all WAF ConfigSet variables
+        For all toolchains return tuple of all WAF ConfigSet flag variables
         that is used on 'configure' step.
         """
 
-        cacheName = 'all-cfg-env-vars'
-        _vars = _cache.get(cacheName)
-        if _vars:
-            return _vars
-
         _vars = []
         for info in TOOLCHAIN_VARS.values():
-            _vars.extend(info['cfgenv-vars'])
-        _vars = tuple(set(_vars))
-        _cache[cacheName] = _vars
-        return _vars
+            _vars.extend(info['cfgenv-flagvars'])
+        return tuple(set(_vars))
 
     @staticmethod
     def allLangs():
@@ -428,26 +422,39 @@ class ToolchainVars(object):
         return tuple(TOOLCHAIN_VARS.keys())
 
     @staticmethod
-    def varToSetToolchain(lang):
+    def sysVarToSetToolchain(lang):
         """
         For selected language return environment variable to set toolchain.
         """
 
         if not lang or lang not in TOOLCHAIN_VARS:
             raise ZenMakeError("Toolchain for '%s' is not supported" % lang)
-        return TOOLCHAIN_VARS[lang]['env-var']
+        return TOOLCHAIN_VARS[lang]['sysenv-var']
 
     @staticmethod
-    def allVarsToSetToolchain():
+    def cfgVarToSetToolchain(lang):
         """
-        Return combined tuple of all environment variables to set toolchain.
+        For selected language return WAF ConfigSet variable to set/get toolchain.
         """
 
-        cacheName = 'all-vars-to-set-toolchain'
-        _vars = _cache.get(cacheName)
-        if _vars:
-            return _vars
+        if not lang or lang not in TOOLCHAIN_VARS:
+            raise ZenMakeError("Toolchain for '%s' is not supported" % lang)
+        return TOOLCHAIN_VARS[lang]['cfgenv-var']
 
-        _vars = tuple([ x['env-var'] for x in TOOLCHAIN_VARS.values() ])
-        _cache[cacheName] = _vars
-        return _vars
+    @staticmethod
+    @_cached('all-sysvars-to-set-toolchain')
+    def allSysVarsToSetToolchain():
+        """
+        Return combined tuple of all sys environment variables to set toolchain.
+        """
+
+        return tuple([ x['sysenv-var'] for x in TOOLCHAIN_VARS.values() ])
+
+    @staticmethod
+    @_cached('all-cfgvars-to-set-toolchain')
+    def allCfgVarsToSetToolchain():
+        """
+        Return combined tuple of all WAF ConfigSet variables to set/get toolchain.
+        """
+
+        return tuple([ x['cfgenv-var'] for x in TOOLCHAIN_VARS.values() ])

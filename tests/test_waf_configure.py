@@ -74,7 +74,7 @@ def cfgctx(monkeypatch, mocker, tmpdir):
         env = self.all_envs[cfgCtx.variant]
         for lang in ('c', 'cxx'):
             compilers = toolchains.get(lang)
-            envVar    = ToolchainVars.varToSetToolchain(lang)
+            envVar    = ToolchainVars.sysVarToSetToolchain(lang)
             if toolchain in compilers:
                 env[envVar] = ['/usr/bin/%s' % toolchain]
         env.loaded = 'loaded-' + toolchain
@@ -268,7 +268,7 @@ def _checkToolchainNames(ctx, buildconf, buildtype, expected):
     bconf.applyBuildType(buildtype)
     assert sorted(ctx.handleToolchainNames(bconf)) == sorted(expected)
 
-def testToolchainNames(testingBuildConf, cfgctx):
+def testToolchainNames(testingBuildConf, cfgctx, monkeypatch):
 
     ctx = cfgctx
 
@@ -303,6 +303,15 @@ def testToolchainNames(testingBuildConf, cfgctx):
     buildconf.tasks.test1.toolchain = 'gxx'
     buildconf.tasks.test2.toolchain = 'lgxx'
     _checkToolchainNames(ctx, buildconf, buildtype, ['gxx', 'lgxx'])
+
+    # CASE: toolchain from system env
+    buildconf = deepcopy(testingBuildConf)
+    buildconf.tasks.test1.toolchain = 'gxx'
+    buildconf.tasks.test1.features = ['c']
+    for tool in ('clang', 'gcc'):
+        monkeypatch.setenv('CC', tool)
+        _checkToolchainNames(ctx, buildconf, buildtype, [tool])
+        monkeypatch.delenv('CC')
 
     ### matrix
 
@@ -372,7 +381,7 @@ def testLoadToolchains(mocker, cfgctx):
     for name in toolchainNames:
         assert name in toolchainsEnvs
         lang = name[5:].replace('+', 'x')
-        envVar = ToolchainVars.varToSetToolchain(lang)
+        envVar = ToolchainVars.sysVarToSetToolchain(lang)
         assert envVar in toolchainsEnvs[name]
         assert toolchainsEnvs[name][envVar]
 
