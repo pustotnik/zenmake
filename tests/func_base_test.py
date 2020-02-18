@@ -12,6 +12,7 @@
 """
 
 import os
+import re
 
 import pytest
 from zm import utils
@@ -27,15 +28,24 @@ FORINSTALL_PRJDIRS = [
     joinpath('subdirs', '2-complex'),
 ]
 
+BY_REGEXPS = tuple('byregexps')
+RE_ALL_D = '^d/'
+
 TEST_CONDITIONS = {
     CUSTOM_TOOLCHAIN_PRJDIR: dict( os = ['linux', 'darwin'], ),
     joinpath('asm', '01-simple-gas') : dict( os = ['linux']),
     joinpath('asm', '02-simple-nasm') :
         dict( os = ['linux'], py = ['2.7', '3.6', '3.7', '3.8']),
+    BY_REGEXPS: [
+        # disable all D projects on windows
+        dict(regexp = RE_ALL_D, condition = dict( os = ['linux', 'darwin'], )),
+    ],
 }
 
 def collectProjectDirs():
     for path in TEST_CONDITIONS:
+        if path == BY_REGEXPS:
+            continue
         path = joinpath(cmn.TEST_PROJECTS_DIR, path)
         assert isdir(path)
 
@@ -56,6 +66,11 @@ def collectProjectDirs():
 
         prjdir = os.path.relpath(dirpath, cmn.TEST_PROJECTS_DIR)
         condition = TEST_CONDITIONS.get(prjdir, None)
+        if not condition:
+            for line in TEST_CONDITIONS[BY_REGEXPS]:
+                if re.search(line['regexp'], prjdir.replace('\\', '/')):
+                    condition = line['condition']
+                    break
         if condition:
             destos =  condition.get('os')
             if destos and PLATFORM not in destos:
