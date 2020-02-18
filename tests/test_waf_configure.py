@@ -68,7 +68,7 @@ def cfgctx(monkeypatch, mocker, tmpdir):
         return cfgCtx.fakebconf
     cfgCtx.getbconf = mocker.MagicMock(side_effect = getbconf)
 
-    def loadTool(toolchain, tooldirs = None, withSysPath = True):
+    def loadTool(toolchain, **kwargs):
         # pylint: disable = unused-argument
         self = cfgCtx
         env = self.all_envs[cfgCtx.variant]
@@ -78,6 +78,7 @@ def cfgctx(monkeypatch, mocker, tmpdir):
             if toolchain in compilers:
                 env[envVar] = ['/usr/bin/%s' % toolchain]
         env.loaded = 'loaded-' + toolchain
+        return env
 
     cfgCtx.loadTool = mocker.MagicMock(side_effect = loadTool)
 

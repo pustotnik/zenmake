@@ -736,15 +736,18 @@ def _confTestCheckInParallel(checkArgs, params):
 # TODO: move specific conf tests to the features/
 
 _confTestFuncs = {
+    # explicit using of Waf 'check' is disabled
+    #'check'               : _confTestCheck,
+
+    # independent
     'check-by-pyfunc'     : _confTestCheckByPyFunc,
     'check-programs'      : _confTestCheckPrograms,
+    'parallel'            : _confTestCheckInParallel,
+    #
     'check-sys-libs'      : _confTestCheckSysLibs,
     'check-headers'       : _confTestCheckHeaders,
     'check-libs'          : _confTestCheckLibs,
     'check-code'          : _confTestCheckCode,
-    # explicit using of Waf 'check' is disabled
-    #'check'               : _confTestCheck,
-    'parallel'            : _confTestCheckInParallel,
     'write-config-header' : _confTestWriteHeader,
 }
 
@@ -791,12 +794,19 @@ class ConfigurationContext(WafConfContext):
 
         self.validToolchainNames = assist.getValidPreDefinedToolchainNames()
 
-    def _loadTool(self, tool, tooldirs = None, withSysPath = True):
+    def _loadTool(self, tool, **kwargs):
 
-        module = self._loadedTools.get(tool)
-        if module:
-            return module
+        tooldirs = kwargs.get('tooldirs', None)
+        withSysPath = kwargs.get('withSysPath', True)
+        customSet = kwargs.get('customSet', '')
 
+        loadedTool = self._loadedTools.setdefault(tool, {})
+        toolInfo = loadedTool.get(customSet)
+        if toolInfo:
+            # don't load again
+            return toolInfo
+
+        module = None
         try:
             module = context.loadTool(tool, tooldirs, withSysPath)
         except ImportError as ex:
@@ -812,10 +822,13 @@ class ConfigurationContext(WafConfContext):
             # pylint: disable = not-callable
             func(self)
 
-        self._loadedTools[tool] = module
-        self.tools.append({'tool' : tool, 'tooldir' : tooldirs, 'funs' : None})
+        if not loadedTool: # avoid duplicates for loading on build stage
+            self.tools.append({'tool' : tool, 'tooldir' : tooldirs, 'funs' : None})
 
-        return module
+        toolenv = self.env
+        loadedTool[customSet] = (module, toolenv)
+
+        return module, toolenv
 
     def _checkToolchainNames(self, bconf):
 
@@ -833,32 +846,35 @@ class ConfigurationContext(WafConfContext):
                     msg += ' Valid toolchains: %r' % list(validNames)
                     raise error.ZenMakeConfError(msg)
 
-    def _loadDetectedCompiler(self, lang):
+    def _loadDetectedToolchain(self, lang, customName):
         """
-        Load auto detected compiler by its lang
+        Load auto detected toolchain by its lang
         """
 
         lang = lang.replace('++', 'xx')
         displayedLang = lang.replace('xx', '++').upper()
 
-        compilers = toolchains.get(lang)
-        cfgVar    = ToolchainVars.cfgVarToSetToolchain(lang)
-
         self.msg('Autodetecting toolchain ...', '%s language' % displayedLang)
-        for compiler in compilers:
+
+        cfgVar = ToolchainVars.cfgVarToSetToolchain(lang)
+
+        toolenv = self.env
+        for toolname in toolchains.get(lang):
             self.env.stash()
             try:
                 # try to load
-                self.loadTool(compiler)
+                toolenv = self.loadTool(toolname, customSet = customName)
             except waferror.ConfigurationError:
                 self.env.revert()
             else:
-                if self.env[cfgVar]:
+                if toolenv[cfgVar]:
                     self.env.commit()
                     break
                 self.env.revert()
         else:
             self.fatal('could not configure a %s toolchain!' % displayedLang)
+
+        return toolenv
 
     # override
     def execute(self):
@@ -897,80 +913,83 @@ class ConfigurationContext(WafConfContext):
         """
 
         toolchainVars = ToolchainVars.allSysVarsToSetToolchain()
-
         toolchainNames = set()
+
         for taskParams in viewvalues(bconf.tasks):
 
             features = utils.toList(taskParams.get('features', []))
-
             _toolchains = []
+
             # handle toolchains from OS env
             for var in toolchainVars:
                 toolchain = os.environ.get(var, None)
                 if not toolchain:
                     continue
-                lang = toolchains.getLang(toolchain)
-                if lang and lang in features:
-                    _toolchains.append(toolchain)
+                for lang in toolchains.getLangs(toolchain):
+                    if lang in features:
+                        _toolchains.append(toolchain)
+                        break
 
-            if _toolchains:
-                taskParams['toolchain'] = _toolchains
-            else:
+            if not _toolchains:
+                # try to get from the task
                 _toolchains = utils.toList(taskParams.get('toolchain', []))
-                taskParams['toolchain'] = _toolchains
 
-            if _toolchains:
-                toolchainNames |= set(_toolchains)
-            else:
+            if not _toolchains:
                 # try to use auto-*
-                atools = set()
+                _toolchains = set()
                 for feature in features:
                     lang = TASK_TARGET_FEATURES_TO_LANG.get(feature)
                     if not lang and feature in TASK_LANG_FEATURES:
                         lang = feature
                     if lang:
-                        atools.add('auto-' + lang.replace('xx', '++'))
-                if atools:
-                    toolchainNames |= atools
-                    taskParams['toolchain'] = list(atools)
+                        _toolchains.add('auto-' + lang.replace('xx', '++'))
+                toolchainNames |= _toolchains
+                _toolchains = list(_toolchains)
+            else:
+                toolchainNames |= set(_toolchains)
+
+            # store result in task
+            taskParams['toolchain'] = _toolchains
 
         return tuple(toolchainNames)
 
-    def loadTool(self, tool, tooldirs = None, withSysPath = True, quiet = False):
+    def loadTool(self, tool, **kwargs):
         """
         Load tool/toolchain from Waf or another places
         Version of loadTool for configure context.
         """
 
-        wrapMsg = 'Checking for %r' % tool
+        startMsg = 'Checking for %r' % tool
 
+        quiet = kwargs.get('quiet', False)
         if quiet:
             try:
                 self.in_msg += 1
             except AttributeError:
                 self.in_msg = 1
 
-        module = None
+        toolEnv = None
         try:
             try:
-                self.start_msg(wrapMsg)
-                module = self._loadTool(tool, tooldirs, withSysPath = withSysPath)
+                self.start_msg(startMsg)
+                toolInfo = self._loadTool(tool, **kwargs)
             except waferror.ConfigurationError:
                 self.end_msg(False)
                 raise
             else:
                 endMsg = True
-                lang = toolchains.getLang(tool)
-                if lang:
+                toolEnv = toolInfo[1]
+                for lang in toolchains.getLangs(tool):
                     var = ToolchainVars.cfgVarToSetToolchain(lang)
-                    if self.env[var]:
-                        endMsg = self.env.get_flat(var)
+                    if toolEnv[var]:
+                        endMsg = toolEnv.get_flat(var)
+                        break
                 self.end_msg(endMsg)
         finally:
             if quiet:
                 self.in_msg -= 1
 
-        return module
+        return toolEnv
 
     def loadToolchains(self, bconf, copyFromEnv):
         """
@@ -986,28 +1005,36 @@ class ConfigurationContext(WafConfContext):
         toolchainsEnvs = self.zmcache().toolchain.setdefault('envs', {})
         oldEnvName = self.variant
 
-        def loadToolchain(toolchain):
-            toolname = toolchain
+        def loadToolchain(toolname):
+
             if toolname in toolchainsEnvs:
                 #don't load again
                 return
 
+            # toolname    - name of a system or custom toolchain
+            # toolForLoad - name of module for toolchain
+            toolForLoad = toolname
+
             self.setenv(toolname, env = copyFromEnv)
-            custom  = bconf.customToolchains.get(toolname, None)
-            if custom is not None:
+
+            customName = ''
+            custom  = bconf.customToolchains.get(toolname)
+            if custom:
                 for var, val in viewitems(custom.vars):
                     self.env[var] = val
-                toolchain = custom.kind
+                toolForLoad = custom.kind
+                customName = toolname
 
-            if toolchain.startswith('auto-'):
-                lang = toolchain[5:]
-                self._loadDetectedCompiler(lang)
+            if toolForLoad.startswith('auto-'):
+                lang = toolForLoad[5:]
+                toolenv = self._loadDetectedToolchain(lang, customName)
             else:
-                self.loadTool(toolchain)
-            toolchainsEnvs[toolname] = self.env
+                toolenv = self.loadTool(toolForLoad, customSet = customName)
 
-        for toolchain in toolchainNames:
-            loadToolchain(toolchain)
+            toolchainsEnvs[toolname] = self.env = toolenv
+
+        for name in toolchainNames:
+            loadToolchain(name)
 
         # switch to old env due to calls of 'loadToolchain'
         self.setenv(oldEnvName)

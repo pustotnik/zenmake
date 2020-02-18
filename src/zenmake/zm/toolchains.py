@@ -25,7 +25,7 @@ def get(lang, platform = PLATFORM):
     """
 
     if not lang or lang not in langTable:
-        raise ZenMakeError("Compiler for feature '%s' is not supported" % lang)
+        raise ZenMakeError("Toolchain for feature '%s' is not supported" % lang)
 
     toolchains = _cache[platform][lang].get('toolchains')
     if toolchains:
@@ -49,7 +49,7 @@ def get(lang, platform = PLATFORM):
 
 def getAll(platform = PLATFORM):
     """
-    Return tuple of unique compiler names supported on selected platform
+    Return tuple of unique toolchain names supported on selected platform
     """
 
     toolchains = _cache[platform].get('all-toolchains')
@@ -61,14 +61,13 @@ def getAll(platform = PLATFORM):
     _cache[platform]['all-toolchains'] = toolchains
     return toolchains
 
-def getLang(toolchain):
+def getLangs(toolchain):
     """
-    Get language for selected toolchain.
-    Returns None if not found
+    Get toolchain supported languages.
     """
 
     if not toolchain:
-        return None
+        return []
 
     toolToLang = _cache.get('toolchain-to-lang')
 
@@ -77,7 +76,8 @@ def getLang(toolchain):
         for lang in langTable:
             toolchains = get(lang)
             for tool in toolchains:
-                toolToLang[tool] = lang
+                toolList = toolToLang.setdefault(tool, [])
+                toolList.append(lang)
         _cache['toolchain-to-lang'] = toolToLang
 
     return toolToLang.get(toolchain)
