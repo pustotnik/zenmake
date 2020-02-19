@@ -14,51 +14,66 @@ CC
     to existing compiler. It overrides values from :ref:`build config<buildconf>`
     if present. Example::
 
-        CC=clang zenmake build -v
+        CC=clang zenmake build -B
 
 CXX
     Set C++ compiler. It can be name of installed a system compiler or any path
     to existing compiler. It overrides values from :ref:`build config<buildconf>`
     if present. Example::
 
-        CXX=clang++ zenmake build -v
+        CXX=clang++ zenmake build -B
+
+DC
+    Set D compiler. It can be name of installed a system compiler or any path
+    to existing compiler. It overrides values from :ref:`build config<buildconf>`
+    if present. Example::
+
+        DC=ldc2 zenmake build -B
 
 AS
     Set Assembler. It can be name of installed a system compiler or any path
     to existing compiler. It overrides values from :ref:`build config<buildconf>`
     if present. Example::
 
-        AS=gcc zenmake build -v
+        AS=gcc zenmake build -B
 
 CFLAGS
-    Set list of compilation flags for C files. It overrides values from
-    :ref:`build config<buildconf>` if present. Example::
+    Extra flags to give to the C compiler. Example::
 
-        CFLAGS='-O3 -fPIC' zenmake build -v
+        CFLAGS='-O3 -fPIC' zenmake build -B
 
 CXXFLAGS
-    Set list of compilation flags for C++ files. It overrides values from
-    :ref:`build config<buildconf>` if present. Example::
+    Extra flags to give to the C++ compiler. Example::
 
-        CXXFLAGS='-O3 -fPIC' zenmake build -v
+        CXXFLAGS='-O3 -fPIC' zenmake build -B
 
-LDFLAGS
-    Set list of link flags for C/C++ files. It overrides values from
-    :ref:`build config<buildconf>` if present. Example::
+CPPFLAGS
+    Extra flags added at the end of compilation commands for the C/C++ compiler.
 
-        LDFLAGS='-Wl,--as-needed' zenmake build -v
+DFLAGS
+    Extra flags to give to the D compiler. Example::
+
+        DFLAGS='-O' zenmake build -B
 
 ASFLAGS
-    Set list of compilation flags for Assembler files. It overrides values from
-    :ref:`build config<buildconf>` if present. Example::
+    Extra flags to give to the Assembler. Example::
 
-        ASFLAGS='-Os' zenmake build -v
+        ASFLAGS='-Os' zenmake build -B
+
+LINKFLAGS
+    Extra list of linker flags for C/C++/D. Example::
+
+        LINKFLAGS='-Wl,--as-needed' zenmake build -B
+
+LDFLAGS
+    Extra list of linker flags at the end of the link command for C/C++. Example::
+
+        LDFLAGS='-Wl,--as-needed' zenmake build -B
 
 ASLINKFLAGS
-    Set list of link flags for Assembler files. It overrides values from
-    :ref:`build config<buildconf>` if present. Example::
+    Extra list of linker flags for Assembler files. Example::
 
-        ASLINKFLAGS='-s' zenmake build -v
+        ASLINKFLAGS='-s' zenmake build -B
 
 JOBS
     Default value for the amount of parallel jobs. Has no effect when ``-j`` is

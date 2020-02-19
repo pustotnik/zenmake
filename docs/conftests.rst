@@ -94,7 +94,7 @@ These configuration tests in ``dict`` format:
 
         If you use ``check-by-pyfunc`` in ``checks`` you should understand that
         python function must be thread safe. If you don't use any shared data
-        in this function you don't need to worry about concurrency.
+        in such a function you don't need to worry about concurrency.
 
         If parameter ``tryall`` is True then all configuration tests
         from the parameter ``checks`` will be executed despite of errors.

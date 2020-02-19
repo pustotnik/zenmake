@@ -21,6 +21,7 @@ ZenMake documentation
    buildconf
    commands
    envvars
+   langs
    conftests
    dependencies
    tests

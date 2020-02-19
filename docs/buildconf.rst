@@ -227,7 +227,7 @@ toolchains
             CXX  : custom-toolchain/gccemu/g++
             AR   : custom-toolchain/gccemu/ar
           custom-clang++:
-            kind': clang++
+            kind : clang++
             CXX  : custom-toolchain/clangemu/clang++
             AR   : custom-toolchain/clangemu/llvm-ar
 
@@ -360,6 +360,9 @@ taskparams
         :cxx:
             Means that the task has a C++ code. Optional in most cases.
             Also it's a 'lang' feature for C++ language.
+        :d:
+            Means that the task has an D code. Optional in most cases.
+            Also it's a 'lang' feature for D language.
         :asm:
             Means that the task has an Assembler code. Optional in most cases.
             Also it's a 'lang' feature for Assembler language.
@@ -480,7 +483,7 @@ taskparams
         not support it.
 
     includes
-        Include paths are used by the C/C++ compilers for finding headers.
+        Include paths are used by the C/C++/D compilers for finding headers/files.
         Paths should be relative to startdir_ or absolute. But last variant is
         not recommended.
 
@@ -565,6 +568,7 @@ taskparams
                              ``icc``, ``xlc``, ``suncc``, ``irixcc``.
         | Known names for C++: ``auto-c++``, ``g++``, ``clang++``, ``msvc``,
                                ``icpc``, ``xlc++``, ``sunc++``.
+        | Known names for D: ``auto-d``, ``ldc2``, ``gdc``, ``dmd``.
         | Known names for Assembler: ``auto-asm``, ``gas``, ``nasm``.
 
         .. note::
@@ -585,6 +589,9 @@ taskparams
     cxxflags
         One or more compiler flags for C++.
 
+    dflags
+        One or more compiler flags for D.
+
     asflags
         One or more compiler flags for Assembler.
 
@@ -592,7 +599,10 @@ taskparams
         One or more compiler flags added at the end of compilation commands.
 
     linkflags
-        One or more linker flags for C/C++.
+        One or more linker flags for C/C++/D.
+
+    ldflags
+        One or more linker flags for C/C++ at the end of the link command.
 
     aslinkflags
         One or more linker flags for Assembler.

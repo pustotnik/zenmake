@@ -29,6 +29,7 @@ Main features
 
   - C: gcc, clang, msvc, icc, xlc, suncc, irixcc
   - C++: g++, clang++, msvc, icpc, xlc++, sunc++
+  - D (MS Windows is not supported yet): dmd, ldc2, gdc
   - Assembler: gas (GNU Assembler), nasm (experimental)
 
 Documentation
