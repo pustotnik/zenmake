@@ -5,7 +5,7 @@ tasks = {
         'features' : 'shlib',
         'source'   : 'src/dll.d',
     },
-    'static' : {
+    'staticlib' : {
         #'features' : 'dstlib',
         'features' : 'stlib',
         'source'   : 'src/static_lib.d',
@@ -15,16 +15,24 @@ tasks = {
         'features' : 'program',
         'source'   : 'src/main.d',
         'includes' : 'src',
-        'use'      : 'static dll',
+        'use'      : 'staticlib dll',
     },
 }
 
 buildtypes = {
-    'debug' : {
+    'release' : {
         #'toolchain': 'auto-d',
         #'toolchain': 'ldc2',
         #'toolchain': 'dmd',
         #'toolchain': 'gdc',
+
+        'dflags' : '-O',
     }
+}
+
+toolchains = {
+    'gdc': {
+        'LINKFLAGS' : '-pthread', # just as an example of linker flags
+    },
 }
 

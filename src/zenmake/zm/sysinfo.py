@@ -16,6 +16,9 @@ from waflib.Configure import ConfigurationContext as WafConfContext, WAF_CONFIG_
 from zm.constants import PLATFORM
 from zm import log
 from zm.cmd import Command as _Command
+# pylint: disable = unused-import
+from zm.waf import wrappers
+# pylint: enable = unused-import
 
 _tempdirs = []
 

@@ -19,7 +19,7 @@ langTable = {}
 # private cache
 _cache = _AutoDict()
 
-def get(lang, platform = PLATFORM):
+def getNames(lang, platform = PLATFORM, withAuto = False):
     """
     Return toolchains tuple for selected language for current platform
     """
@@ -27,7 +27,10 @@ def get(lang, platform = PLATFORM):
     if not lang or lang not in langTable:
         raise ZenMakeError("Toolchain for feature '%s' is not supported" % lang)
 
-    toolchains = _cache[platform][lang].get('toolchains')
+    cacheKey = 'toolchains-withauto' if withAuto else 'toolchains'
+    cache = _cache[platform][lang]
+
+    toolchains = cache.get(cacheKey)
     if toolchains:
         return toolchains
 
@@ -42,24 +45,31 @@ def get(lang, platform = PLATFORM):
         _platform = platform
         if platform == 'windows':
             _platform = 'win32'
-        toolchains = table.get(_platform, table['default'])
+        toolchains = tuple(table.get(_platform, table['default']))
 
-    _cache[platform][lang].toolchains = toolchains
-    return toolchains
+    cache['toolchains'] = toolchains
+    cache['toolchains-withauto'] = toolchains + ('auto-' + lang.replace('xx', '++'),)
+    return cache.get(cacheKey)
 
-def getAll(platform = PLATFORM):
+def getAllNames(platform = PLATFORM, withAuto = False):
     """
     Return tuple of unique toolchain names supported on selected platform
     """
 
-    toolchains = _cache[platform].get('all-toolchains')
+    cacheKey = 'all-toolchains-withauto' if withAuto else 'all-toolchains'
+    cache = _cache[platform]
+
+    toolchains = cache.get(cacheKey)
     if toolchains:
         return toolchains
 
-    toolchains = [ c for l in langTable for c in get(l, platform) ]
+    toolchains = [ t for l in langTable for t in getNames(l, platform) ]
     toolchains = tuple(set(toolchains))
-    _cache[platform]['all-toolchains'] = toolchains
-    return toolchains
+    cache['all-toolchains'] = toolchains
+    autoNames = ['auto-' + lang.replace('xx', '++') for lang in langTable ]
+    cache['all-toolchains-withauto'] = toolchains + tuple(autoNames)
+
+    return cache.get(cacheKey)
 
 def getLangs(toolchain):
     """
@@ -74,7 +84,7 @@ def getLangs(toolchain):
     if not toolToLang:
         toolToLang = {}
         for lang in langTable:
-            toolchains = get(lang)
+            toolchains = getNames(lang, withAuto = True)
             for tool in toolchains:
                 toolList = toolToLang.setdefault(tool, [])
                 toolList.append(lang)

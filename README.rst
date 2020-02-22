@@ -15,9 +15,9 @@ Main features
 
 - Easy to use and flexible build config as python (.py) or as yaml file.
 - Distribution as zip application or as system package (pip).
-- Automatic build order and dependencies. (Thanks to Waf)
+- Automatic build order and dependencies.
 - Automatic reconfiguring: no need to run command 'configure'.
-- Compiler autodetection. (Thanks to Waf)
+- Compiler autodetection.
 - Building and running functional/unit tests including an ability to
   build and run tests only on changes.
 - Running custom scripts during a build phase.
@@ -29,7 +29,7 @@ Main features
 
   - C: gcc, clang, msvc, icc, xlc, suncc, irixcc
   - C++: g++, clang++, msvc, icpc, xlc++, sunc++
-  - D (MS Windows is not supported yet): dmd, ldc2, gdc
+  - D: dmd, ldc2, gdc (MS Windows is not supported yet)
   - Assembler: gas (GNU Assembler), nasm (experimental)
 
 Documentation

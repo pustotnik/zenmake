@@ -15,12 +15,14 @@ from zm.features import ToolchainVars
 
 LANGMAP = {
     'sys': {
+        'ar'  : 'AR',
         'c'   : 'CC',
         'cxx' : 'CXX',
         'asm' : 'AS',
         'd'   : 'DC',
     },
     'cfg' : {
+        'ar'  : 'AR',
         'c'   : 'CC',
         'cxx' : 'CXX',
         'asm' : 'AS',

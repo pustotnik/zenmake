@@ -206,15 +206,16 @@ buildtypes
 
 toolchains
 """"""""""
-    A `dict <buildconf-dict-def_>`_ with custom toolchains setups. It's useful
-    for simple cross builds for example. In common case you don't need it.
-    Each value has unique name and parameters. Parameters are also
+    A `dict <buildconf-dict-def_>`_ with custom toolchain setups. It's useful
+    for simple cross builds for example, or for custom settings for existing
+    toolchains. Each value has unique name and parameters. Parameters are also
     dict with names of environment variables and
     special name ``kind`` that is used for specifying type of
     toolchain/compiler. Environment variables are usually such variables as
-    ``CC``, ``CXX``, ``AR``, ``LINK_CXX`` and etc that is used to specify
+    ``CC``, ``CXX``, ``AR``, etc that is used to specify
     name or path to existing toolchain/compiler. Path can be absolute or
-    relative to the startdir_. Names of toolchains from this
+    relative to the startdir_. But also it can be variables ``CFLAGS``,
+    ``CXXFLAGS``, etc. Names of toolchains from this
     variable can be used as value for parameter ``toolchain`` in taskparams_.
 
     Example in YAML format:
@@ -230,6 +231,8 @@ toolchains
             kind : clang++
             CXX  : custom-toolchain/clangemu/clang++
             AR   : custom-toolchain/clangemu/llvm-ar
+          g++:
+            LINKFLAGS : -Wl,--as-needed
 
 platforms
 """""""""
@@ -596,7 +599,7 @@ taskparams
         One or more compiler flags for Assembler.
 
     cppflags
-        One or more compiler flags added at the end of compilation commands.
+        One or more compiler flags added at the end of compilation commands for C/C++.
 
     linkflags
         One or more linker flags for C/C++/D.
@@ -606,6 +609,9 @@ taskparams
 
     aslinkflags
         One or more linker flags for Assembler.
+
+    arflags
+        Flags to give the archive-maintaining program.
 
     defines
         One or more defines for C/C++/Assembler.

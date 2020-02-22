@@ -10,7 +10,6 @@
 
 import os
 import re
-import shlex
 from copy import deepcopy
 
 from waflib.ConfigSet import ConfigSet
@@ -26,6 +25,8 @@ joinpath = os.path.join
 normpath = os.path.normpath
 relpath  = os.path.relpath
 isabs    = os.path.isabs
+
+toList = utils.toList
 
 _usedWafTaskKeys = set([
     'name', 'target', 'features', 'source', 'includes', 'lib', 'libpath',
@@ -187,7 +188,7 @@ def applyInstallPaths(env, clicmd):
         if not isabs(val):
             env[var] = '/' + val
 
-def setTaskEnvVars(env, taskParams):
+def setTaskEnvVars(env, taskParams, toolchainSettings):
     """
     Set up some env vars for build task such as compiler flags
     """
@@ -199,34 +200,34 @@ def setTaskEnvVars(env, taskParams):
 
     # all Waf env vars that can be set from buildconf params
     cfgFlagVars = ToolchainVars.allCfgFlagVars()
-    # read flags from the buildconf
+    # read flags from the buildconf and USELIB_VARS
     for var in cfgFlagVars:
         paramName = var.lower()
         val = taskParams.get(paramName)
         if val:
-            _gathered[var] = utils.toList(val)
+            # bconf
+            _gathered[var] = toList(val)
 
-    # get all system env flag vars
+    # apply vars from toolchain settings that include env vars
     sysFlagVars = ToolchainVars.allSysFlagVars()
-    # read flags from the system environment
-    for var in sysFlagVars:
-        val = os.environ.get(var, None)
-        if not val:
-            continue
-
-        # bconf + sys env
-        paramName = var.lower()
-        _gathered[var] = _gathered.get(var, []) + shlex.split(val)
+    for toolchain in taskParams['toolchain']:
+        assert toolchain in toolchainSettings
+        settingVars = toolchainSettings[toolchain].vars
+        for var in sysFlagVars:
+            val = settingVars.get(var)
+            if val:
+                # bconf + (toolchains + sys env)
+                _gathered[var] = _gathered.get(var, []) + val
 
     # merge with the waf env vars
     for var, val in viewitems(_gathered):
         # Waf has some usefull predefined env vars for some compilers
         # so here we add values, not replace them.
 
-        # waf env + (bconf + sys env)
+        # waf env + (bconf + toolchains + sys env)
         val = env[var] + val
 
-        # remove duplicates: keep only last unique value in the list
+        # remove duplicates: keep only last unique values in the list
         val = utils.uniqueListWithOrder(reversed(val))
         val.reverse()
         env[var] = val
@@ -238,7 +239,7 @@ def getValidPreDefinedToolchainNames():
 
     langs = set(getLoadedFeatures()).intersection(ToolchainVars.allLangs())
     validNames = {'auto-' + lang.replace('xx', '++') for lang in langs}
-    validNames.update(toolchains.getAll(platform = PLATFORM))
+    validNames.update(toolchains.getAllNames(platform = PLATFORM))
     return validNames
 
 def getTaskNamesWithDeps(tasks, names):
@@ -250,7 +251,7 @@ def getTaskNamesWithDeps(tasks, names):
         params = tasks.get(name, {})
         deps = params.get('use')
         if deps:
-            result.extend(getTaskNamesWithDeps(tasks, utils.toList(deps)))
+            result.extend(getTaskNamesWithDeps(tasks, toList(deps)))
 
     return result
 
@@ -265,7 +266,7 @@ def detectTaskFeatures(ctx, taskParams):
     Param 'ctx' is used only if an alies exists in features.
     """
 
-    features = utils.toList(taskParams.get('features', []))
+    features = toList(taskParams.get('features', []))
     if aliesInFeatures(features):
         features = handleTaskFeatureAlieses(ctx, features, taskParams.get('source'))
 
@@ -292,7 +293,7 @@ def handleTaskFeatureAlieses(ctx, features, source):
     assert source
 
     if source.get('paths') is None:
-        patterns = utils.toList(source.get('include', ''))
+        patterns = toList(source.get('include', ''))
         #ignorecase = source.get('ignorecase', False)
         #if ignorecase:
         #    patterns = [x.lower() for x in patterns]
@@ -337,7 +338,7 @@ def _makeTaskPathParam(param, rootdir, startdir, relative = True):
     # make valid absolute path for current param
     _startdir = joinpath(rootdir, _startdir)
 
-    paths = utils.toList(param['paths'])
+    paths = toList(param['paths'])
     result = []
     for path in paths:
         path = utils.getNativePath(path)
@@ -422,7 +423,7 @@ def handleTaskExportDefinesParam(taskParams):
     if isinstance(exportDefines, bool) and exportDefines:
         exportDefines = taskParams.get('defines', [])
 
-    taskParams['export-defines'] = utils.toList(exportDefines)
+    taskParams['export-defines'] = toList(exportDefines)
 
 def handleTaskSourceParam(ctx, src):
     """
@@ -450,7 +451,7 @@ def handleTaskSourceParam(ctx, src):
     files = src.get('paths', None)
     if files is not None:
         # process each source file
-        files = utils.toList(files)
+        files = toList(files)
         result = []
         for file in files:
             assert isinstance(file, stringtype)

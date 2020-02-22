@@ -131,18 +131,27 @@ def testDeepCopyEnv():
 def testSetTaskEnvVars():
     cfgEnvVars = ToolchainVars.allCfgFlagVars()
 
+    toolchainSettings = AutoDict()
+    toolchainSettings.gcc.vars = {}
+
     taskParamsFixture = []
+    baseTaskParams = {
+        'features' : ['cshlib'],
+        'toolchain': ['gcc'],
+    }
     for var in cfgEnvVars:
         taskParamsFixture.extend([
-            { var.lower() : 'var1' },
-            { var.lower() : 'var1 var2' },
-            { var.lower() : ['var1', 'var2'] },
+            dict(baseTaskParams, **{ var.lower() : 'var1' }),
+            dict(baseTaskParams, **{ var.lower() : 'var1 var2' }),
+            dict(baseTaskParams, **{ var.lower() : ['var1', 'var2'] }),
         ])
 
     for taskParams in taskParamsFixture:
         env = ConfigSet()
-        assist.setTaskEnvVars(env, taskParams)
+        assist.setTaskEnvVars(env, taskParams, toolchainSettings)
         for key, val in taskParams.items():
+            if key in ('toolchain', 'features'):
+                continue
             envkey = key.upper()
             assert envkey in env
             assert env[envkey] == utils.toList(val)

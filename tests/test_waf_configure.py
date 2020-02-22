@@ -73,7 +73,7 @@ def cfgctx(monkeypatch, mocker, tmpdir):
         self = cfgCtx
         env = self.all_envs[cfgCtx.variant]
         for lang in ('c', 'cxx'):
-            compilers = toolchains.get(lang)
+            compilers = toolchains.getNames(lang)
             envVar    = ToolchainVars.sysVarToSetToolchain(lang)
             if toolchain in compilers:
                 env[envVar] = ['/usr/bin/%s' % toolchain]
@@ -267,7 +267,7 @@ def testRunConfTestsUnknown(mocker, cfgctx):
 def _checkToolchainNames(ctx, buildconf, buildtype, expected):
     bconf = BuildConfig(asRealConf(buildconf))
     bconf.applyBuildType(buildtype)
-    assert sorted(ctx.handleToolchainNames(bconf)) == sorted(expected)
+    assert sorted(ctx.handleToolchains(bconf)) == sorted(expected)
 
 def testToolchainNames(testingBuildConf, cfgctx, monkeypatch):
 
@@ -278,7 +278,7 @@ def testToolchainNames(testingBuildConf, cfgctx, monkeypatch):
     # CASE: invalid use
     bconf = BuildConfig(asRealConf(buildconf))
     with pytest.raises(ZenMakeLogicError):
-        _ = ctx.handleToolchainNames(bconf)
+        _ = ctx.handleToolchains(bconf)
 
     buildconf.buildtypes['debug-gxx'] = {}
     buildconf.buildtypes.default = 'debug-gxx'
@@ -291,7 +291,7 @@ def testToolchainNames(testingBuildConf, cfgctx, monkeypatch):
     bconf = BuildConfig(asRealConf(buildconf))
     bconf.applyBuildType(buildtype)
     # it returns tuple but it can return list so we check by len
-    assert len(ctx.handleToolchainNames(bconf)) == 0
+    assert len(ctx.handleToolchains(bconf)) == 0
 
     # CASE: tasks with the same toolchain
     buildconf = deepcopy(testingBuildConf)
@@ -327,7 +327,7 @@ def testToolchainNames(testingBuildConf, cfgctx, monkeypatch):
     bconf = BuildConfig(asRealConf(buildconf))
     bconf.applyBuildType(buildtype)
     # it returns tuple but it can return list so we check by len
-    assert len(ctx.handleToolchainNames(bconf)) == 0
+    assert len(ctx.handleToolchains(bconf)) == 0
 
     # CASE: tasks in matrix with the same toolchain
     buildconf = deepcopy(testingBuildConf)
@@ -366,7 +366,7 @@ def testLoadToolchains(mocker, cfgctx):
     # load existing tools by name
     toolchainNames = ['gcc', 'g++', 'g++']
     setToolchains(bconf, toolchainNames)
-    bconf.customToolchains = {}
+    bconf.customToolchains = AutoDict()
     toolchainsEnvs = ctx.loadToolchains(bconf, env)
     for name in toolchainNames:
         assert name in toolchainsEnvs
@@ -374,7 +374,7 @@ def testLoadToolchains(mocker, cfgctx):
     assert ctx.variant == 'old'
 
     # auto load existing tool by lang
-    bconf.customToolchains = {}
+    bconf.customToolchains = AutoDict()
     toolchainNames = ['auto-c', 'auto-c++']
     setToolchains(bconf, toolchainNames)
     toolchainsEnvs = ctx.loadToolchains(bconf, env)
@@ -389,12 +389,12 @@ def testLoadToolchains(mocker, cfgctx):
     assert ctx.variant == 'old'
 
     # load custom tool
-    bconf.customToolchains = {
+    bconf.customToolchains = AutoDict({
         'local-g++': AutoDict({
             'kind' : 'g++',
             'vars' : { 'CXX' : 'some_path/g++'} ,
         })
-    }
+    })
     toolchainNames = ['local-g++', 'g++']
     setToolchains(bconf, toolchainNames)
     toolchainsEnvs = ctx.loadToolchains(bconf, env)
@@ -405,7 +405,7 @@ def testLoadToolchains(mocker, cfgctx):
     # errors
     ctx.zmcache().clear()
     ctx.loadTool = mocker.MagicMock(side_effect = WafError)
-    bconf.customToolchains = {}
+    bconf.customToolchains = AutoDict()
     bconf.toolchainNames = ['auto-c', 'auto-c++']
     with pytest.raises(WafError):
         ctx.loadToolchains(bconf, env)

@@ -13,6 +13,7 @@
 import os
 import sys
 import shutil
+import shlex
 import traceback
 
 # NOTICE:This module must import modules with original Waf context classes
@@ -779,6 +780,11 @@ def _handleConfChecks(checks, params):
 
         func(checkArgs, params)
 
+def _genToolAutoName(lang):
+    return 'auto-%s' % lang.replace('xx', '++')
+
+TOOL_AUTO_NAMES = { _genToolAutoName(x) for x in ToolchainVars.allLangs() }
+
 class ConfigurationContext(WafConfContext):
     """ Context for command 'configure' """
 
@@ -798,10 +804,11 @@ class ConfigurationContext(WafConfContext):
 
         tooldirs = kwargs.get('tooldirs', None)
         withSysPath = kwargs.get('withSysPath', True)
-        customSet = kwargs.get('customSet', '')
+        toolId = kwargs.get('id', '')
+        toolId = hash(toolId)
 
         loadedTool = self._loadedTools.setdefault(tool, {})
-        toolInfo = loadedTool.get(customSet)
+        toolInfo = loadedTool.get(toolId)
         if toolInfo:
             # don't load again
             return toolInfo
@@ -826,15 +833,16 @@ class ConfigurationContext(WafConfContext):
             self.tools.append({'tool' : tool, 'tooldir' : tooldirs, 'funs' : None})
 
         toolenv = self.env
-        loadedTool[customSet] = (module, toolenv)
+        loadedTool[toolId] = (module, toolenv)
 
         return module, toolenv
 
     def _checkToolchainNames(self, bconf):
 
         # Each bconf has own customToolchains
-        if bconf.customToolchains:
-            validNames = self.validToolchainNames.union(bconf.customToolchains.keys())
+        customToolchains = bconf.customToolchains
+        if customToolchains:
+            validNames = self.validToolchainNames.union(customToolchains.keys())
         else:
             validNames = self.validToolchainNames
 
@@ -846,7 +854,7 @@ class ConfigurationContext(WafConfContext):
                     msg += ' Valid toolchains: %r' % list(validNames)
                     raise error.ZenMakeConfError(msg)
 
-    def _loadDetectedToolchain(self, lang, customName):
+    def _loadDetectedToolchain(self, lang, toolId):
         """
         Load auto detected toolchain by its lang
         """
@@ -858,12 +866,13 @@ class ConfigurationContext(WafConfContext):
 
         cfgVar = ToolchainVars.cfgVarToSetToolchain(lang)
 
+        toolname = None
         toolenv = self.env
-        for toolname in toolchains.get(lang):
+        for toolname in toolchains.getNames(lang):
             self.env.stash()
             try:
                 # try to load
-                toolenv = self.loadTool(toolname, customSet = customName)
+                toolenv = self.loadTool(toolname, id = toolId)
             except waferror.ConfigurationError:
                 self.env.revert()
             else:
@@ -874,7 +883,7 @@ class ConfigurationContext(WafConfContext):
         else:
             self.fatal('could not configure a %s toolchain!' % displayedLang)
 
-        return toolenv
+        return toolname, toolenv
 
     # override
     def execute(self):
@@ -906,53 +915,6 @@ class ConfigurationContext(WafConfContext):
         self.variant = name
         self.all_envs[name] = env
 
-    def handleToolchainNames(self, bconf):
-        """
-        Handle all toolchains from current build tasks.
-        Returns unique names of all toolchains.
-        """
-
-        toolchainVars = ToolchainVars.allSysVarsToSetToolchain()
-        toolchainNames = set()
-
-        for taskParams in viewvalues(bconf.tasks):
-
-            features = utils.toList(taskParams.get('features', []))
-            _toolchains = []
-
-            # handle toolchains from OS env
-            for var in toolchainVars:
-                toolchain = os.environ.get(var, None)
-                if not toolchain:
-                    continue
-                for lang in toolchains.getLangs(toolchain):
-                    if lang in features:
-                        _toolchains.append(toolchain)
-                        break
-
-            if not _toolchains:
-                # try to get from the task
-                _toolchains = utils.toList(taskParams.get('toolchain', []))
-
-            if not _toolchains:
-                # try to use auto-*
-                _toolchains = set()
-                for feature in features:
-                    lang = TASK_TARGET_FEATURES_TO_LANG.get(feature)
-                    if not lang and feature in TASK_LANG_FEATURES:
-                        lang = feature
-                    if lang:
-                        _toolchains.add('auto-' + lang.replace('xx', '++'))
-                toolchainNames |= _toolchains
-                _toolchains = list(_toolchains)
-            else:
-                toolchainNames |= set(_toolchains)
-
-            # store result in task
-            taskParams['toolchain'] = _toolchains
-
-        return tuple(toolchainNames)
-
     def loadTool(self, tool, **kwargs):
         """
         Load tool/toolchain from Waf or another places
@@ -973,8 +935,11 @@ class ConfigurationContext(WafConfContext):
             try:
                 self.start_msg(startMsg)
                 toolInfo = self._loadTool(tool, **kwargs)
-            except waferror.ConfigurationError:
+            except waferror.ConfigurationError as ex:
                 self.end_msg(False)
+                if 'CXX=g++48' in ex.msg:
+                    msg = 'Could not find gcc/g++ (only Clang)'
+                    raise waferror.ConfigurationError(msg)
                 raise
             else:
                 endMsg = True
@@ -991,12 +956,91 @@ class ConfigurationContext(WafConfContext):
 
         return toolEnv
 
+    def handleToolchains(self, bconf):
+        """
+        Handle all toolchains from current build tasks.
+        Returns unique names of all toolchains.
+        """
+
+        customToolchains = bconf.customToolchains
+        toolchainVars = ToolchainVars.allSysVarsToSetToolchain()
+        flagVars = ToolchainVars.allSysFlagVars()
+
+        actualToolchains = set(toolchains.getAllNames(withAuto = True))
+        # customToolchains can contain unknown custom names
+        actualToolchains.update(customToolchains.keys())
+
+        # OS env vars
+        osenv = os.environ
+        sysEnvToolVars = \
+            { var:osenv[var] for var in toolchainVars if var in osenv }
+        sysEnvFlagVars = \
+            { var:shlex.split(osenv[var]) for var in flagVars if var in osenv}
+
+        for toolchain in tuple(actualToolchains):
+            if toolchain in customToolchains and toolchain in TOOL_AUTO_NAMES:
+                msg = "Error in the file %r:" % (bconf.path)
+                msg += "\n  %r is not valid name" % toolchain
+                msg += " in the variable 'toolchains'"
+                raise error.ZenMakeConfError(msg)
+
+            settings = customToolchains[toolchain]
+
+            # OS env vars
+            settings.vars.update(sysEnvToolVars)
+            settings.vars.update(sysEnvFlagVars)
+            settings.kind = toolchain if not settings.kind else settings.kind
+
+        toolchainNames = set()
+
+        for taskParams in viewvalues(bconf.tasks):
+
+            features = utils.toList(taskParams.get('features', []))
+            _toolchains = []
+
+            # handle env vars to set toolchain
+            for var, val in viewitems(sysEnvToolVars):
+                lang = ToolchainVars.langBySysVarToSetToolchain(var)
+                if not lang or lang not in features:
+                    continue
+                if val in actualToolchains:
+                    # it's lucky value
+                    _toolchains.append(val)
+                else:
+                    # Value from OS env is not name of a toolchain and
+                    # therefore it should be set auto-* for toolchain name
+                    # ZenMake detects actual name later.
+                    _toolchains.append(_genToolAutoName(lang))
+
+            # try to get from the task
+            if not _toolchains:
+                _toolchains = utils.toList(taskParams.get('toolchain', []))
+
+            if not _toolchains:
+                # try to use auto-*
+                _toolchains = set()
+                for feature in features:
+                    lang = TASK_TARGET_FEATURES_TO_LANG.get(feature)
+                    if not lang and feature in TASK_LANG_FEATURES:
+                        lang = feature
+                    if lang:
+                        _toolchains.add(_genToolAutoName(lang))
+                _toolchains = list(_toolchains)
+
+            toolchainNames.update(_toolchains)
+
+            # store result in task
+            taskParams['toolchain'] = _toolchains
+
+        toolchainNames = tuple(toolchainNames)
+        return toolchainNames
+
     def loadToolchains(self, bconf, copyFromEnv):
         """
         Load all selected toolchains
         """
 
-        toolchainNames = self.handleToolchainNames(bconf)
+        toolchainNames = self.handleToolchains(bconf)
         self._checkToolchainNames(bconf)
 
         if not toolchainNames and bconf.tasks:
@@ -1004,37 +1048,60 @@ class ConfigurationContext(WafConfContext):
 
         toolchainsEnvs = self.zmcache().toolchain.setdefault('envs', {})
         oldEnvName = self.variant
+        customToolchains = bconf.customToolchains
+        detectedToolNames = {}
 
-        def loadToolchain(toolname):
+        def loadToolchain(toolchain):
 
-            if toolname in toolchainsEnvs:
+            if toolchain in toolchainsEnvs:
                 #don't load again
                 return
 
-            # toolname    - name of a system or custom toolchain
+            self.setenv(toolchain, env = copyFromEnv)
+
+            toolId = ''
+            toolSettings  = customToolchains[toolchain]
+
+            for var, val in viewitems(toolSettings.vars):
+                lang = ToolchainVars.langBySysVarToSetToolchain(var)
+                if not lang:
+                    # it's not toolchain var
+                    continue
+                self.env[var] = val
+                toolId += '%s=%r ' % (var, val)
+
+            allowedNames = toolchains.getAllNames(withAuto = True)
+            if toolSettings.kind not in allowedNames:
+                msg = "Error in the file %r:" % (bconf.path)
+                msg += "\n  toolchains.%s" % toolchain
+                msg += " must have field 'kind' with one of the values: "
+                msg += str(allowedNames)[1:-1]
+                raise error.ZenMakeConfError(msg)
+
+            # toolchain   - name of a system or custom toolchain
             # toolForLoad - name of module for toolchain
-            toolForLoad = toolname
+            toolForLoad = toolSettings.kind
 
-            self.setenv(toolname, env = copyFromEnv)
-
-            customName = ''
-            custom  = bconf.customToolchains.get(toolname)
-            if custom:
-                for var, val in viewitems(custom.vars):
-                    self.env[var] = val
-                toolForLoad = custom.kind
-                customName = toolname
-
-            if toolForLoad.startswith('auto-'):
+            if toolForLoad in TOOL_AUTO_NAMES:
                 lang = toolForLoad[5:]
-                toolenv = self._loadDetectedToolchain(lang, customName)
+                detectedToolname, toolenv = self._loadDetectedToolchain(lang, toolId)
+                detectedToolNames[toolForLoad] = detectedToolname
+                if toolchain in TOOL_AUTO_NAMES:
+                    toolchainsEnvs[toolchain] = toolenv # to avoid reloading
+                    toolchain = detectedToolname
             else:
-                toolenv = self.loadTool(toolForLoad, customSet = customName)
+                toolenv = self.loadTool(toolForLoad, id = toolId)
 
-            toolchainsEnvs[toolname] = self.env = toolenv
+            toolchainsEnvs[toolchain] = self.env = toolenv
 
         for name in toolchainNames:
             loadToolchain(name)
+
+        if detectedToolNames:
+            # replace all auto-* in build tasks with detected toolchains
+            for taskParams in viewvalues(bconf.tasks):
+                taskParams['toolchain'] = \
+                    [detectedToolNames.get(t, t) for t in taskParams['toolchain']]
 
         # switch to old env due to calls of 'loadToolchain'
         self.setenv(oldEnvName)

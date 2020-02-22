@@ -103,14 +103,8 @@ def run():
     try:
 
         # pylint: disable = unused-import
-
-        # load and set waf wrappers
-        # some indy commands depend on them too
-        from zm.waf import wrappers
-
         # force loading *feature*_init modules before CLI
         from zm import features
-
         # pylint: enable = unused-import
 
         loadTesting()

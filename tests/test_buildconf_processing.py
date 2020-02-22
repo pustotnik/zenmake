@@ -493,31 +493,22 @@ class TestSuite(object):
         bconf = BuildConfig(asRealConf(buildconf))
         assert bconf.customToolchains == {}
 
-        # CASE: invalid toolchain
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.toolchains = {
-            'something' : {}
-        }
-        bconf = BuildConfig(asRealConf(buildconf))
-        with pytest.raises(ZenMakeError):
-            empty = bconf.customToolchains
-
         # CASE: one custom toolchain with fake path
         buildconf = deepcopy(testingBuildConf)
         buildconf.toolchains = {
             'something' : {
                 'kind': 'auto-c++',
-                'var': joinpath('path', 'to', 'toolchain')
+                'CXX': joinpath('path', 'to', 'toolchain')
             },
         }
         bconf = BuildConfig(asRealConf(buildconf))
         confPaths = bconf.confPaths
         expected = deepcopy(buildconf.toolchains)
         expected['something']['vars'] = {
-            'var' : utils.unfoldPath(confPaths.startdir,
-                                     buildconf.toolchains['something']['var'])
+            'CXX' : [utils.unfoldPath(confPaths.startdir,
+                                     buildconf.toolchains['something']['CXX'])]
         }
-        del expected['something']['var']
+        del expected['something']['CXX']
         assert bconf.customToolchains == expected
         captured = capsys.readouterr()
         assert "doesn't exist" in captured.err

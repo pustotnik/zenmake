@@ -18,6 +18,7 @@ from zm.pyutils import stringtype, maptype, viewitems, viewvalues
 from zm import utils, log
 from zm.buildconf import loader
 from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES
+from zm.features import ToolchainVars
 
 joinpath = os.path.join
 abspath  = os.path.abspath
@@ -28,6 +29,8 @@ isabs    = os.path.isabs
 isdir    = os.path.isdir
 
 toList = utils.toList
+
+TOOLCHAIN_PATH_ENVVARS = frozenset(ToolchainVars.allSysVarsToSetToolchain())
 
 #def _isDevVersion():
 #    """
@@ -172,7 +175,7 @@ class Config(object):
         # 'toolchains'
         for params in viewvalues(buildconf.toolchains):
             for k, v in viewitems(params):
-                if k == 'kind':
+                if k == 'kind' or k not in TOOLCHAIN_PATH_ENVVARS:
                     continue
                 param = utils.getNativePath(v)
                 if not isabs(param):
@@ -705,16 +708,17 @@ class Config(object):
         _customToolchains = AutoDict()
         for name, info in viewitems(srcToolchains):
             _vars = deepcopy(info) # don't change origin
+            # checking of the 'kind' value is in 'configure' phase
             kind = _vars.pop('kind', None)
-            if kind is None:
-                raise ZenMakeConfError("Toolchain '%s': field 'kind' not found" % name)
 
             for k, v in viewitems(_vars):
-                # try to identify path and do warning if not
-                path = utils.unfoldPath(self.startdir, v)
-                if not os.path.exists(path):
-                    log.warn("Path to toolchain '%s' doesn't exist" % path)
-                _vars[k] = path
+                if k in TOOLCHAIN_PATH_ENVVARS:
+                    # try to identify path and do warning if not
+                    path = utils.unfoldPath(self.startdir, v)
+                    if not os.path.exists(path):
+                        log.warn("Path to toolchain '%s' doesn't exist" % path)
+                    v = path
+                _vars[k] = utils.toList(v)
 
             _customToolchains[name].kind = kind
             _customToolchains[name].vars = _vars

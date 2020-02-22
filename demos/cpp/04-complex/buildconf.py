@@ -54,31 +54,42 @@ buildtypes = {
     # -fPIC is necessary to compile static lib
     'debug-gcc' : {
         'toolchain' : 'g++',
-        'cxxflags' : '-fPIC -O0 -g',
-        'linkflags' : '-Wl,--as-needed',
+        'cxxflags' : '-O0 -g',
     },
     'release-gcc' : {
         'toolchain' : 'g++',
-        'cxxflags' : '-fPIC -O2',
-        'linkflags' : '-Wl,--as-needed',
+        'cxxflags' : '-O2',
     },
     'debug-clang' : {
         'toolchain' : 'clang++',
-        'cxxflags' : '-fPIC -O0 -g',
+        'cxxflags' : '-O0 -g',
     },
     'release-clang' : {
         'toolchain' : 'clang++',
-        'cxxflags' : '-fPIC -O2',
+        'cxxflags' : '-O2',
     },
     'debug-msvc' : {
         'toolchain' : 'msvc',
-        'cxxflags' : '/Od /EHsc',
+        'cxxflags' : '/Od',
     },
     'release-msvc' : {
         'toolchain' : 'msvc',
-        'cxxflags' : '/O2 /EHsc',
+        'cxxflags' : '/O2',
     },
     'default' : 'debug-gcc',
+}
+
+toolchains = {
+    'g++': {
+        'LINKFLAGS' : '-Wl,--as-needed',
+        'CXXFLAGS' : '-fPIC -Wall',
+    },
+    'clang++': {
+        'CXXFLAGS' : '-fPIC',
+    },
+    'msvc': {
+        'CXXFLAGS' : '/EHsc',
+    },
 }
 
 platforms = {

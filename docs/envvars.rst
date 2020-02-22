@@ -5,9 +5,12 @@
 Environment variables
 =====================
 
-ZenMake has some environment variables that can be used. Examples are for POSIX
-platforms (Linux/MacOS) with ``gcc`` and ``clang`` installed. Some of these
-variables just provided by Waf.
+ZenMake supports some environment variables that can be used. Most of examples
+are for POSIX platforms (Linux/MacOS) with ``gcc`` and ``clang`` installed.
+Some of these variables just provided by Waf.
+
+AR
+    Set archive-maintaining program.
 
 CC
     Set C compiler. It can be name of installed a system compiler or any path
@@ -37,6 +40,9 @@ AS
 
         AS=gcc zenmake build -B
 
+ARFLAGS
+    Flags to give the archive-maintaining program.
+
 CFLAGS
     Extra flags to give to the C compiler. Example::
 
@@ -48,7 +54,7 @@ CXXFLAGS
         CXXFLAGS='-O3 -fPIC' zenmake build -B
 
 CPPFLAGS
-    Extra flags added at the end of compilation commands for the C/C++ compiler.
+    Extra flags added at the end of compilation commands for C/C++.
 
 DFLAGS
     Extra flags to give to the D compiler. Example::

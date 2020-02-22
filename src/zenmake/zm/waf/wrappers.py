@@ -174,21 +174,6 @@ def wrapUtilsGetProcess(_):
 
     return execute
 
-#TODO: remove it when this patch appears in the Waf
-# See https://gitlab.com/ita1024/waf/issues/2272
-if Utils.is_win32:
-    # pylint: disable = wrong-import-position, ungrouped-imports
-    from waflib.TaskGen import after_method, feature
-    @feature('c', 'cxx', 'd', 'asm', 'fc', 'includes')
-    @after_method('propagate_uselib_vars', 'process_source')
-    def apply_incpaths(self):
-        # pylint: disable = invalid-name, missing-docstring
-        lst = self.to_incnodes(self.to_list(getattr(self, 'includes', [])) + self.env.INCLUDES)
-        self.includes_nodes = lst
-        cwd = self.get_cwd()
-        self.env.INCPATHS = [x.path_from(cwd) if x.is_child_of(self.bld.srcnode) \
-                             else x.abspath() for x in lst]
-
 def setup():
     """ Setup some wrappers for Waf """
 

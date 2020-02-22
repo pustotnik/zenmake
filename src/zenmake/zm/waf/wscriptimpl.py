@@ -24,7 +24,6 @@ import os
 from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext
 from zm.pyutils import viewitems
-from zm.utils import toList
 from zm import cli, error, log
 from zm.waf import assist
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
@@ -99,15 +98,15 @@ def configure(conf):
         taskParams['$task.variant'] = taskVariant
 
         # set up env with toolchain for task
-        toolchains = toList(taskParams.get('toolchain', []))
+        toolchains = taskParams['toolchain']
         if toolchains:
-            baseEnv = toolchainsEnvs.get(toolchains[0], emptyEnv)
+            baseEnv = toolchainsEnvs[toolchains[0]]
             if len(toolchains) > 1:
                 # make copy of env to avoid using 'update' on original
                 # toolchain env
                 baseEnv = assist.copyEnv(baseEnv)
             for toolname in toolchains[1:]:
-                baseEnv.update(toolchainsEnvs.get(toolname, emptyEnv))
+                baseEnv.update(toolchainsEnvs[toolname])
         else:
             if 'source' in taskParams:
                 msg = "No toolchain for task %r found." % taskName
@@ -127,9 +126,6 @@ def configure(conf):
         # creates the new object and it is not really needed here
         conf.setDirectEnv(taskVariant, taskEnv)
 
-        # set task env variables
-        assist.setTaskEnvVars(conf.env, taskParams)
-
         # configure all possible task params
         conf.configureTaskParams(bconf, taskParams)
 
@@ -144,6 +140,11 @@ def configure(conf):
 
         taskVariant = taskParams['$task.variant']
         conf.setenv(taskVariant)
+
+        # set task env variables
+        # NOTICE: if set these env vars (-O2, -shared, etc) before
+        # running of conf tests then the vars will affect builds in the conf tests.
+        assist.setTaskEnvVars(conf.env, taskParams, bconf.customToolchains)
 
         # Waf always loads all *_cache.py files in directory 'c4che' during
         # build step. So it loads all stored variants even though they

@@ -37,38 +37,38 @@ COMPILERS_MAP = {
 
 SUPPORTED_LANGS = COMPILERS_MAP.keys()
 
-def testGet():
+def testGetNames():
 
     for lang in SUPPORTED_LANGS:
         langCompiler = COMPILERS_MAP[lang]
 
         for _platform in ('linux', 'windows', 'darwin'):
-            compilers = toolchains.get(lang, _platform)
+            compilers = toolchains.getNames(lang, _platform)
             # to force covering of cache
-            _compilers = toolchains.get(lang, _platform)
+            _compilers = toolchains.getNames(lang, _platform)
             assert _compilers == compilers
 
             expected = langCompiler.get(_platform, langCompiler['default'])
             assert set(compilers) == set(expected)
 
-        compilers = toolchains.get(lang, 'all')
+        compilers = toolchains.getNames(lang, 'all')
         # to force covering of cache
-        _compilers = toolchains.get(lang, 'all')
+        _compilers = toolchains.getNames(lang, 'all')
         assert _compilers == compilers
         assert set(compilers) >= \
                         set(itertools.chain(*langCompiler.values()))
 
     with pytest.raises(ZenMakeError):
-        toolchains.get('')
+        toolchains.getNames('')
     with pytest.raises(ZenMakeError):
-        toolchains.get('invalid lang')
+        toolchains.getNames('invalid lang')
 
-def testAllCompilers():
+def testGetAllNames():
 
     for platform in ('linux', 'windows', 'darwin', 'all'):
         expectedCompilers = []
         for lang in SUPPORTED_LANGS:
-            expectedCompilers.extend(toolchains.get(lang, platform))
+            expectedCompilers.extend(toolchains.getNames(lang, platform))
         expectedCompilers = list(set(expectedCompilers))
-        assert sorted(toolchains.getAll(platform)) == \
+        assert sorted(toolchains.getAllNames(platform)) == \
                                         sorted(expectedCompilers)

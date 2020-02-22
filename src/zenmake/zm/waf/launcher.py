@@ -199,6 +199,11 @@ def run(cwd, cmd, wafCmdLine, bconfManager):
     Replacement for the Scripting.waf_entry_point
     """
 
+    # pylint: disable = unused-import
+    # load and set waf wrappers
+    from zm.waf import wrappers
+    # pylint: enable = unused-import
+
     bconf = bconfManager.root
     bconfPaths = bconf.confPaths
 

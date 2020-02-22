@@ -19,9 +19,9 @@ Main features
       Details are :ref:`here<buildconf>`.
     - Distribution as zip application or as system package (pip).
       See :ref:`Installation<installation>`.
-    - Automatic build order and dependencies. (Thanks to Waf_)
+    - Automatic build order and dependencies.
     - Automatic reconfiguring: no need to run command 'configure'.
-    - Compiler autodetection. (Thanks to Waf_)
+    - Compiler autodetection.
     - Building and running functional/unit tests including an ability to
       build and run tests only on changes. Details are :ref:`here<buildtests>`.
     - Running custom scripts during a build phase.
@@ -33,7 +33,7 @@ Main features
 
       - C: gcc, clang, msvc, icc, xlc, suncc, irixcc
       - C++: g++, clang++, msvc, icpc, xlc++, sunc++
-      - D (MS Windows is not supported yet): dmd, ldc2, gdc
+      - D: dmd, ldc2, gdc (MS Windows is not supported yet)
       - Assembler: gas (GNU Assembler), nasm/yasm (experimental)
 
 Plans to do

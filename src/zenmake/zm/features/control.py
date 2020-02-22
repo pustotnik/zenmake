@@ -12,7 +12,7 @@ import os
 from collections import namedtuple
 
 from zm.constants import TASK_TARGET_KINDS, TASK_FEATURE_ALIESES
-from zm.pyutils import stringtype, viewvalues
+from zm.pyutils import stringtype, viewvalues, viewitems
 from zm.autodict import AutoDict as _AutoDict
 from zm.pypkg import PkgPath
 from zm.utils import loadPyModule, toList, getNativePath
@@ -117,8 +117,17 @@ def _getFeatureDetectFuncs():
             funcs.append(func)
     return funcs
 
+def _generateToolchainVarToLang(toolchainVars):
+    result = {}
+    for lang, info in viewitems(toolchainVars):
+        var = info['sysenv-var']
+        assert var not in result
+        result[var] = lang
+
+    return result
+
 TASK_TARGET_FEATURES_TO_LANG, \
-FILE_EXTENSIONS_TO_LANG_FEATURE, \
+FILE_EXTENSIONS_TO_LANG, \
 TASK_LANG_FEATURES_TO_ALIESES, \
 SUPPORTED_TASK_FEATURES = _generateFeaturesMap()
 
@@ -126,6 +135,11 @@ TASK_TARGET_FEATURES = frozenset(TASK_TARGET_FEATURES_TO_LANG.keys())
 TASK_LANG_FEATURES = frozenset(TASK_TARGET_FEATURES_TO_LANG.values())
 
 TOOLCHAIN_VARS = _generateToolchainVars()
+TOOLCHAIN_SYSVAR_TO_LANG = _generateToolchainVarToLang(TOOLCHAIN_VARS)
+
+CCROOT_FEATURES = frozenset(
+    ('c', 'cxx', 'asm', 'd', 'fc', 'java', 'cs', )
+)
 
 # Could there be a more elegant solution to define these priorities?
 TASK_LANG_FEATURES_PRIORITY = (
@@ -176,7 +190,7 @@ def resolveAliesesInFeatures(source, features):
 
     extensions = _gatherFileExtensions(source)
     for ext in tuple(extensions):
-        feature = FILE_EXTENSIONS_TO_LANG_FEATURE.get(ext)
+        feature = FILE_EXTENSIONS_TO_LANG.get(ext)
         if feature:
             lfeatures.append(feature)
 
@@ -350,6 +364,9 @@ def loadFeatures(bconfManager):
     # remove already loaded
     features = features.difference(modules.keys())
 
+    if features & CCROOT_FEATURES:
+        loadPyModule('zm.waf.ccroot', withImport = True)
+
     # load modules
     for feature in features:
         moduleName = MODULE_NAME_PREFIX + feature
@@ -458,3 +475,12 @@ class ToolchainVars(object):
         """
 
         return tuple([ x['cfgenv-var'] for x in TOOLCHAIN_VARS.values() ])
+
+    @staticmethod
+    def langBySysVarToSetToolchain(var):
+        """
+        Return language of selected sys env var name.
+        Examples: CC -> c, CXX -> cxx, DC -> d
+        """
+
+        return TOOLCHAIN_SYSVAR_TO_LANG.get(var)

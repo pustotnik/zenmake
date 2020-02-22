@@ -13,6 +13,8 @@
 
 import os
 import fnmatch
+from distutils.spawn import find_executable
+
 import pytest
 
 from zm import utils
@@ -64,11 +66,19 @@ class TestParams(object):
         fixture = {
             'c' : {
                 'gcc': {
+                    'sysenvval' : 'gcc',
                     'compflags' : '',
                     'linkflags' : '',
                     'ldflags'   : '-Wl,-rpath,.',
                 },
                 'clang': {
+                    'sysenvval' : 'clang',
+                    'compflags' : '-O1 -g',
+                    'linkflags' : '-Wl,-rpath,. ',
+                    'ldflags'   : '',
+                },
+                'clang-path': {
+                    'sysenvval' : find_executable('clang'),
                     'compflags' : '-O1 -g',
                     'linkflags' : '-Wl,-rpath,. ',
                     'ldflags'   : '',
@@ -76,11 +86,13 @@ class TestParams(object):
             },
             'cxx': {
                 'g++': {
+                    'sysenvval' : 'g++',
                     'compflags' : '-O2 -Wall',
                     'linkflags' : '-Wl,-rpath,. -Wl,--as-needed',
                     'ldflags'   : '-fsanitize=address',
                 },
                 'clang++': {
+                    'sysenvval' : 'clang++',
                     'compflags' : '-O3 -Wall -Wextra',
                     'linkflags' : '-Wl,--as-needed -fsanitize=address',
                     'ldflags'   : '-Wl,-rpath,.',
@@ -106,12 +118,12 @@ class TestParams(object):
 
         prjfixture = fixture[projectLang]
 
-        for toolchain, flags in prjfixture.items():
+        for toolchain, info in prjfixture.items():
 
-            env[sysEnvToolVar] = toolchain
-            env[compFlagsName] = flags['compflags']
-            env['LINKFLAGS'] = flags['linkflags']
-            env['LDFLAGS'] = flags['ldflags']
+            env[sysEnvToolVar] = info['sysenvval']
+            env[compFlagsName] = info['compflags']
+            env['LINKFLAGS'] = info['linkflags']
+            env['LDFLAGS'] = info['ldflags']
 
             assert runZm(self, cmdLine, env)[0] == 0
 
@@ -146,7 +158,7 @@ class TestParams(object):
                 targetKind = getTargetPattern(usedEnv, features)[1]
 
                 # check toolchain
-                assert usedEnv[cfgEnvToolVar] == [toolchain]
+                assert usedEnv[cfgEnvToolVar] == [info['sysenvval']]
 
                 isLink = data['is-link']
                 if not isLink:
@@ -156,7 +168,7 @@ class TestParams(object):
                     expectedFlags = formExpectedFlags(bconfFlags + sysEnvFlags)
                     if targetKind == 'shlib':
                         # Waf adds this flag itself
-                        expectedFlags += ['-fPIC']
+                        expectedFlags = ['-fPIC'] + expectedFlags
                     assert usedEnv.get(compFlagsName, []) == expectedFlags
                 else:
                     # check LINKFLAGS/LDFLAGS
@@ -166,6 +178,6 @@ class TestParams(object):
                         expectedFlags = formExpectedFlags(bconfFlags + sysEnvFlags)
                         if targetKind == 'shlib' and flagsName == 'linkflags':
                             # Waf adds this flag itself
-                            expectedFlags += ['-shared']
+                            expectedFlags = ['-shared'] + expectedFlags
 
                         assert usedEnv.get(flagsName.upper(), []) == expectedFlags
