@@ -36,6 +36,9 @@ addons:
       - boost-python
       - dmd
       - ldc
+    # https://travis-ci.community/t/macos-build-fails-because-of-homebrew-bundle-unknown-command/7296
+    # https://github.com/travis-ci/packer-templates-mac/pull/13
+    update: true
 
 # most problematic jobs are at first places
 jobs:
