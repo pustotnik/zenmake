@@ -20,7 +20,7 @@ from zm.constants import PLATFORM
 from zm.constants import BUILDCONF_FILENAMES
 
 import tests.common as cmn
-from tests.func_test_tools import *
+from tests.func_utils import *
 
 CUSTOM_TOOLCHAIN_PRJDIR = joinpath('cpp', '05-custom-toolchain')
 FORINSTALL_PRJDIRS = [

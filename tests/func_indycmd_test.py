@@ -16,7 +16,7 @@ from zipfile import is_zipfile as iszip
 import pytest
 from zm import zipapp
 
-from tests.func_test_tools import *
+from tests.func_utils import *
 
 class TestIndyCmd(object):
 

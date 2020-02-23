@@ -21,7 +21,7 @@ from zm.autodict import AutoDict
 from zm.constants import PLATFORM
 from zm.features import TASK_TARGET_FEATURES
 
-from tests.func_test_tools import *
+from tests.func_utils import *
 
 FORINSTALL_PRJDIRS = [
     joinpath('cpp', '09-complex-unittest'),

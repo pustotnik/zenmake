@@ -13,7 +13,7 @@
 
 import pytest
 
-from tests.func_test_tools import *
+from tests.func_utils import *
 
 COMPLEX_UNITTEST_PRJDIR = joinpath('cpp', '09-complex-unittest')
 

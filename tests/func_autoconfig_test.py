@@ -20,7 +20,7 @@ from zm import pyutils, version
 from zm.features import ToolchainVars
 
 import tests.common as cmn
-from tests.func_test_tools import *
+from tests.func_utils import *
 
 @pytest.mark.usefixtures("unsetEnviron")
 class TestAutoconfig(object):

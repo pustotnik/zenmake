@@ -20,7 +20,7 @@ import pytest
 from zm import utils
 from zm.features import ToolchainVars
 from zm.testing import loadFromJson
-from tests.func_test_tools import *
+from tests.func_utils import *
 
 @pytest.mark.usefixtures("unsetEnviron")
 class TestParams(object):
