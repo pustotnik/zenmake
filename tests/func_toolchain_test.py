@@ -18,9 +18,9 @@ from zm.constants import PLATFORM
 from tests.func_utils import *
 
 TOOLCHAN_TO_ENVVAR = dict(
-    dmd = 'DC',
+    dmd  = 'DC',
     ldc2 = 'DC',
-    gdc = 'DC',
+    gdc  = 'DC',
 )
 
 PARAMS_CONFIG = {
@@ -40,9 +40,19 @@ def _generateParams():
     isTravisCI = os.environ.get('TRAVIS', None) == 'true' and \
                     os.environ.get('CI', None) == 'true'
 
+    disableGDC = False
+
+    # Due to bug with packages ldc + gdc:
+    # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=827211
+    if isTravisCI and PLATFORM == 'linux':
+        travisDist = os.environ.get('TRAVIS_DIST', '')
+        disableGDC = travisDist == 'xenial'
+
     for item, condition in PARAMS_CONFIG.items():
         condition = condition['travis'] if isTravisCI else condition['default']
         if PLATFORM in condition:
+            if item[0] == 'gdc' and disableGDC:
+                continue
             params.append(item)
 
     return params
