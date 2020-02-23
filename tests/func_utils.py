@@ -24,7 +24,7 @@ from waflib import Context
 from waflib.ConfigSet import ConfigSet
 from zm import starter
 from zm import pyutils, utils, zipapp
-from zm.pyutils import viewitems, viewvalues
+from zm.pyutils import viewitems, viewvalues, stringtype
 from zm.waf import assist
 from zm.autodict import AutoDict
 from zm.buildconf import loader as bconfloader
@@ -142,7 +142,7 @@ def setupTest(self, request, tmpdir):
             return names
         return ['build', '_build']
 
-    testPath = request.param
+    testPath = request if isinstance(request, stringtype) else request.param
     testPathParts = testPath.split(os.sep)
     currentPrjDir = os.sep.join(testPathParts[:2])
     currentPrjDir = joinpath(cmn.TEST_PROJECTS_DIR, currentPrjDir)
