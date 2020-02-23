@@ -53,7 +53,7 @@ for _var in ToolchainVars.allCfgVarsToSetToolchain():
     CONFTEST_HASH_USED_ENV_KEYS.add('%s_VERSION' % _var)
     CONFTEST_HASH_USED_ENV_KEYS.add('%s_NAME' % _var)
 
-CONFTEST_HASH_IGNORED_FUNC_ARGS = set(
+CONFTEST_HASH_IGNORED_FUNC_ARGS = frozenset(
     ('mandatory', 'msg', 'okmsg', 'errmsg', 'id', 'before', 'after')
 )
 
@@ -431,7 +431,7 @@ def _calcConfCheckHexHash(checkArgs, params):
             continue
         hashVals[k] = v
     # just in case
-    hashVals['toolchain'] = taskParams.get('toolchain', '')
+    hashVals['toolchain'] = utils.toList(taskParams.get('toolchain', []))
 
     buff = [ '%s: %s' % (k, str(hashVals[k])) for k in sorted(hashVals.keys()) ]
 
@@ -585,16 +585,16 @@ def _confTestCheckCode(checkArgs, params):
     text = checkArgs.pop('text', None)
     file = checkArgs.pop('file', None)
 
-    if all((text is None, file is None)):
-        msg = "Neither 'text' nor 'file' exists in a conf test"
+    if all((not text, not file)):
+        msg = "Neither 'text' nor 'file' set in a conf test"
         msg += " with act = 'check-code' for task %r" % taskName
         cfgCtx.fatal(msg)
 
-    if text is not None:
+    if text:
         checkArgs['fragment'] = text
         _confTestCheck(checkArgs, params)
 
-    if file is not None:
+    if file:
         bconf = cfgCtx.getbconf()
         startdir = bconf.confPaths.startdir
         file = utils.getNativePath(file)
@@ -627,12 +627,17 @@ def _confTestWriteHeader(checkArgs, params):
     def defaultFileName():
         return utils.normalizeForFileName(taskName).lower()
 
-    fileName = checkArgs.pop('file', '%s_%s' %
-                             (defaultFileName(), 'config.h'))
+    fileName = checkArgs.pop('file', None)
+    if not fileName:
+        fileName = '%s_%s' % (defaultFileName(), 'config.h')
     fileName = joinpath(buildtype, fileName)
-    projectName = cfgCtx.getbconf().projectName or ''
-    guardname = utils.normalizeForDefine(projectName + '_' + fileName)
-    checkArgs['guard'] = checkArgs.pop('guard', guardname)
+
+    guardname = checkArgs.pop('guard', None)
+    if not guardname:
+        projectName = cfgCtx.getbconf().projectName or ''
+        guardname = utils.normalizeForDefine(projectName + '_' + fileName)
+    checkArgs['guard'] = guardname
+
     # write the configuration header from the build directory
     checkArgs['top'] = True
 
@@ -660,8 +665,12 @@ def _confTestCheck(checkArgs, params):
     #checkArgs['global_define'] = False
 
     defname = checkArgs.pop('defname', None)
-    if defname is not None:
+    if defname:
         checkArgs['define_name'] = defname
+
+    defines = checkArgs.pop('defines', None)
+    if defines:
+        checkArgs['defines'] = utils.toList(defines)
 
     libpath = taskParams.get('libpath', None)
     if libpath:

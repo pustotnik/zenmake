@@ -26,41 +26,54 @@ but not between runnings of ZenMake.
 These configuration tests in ``dict`` format:
 
     ``act`` = ``check-headers``
+        *Parameters*: ``names``, ``defines`` = [],  ``mandatory`` = True.
+
         Check existence of C/C++ headers from list in the ``names``.
 
-        Parameter ``defines`` can be used to set additional ``C/C++ defines``
+        Parameter ``defines`` can be used to set additional C/C++ defines
         to use in compiling of the test.
 
     ``act`` = ``check-libs``
+        *Parameters*: ``names``, ``defines`` = [],  ``autodefine`` = False,
+        ``mandatory`` = True.
+
         Check existence of the system libraries from list in
         the ``names``. If ``autodefine`` is set to True it generates
-        ``C/C++ define name`` like ``HAVE_LIB_SOMELIB``.
+        C/C++ define name like ``HAVE_LIB_SOMELIB``.
 
-        Parameter ``defines`` can be used to set additional ``C/C++ defines``
+        Parameter ``defines`` can be used to set additional C/C++ defines
         to use in compiling of the test.
 
     ``act`` = ``check-sys-libs``
+        *Parameters*: ``defines`` = [],  ``autodefine`` = False, ``mandatory`` = True.
+
         Check existence of all system libraries from
         task parameter ``sys-libs``. All parameters for the act ``check-libs``
         excluding ``names`` can be used here.
 
     ``act`` = ``check-code``
+        *Parameters*: ``text`` = '', ``file`` = '', ``label`` = '',
+        ``defines`` = [],  ``defname`` = '', ``execute`` = False, ``mandatory`` = True.
+
         Provide piece of code for the test. Code can be provided with
         parameter ``text`` as a plane text or with parameter ``file`` as a path to
         file with code. This path can be absolute or relative to
-        the :ref:`startdir<buildconf-startdir>`.
+        the :ref:`startdir<buildconf-startdir>`. At least one of the
+        parameters ``text`` or ``file`` must be set.
 
         Parameter ``label`` can be used to mark message of the test.
         If parameter ``execute`` is True it means that the resulting binary
         will be executed.
 
-        Parameter ``defname`` is a name of ``C/C++ define`` to set
+        Parameter ``defname`` is a name of C/C++ define to set
         when the test is over.
 
-        Parameter ``defines`` can be used to set additional ``C/C++ defines``
+        Parameter ``defines`` can be used to set additional C/C++ defines
         to use in compiling of the test.
 
     ``act`` = ``check-programs``
+        *Parameters*: ``names``, ``paths`` = [],  ``var`` = '', ``mandatory`` = True.
+
         Check existence of programs from list in the ``names``.
         Parameter ``paths`` can be used to set paths to find
         these programs, but usually you don't need to use it.
@@ -68,11 +81,15 @@ These configuration tests in ``dict`` format:
         By default it's a first name from the ``names`` in upper case.
 
     ``act`` = ``check-by-pyfunc``
+        *Parameters*: ``func``, ``mandatory`` = True.
+
         Check by python function. It'a another way to use python
         function for checking. In this way you can use parameter
         ``mandatory``.
 
     ``act`` = ``write-config-header``
+        *Parameters*: ``file`` = '', ``guard`` = '',  ``mandatory`` = True.
+
         After all the configuration tests are executed, write a
         configuration header in the build directory.
         The configuration header is used to limit the size of the
@@ -87,6 +104,8 @@ These configuration tests in ``dict`` format:
         You can override file name by using parameter ``file``.
 
     ``act`` = ``parallel``
+        *Parameters*: ``checks``, ``tryall`` = False,  ``mandatory`` = True.
+
         Run configuration tests from the parameter ``checks``
         in parallel. Not all types of tests are supported.
         Allowed tests are ``check-sys-libs``, ``check-headers``,
