@@ -13,18 +13,25 @@ from zm.autodict import AutoDict as _AutoDict
 from zm.pyutils import maptype
 from zm.constants import PLATFORM
 
-# to change outside in modules for task features
-langTable = {}
+# Table with language toolchains
+_langTable = {}
 
 # private cache
 _cache = _AutoDict()
+
+def regToolchains(lang, table):
+    """
+    Register table of toolchains for selected lang.
+    """
+
+    _langTable[lang] = table
 
 def getNames(lang, platform = PLATFORM, withAuto = False):
     """
     Return toolchains tuple for selected language for current platform
     """
 
-    if not lang or lang not in langTable:
+    if not lang or lang not in _langTable:
         raise ZenMakeError("Toolchain for feature '%s' is not supported" % lang)
 
     cacheKey = 'toolchains-withauto' if withAuto else 'toolchains'
@@ -34,7 +41,7 @@ def getNames(lang, platform = PLATFORM, withAuto = False):
     if toolchains:
         return toolchains
 
-    table = langTable[lang]
+    table = _langTable[lang]
     if table is None or not isinstance(table, maptype):
         # Code of Waf was changed
         raise NotImplementedError()
@@ -63,10 +70,10 @@ def getAllNames(platform = PLATFORM, withAuto = False):
     if toolchains:
         return toolchains
 
-    toolchains = [ t for l in langTable for t in getNames(l, platform) ]
+    toolchains = [ t for l in _langTable for t in getNames(l, platform) ]
     toolchains = tuple(set(toolchains))
     cache['all-toolchains'] = toolchains
-    autoNames = ['auto-' + lang.replace('xx', '++') for lang in langTable ]
+    autoNames = ['auto-' + lang.replace('xx', '++') for lang in _langTable ]
     cache['all-toolchains-withauto'] = toolchains + tuple(autoNames)
 
     return cache.get(cacheKey)
@@ -83,7 +90,7 @@ def getLangs(toolchain):
 
     if not toolToLang:
         toolToLang = {}
-        for lang in langTable:
+        for lang in _langTable:
             toolchains = getNames(lang, withAuto = True)
             for tool in toolchains:
                 toolList = toolToLang.setdefault(tool, [])

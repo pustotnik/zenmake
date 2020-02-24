@@ -8,6 +8,4 @@
 
 from zm import toolchains
 
-toolchains.langTable['asm'] = {
-    'default': ('gas', 'nasm'),
-}
+toolchains.regToolchains('asm', { 'default': ('gas', 'nasm'), })

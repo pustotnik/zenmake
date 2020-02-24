@@ -6,7 +6,34 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+from waflib.Tools.c_config import SNIP_EMPTY_PROGRAM as EMPTY_PROGRAM
 from waflib.Tools.compiler_c import c_compiler
-from zm import toolchains
+from zm import toolchains, conftests
 
-toolchains.langTable['c'] = c_compiler
+toolchains.regToolchains('c', c_compiler)
+
+_specificArgs = {
+    'code-type': 'c',
+    'compile-filename': 'test.c',
+    'code' : EMPTY_PROGRAM,
+}
+
+def _checkWrapper(funcName):
+
+    func = getattr(conftests, funcName)
+
+    def execute(checkArgs, params):
+        checkArgs.update(_specificArgs)
+        func(checkArgs, params)
+
+    return execute
+
+_confTestFuncs = {
+    'check-sys-libs'      : _checkWrapper('checkSysLibs'),
+    'check-headers'       : _checkWrapper('checkHeaders'),
+    'check-libs'          : _checkWrapper('checkLibs'),
+    'check-code'          : _checkWrapper('checkCode'),
+    'write-config-header' : conftests.writeConfigHeader,
+}
+
+conftests.regConfTestFuncs('c', _confTestFuncs)

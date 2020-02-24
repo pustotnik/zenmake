@@ -8,6 +8,4 @@
 
 from zm import toolchains
 
-toolchains.langTable['d'] = {
-    'default': ('ldc2', 'gdc', 'dmd'),
-}
+toolchains.regToolchains('d', { 'default': ('ldc2', 'gdc', 'dmd'), })

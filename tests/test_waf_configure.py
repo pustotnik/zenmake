@@ -113,6 +113,7 @@ def testRunConfTestsCheckPrograms(mocker, cfgctx):
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
+    tasks.task.features = ['c', 'cshlib']
     tasks.task.conftests = [
         dict(act = 'check-programs', names = 'python2', mandatory = False),
         dict(act = 'check-programs', names = 'python2 python3', paths = '1 2')
@@ -136,6 +137,7 @@ def testRunConfTestsCheckSysLibs(mocker, cfgctx):
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
+    tasks.task.features = ['cxx', 'cxxshlib']
     tasks.task['sys-libs'] = 'lib1 lib2'
     tasks.task['$task.variant'] = buildtype
     tasks.task.conftests = [
@@ -145,12 +147,13 @@ def testRunConfTestsCheckSysLibs(mocker, cfgctx):
     ctx.check = mocker.MagicMock()
     ctx.runConfTests(buildtype, tasks)
 
-    ignoreArgs = ['msg', '$conf-test-hash']
+    ignoreArgs = ['msg', '$conf-test-hash', 'type', 'compile_filename',
+                  'code', 'compile_mode']
     ignoreArgs = { k: mocker.ANY for k in ignoreArgs }
 
     calls = [
-        mocker.call(lib = 'lib1', mandatory = False, **ignoreArgs),
-        mocker.call(lib = 'lib2', mandatory = False, **ignoreArgs),
+        mocker.call(lib = 'lib1', mandatory = False, compiler = 'cxx', **ignoreArgs),
+        mocker.call(lib = 'lib2', mandatory = False, compiler = 'cxx', **ignoreArgs),
     ]
 
     assert ctx.check.mock_calls == calls
@@ -162,6 +165,7 @@ def testRunConfTestsCheckHeaders(mocker, cfgctx):
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
+    tasks.task.features = ['c', 'cshlib']
     tasks.task['$task.variant'] = buildtype
     tasks.task.conftests = [
         dict(act = 'check-headers', names = 'header1 header2', mandatory = False),
@@ -170,12 +174,15 @@ def testRunConfTestsCheckHeaders(mocker, cfgctx):
     ctx.check = mocker.MagicMock()
     ctx.runConfTests(buildtype, tasks)
 
-    ignoreArgs = ['msg', '$conf-test-hash']
+    ignoreArgs = ['msg', '$conf-test-hash', 'type', 'compile_filename',
+                  'code', 'compile_mode']
     ignoreArgs = { k: mocker.ANY for k in ignoreArgs }
 
     calls = [
-        mocker.call(header_name = 'header1', mandatory = False, **ignoreArgs),
-        mocker.call(header_name = 'header2', mandatory = False, **ignoreArgs),
+        mocker.call(header_name = 'header1', mandatory = False,
+                    compiler = 'c', **ignoreArgs),
+        mocker.call(header_name = 'header2', mandatory = False,
+                    compiler = 'c', **ignoreArgs),
     ]
 
     assert ctx.check.mock_calls == calls
@@ -187,6 +194,7 @@ def testRunConfTestsCheckLibs(mocker, cfgctx):
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
+    tasks.task.features = ['c', 'cshlib']
     tasks.task['$task.variant'] = buildtype
     tasks.task.conftests = [
         dict(act = 'check-libs', names = 'lib1 lib2', mandatory = False),
@@ -196,13 +204,17 @@ def testRunConfTestsCheckLibs(mocker, cfgctx):
     ctx.check = mocker.MagicMock()
     ctx.runConfTests(buildtype, tasks)
 
-    ignoreArgs = ['msg', '$conf-test-hash']
+    ignoreArgs = ['msg', '$conf-test-hash', 'type', 'compile_filename',
+                  'code', 'compile_mode']
     ignoreArgs = { k: mocker.ANY for k in ignoreArgs }
 
     calls = [
-        mocker.call(lib = 'lib1', mandatory = False, **ignoreArgs),
-        mocker.call(lib = 'lib2', mandatory = False, **ignoreArgs),
-        mocker.call(lib = 'lib3', define_name = 'HAVE_LIB_LIB3', **ignoreArgs),
+        mocker.call(lib = 'lib1', mandatory = False,
+                    compiler = 'c', **ignoreArgs),
+        mocker.call(lib = 'lib2', mandatory = False,
+                    compiler = 'c', **ignoreArgs),
+        mocker.call(lib = 'lib3', define_name = 'HAVE_LIB_LIB3',
+                    compiler = 'c', **ignoreArgs),
     ]
 
     assert ctx.check.mock_calls == calls
@@ -214,6 +226,7 @@ def testRunConfTestsWriteHeader(mocker, cfgctx):
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
+    tasks['some task'].features = ['c', 'cshlib']
     tasks['some task']['$task.variant'] = buildtype
     tasks['some task'].conftests = [
         dict(act = 'write-config-header',),
@@ -257,6 +270,7 @@ def testRunConfTestsUnknown(mocker, cfgctx):
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
+    tasks.task.features = ['c', 'cshlib']
     tasks.task.conftests = [
         dict(act = 'random act',),
     ]

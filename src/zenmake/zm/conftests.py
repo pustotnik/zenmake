@@ -14,6 +14,7 @@ import os
 import sys
 import shutil
 import traceback
+import inspect
 
 from waflib import ConfigSet, Task, Options
 from waflib.Utils import SIG_NIL
@@ -24,9 +25,14 @@ from waflib.Tools.c_config import DEFKEYS
 from zm.constants import CONFTEST_DIR_PREFIX
 from zm.pyutils import maptype, stringtype, viewitems, viewvalues
 from zm import utils, log, error
-from zm.features import ToolchainVars
+from zm.features import ToolchainVars, TASK_TARGET_FEATURES_TO_LANG
 
 joinpath = os.path.join
+
+try:
+    inspectArgSpec = inspect.getfullargspec
+except AttributeError:
+    inspectArgSpec = inspect.getargspec
 
 CONFTEST_CACHE_FILE = 'conf_check_cache'
 
@@ -276,8 +282,7 @@ def _applyParallelTasksDeps(tasks):
         args.pop('before', None)
         args.pop('after', None)
 
-@conf
-def checkInParallel(self, checkArgsList, **kwargs):
+def _checkInParallelImpl(cfgCtx, checkArgsList, **kwargs):
     """
     Runs configuration tests in parallel.
     Results are printed sequentially at the end.
@@ -285,13 +290,13 @@ def checkInParallel(self, checkArgsList, **kwargs):
 
     from waflib import Runner
 
-    self.start_msg('Checking in parallel %d tests' % len(checkArgsList))
+    cfgCtx.start_msg('Checking in parallel %d tests' % len(checkArgsList))
 
     # Force a copy so that threads append to the same list at least
     # no order is guaranteed, but the values should not disappear at least
     for var in ('DEFINES', DEFKEYS):
-        self.env.append_value(var, [])
-    self.env.DEFINE_COMMENTS = self.env.DEFINE_COMMENTS or {}
+        cfgCtx.env.append_value(var, [])
+    cfgCtx.env.DEFINE_COMMENTS = cfgCtx.env.DEFINE_COMMENTS or {}
 
     tasks = []
     runnerCtx = _RunnerBldCtx(tasks)
@@ -303,11 +308,11 @@ def checkInParallel(self, checkArgsList, **kwargs):
 
         checkTask = _CfgCheckTask(env = None)
         checkTask.stopRunnerOnError = not tryall
-        checkTask.conf = self
+        checkTask.conf = cfgCtx
         checkTask.bld = runnerCtx # to use in task.log_display(task.generator.bld)
 
         # bind a logger that will keep the info in memory
-        checkTask.logger = log.makeMemLogger(str(id(checkTask)), self.logger)
+        checkTask.logger = log.makeMemLogger(str(id(checkTask)), cfgCtx.logger)
 
         checkTask.call = dict( name = args.pop('$func-name'), args = args)
 
@@ -323,7 +328,7 @@ def checkInParallel(self, checkArgsList, **kwargs):
     runnerCtx.producer = scheduler = Runner.Parallel(runnerCtx, Options.options.jobs)
     scheduler.biter = getTasksGenerator()
 
-    self.end_msg('started')
+    cfgCtx.end_msg('started')
     try:
         scheduler.start()
     except waferror.WafError as ex:
@@ -338,13 +343,13 @@ def checkInParallel(self, checkArgsList, **kwargs):
     for tsk in tasks:
         tsk.logger.memhandler.flush()
 
-    self.start_msg('-> processing test results')
+    cfgCtx.start_msg('-> processing test results')
 
     for tsk in scheduler.error:
         if not getattr(tsk, 'err_msg', None):
             continue
-        self.to_log(tsk.err_msg)
-        self.end_msg('fail', color = 'RED')
+        cfgCtx.to_log(tsk.err_msg)
+        cfgCtx.end_msg('fail', color = 'RED')
         msg = 'There is an error in the Waf, read config.log for more information'
         raise waferror.WafError(msg)
 
@@ -352,16 +357,16 @@ def checkInParallel(self, checkArgsList, **kwargs):
     failureCount = len([x for x in tasks if x.hasrun not in okStates])
 
     if failureCount:
-        self.end_msg('%s test(s) failed' % failureCount, color = 'YELLOW')
+        cfgCtx.end_msg('%s test(s) failed' % failureCount, color = 'YELLOW')
     else:
-        self.end_msg('all ok')
+        cfgCtx.end_msg('all ok')
 
     for tsk in tasks:
         # in rare case we get "No handlers could be found for logger"
         log.freeLogger(tsk.logger)
 
         if tsk.hasrun not in okStates and tsk.call['args'].get('mandatory', True):
-            self.fatal('One of the tests has failed, read config.log for more information')
+            cfgCtx.fatal('One of the tests has failed, read config.log for more information')
 
 def _loadConfCheckCache(cfgCtx):
     """
@@ -433,7 +438,7 @@ def _calcConfCheckHexHash(checkArgs, params):
     return utils.hexOfStr(utils.hashOfStrs(buff))
 
 @conf
-def checkByPyFunc(self, **kwargs):
+def runCheckByPyFunc(self, **kwargs):
     """
     Run configuration test by python function
     """
@@ -483,11 +488,10 @@ def checkByPyFunc(self, **kwargs):
 
     self.fatal('The configuration failed')
 
-def _confTestCheckByPyFunc(checkArgs, params):
+def checkByPyFunc(checkArgs, params):
+    """ Check by python function """
 
     # pylint: disable = deprecated-method, broad-except
-
-    import inspect
 
     cfgCtx    = params['cfgCtx']
     buildtype = params['buildtype']
@@ -496,11 +500,7 @@ def _confTestCheckByPyFunc(checkArgs, params):
     checkArgs = checkArgs.copy()
 
     func = checkArgs['func']
-    try:
-        argsSpec = inspect.getfullargspec(func)
-    except AttributeError:
-        argsSpec = inspect.getargspec(func)
-
+    argsSpec = inspectArgSpec(func)
     noFuncArgs = not any(argsSpec[0:3])
     args = dict(task = taskName, buildtype = buildtype)
 
@@ -511,12 +511,14 @@ def _confTestCheckByPyFunc(checkArgs, params):
 
     if parallelChecks is not None:
         # checkArgs is shared so it can be changed later
-        checkArgs['$func-name'] = 'checkByPyFunc'
+        checkArgs['$func-name'] = 'runCheckByPyFunc'
         parallelChecks.append(checkArgs)
     else:
-        cfgCtx.checkByPyFunc(**checkArgs)
+        cfgCtx.runCheckByPyFunc(**checkArgs)
 
-def _confTestCheckPrograms(checkArgs, params):
+def checkPrograms(checkArgs, params):
+    """ Check programs """
+
     cfgCtx = params['cfgCtx']
 
     cfgCtx.setenv('')
@@ -529,15 +531,19 @@ def _confTestCheckPrograms(checkArgs, params):
         # therefore it's not needed to cache it here.
         cfgCtx.find_program(name, **checkArgs)
 
-def _confTestCheckSysLibs(checkArgs, params):
+def checkSysLibs(checkArgs, params):
+    """ Check libraries from task param 'sys-libs' """
+
     taskParams = params['taskParams']
 
     sysLibs = utils.toList(taskParams.get('sys-libs', []))
     sysLibs.extend(utils.toList(taskParams.get('lib', [])))
     checkArgs['names'] = sysLibs
-    _confTestCheckLibs(checkArgs, params)
+    checkLibs(checkArgs, params)
 
-def _confTestCheckLibs(checkArgs, params):
+def checkLibs(checkArgs, params):
+    """ Check libraries """
+
     libs = utils.toList(checkArgs.pop('names', []))
     autodefine = checkArgs.pop('autodefine', False)
     for lib in libs:
@@ -546,16 +552,19 @@ def _confTestCheckLibs(checkArgs, params):
         _checkArgs['lib'] = lib
         if autodefine and 'define_name' not in _checkArgs:
             _checkArgs['define_name'] = 'HAVE_LIB_' + lib.upper()
-        _confTestCheck(_checkArgs, params)
+        checkWithBuild(_checkArgs, params)
 
-def _confTestCheckHeaders(checkArgs, params):
+def checkHeaders(checkArgs, params):
+    """ Check headers """
+
     headers = utils.toList(checkArgs.pop('names', []))
     for header in headers:
         checkArgs['msg'] = 'Checking for header %s' % header
         checkArgs['header_name'] = header
-        _confTestCheck(checkArgs, params)
+        checkWithBuild(checkArgs, params)
 
-def _confTestCheckCode(checkArgs, params):
+def checkCode(checkArgs, params):
+    """ Check code snippet """
 
     cfgCtx = params['cfgCtx']
     taskName = params['taskName']
@@ -577,7 +586,7 @@ def _confTestCheckCode(checkArgs, params):
 
     if text:
         checkArgs['fragment'] = text
-        _confTestCheck(checkArgs, params)
+        checkWithBuild(checkArgs, params)
 
     if file:
         bconf = cfgCtx.getbconf()
@@ -598,9 +607,10 @@ def _confTestCheckCode(checkArgs, params):
             text = file.read()
 
         checkArgs['fragment'] = text
-        _confTestCheck(checkArgs, params)
+        checkWithBuild(checkArgs, params)
 
-def _confTestWriteHeader(checkArgs, params):
+def writeConfigHeader(checkArgs, params):
+    """ write config header """
 
     buildtype  = params['buildtype']
     cfgCtx     = params['cfgCtx']
@@ -628,13 +638,18 @@ def _confTestWriteHeader(checkArgs, params):
 
     cfgCtx.write_config_header(fileName, **checkArgs)
 
-def _confTestCheck(checkArgs, params):
+def checkWithBuild(checkArgs, params):
+    """
+    Check it with building of some code.
+    It's general function for many checks.
+    """
+
     cfgCtx = params['cfgCtx']
     taskParams = params['taskParams']
 
     cfgCtx.setenv(taskParams['$task.variant'])
 
-    # _confTestCheck is used in loops so it's needed to save checkArgs
+    # checkWithBuild is used in loops so it's needed to save checkArgs
     # without changes
     checkArgs = checkArgs.copy()
 
@@ -652,6 +667,15 @@ def _confTestCheck(checkArgs, params):
     defname = checkArgs.pop('defname', None)
     if defname:
         checkArgs['define_name'] = defname
+
+    codeType = checkArgs.pop('code-type', None)
+    if codeType:
+        checkArgs['compiler'] = checkArgs['compile_mode'] = codeType
+        checkArgs['type'] = '%sprogram' % codeType
+
+    compileFilename = checkArgs.pop('compile-filename', None)
+    if compileFilename:
+        checkArgs['compile_filename'] = compileFilename
 
     defines = checkArgs.pop('defines', None)
     if defines:
@@ -674,7 +698,11 @@ def _confTestCheck(checkArgs, params):
     else:
         cfgCtx.check(**checkArgs)
 
-def _confTestCheckInParallel(checkArgs, params):
+def checkInParallel(checkArgs, params):
+    """
+    Run checks in parallel
+    """
+
     cfgCtx     = params['cfgCtx']
     taskName   = params['taskName']
     taskParams = params['taskParams']
@@ -712,7 +740,7 @@ def _confTestCheckInParallel(checkArgs, params):
         if errMsg:
             cfgCtx.fatal(errMsg)
 
-    handleConfTests(subchecks, params)
+    _handleConfChecks(subchecks, params)
     params.pop('parallel-checks', None)
 
     if not parallelCheckArgsList:
@@ -726,28 +754,17 @@ def _confTestCheckInParallel(checkArgs, params):
     )
     params.update(checkArgs)
 
-    cfgCtx.checkInParallel(parallelCheckArgsList, **params)
+    _checkInParallelImpl(cfgCtx, parallelCheckArgsList, **params)
 
-_confTestsTable = {
-    # explicit using of Waf 'check' is disabled
-    #'check'               : _confTestCheck,
-
-    # independent
-    'check-by-pyfunc'     : _confTestCheckByPyFunc,
-    'check-programs'      : _confTestCheckPrograms,
-    'parallel'            : _confTestCheckInParallel,
-    #
-    'check-sys-libs'      : _confTestCheckSysLibs,
-    'check-headers'       : _confTestCheckHeaders,
-    'check-libs'          : _confTestCheckLibs,
-    'check-code'          : _confTestCheckCode,
-    'write-config-header' : _confTestWriteHeader,
+_commonConfTestsFuncs = {
+    'check-by-pyfunc' : checkByPyFunc,
+    'check-programs'  : checkPrograms,
+    'parallel'        : checkInParallel,
 }
 
-def handleConfTests(checks, params):
-    """
-    Handle configuration tests
-    """
+_confTestsTable = { x:_commonConfTestsFuncs.copy() for x in ToolchainVars.allLangs()}
+
+def _handleConfChecks(checks, params):
 
     for checkArgs in checks:
         if callable(checkArgs):
@@ -768,10 +785,32 @@ def handleConfTests(checks, params):
                     % (checkArgs, taskName)
             ctx.fatal(msg)
 
-        func = _confTestsTable.get(act)
+        lang = None
+        features = params['taskParams']['features']
+        for feature in features:
+            lang = TASK_TARGET_FEATURES_TO_LANG.get(feature)
+            if lang:
+                break
+
+        table = _confTestsTable.get(lang, _commonConfTestsFuncs)
+        func = table.get(act)
         if not func:
-            msg = "Unknown act %r in the configuration test %r for task %r!" \
+            msg = "Unsupported act %r in the configuration test %r for task %r!" \
                     % (act, checkArgs, taskName)
             ctx.fatal(msg)
 
         func(checkArgs, params)
+
+def regConfTestFuncs(lang, funcs):
+    """
+    Register functions for configuration tests
+    """
+
+    _confTestsTable[lang].update(funcs)
+
+def handleConfTests(checks, params):
+    """
+    Handle configuration tests
+    """
+
+    _handleConfChecks(checks, params)
