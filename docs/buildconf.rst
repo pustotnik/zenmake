@@ -407,18 +407,30 @@ taskparams
             command. It's optional because ZenMake detects this feature
             automatically by presence of the ``run`` in task parameters.
             You need to set it explicitly only if you want to try to run
-            \*program task without parameter ``run``.
+            <lang>program task without parameter ``run``.
         :test:
             Means that the task is a test. More details about
             tests :ref:`here<buildtests>`. It is not needed to add ``runcmd``
             to this feature because ZenMake adds ``runcmd`` itself if necessary.
 
         Some features can be mixed. For example ``cxxprogram`` can be mixed
-        with ``c`` for C/C++ mixed build tasks. But ``cxxshlib`` cannot be
-        mixed for example with ``cxxprogram``. Using of such features as
+        with ``cxx`` for C++ build tasks but it's not necessary because ZenMake
+        adds ``cxx`` for ``cxxprogram`` itself. Feature ``cxxshlib`` cannot be
+        mixed for example with ``cxxprogram`` in one build task because they
+        are different types of build task target file. Using of such features as
         ``c`` or ``cxx`` doesn't make sense without
         \*stlib/\*shlib/\*program features in most cases.
         Features ``runcmd`` and ``test`` can be mixed with any feature.
+
+        Examples:
+
+        .. code-block:: python
+
+            'features' : 'cprogram'
+            'features' : 'program'
+            'features' : 'cxxshlib'
+            'features' : 'cxxprogram runcmd'
+            'features' : 'cxxprogram test'
 
         .. note::
 

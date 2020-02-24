@@ -28,6 +28,8 @@ These configuration tests in ``dict`` format:
     ``act`` = ``check-headers``
         *Parameters*: ``names``, ``defines`` = [],  ``mandatory`` = True.
 
+        *Supported languages*: C, C++.
+
         Check existence of C/C++ headers from list in the ``names``.
 
         Parameter ``defines`` can be used to set additional C/C++ defines
@@ -36,6 +38,8 @@ These configuration tests in ``dict`` format:
     ``act`` = ``check-libs``
         *Parameters*: ``names``, ``defines`` = [],  ``autodefine`` = False,
         ``mandatory`` = True.
+
+        *Supported languages*: C, C++.
 
         Check existence of the system libraries from list in
         the ``names``. If ``autodefine`` is set to True it generates
@@ -47,6 +51,8 @@ These configuration tests in ``dict`` format:
     ``act`` = ``check-sys-libs``
         *Parameters*: ``defines`` = [],  ``autodefine`` = False, ``mandatory`` = True.
 
+        *Supported languages*: C, C++.
+
         Check existence of all system libraries from
         task parameter ``sys-libs``. All parameters for the act ``check-libs``
         excluding ``names`` can be used here.
@@ -54,6 +60,8 @@ These configuration tests in ``dict`` format:
     ``act`` = ``check-code``
         *Parameters*: ``text`` = '', ``file`` = '', ``label`` = '',
         ``defines`` = [],  ``defname`` = '', ``execute`` = False, ``mandatory`` = True.
+
+        *Supported languages*: C, C++, D.
 
         Provide piece of code for the test. Code can be provided with
         parameter ``text`` as a plane text or with parameter ``file`` as a path to
@@ -74,6 +82,8 @@ These configuration tests in ``dict`` format:
     ``act`` = ``check-programs``
         *Parameters*: ``names``, ``paths`` = [],  ``var`` = '', ``mandatory`` = True.
 
+        *Supported languages*: all languages supported by ZenMake.
+
         Check existence of programs from list in the ``names``.
         Parameter ``paths`` can be used to set paths to find
         these programs, but usually you don't need to use it.
@@ -83,12 +93,16 @@ These configuration tests in ``dict`` format:
     ``act`` = ``check-by-pyfunc``
         *Parameters*: ``func``, ``mandatory`` = True.
 
+        *Supported languages*: all languages supported by ZenMake.
+
         Check by python function. It'a another way to use python
         function for checking. In this way you can use parameter
         ``mandatory``.
 
     ``act`` = ``write-config-header``
         *Parameters*: ``file`` = '', ``guard`` = '',  ``mandatory`` = True.
+
+        *Supported languages*: C, C++.
 
         After all the configuration tests are executed, write a
         configuration header in the build directory.
@@ -105,6 +119,8 @@ These configuration tests in ``dict`` format:
 
     ``act`` = ``parallel``
         *Parameters*: ``checks``, ``tryall`` = False,  ``mandatory`` = True.
+
+        *Supported languages*: all languages supported by ZenMake.
 
         Run configuration tests from the parameter ``checks``
         in parallel. Not all types of tests are supported.
