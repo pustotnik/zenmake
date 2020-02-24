@@ -1,4 +1,21 @@
 
+fragment1 = """
+int main()
+{
+    return 0;
+}
+"""
+
+fragment2 = """
+import core.stdc.stdio;
+
+int main()
+{
+    printf("fragment2\n");
+    return 0;
+}
+"""
+
 tasks = {
     'dll' : {
         #'features' : 'dshlib',
@@ -16,6 +33,14 @@ tasks = {
         'source'   : 'src/main.d',
         'includes' : 'src',
         'use'      : 'staticlib dll',
+        'conftests'  : [
+            dict( act = 'parallel',
+                checks = [
+                    dict(act = 'check-code', text = fragment1, label = 'fragment1'),
+                    dict(act = 'check-code', text = fragment2, label = 'fragment2', execute = True)
+                ],
+            ),
+        ],
     },
 }
 

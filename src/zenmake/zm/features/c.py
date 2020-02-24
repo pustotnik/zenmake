@@ -18,9 +18,7 @@ _specificArgs = {
     'code' : EMPTY_PROGRAM,
 }
 
-def _checkWrapper(funcName):
-
-    func = getattr(conftests, funcName)
+def _checkWrapper(func):
 
     def execute(checkArgs, params):
         checkArgs.update(_specificArgs)
@@ -29,10 +27,10 @@ def _checkWrapper(funcName):
     return execute
 
 _confTestFuncs = {
-    'check-sys-libs'      : _checkWrapper('checkSysLibs'),
-    'check-headers'       : _checkWrapper('checkHeaders'),
-    'check-libs'          : _checkWrapper('checkLibs'),
-    'check-code'          : _checkWrapper('checkCode'),
+    'check-sys-libs'      : _checkWrapper(conftests.checkSysLibs),
+    'check-headers'       : _checkWrapper(conftests.checkHeaders),
+    'check-libs'          : _checkWrapper(conftests.checkLibs),
+    'check-code'          : _checkWrapper(conftests.checkCode),
     'write-config-header' : conftests.writeConfigHeader,
 }
 
