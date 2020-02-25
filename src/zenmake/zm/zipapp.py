@@ -14,6 +14,7 @@ import tempfile
 import atexit
 
 from zm.constants import PLATFORM, APPNAME
+from zm.pyutils import stringtype
 from zm import log, error, cmd
 from zm import ZENMAKE_DIR
 from zm.pypkg import ZipPkg
@@ -81,6 +82,10 @@ def make(destDir, verbose = 0):
     tempDest = os.path.join(tempDir, APPNAME)
 
     def copytreeIgnore(src, names):
+        if not isinstance(src, stringtype):
+            # Since python 3.8 the src is the os.DirEntry object
+            src = src.name
+
         _names = []
         for item in IGNORE_FILE_PATHS:
             if not src.endswith(item['dir']):
