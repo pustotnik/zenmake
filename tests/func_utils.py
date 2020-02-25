@@ -44,6 +44,7 @@ PYTHON_EXE = sys.executable if sys.executable else 'python'
 PYTHON_VER = _platform.python_version()
 
 zmExes = {}
+_cache = AutoDict()
 
 def getZmExecutables():
 
@@ -156,6 +157,7 @@ def setupTest(self, request, tmpdir):
 
     self.cwd = joinpath(tmptestDir, os.sep.join(testPathParts[2:]))
     self.projectConf = bconfloader.load(dirpath = self.cwd)
+    self.origProjectDir = currentPrjDir
 
 def processConfManagerWithCLI(testSuit, cmdLine):
     cmdLine = list(cmdLine)
@@ -207,6 +209,16 @@ def getTargetPattern(env, features):
             kind = 'stlib'
 
     return fileNamePattern, kind
+
+def getCachedTargetPattern(testSuit, taskName, features):
+
+    cache = _cache[testSuit.origProjectDir]['target-patterns']
+    result = cache.get(taskName)
+    if not result:
+        env = getTaskEnv(testSuit, taskName)
+        cache[taskName] = result = getTargetPattern(env, features)
+
+    return result
 
 def handleTaskFeatures(testSuit, taskParams):
     ctx = Context.Context(run_dir = testSuit.cwd)
@@ -262,8 +274,7 @@ def obtainBuildTargets(testSuit, cmdLine, withTests = False):
             continue
 
         info = {}
-        taskEnv = getTaskEnv(testSuit, taskName)
-        fpattern, targetKind = getTargetPattern(taskEnv, features)
+        fpattern, targetKind = getCachedTargetPattern(testSuit, taskName, features)
         target = taskParams.get('target', taskName)
         targetdir = joinpath(buildout, buildtype)
 
