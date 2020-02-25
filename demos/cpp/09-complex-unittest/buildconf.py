@@ -104,7 +104,7 @@ tasks = {
         'source'      : 'tests/test_shlib.cpp',
         'use'         : 'shlib testcmn',
         'run' : {
-            'cmd' : '${PROGRAM} a b c',
+            'cmd' : '${TARGET} a b c',
             #'cwd'     : '.', # can be path relative to current project root path
             #'cwd'     : '.1',
             'env'     : { 'AZ' : '111', 'BROKEN_TEST' : 'false'},

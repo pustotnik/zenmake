@@ -30,6 +30,7 @@ addons:
     - gdc
     - ldc
     - libboost-all-dev
+    - lua5.3
   homebrew:
     packages:
       - boost

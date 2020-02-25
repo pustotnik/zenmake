@@ -29,7 +29,8 @@ FORINSTALL_PRJDIRS = [
 ]
 
 BY_REGEXPS = tuple('byregexps')
-RE_ALL_D = '^d/'
+RE_ALL_D   = '^d/'
+RE_ALL_LUA = '^lua/'
 
 TEST_CONDITIONS = {
     CUSTOM_TOOLCHAIN_PRJDIR: dict( os = ['linux', 'darwin'], ),
@@ -39,6 +40,7 @@ TEST_CONDITIONS = {
     BY_REGEXPS: [
         # disable all D projects on windows
         dict(regexp = RE_ALL_D, condition = dict( os = ['linux', 'darwin'], )),
+        dict(regexp = RE_ALL_LUA, condition = dict( os = ['linux'], )),
     ],
 }
 

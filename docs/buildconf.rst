@@ -654,9 +654,13 @@ taskparams
 
         :cmd:
             Command line to run. It can be any suitable command line.
-            For convenience special environment variable ``PROGRAM`` can be
-            used. This variable contains the absolute path to resulting
-            target file of the current task.
+            For convenience special variable ``TARGET`` can be
+            used here. This variable contains the absolute path to resulting
+            target file of the current task. There are also two additional
+            provided by Waf variables that can be used: ``SRC`` and ``TGT``.
+            They represent the task input and output Waf nodes
+            (see description of node objects
+            here: https://waf.io/book/#_node_objects).
             For python variant of buildconf it can be python function as well.
             It this case such a function gets one argument as a python dict
             with parameters:
@@ -719,13 +723,19 @@ taskparams
                 'features' : 'cxxprogram test',
                 # ...
                 'run'      : {
-                    'cmd'     : '${PROGRAM} a b c',
+                    'cmd'     : '${TARGET} a b c',
                     'env'     : { 'ENV_VAR1' : '111', 'ENV_VAR2' : 'false'},
                     'repeat'  : 2,
                     'timeout' : 10, # in seconds, Python 3 only
                     'shell'   : False,
                 },
-            }
+            },
+
+            'foo.luac' : {
+                'source' : 'foo.lua',
+                'conftests' : [ dict(act = 'check-programs', names = 'luac'), ],
+                'run': { 'cmd' : '${LUAC} -s -o ${TGT} ${SRC}' },
+            },
 
     conftests
         A list of configuration tests. Details are :ref:`here<conftests>`.

@@ -27,6 +27,7 @@ from zm.pyutils import viewitems
 from zm import cli, error, log
 from zm.waf import assist
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
+from zm.features import TASK_LANG_FEATURES
 
 joinpath = os.path.join
 abspath = os.path.abspath
@@ -108,7 +109,8 @@ def configure(conf):
             for toolname in toolchains[1:]:
                 baseEnv.update(toolchainsEnvs[toolname])
         else:
-            if 'source' in taskParams:
+            needToolchain = set(taskParams['features']) & TASK_LANG_FEATURES
+            if needToolchain:
                 msg = "No toolchain for task %r found." % taskName
                 msg += " Is buildconf correct?"
                 conf.fatal(msg)

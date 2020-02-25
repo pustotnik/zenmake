@@ -297,9 +297,6 @@ class ConfigurationContext(WafConfContext):
         toolchainNames = self.handleToolchains(bconf)
         self._checkToolchainNames(bconf)
 
-        if not toolchainNames and bconf.tasks:
-            log.warn("No toolchains found. Is buildconf correct?")
-
         toolchainsEnvs = self.zmcache().toolchain.setdefault('envs', {})
         oldEnvName = self.variant
         customToolchains = bconf.customToolchains

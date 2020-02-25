@@ -9,6 +9,7 @@
 """
 
 import os
+import re
 import shlex
 
 from waflib.TaskGen import feature, after
@@ -23,6 +24,8 @@ if PLATFORM == 'windows':
     CMDFILE_EXTS = EXE_FILE_EXTS + '.py,.pl'
 else:
     CMDFILE_EXTS = EXE_FILE_EXTS
+
+RE_WITH_TGT = re.compile(r'\$\{*TGT')
 
 def _processCmdLine(conf, cwd, shell, cmdArgs):
     """ Get and process 'cmd' at 'configure' stage """
@@ -245,14 +248,14 @@ def applyRunCmd(tgen):
     env.env.update(cmdArgs.pop('env', {}))
 
     # add new var to use in 'rule'
-    env['PROGRAM'] = realTarget
+    env['TARGET'] = realTarget
 
     ruleArgs = cmdArgs.copy()
     ruleArgs.update(dict(
         env   = env,
         color = getattr(tgen, 'color', 'BLUE'),
         cls_keyword = lambda _: 'Running',
-        cls_str = lambda _: 'command %r' % tgen.name,
+        cls_str = lambda _: 'command for task %r' % tgen.name,
     ))
     repeat = ruleArgs.pop('repeat', 1)
 
@@ -277,7 +280,8 @@ def applyRunCmd(tgen):
         for k, v in viewitems(ruleArgs):
             setattr(tgen, k, v)
         if hasattr(tgen, 'target'):
-            delattr(tgen, 'target')
+            if cmdType == 'func' or not RE_WITH_TGT.search(cmd):
+                delattr(tgen, 'target')
         tgen.process_rule()
         delattr(tgen, 'rule')
         setattr(tgen, 'runcmdTask', tgen.tasks[0])
