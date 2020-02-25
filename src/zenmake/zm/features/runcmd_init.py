@@ -6,14 +6,14 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-from zm.pyutils import viewvalues
+from zm.pyutils import viewvalues, maptype
 from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY
 
 VALIDATION_TASKSCHEME_SPEC = {
-    'run' :       {
-        'type' : 'dict',
-        'allow-unknown-keys' : False,
-        'vars' : {
+    'run' : {
+        'type' : ('dict', 'str', 'func'),
+        'dict-allow-unknown-keys' : False,
+        'dict-vars' : {
             'cmd' : { 'type': ('str', 'func') },
             'cwd' : { 'type': 'str' },
             'env' : {
@@ -30,6 +30,19 @@ VALIDATION_TASKSCHEME_SPEC = {
 TASK_FEATURES_SETUP = {
     'runcmd' : {}
 }
+
+def prepareBuildConfTaskParams(bconf, taskparams):
+    """
+    Function to call during processing of task params in buildconf
+    before actual processing
+    """
+
+    param = taskparams.get('run')
+    if not param:
+        return
+    if not isinstance(param, maptype):
+        param = { 'cmd' : param }
+    param['startdir'] = bconf.startdir
 
 def detectFeatures(bconf):
     """

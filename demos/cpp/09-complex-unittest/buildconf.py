@@ -19,9 +19,7 @@ tasks = {
         'features' : 'cxxshlib',
         'source'   :  dict( include = 'shlib/**/*.cpp' ),
         'includes' : '.',
-        'run'      : {
-            'cmd' : "echo 'This is runcmd in task \"shlib\"'",
-        },
+        'run'      : "echo 'This is runcmd in task \"shlib\"'",
         'conftests'  : [
             dict(act = 'check-headers', names = 'iostream'),
         ],
@@ -45,9 +43,7 @@ tasks = {
         'source'   :  dict( include = 'prog/**/*.cpp' ),
         'includes' : '.',
         'use'      : 'shlibmain',
-        'run'      : {
-            'cmd' : "echo 'This is runcmd in task \"complex\"'",
-        },
+        'run'      : "echo 'This is runcmd in task \"complex\"'",
     },
     'echo' : {
         'run'      : {
@@ -76,7 +72,7 @@ tasks = {
         'run' : { 'cmd' : '"alt script.py"', 'cwd' : '.' },
     },
     'pyfunc' : {
-        'run': { 'cmd' : somefunc }
+        'run': somefunc
     },
     #### tasks for build/run tests
     'stlib-test' : {

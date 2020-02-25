@@ -344,7 +344,6 @@ class TestSuite(object):
                                ['act'], list(KNOWN_CONFTEST_ACTS))
         self._validateBoolValues(buildconf, confnode['conftests'][0], 'autodefine')
 
-        self._checkParamAsDict(buildconf, confnode, 'run')
         confnode['run'] = {}
         validTypesAndVals = { 'str' : None, 'func' : None, }
         self._checkParamsAs(buildconf, confnode['run'], ['cmd'], validTypesAndVals)

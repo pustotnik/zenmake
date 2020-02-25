@@ -15,7 +15,7 @@ import shlex
 from waflib.TaskGen import feature, after
 from waflib.Errors import WafError
 from waflib import Task
-from zm.pyutils import viewitems
+from zm.pyutils import viewitems, maptype
 from zm import log, error
 from zm.constants import PLATFORM, EXE_FILE_EXTS
 from zm.features import postcmd
@@ -106,6 +106,8 @@ def postConf(conf):
 
         if cmdArgs is None:
             cmdArgs = {}
+        elif not isinstance(cmdArgs, maptype):
+            cmdArgs = { 'cmd' : cmdArgs }
 
         cmdTaskArgs = dict(
             name     = taskName,

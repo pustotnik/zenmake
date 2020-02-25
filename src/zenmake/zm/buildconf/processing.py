@@ -18,7 +18,7 @@ from zm.pyutils import stringtype, maptype, viewitems, viewvalues
 from zm import utils, log
 from zm.buildconf import loader
 from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES
-from zm.features import ToolchainVars
+from zm.features import ToolchainVars, BUILDCONF_PREPARE_TASKPARAMS
 
 joinpath = os.path.join
 abspath  = os.path.abspath
@@ -136,28 +136,12 @@ class Config(object):
                 if arg in param:
                     param[arg] = toList(param[arg])
 
-        def fixPathParam(taskparams, paramname, startdir):
-            param = taskparams.get(paramname, None)
-            if param is None:
-                return
-            taskparams[paramname] = dict(startdir = startdir, paths = param)
-
-        def fixRunParam(taskparams, startdir):
-            param = taskparams.get('run', None)
-            if not param:
-                return
-            param['startdir'] = startdir
-
         def fixTaskParams(taskparams, startdir):
             # 'source'
             fixSrcParam(taskparams, startdir)
-            # 'includes'
-            fixPathParam(taskparams, 'includes', startdir)
-            fixPathParam(taskparams, 'export-includes', startdir)
-            # 'libpath'
-            fixPathParam(taskparams, 'libpath', startdir)
-            # 'run'
-            fixRunParam(taskparams, startdir)
+
+            for hook in BUILDCONF_PREPARE_TASKPARAMS:
+                hook(self, taskparams)
 
         # tasks, buildtypes
         for varName in ('tasks', 'buildtypes'):
@@ -170,7 +154,9 @@ class Config(object):
 
         # matrix
         for entry in buildconf.matrix:
-            fixTaskParams(entry.get('set', {}), startdir)
+            taskparams = entry.get('set')
+            if taskparams:
+                fixTaskParams(taskparams, startdir)
 
         # 'toolchains'
         for params in viewvalues(buildconf.toolchains):

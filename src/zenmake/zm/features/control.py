@@ -108,6 +108,15 @@ def _generateToolchainVars():
 
     return toolchainVars
 
+def _getBuildConfProcessingHooks():
+    modules = _getInitModules()
+    funcs = []
+    for module in modules:
+        func = getattr(module, 'prepareBuildConfTaskParams', None)
+        if func:
+            funcs.append(func)
+    return tuple(funcs)
+
 def _getFeatureDetectFuncs():
     modules = _getInitModules()
     funcs = []
@@ -133,6 +142,8 @@ SUPPORTED_TASK_FEATURES = _generateFeaturesMap()
 
 TASK_TARGET_FEATURES = frozenset(TASK_TARGET_FEATURES_TO_LANG.keys())
 TASK_LANG_FEATURES = frozenset(TASK_TARGET_FEATURES_TO_LANG.values())
+
+BUILDCONF_PREPARE_TASKPARAMS = _getBuildConfProcessingHooks()
 
 TOOLCHAIN_VARS = _generateToolchainVars()
 TOOLCHAIN_SYSVAR_TO_LANG = _generateToolchainVarToLang(TOOLCHAIN_VARS)

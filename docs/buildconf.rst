@@ -650,7 +650,9 @@ taskparams
 
     run
         A `dict <buildconf-dict-def_>`_ with parameters to run something in
-        the task. It' used with task features ``runcmd`` and ``test``.
+        the task. It' used with task features ``runcmd`` and ``test``. It can be
+        also just a string or a python function (for buildconf.py only). In this case
+        it's the same as using dict with one parameter ``cmd``.
 
         :cmd:
             Command line to run. It can be any suitable command line.
@@ -706,7 +708,7 @@ taskparams
         .. code-block:: python
 
             'echo' : {
-                'run' : { 'cmd' : "echo 'say hello'" },
+                'run' : "echo 'say hello'",
             },
 
             'test.py' : {
@@ -734,7 +736,7 @@ taskparams
             'foo.luac' : {
                 'source' : 'foo.lua',
                 'conftests' : [ dict(act = 'check-programs', names = 'luac'), ],
-                'run': { 'cmd' : '${LUAC} -s -o ${TGT} ${SRC}' },
+                'run': '${LUAC} -s -o ${TGT} ${SRC}',
             },
 
     conftests
