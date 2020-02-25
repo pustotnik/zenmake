@@ -24,6 +24,23 @@ if PLATFORM == 'windows':
 else:
     SHEBANG_ENC = sys.getfilesystemencoding()
 
+IGNORE_EXTS = frozenset(('.pyc', '.PYC', '.pyo', '.PYO' ))
+IGNORE_FILE_PATHS = (
+    {
+        'dir' : os.path.join('waf', 'waflib', 'Tools'),
+        'files' : frozenset(('lua.py', 'waf_unit_test.py'))
+    },
+    {
+        'dir' : os.path.join('waf', 'waflib', 'extras'),
+        'dont-ignore' : frozenset((
+            'erlang.py', 'c_bgxlc.py', 'c_emscripten.py', 'c_nec.py',
+            'fc_bgxlf.py', 'fc_cray.py', 'fc_nag.py', 'fc_nec.py',
+            'fc_nfort.py', 'fc_open64.py', 'fc_pgfortran.py', 'fc_solstudio.py',
+            'fc_xlf.py', 'protoc.py', 'pyqt5.py',
+        ))
+    },
+)
+
 # copied from shutil.py
 def _samefile(src, dst):
     # Macintosh, Unix.
@@ -63,8 +80,22 @@ def make(destDir, verbose = 0):
     tempDir = tempfile.mkdtemp(prefix = APPNAME + '.')
     tempDest = os.path.join(tempDir, APPNAME)
 
-    def copytreeIgnore(_, names):
-        return [ x for x in names if len(x) > 4 and x[-4:] in ('.pyc', '.pyo')]
+    def copytreeIgnore(src, names):
+        _names = []
+        for item in IGNORE_FILE_PATHS:
+            if not src.endswith(item['dir']):
+                continue
+            _names = set(names)
+            files = item.get('files', frozenset())
+            dontIgnore = item.get('dont-ignore', frozenset())
+
+            _names = _names & files if files else _names
+            _names = list(_names - dontIgnore)
+            break
+
+        _names += [x for x in names if os.path.splitext(x)[1] in IGNORE_EXTS]
+        return _names
+
     shutil.copytree(ZENMAKE_DIR, tempDest, ignore = copytreeIgnore)
 
     logger = log if verbose >= 1 else None
@@ -73,7 +104,7 @@ def make(destDir, verbose = 0):
 
     interpreter = '/usr/bin/env python'
     interpreter = interpreter.encode(SHEBANG_ENC)
-    # Python 'zipapp' exists in python >= 3.5 but it's not a big problem
+    # Python 'zipapp' exists only in python >= 3.5 but it's not a big problem
     with io.open(zipAppFileName, 'wb') as appFile:
         shebang = b'#!' + interpreter + b'\n'
         appFile.write(shebang)
