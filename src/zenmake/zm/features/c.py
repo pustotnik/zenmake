@@ -7,10 +7,10 @@
 """
 
 from waflib.Tools.c_config import SNIP_EMPTY_PROGRAM as EMPTY_PROGRAM
-from waflib.Tools.compiler_c import c_compiler
+from waflib.Tools.compiler_c import c_compiler as compilers
 from zm import toolchains, conftests
 
-toolchains.regToolchains('c', c_compiler)
+toolchains.regToolchains('c', compilers)
 
 _specificArgs = {
     'code-type': 'c',
