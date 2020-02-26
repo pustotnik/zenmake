@@ -20,6 +20,7 @@ LANGMAP = {
         'cxx' : 'CXX',
         'asm' : 'AS',
         'd'   : 'DC',
+        'fc'  : 'FC',
     },
     'cfg' : {
         'ar'  : 'AR',
@@ -27,6 +28,7 @@ LANGMAP = {
         'cxx' : 'CXX',
         'asm' : 'AS',
         'd'   : 'D',
+        'fc'  : 'FC',
     },
 }
 SUPPORTED_LANGS = list(LANGMAP['sys'].keys())

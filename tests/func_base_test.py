@@ -28,9 +28,10 @@ FORINSTALL_PRJDIRS = [
     joinpath('subdirs', '2-complex'),
 ]
 
-BY_REGEXPS = tuple('byregexps')
+BY_REGEXPS = tuple('byregexps') # for ability to have non string dict key
 RE_ALL_D   = '^d/'
 RE_ALL_LUA = '^lua/'
+RE_ALL_FC  = '^fortran/'
 
 TEST_CONDITIONS = {
     CUSTOM_TOOLCHAIN_PRJDIR: dict( os = ['linux', 'darwin'], ),
@@ -38,9 +39,9 @@ TEST_CONDITIONS = {
     joinpath('asm', '02-simple-nasm') :
         dict( os = ['linux'], py = ['2.7', '3.6', '3.7', '3.8']),
     BY_REGEXPS: [
-        # disable all D projects on windows
         dict(regexp = RE_ALL_D, condition = dict( os = ['linux', 'darwin'], )),
         dict(regexp = RE_ALL_LUA, condition = dict( os = ['linux'], )),
+        dict(regexp = RE_ALL_FC, condition = dict( os = ['linux'], )),
     ],
 }
 

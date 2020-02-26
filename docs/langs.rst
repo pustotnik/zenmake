@@ -14,13 +14,33 @@ Supported compilers:
 
   - C:
 
-    - regularly tested: gcc, clang, msvc
-    - should work: icc, xlc, suncc, irixcc
+    - GCC C (gcc): regularly tested
+
+    - CLANG C from LLVM (clang): regularly tested
+
+    - Microsoft Visual C/C++ (msvc): regularly tested
+
+    - Intel C/C++ (icc): should work but not tested
+
+    - IBM XL C/C++ (xlc): should work but not tested
+
+    - Oracle/Sun C (suncc): should work but not tested
+
+    - IRIX/MIPSpro C (irixcc): may be works, not tested
 
   - C++:
 
-    - regularly tested: g++, clang++, msvc
-    - should work: icpc, xlc++, sunc++
+    - GCC C++ (g++): regularly tested
+
+    - CLANG C++ from LLVM (clang++): regularly tested
+
+    - Microsoft Visual C/C++ (msvc): regularly tested
+
+    - Intel C/C++ (icpc): should work but not tested
+
+    - IBM XL C/C++ (xlc++): should work but not tested
+
+    - Oracle/Sun C++ (sunc++): should work but not tested
 
 Examples of projects can be found in the directory ``c``  and ``cpp``
 in the repository `here <repo_demo_projects_>`_.
@@ -42,9 +62,28 @@ like C/C++ code but there are some limits:
   - There is no support for MS Windows yet.
   - There is no supports for D package manager DUB.
 
-While nobody uses ZenMake for D, there are no plans to solve these problems.
+While nobody uses ZenMake for D, there are no plans to resolve these issues.
 
-Supported compilers: dmd, gdc, ldc2
+Supported compilers:
+
+  - DMD Compiler - official D compiler (dmd): regularly tested
+
+  - GCC D Compiler (gdc): regularly tested
+
+  - LLVM D compiler (ldc2): regularly tested
 
 Examples of projects can be found in the directory ``d``
+in the repository `here <repo_demo_projects_>`_.
+
+FORTRAN
+-----------
+  ZenMake supports compiling for Fortran language.
+
+  Supported compilers:
+
+    - GCC Fortran Compiler (gfortran): regularly tested
+
+    - Intel Fortran Compiler (ifort): should work but not tested
+
+Examples of projects can be found in the directory ``fortran``
 in the repository `here <repo_demo_projects_>`_.

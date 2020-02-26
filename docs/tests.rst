@@ -4,11 +4,11 @@
 Tests
 ============
 
-ZenMake supports building and running tests. It has not special support for
+ZenMake supports building and running tests. It has no special support for
 particular testing framework/library but it can be any testing
 framework/library.
 
-To set up test you need to specify task feature ``test`` in ``buildconf`` file.
+To set up a test you need to specify task feature ``test`` in ``buildconf`` file.
 Then you have a choice:
 
     - If selected task has feature \*program then you may not need to do

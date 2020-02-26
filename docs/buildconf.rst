@@ -359,16 +359,19 @@ taskparams
 
         :c:
             Means that the task has a C code. Optional in most cases.
-            Also it's a 'lang' feature for C language.
+            Also it's 'lang' feature for C language.
         :cxx:
             Means that the task has a C++ code. Optional in most cases.
-            Also it's a 'lang' feature for C++ language.
+            Also it's 'lang' feature for C++ language.
         :d:
-            Means that the task has an D code. Optional in most cases.
-            Also it's a 'lang' feature for D language.
+            Means that the task has a D code. Optional in most cases.
+            Also it's 'lang' feature for D language.
+        :fc:
+            Means that the task has a Fortran code. Optional in most cases.
+            Also it's 'lang' feature for Fortran language.
         :asm:
             Means that the task has an Assembler code. Optional in most cases.
-            Also it's a 'lang' feature for Assembler language.
+            Also it's 'lang' feature for Assembler language.
         :<lang>stlib:
             Means that result of the task is a static library for the <lang> code.
             For example: ``cstlib``, ``cxxstlib``, etc.
@@ -498,7 +501,7 @@ taskparams
         not support it.
 
     includes
-        Include paths are used by the C/C++/D compilers for finding headers/files.
+        Include paths are used by the C/C++/D/Fortran compilers for finding headers/files.
         Paths should be relative to startdir_ or absolute. But last variant is
         not recommended.
 
@@ -576,14 +579,15 @@ taskparams
         Name of toolchain/compiler to use in the task. It can be any system
         compiler that is supported by Waf or toolchain from custom toolchains_.
         There are also the special names for autodetecting in format
-        ``auto-*`` where ``*`` is programming language, for example
-        ``auto-c`` or ``auto-c++``.
+        ``auto-*`` where ``*`` is a 'lang' feature for programming language,
+        for example ``auto-c``, ``auto-c++``, etc.
 
         | Known names for C: ``auto-c``, ``gcc``, ``clang``, ``msvc``,
                              ``icc``, ``xlc``, ``suncc``, ``irixcc``.
         | Known names for C++: ``auto-c++``, ``g++``, ``clang++``, ``msvc``,
                                ``icpc``, ``xlc++``, ``sunc++``.
         | Known names for D: ``auto-d``, ``ldc2``, ``gdc``, ``dmd``.
+        | Known names for Fortran: ``auto-fc``, ``gfortran``, ``ifort``.
         | Known names for Assembler: ``auto-asm``, ``gas``, ``nasm``.
 
         .. note::
@@ -607,6 +611,9 @@ taskparams
     dflags
         One or more compiler flags for D.
 
+    fcflags
+        One or more compiler flags for Fortran.
+
     asflags
         One or more compiler flags for Assembler.
 
@@ -614,10 +621,10 @@ taskparams
         One or more compiler flags added at the end of compilation commands for C/C++.
 
     linkflags
-        One or more linker flags for C/C++/D.
+        One or more linker flags for C/C++/D/Fortran.
 
     ldflags
-        One or more linker flags for C/C++ at the end of the link command.
+        One or more linker flags for C/C++/D/Fortran at the end of the link command.
 
     aslinkflags
         One or more linker flags for Assembler.
@@ -626,7 +633,7 @@ taskparams
         Flags to give the archive-maintaining program.
 
     defines
-        One or more defines for C/C++/Assembler.
+        One or more defines for C/C++/Assembler/Fortran.
 
     export-defines
         If it's True then it exports value of ``defines`` for all buld tasks

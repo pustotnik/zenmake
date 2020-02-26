@@ -61,7 +61,7 @@ These configuration tests in ``dict`` format:
         *Parameters*: ``text`` = '', ``file`` = '', ``label`` = '',
         ``defines`` = [],  ``defname`` = '', ``execute`` = False, ``mandatory`` = True.
 
-        *Supported languages*: C, C++, D.
+        *Supported languages*: C, C++, D, Fortran.
 
         Provide piece of code for the test. Code can be provided with
         parameter ``text`` as a plane text or with parameter ``file`` as a path to
@@ -73,10 +73,10 @@ These configuration tests in ``dict`` format:
         If parameter ``execute`` is True it means that the resulting binary
         will be executed.
 
-        Parameter ``defname`` is a name of C/C++ define to set
+        Parameter ``defname`` is a name of C/C++/Fortran define to set
         when the test is over.
 
-        Parameter ``defines`` can be used to set additional C/C++ defines
+        Parameter ``defines`` can be used to set additional C/C++/Fortran defines
         to use in compiling of the test.
 
     ``act`` = ``check-programs``

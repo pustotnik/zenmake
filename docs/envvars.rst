@@ -33,6 +33,13 @@ DC
 
         DC=ldc2 zenmake build -B
 
+FC
+    Set Fortran compiler. It can be name of installed a system compiler or any path
+    to existing compiler. It overrides values from :ref:`build config<buildconf>`
+    if present. Example::
+
+        FC=gfortran zenmake build -B
+
 AS
     Set Assembler. It can be name of installed a system compiler or any path
     to existing compiler. It overrides values from :ref:`build config<buildconf>`
@@ -60,6 +67,10 @@ DFLAGS
     Extra flags to give to the D compiler. Example::
 
         DFLAGS='-O' zenmake build -B
+FCFLAGS
+    Extra flags to give to the Fortran compiler. Example::
+
+        FCFLAGS='-O0' zenmake build -B
 
 ASFLAGS
     Extra flags to give to the Assembler. Example::
@@ -67,12 +78,12 @@ ASFLAGS
         ASFLAGS='-Os' zenmake build -B
 
 LINKFLAGS
-    Extra list of linker flags for C/C++/D. Example::
+    Extra list of linker flags for C/C++/D/Fortran. Example::
 
         LINKFLAGS='-Wl,--as-needed' zenmake build -B
 
 LDFLAGS
-    Extra list of linker flags at the end of the link command for C/C++. Example::
+    Extra list of linker flags at the end of the link command for C/C++/D/Fortran. Example::
 
         LDFLAGS='-Wl,--as-needed' zenmake build -B
 
