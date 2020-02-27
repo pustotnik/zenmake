@@ -148,6 +148,12 @@ config.options = [
         action = 'help',
         help = 'show this help message and exit',
     ),
+    Option(
+        names = ['--version'],
+        isglobal = True,
+        runcmd = 'version',
+        help = 'alies for command "version"',
+    ),
     # command options
     Option(
         names = ['-h', '--help'],
@@ -278,7 +284,7 @@ class CmdLineParser(object):
     """
 
     __slots__ = (
-        '_defaults', '_options', '_command', '_wafCmdLine',
+        '_defaults', '_globalOptions', '_command', '_wafCmdLine',
         '_parser', '_commandHelps', '_cmdNameMap'
     )
 
@@ -288,7 +294,6 @@ class CmdLineParser(object):
         self._defaults.update(_getReadyOptDefaults())
         self._defaults.update(defaults)
 
-        self._options = []
         self._command = None
         self._wafCmdLine = []
 
@@ -357,8 +362,7 @@ class CmdLineParser(object):
         self._commandHelps = commandHelps
 
     def _setupOptions(self):
-        # make independent copy
-        self._options = list(config.options)
+        self._globalOptions = [x for x in config.options if x.isglobal]
 
     def _getOptionDefault(self, opt, cmd  = None):
         optName = opt.names[-1].replace('-', '', 2)
@@ -408,20 +412,23 @@ class CmdLineParser(object):
     def _addOptions(self, target, cmd = None):
         if cmd is None:
             # get only global options
-            options = [x for x in self._options if x.isglobal]
+            options = self._globalOptions
         else:
             def isvalid(opt):
                 if opt.isglobal:
                     return False
                 return cmd.name in opt.commands
-            options = [x for x in self._options if isvalid(x)]
+            options = [x for x in config.options if isvalid(x)]
 
         for opt in options:
             kwargs = _AutoDict()
             if 'runcmd' in opt:
                 kwargs.action = "store_true"
-                kwargs.help = "run command '%s' before command '%s'" \
-                        % (opt.runcmd, cmd.name)
+                if 'help' in opt:
+                    kwargs.help = opt.help
+                else:
+                    kwargs.help = "run command '%s' before command '%s'" \
+                                  % (opt.runcmd, cmd.name)
             else:
                 for k, v in viewitems(opt):
                     if v is None or k in Option.NOTARGPARSE_FIELDS:
@@ -436,6 +443,10 @@ class CmdLineParser(object):
 
     def _fillCmdInfo(self, parsedArgs):
         args = _AutoDict(vars(parsedArgs))
+        for opt in self._globalOptions:
+            if 'runcmd' in opt:
+                optName = opt.names[-1].replace('-', '', 2)
+                args.pop(optName, None)
         cmd = self._cmdNameMap[args.pop('command')]
         self._command = ParsedCommand(
             name = cmd.name,
@@ -485,13 +496,23 @@ class CmdLineParser(object):
         if args is None:
             args = sys.argv[1:]
 
+        defaultCmdIsReady = False
+        globalOpts = self._globalOptions
+        if args:
+            for opt in globalOpts:
+                runcmd = opt.get('runcmd')
+                if runcmd and args[0] in opt.names:
+                    args[0] = runcmd
+                    defaultCmdIsReady = True
+                    break
+
         # simple hack to set default command
-        if not args or not [ x for x in args if not x.startswith('-') ]:
-            optHelp = self._options[0]
-            assert optHelp.action == 'help'
-            # don't show help for default command
-            if not any(x in optHelp.names for x in args):
-                args.insert(0, defaultCmd)
+        if not defaultCmdIsReady:
+            if not args or not [ x for x in args if not x.startswith('-') ]:
+                optNames = set(y for x in globalOpts for y in x.names)
+                # don't use global options for default command
+                if not any(x in optNames for x in args):
+                    args.insert(0, defaultCmd)
 
         # parse
         parsedArgs = self._parser.parse_args(args)
