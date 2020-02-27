@@ -12,6 +12,7 @@ import tempfile
 import shutil
 import atexit
 
+from waflib import Errors as waferror
 from waflib.Configure import ConfigurationContext as WafConfContext, WAF_CONFIG_LOG
 from zm.constants import PLATFORM
 from zm import log
@@ -63,6 +64,18 @@ class ConfContext(WafConfContext):
         path = os.path.join(self.bldnode.abspath(), WAF_CONFIG_LOG)
         self.logger = log.makeLogger(path, 'cfg')
 
+    def findProgram(self, name):
+        """
+        Try to find a program
+        """
+        # pylint: disable = no-member
+
+        try:
+            result = self.find_program(name)
+        except waferror.WafError:
+            result = None
+        return result[0] if result else None
+
 def gatherSysInfo():
     """
     Gather some useful system info.
@@ -74,10 +87,12 @@ def gatherSysInfo():
     import subprocess
     import multiprocessing
     import platform as _platform
-    from distutils.spawn import find_executable
-    from waflib import Context, Utils
-    from waflib import Errors as waferror
+    from waflib import Utils
     from zm.autodict import AutoDict as _AutoDict
+    from zm.waf import context
+
+    cfgCtx = ConfContext()
+    cfgCtx.prepare()
 
     info = []
 
@@ -95,22 +110,17 @@ def gatherSysInfo():
 
     def getMsvcVersion():
         if Utils.winreg is not None:
-            msvcModule = Context.load_tool('msvc')
+            msvcModule = context.loadTool('msvc')
 
-            cfgCtx = None
             try:
-                cfgCtx = ConfContext()
-                cfgCtx.prepare()
                 version = msvcModule.detect_msvc(cfgCtx)[1]
             except waferror.ConfigurationError:
                 version = 'not recognized'
-            finally:
-                if cfgCtx:
-                    cfgCtx.finalize()
         else:
             version = 'not recognized'
         return version
 
+    # TODO: add gfortran, ifort
     compilers = [
         _AutoDict(header = 'GCC', bin = 'gcc', verargs = ['--version']),
         _AutoDict(header = 'CLANG', bin = 'clang', verargs = ['--version']),
@@ -118,13 +128,15 @@ def gatherSysInfo():
         _AutoDict(header = 'DMD', bin = 'dmd', verargs = ['--version']),
         _AutoDict(header = 'LDC', bin = 'ldc2', verargs = ['--version']),
         _AutoDict(header = 'GDC', bin = 'gdc', verargs = ['--version']),
+        _AutoDict(header = 'GFORTRAN', bin = 'gfortran', verargs = ['--version']),
+        _AutoDict(header = 'IFORT', bin = 'ifort', verargs = ['--version']),
     ]
 
     for compiler in compilers:
         if 'func' in compiler:
             ver = compiler.func()
         else:
-            _bin = find_executable(compiler.bin)
+            _bin = cfgCtx.findProgram(compiler.bin)
             if _bin:
                 ver = subprocess.check_output([_bin] + compiler.verargs,
                                               universal_newlines = True)
@@ -132,6 +144,8 @@ def gatherSysInfo():
             else:
                 ver = 'not recognized'
         info.append('%s: %s' % (compiler.header, ver))
+
+    cfgCtx.finalize()
 
     return info
 
