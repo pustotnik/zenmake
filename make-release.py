@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import sys
 import os
 import io
+import re
 import subprocess
 from distutils.spawn import find_executable as findProg
 
@@ -112,6 +113,23 @@ def _writeNewDevVersion(baseVer):
     _writeVersionFile(nextVer)
     return nextVer
 
+def _checkChangeLog(newVer):
+    filePath = os.path.join(here, 'CHANGELOG.rst')
+    if not os.path.isfile(filePath):
+        print("File %r doesn't exist" % filePath)
+        sys.exit(1)
+
+    pattern = 'Version\s+' + newVer
+    pattern = re.compile(pattern)
+    with io.open(filePath, 'rt') as file:
+        for line in file:
+            if pattern.search(line):
+                break
+        else:
+            return False
+
+    return True
+
 def main():
     """ do main work """
 
@@ -135,6 +153,10 @@ def main():
     if not GIT_EXE:
         print("There is no 'git'. Install 'git' to use this script.")
         return 2
+
+    if not _checkChangeLog(newVer):
+        print('There is no records for the version %r in changelog file' % newVer)
+        return 3
 
     question = 'Bump version to %s?'
     question += ' It will write the version to file,'
