@@ -20,6 +20,7 @@ from zm import WAF_DIR
 from zm.constants import WAF_LOCKFILE
 from zm.pyutils import viewvalues
 from zm import log, utils, cli
+from zm.error import ZenMakeConfError
 from zm.waf import wscriptimpl, assist
 from zm.waf.options import setupOptionVerbose
 
@@ -100,11 +101,18 @@ def _prepareAndLoadFeatures(bconfManager):
     ctx = Context.Context()
     setattr(ctx, 'bconfManager', bconfManager)
 
-    # process all actual features from buildconf(s)
-    for bconf in bconfManager.configs:
-        for taskParams in viewvalues(bconf.tasks):
-            assist.detectTaskFeatures(ctx, taskParams)
-            assist.validateConfTaskFeatures(taskParams)
+    try:
+        # process all actual features from buildconf(s)
+        for bconf in bconfManager.configs:
+            for taskParams in viewvalues(bconf.tasks):
+                assist.detectTaskFeatures(ctx, taskParams)
+                assist.validateTaskFeatures(taskParams)
+    except ZenMakeConfError as ex:
+        origMsg = ex.msg
+        ex.msg = "Error in the file %r:" % bconf.path
+        for line in origMsg.splitlines():
+            ex.msg += "\n  %s" % line
+        raise ex
 
     # load modules for all actual features from buildconf(s)
     loadFeatures(bconfManager)

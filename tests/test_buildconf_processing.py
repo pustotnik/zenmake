@@ -321,6 +321,8 @@ class TestSuite(object):
 
         # CASE: just some buildconf.tasks, nothing else
         buildconf = deepcopy(testingBuildConf)
+        buildconf.tasks.test1.name = 'test1'
+        buildconf.tasks.test2.name = 'test2'
         buildconf.tasks.test1.param1 = '1'
         buildconf.tasks.test2.param2 = '2'
         self._checkTasks(buildconf, buildtype, buildconf.tasks)
@@ -329,6 +331,8 @@ class TestSuite(object):
         # with non-empty selected buildtype
         # buildtype 'mybuildtype' should be selected at this moment
         buildconf = deepcopy(testingBuildConf)
+        buildconf.tasks.test1.name = 'test1'
+        buildconf.tasks.test2.name = 'test2'
         buildconf.tasks.test1.param1 = '111'
         buildconf.tasks.test2.param2 = '222'
         buildconf.buildtypes.mybuildtype = { 'cxxflags' : '-O2' }
@@ -347,6 +351,8 @@ class TestSuite(object):
         # params from buildconf.buildtypes must override params from
         # buildconf.tasks
         buildconf = deepcopy(testingBuildConf)
+        buildconf.tasks.test1.name = 'test1'
+        buildconf.tasks.test2.name = 'test2'
         buildconf.tasks.test1.param1 = 'p1'
         buildconf.tasks.test2.cxxflags = '-Os'
         buildconf.tasks.test2.toolchain = 'auto-c'
@@ -378,7 +384,10 @@ class TestSuite(object):
             { 'for' : { 'task' : 't1' }, 'set' : { 'param1' : '1' } },
             { 'for' : { 'task' : 't2' }, 'set' : { 'param2' : '2' } },
         ]
-        expected = { 't1': {'param1': '1'}, 't2': {'param2': '2'} }
+        expected = {
+            't1': {'name' : 't1', 'param1': '1'},
+            't2': {'name' : 't2', 'param2': '2'}
+        }
         self._checkTasks(buildconf, buildtype, expected)
 
         # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
@@ -390,7 +399,8 @@ class TestSuite(object):
             { 'for' : {}, 'set' : { 'default-buildtype' : 'mybt' } },
         ]
         self._checkTasks(buildconf, buildtype, {
-            't1': {'param1': '1'}, 't2': {'param2': '2'}
+            't1': {'name' : 't1', 'param1': '1'},
+            't2': {'name' : 't2', 'param2': '2'}
         })
 
         # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
@@ -406,7 +416,10 @@ class TestSuite(object):
                 'set' : { 'param2' : '2' }
             },
         ]
-        self._checkTasks(buildconf, buildtype, { 't1': {}, 't2': {'param2': '2'} })
+        self._checkTasks(buildconf, buildtype, {
+            't1': {'name' : 't1'},
+            't2': {'name' : 't2', 'param2': '2'}
+        })
 
         # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
         # Applying for all tasks
@@ -417,8 +430,8 @@ class TestSuite(object):
             { 'for' : { 'task' : 't2' }, 'set' : { 'p2' : '2' } },
         ]
         self._checkTasks(buildconf, buildtype, {
-            't1': {'p1': '1', 'p3': '3'},
-            't2': {'p2': '2', 'p3': '3'},
+            't1': {'name' : 't1', 'p1': '1', 'p3': '3'},
+            't2': {'name' : 't2', 'p2': '2', 'p3': '3'},
         })
 
         # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
@@ -431,8 +444,8 @@ class TestSuite(object):
             { 'for' : { 'task' : 't1' }, 'set' : { 'p4' : '4', 'p2' : '-2-' } },
         ]
         self._checkTasks(buildconf, buildtype, {
-            't1': {'p1': '1', 'p3': '3', 'p2' : '-2-', 'p4' : '4'},
-            't2': {'p2': '22', 'p3': '3'},
+            't1': {'name' : 't1', 'p1': '1', 'p3': '3', 'p2' : '-2-', 'p4' : '4'},
+            't2': {'name' : 't2', 'p2': '22', 'p3': '3'},
         })
 
         # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
@@ -448,7 +461,10 @@ class TestSuite(object):
                 'set' : { 'p2' : '2' }
             },
         ]
-        expected = { 't1': {'p1': '1'}, 't2': {'p2': '2'} }
+        expected = {
+            't1': {'name' : 't1', 'p1': '1'},
+            't2': {'name' : 't2', 'p2': '2'}
+        }
         self._checkTasks(buildconf, buildtype, expected)
         buildconf.matrix = baseMatrix + [
             {
@@ -460,7 +476,9 @@ class TestSuite(object):
                 'set' : { 'p2' : '2' }
             },
         ]
-        expected = { 't1': {'p1': '1'}, 't2': {} }
+        expected = {
+            't1': {'name' : 't1', 'p1': '1'}, 't2': { 'name' : 't2' }
+        }
         self._checkTasks(buildconf, buildtype, expected)
 
         # CASE: some tasks in buildconf.tasks, some tasks in buildconf.matrix
@@ -476,10 +494,10 @@ class TestSuite(object):
             { 'for' : { 'task' : 't4' }, 'set' : { 'p5' : '1', 'p6' : '2' } },
         ]
         self._checkTasks(buildconf, buildtype, {
-            't1': {'p1': '1', 'p3': '3'},
-            't2': {'p1': '11', 'p2': '2', 'p3': '3'},
-            't3': {'p1': '1', 'p2': '2', 'p3': '3'},
-            't4': {'p5': '1', 'p6': '2', 'p3': '3'},
+            't1': {'name' : 't1', 'p1': '1', 'p3': '3'},
+            't2': {'name' : 't2', 'p1': '11', 'p2': '2', 'p3': '3'},
+            't3': {'name' : 't3', 'p1': '1', 'p2': '2', 'p3': '3'},
+            't4': {'name' : 't4', 'p5': '1', 'p6': '2', 'p3': '3'},
         })
 
     def testCustomToolchains(self, testingBuildConf, capsys):

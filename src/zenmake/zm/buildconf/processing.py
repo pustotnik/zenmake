@@ -676,6 +676,10 @@ class Config(object):
                 task.update(params)
                 task.pop('default-buildtype', None)
 
+        # set task names
+        for taskName, taskParams in viewitems(tasks):
+            taskParams['name'] = taskName
+
         self._fixTaskPathParamsToStartDir(tasks)
 
         self._meta.tasks[buildtype] = tasks

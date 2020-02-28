@@ -23,7 +23,7 @@ import os
 
 from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext
-from zm.pyutils import viewitems
+from zm.pyutils import viewitems, viewvalues
 from zm import cli, error, log
 from zm.waf import assist
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
@@ -89,9 +89,9 @@ def configure(conf):
     buildtype = bconf.selectedBuildType
 
     # Prepare task envs based on toolchains envs
-    for taskName, taskParams in viewitems(tasks):
+    for taskParams in viewvalues(tasks):
 
-        taskParams['name'] = taskName
+        taskName = taskParams['name']
 
         # make variant name for each task: 'buildtype.taskname'
         taskVariant = assist.makeTaskVariantName(buildtype, taskName)
@@ -135,7 +135,7 @@ def configure(conf):
     conf.runConfTests(buildtype, tasks)
 
     # save envs
-    for taskName, taskParams in viewitems(tasks):
+    for taskParams in viewvalues(tasks):
 
         # It's not needed anymore.
         taskParams.pop('conftests', None)

@@ -15,8 +15,8 @@ from copy import deepcopy
 from waflib.ConfigSet import ConfigSet
 from zm.pyutils import viewitems, stringtype
 from zm import utils, log, version, toolchains
-from zm.error import ZenMakeError
-from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, CWD, TASK_FEATURE_ALIESES, PLATFORM
+from zm.error import ZenMakeError, ZenMakeConfError
+from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, TASK_FEATURE_ALIESES, PLATFORM
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
 from zm.features import SUPPORTED_TASK_FEATURES, resolveAliesesInFeatures
 from zm.features import ToolchainVars, getLoadedFeatures
@@ -273,6 +273,9 @@ def detectTaskFeatures(ctx, taskParams):
     detected = [ TASK_TARGET_FEATURES_TO_LANG.get(x, '') for x in features ]
     features = detected + features
 
+    if 'run' in taskParams:
+        features.append('runcmd')
+
     features = utils.uniqueListWithOrder(features)
     if '' in features:
         features.remove('')
@@ -302,12 +305,12 @@ def handleTaskFeatureAlieses(ctx, features, source):
             if not _RE_EXT_AT_THE_END.search(pattern):
                 msg = "Pattern %r in 'source'" % pattern
                 msg += " must have some file extension at the end."
-                raise ZenMakeError(msg)
+                raise ZenMakeConfError(msg)
 
     source = handleTaskSourceParam(ctx, source)
     return resolveAliesesInFeatures(source, features)
 
-def validateConfTaskFeatures(taskParams):
+def validateTaskFeatures(taskParams):
     """
     Check all features are valid and remove unsupported features
     """
@@ -321,6 +324,13 @@ def validateConfTaskFeatures(taskParams):
                   (val, taskParams['name'])
             log.warn(msg)
     taskParams['features'] = features
+
+    if not features and taskParams.get('source'):
+        msg = "There is no way to proccess task %r" % taskParams['name']
+        msg += " with empty 'features'."
+        msg += " You need to specify 'features' for this task."
+        raise ZenMakeConfError(msg)
+
     return features
 
 def _makeTaskPathParam(param, rootdir, startdir, relative = True):
@@ -459,7 +469,7 @@ def handleTaskSourceParam(ctx, src):
             if v:
                 result.append(v)
             else:
-                msg = "Error in the buildconf file %r:" % relpath(bconf.path, CWD)
+                msg = "Error in the file %r:" % bconf.path
                 msg += "\nFile %r from the 'source' not found." % file
                 raise ZenMakeError(msg)
     else:
