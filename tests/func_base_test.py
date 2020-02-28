@@ -32,6 +32,7 @@ BY_REGEXPS = tuple('byregexps') # for ability to have non string dict key
 RE_ALL_D   = '^d/'
 RE_ALL_LUA = '^lua/'
 RE_ALL_FC  = '^fortran/'
+RE_ALL_DBUS  = '^dbus/'
 
 TEST_CONDITIONS = {
     CUSTOM_TOOLCHAIN_PRJDIR: dict( os = ['linux', 'darwin'], ),
@@ -43,6 +44,7 @@ TEST_CONDITIONS = {
         dict(regexp = RE_ALL_D, condition = dict( os = ['linux', 'darwin'], )),
         dict(regexp = RE_ALL_LUA, condition = dict( os = ['linux'], )),
         dict(regexp = RE_ALL_FC, condition = dict( os = ['linux'], )),
+        dict(regexp = RE_ALL_DBUS, condition = dict( os = ['linux'], )),
     ],
 }
 

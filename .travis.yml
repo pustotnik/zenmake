@@ -31,6 +31,7 @@ addons:
     - ldc
     - libboost-all-dev
     - lua5.1
+    - libdbus-glib-1-dev
     - gfortran
   homebrew:
     packages:
