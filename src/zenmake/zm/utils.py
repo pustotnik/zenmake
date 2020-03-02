@@ -116,6 +116,24 @@ def mksymlink(src, dst, force = True):
 
     raise NotImplementedError
 
+def printInWorkStatus(title = '', end = False):
+    """
+    Print 'in work' status like emerge does it.
+    """
+
+    statusSymbols = ('\\', '|', '/', '-',)
+
+    try:
+        printInWorkStatus.index += 1
+        if printInWorkStatus.index >= len(statusSymbols):
+            printInWorkStatus.index = 0
+    except AttributeError:
+        printInWorkStatus.index = 0
+
+    symbols = '' if end else title + ' ' + statusSymbols[printInWorkStatus.index]
+    sys.stdout.write("\r" + symbols)
+    sys.stdout.flush()
+
 def _loadPyModuleWithoutImport(name):
 
     # In this case we should compile python file manually

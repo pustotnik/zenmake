@@ -15,7 +15,7 @@ import atexit
 from waflib import Errors as waferror
 from waflib.Configure import ConfigurationContext as WafConfContext, WAF_CONFIG_LOG
 from zm.constants import PLATFORM
-from zm import log
+from zm import log, utils
 from zm.cmd import Command as _Command
 # pylint: disable = unused-import
 from zm.waf import wrappers
@@ -76,7 +76,7 @@ class ConfContext(WafConfContext):
             result = None
         return result[0] if result else None
 
-def gatherSysInfo():
+def gatherSysInfo(progress = False):
     """
     Gather some useful system info.
     """
@@ -91,6 +91,10 @@ def gatherSysInfo():
     from zm.autodict import AutoDict as _AutoDict
     from zm.waf import context
 
+    def printProgress(end = False):
+        if progress:
+            utils.printInWorkStatus("processing", end)
+
     cfgCtx = ConfContext()
     cfgCtx.prepare()
 
@@ -98,6 +102,7 @@ def gatherSysInfo():
 
     info.append('= System information =')
     info.append('CPU name: %s' % _platform.processor())
+    info.append('CPU architecture: %s' % _platform.machine())
     info.append('Number of CPUs: %s' % multiprocessing.cpu_count())
     info.append('Bit architecture: %s' % _platform.architecture()[0])
     info.append('Platform: %s' % PLATFORM)
@@ -120,7 +125,6 @@ def gatherSysInfo():
             version = 'not recognized'
         return version
 
-    # TODO: add gfortran, ifort
     compilers = [
         _AutoDict(header = 'GCC', bin = 'gcc', verargs = ['--version']),
         _AutoDict(header = 'CLANG', bin = 'clang', verargs = ['--version']),
@@ -133,6 +137,7 @@ def gatherSysInfo():
     ]
 
     for compiler in compilers:
+        printProgress()
         if 'func' in compiler:
             ver = compiler.func()
         else:
@@ -147,6 +152,7 @@ def gatherSysInfo():
 
     cfgCtx.finalize()
 
+    printProgress(end = True)
     return info
 
 def printSysInfo():
@@ -155,7 +161,7 @@ def printSysInfo():
     """
 
     print('==================================================')
-    for line in gatherSysInfo():
+    for line in gatherSysInfo(progress = True):
         print(line)
     print('==================================================')
 
@@ -171,6 +177,6 @@ class Command(_Command):
             #TODO: add more info
             pass
 
-        for line in gatherSysInfo():
+        for line in gatherSysInfo(progress = True):
             self._info(line)
         return 0
