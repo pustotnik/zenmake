@@ -60,7 +60,7 @@ ZenMake supports compiling for D language. You can configure and build D code
 like C/C++ code but there are some limits:
 
   - There is no support for MS Windows yet.
-  - There is no supports for D package manager DUB.
+  - There is no support for D package manager DUB.
 
 While nobody uses ZenMake for D, there are no plans to resolve these issues.
 

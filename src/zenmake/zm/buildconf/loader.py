@@ -65,6 +65,10 @@ def applyDefaults(buildconf, isTopLevel, projectDir):
         params = buildconf.features
         params['autoconfig'] = params.get('autoconfig', True)
 
+    # conditions
+    if not hasattr(buildconf, 'conditions'):
+        setattr(buildconf, 'conditions', {})
+
     # usedirs
     if not hasattr(buildconf, 'subdirs'):
         setattr(buildconf, 'subdirs', [])

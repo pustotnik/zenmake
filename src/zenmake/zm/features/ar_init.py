@@ -6,9 +6,12 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+from zm.buildconf.schemeutils import addSelectToParams
+
 VALIDATION_TASKSCHEME_SPEC = {
     'arflags' :    { 'type': ('str', 'list-of-strs') },
 }
+addSelectToParams(VALIDATION_TASKSCHEME_SPEC)
 
 TOOLCHAIN_VARS = {
     # 'sysenv-var' - environment variable to set tool

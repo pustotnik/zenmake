@@ -7,7 +7,7 @@
 """
 
 from zm.pyutils import viewvalues, maptype
-from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY
+from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY, addSelectToParams
 
 VALIDATION_TASKSCHEME_SPEC = {
     'run' : {
@@ -26,23 +26,27 @@ VALIDATION_TASKSCHEME_SPEC = {
         },
     },
 }
+addSelectToParams(VALIDATION_TASKSCHEME_SPEC)
 
 TASK_FEATURES_SETUP = {
     'runcmd' : {}
 }
 
-def prepareBuildConfTaskParams(bconf, taskparams):
+def getBuildConfTaskParamHooks():
     """
-    Function to call during processing of task params in buildconf
-    before actual processing
+    Get pairs of (param, function) where the function is called during
+    processing of task param in buildconf before actual processing
     """
 
-    param = taskparams.get('run')
-    if not param:
-        return
-    if not isinstance(param, maptype):
-        param = { 'cmd' : param }
-    param['startdir'] = bconf.startdir
+    def handleParam(bconf, param):
+        if param is None:
+            return None
+        if not isinstance(param, maptype):
+            param = { 'cmd' : param }
+        param['startdir'] = bconf.startdir
+        return param
+
+    return [('run', handleParam)]
 
 def detectFeatures(bconf):
     """

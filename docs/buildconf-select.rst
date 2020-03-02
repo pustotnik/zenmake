@@ -1,0 +1,200 @@
+.. include:: global.rst.inc
+.. highlight:: python
+.. _buildconf-select:
+
+Build config: selectable parameters
+===================================
+
+ZenMake provides ability to select values for parameters in
+:ref:`task params<buildconf-taskparams>` depending on some conditions.
+This feature of ZenMake is similar to `Configurable attributes` from
+Bazel build system and main idea was borrowed from that system. But
+implementation is different.
+
+It can be used for selecting different source files, includes, compiler flags
+and others on different platforms, different toolchains, etc.
+
+Example:
+
+.. code-block:: python
+
+    tasks = {
+        # ...
+    }
+
+    conditions = {
+        'windows-msvc' : {
+            'platform' : 'windows',
+            'toolchain' : 'msvc',
+        },
+    }
+
+    buildtypes = {
+        'debug' : {
+        },
+        'release' : {
+            'cxxflags.select' : {
+                'windows-msvc': '/O2',
+                'default': '-O2',
+            },
+        },
+    }
+
+In this example for build type 'release' we set value '/O2' to 'cxxflags'
+if toolchain 'msvc' is used on MS Windows and set '-02' for all other cases.
+
+This method can be used for any parameter in :ref:`task params<buildconf-taskparams>`
+excluding :ref:`features<buildconf-taskparams-features>` in the form:
+
+.. code-block:: python
+
+    '<parameter name>.select' : {
+        '<condition name1>' : <value>,
+        '<condition name2>' : <value>,
+        ...
+        'default' : <value>,
+    }
+
+A <parameter name> here is a parameter from :ref:`task params<buildconf-taskparams>`.
+Examples: 'toolchain.select', 'source.select', 'use.select', etc.
+
+Each condition name must refer to a key in :ref:`conditions<buildconf-conditions>`
+or to one of internal conditions (see below).
+There is also special optional key ``default`` wich means default value if none
+of the conditions has been selected. If the key ``default`` doen't exist then ZenMake
+tries to use the value of <parameter name> if it exists. If none of the
+conditions has been selected and no default value for the parameter then this
+parameter will not be used.
+
+Keys in :ref:`conditions<buildconf-conditions>` are just strings with any
+characters excluding white spaces. A value of each condition is a dict with
+one or more such parameters:
+
+    :platform:
+        Selected platform like 'linux', 'windows', 'darwin', etc.
+
+        It can be one value or list of values or string with more than one
+        value separated by spaces like this: 'linux windows'.
+
+    :cpu-arch:
+        Selected current CPU architecture. Actual it's a result of the python function
+        platform.machine() See https://docs.python.org/library/platform.html.
+        Some possible values are: arm, i386, i686, x86_64, AMD64.
+        Real value depends also on platform. For example on Windows you can get
+        AMD64 while on Linux you gets x86_64 on the same host.
+
+        Current value can be obtained also with the command ``zenmake sysinfo``.
+
+        It can be one value or list of values or string with more than one value
+        separated by spaces like this: 'i686 x86_64'.
+
+    :toolchain:
+        Selected/detected toolchain.
+
+        It can be one value or list of values or string with more than one value
+        separated by spaces like this: 'gcc clang'.
+
+    :task:
+        Selected build task name.
+
+        It can be one value or list of values or string with more than one value
+        separated by spaces like this: 'mylib myprogram'.
+
+    :environ:
+        Check system environment variables. It's a dict of pairs <variable> : <value>.
+        Example:
+
+        .. code-block:: python
+
+           conditions = {
+                'my-env' : {
+                    'environ' : {
+                        'TEST' : 'true',
+                        'CXX' : 'gcc',
+                    }
+                },
+            }
+
+If a parameter in a condition contains more than one value then any of these
+values will fulfill selected condition. It means if some condition, for example,
+has ``platform`` which contains ``'linux windows'`` without other parameters then
+this condition will be selected on any of these platforms (on GNU/Linux and
+on MS Windows). But with parameter ``environ`` the situation is different. This
+parameter can contain more than one environment variable and a condition will be
+selected only when all of these variables are equal to existing variables from the
+system environment. If you want to have condition to select by any of such
+variables you can do it by making different conditions in
+:ref:`conditions<buildconf-conditions>`.
+
+.. note::
+    There is one limitation for ``toolchain.select`` - it's not possible to use
+    condition with 'toolchain' parameter inside ``toolchain.select``.
+
+Only one record from ``*.select`` for each parameter can be selected for each task
+during configuring but condition name in ``*.select`` can be string with more than
+one name from ``conditions``. Such names must be
+just separated by spaces in the string. In this case it is considered like:
+
+.. code-block:: python
+
+    '<parameter name>.select' : {
+        '<name1 AND name2>' : <value>,
+        ...
+    }
+
+Example:
+
+.. code-block:: python
+
+    conditions = {
+        'linux' : {
+            'platform' : 'linux',
+        },
+        'g++' : {
+            'toolchain' : 'g++',
+        },
+    }
+
+    buildtypes = {
+        'debug' : {
+        },
+        'release' : {
+            'cxxflags.select' : {
+                # will be selected only on linux with selected/detected toolchain g++
+                'linux g++': '-Ofast',
+                # will be selected in all other cases
+                'default': '-O2',
+            },
+        },
+    }
+
+For convenience there are ready to use internal conditions for known platforms and
+supported toolchains. So in example above variable ``conditions`` is not needed
+at all because conditions with names ``linux`` and ``g++`` already exist:
+
+.. code-block:: python
+
+    # no declaration of conditions
+
+    buildtypes = {
+        'debug' : {
+        },
+        'release' : {
+            'cxxflags.select' : {
+                # will be selected only on linux with selected/detected toolchain g++
+                'linux g++': '-Ofast',
+                # will be selected in all other cases
+                'default': '-O2',
+            },
+        },
+    }
+
+But there is one detail about internal conditions for toolchains - only toolchains
+supported for current build tasks exist. ZenMake detects them with all ``features``
+of all existing build tasks in current project during configuring. For example
+if tasks exist for C language only then supported toolchains for all other languages
+don't exist in internal conditions.
+
+If you declare condition in :ref:`conditions<buildconf-conditions>` with the
+same name of some internal condition then your condition will be used instead
+of internal condition.

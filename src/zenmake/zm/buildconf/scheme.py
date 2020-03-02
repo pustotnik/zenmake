@@ -9,7 +9,7 @@
 from zm.constants import KNOWN_PLATFORMS
 from zm.pyutils import stringtype
 from zm.cli import config as cliConfig
-from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY
+from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY, addSelectToParams
 from zm.features import ConfValidation
 
 def _genSameSchemeDict(keys, scheme):
@@ -101,7 +101,6 @@ taskscheme = {
     'use' :         { 'type': ('str', 'list-of-strs') },
     'source' :      {
         'type': ('str', 'list-of-strs', 'dict'),
-        'dict-allow-unknown-keys' : False,
         'dict-vars' : {
             'include' :    { 'type': ('str', 'list-of-strs') },
             'exclude' :    { 'type': ('str', 'list-of-strs') },
@@ -113,6 +112,8 @@ taskscheme = {
     'conftests' : _genConfTestsScheme,
     'normalize-target-name' : { 'type': 'bool' },
 }
+
+addSelectToParams(taskscheme, [x for x in taskscheme if x != 'features'])
 
 taskscheme.update(ConfValidation.getTaskSchemeSpecs())
 
@@ -145,7 +146,6 @@ confscheme = {
     'realbuildroot' : { 'type': 'str' },
     'features' : {
         'type' : 'dict',
-        'allow-unknown-keys' : False,
         'vars' : {
             'autoconfig' : { 'type': 'bool' },
             'monitor-files' : { 'type': ('str', 'list-of-strs') },
@@ -153,7 +153,6 @@ confscheme = {
     },
     'options' : {
         'type' : 'dict',
-        'allow-unknown-keys' : False,
         'vars' : _genOptionsVarsScheme,
     },
     'subdirs' : {
@@ -161,10 +160,26 @@ confscheme = {
     },
     'project' : {
         'type' : 'dict',
-        'allow-unknown-keys' : False,
         'vars' : {
             'name' : { 'type': 'str' },
             'version' : { 'type': 'str' },
+        },
+    },
+    'conditions' : {
+        'type' : 'dict',
+        'disallowed-keys' : ('default', ),
+        'vars' : {
+            ANYAMOUNTSTRS_KEY : {
+                #'type' : ('dict', 'func'),
+                'type' : 'dict',
+                'dict-vars' : {
+                    'platform' :  { 'type': ('str', 'list-of-strs') },
+                    'cpu-arch' :  { 'type': ('str', 'list-of-strs') },
+                    'toolchain' : { 'type': ('str', 'list-of-strs') },
+                    'task' :      { 'type': ('str', 'list-of-strs') },
+                    'environ' :   { 'type' : 'dict' },
+                },
+            },
         },
     },
     'tasks' : {
@@ -179,7 +194,6 @@ confscheme = {
         'vars' : {
             ANYAMOUNTSTRS_KEY : {
                 'type' : 'dict',
-                'allow-unknown-keys' : False,
                 'vars' : taskscheme,
             },
             'default' : { 'type': 'str' },
@@ -212,7 +226,6 @@ confscheme = {
         'dict-vars' : {
             'for' : {
                 'type': 'dict',
-                'allow-unknown-keys' : False,
                 'vars' : {
                     'task' : { 'type': ('str', 'list-of-strs') },
                     'buildtype' : { 'type': ('str', 'list-of-strs') },
@@ -221,7 +234,6 @@ confscheme = {
             },
             'not-for' : {
                 'type': 'dict',
-                'allow-unknown-keys' : False,
                 'vars' : {
                     'task' : { 'type': ('str', 'list-of-strs') },
                     'buildtype' : { 'type': ('str', 'list-of-strs') },
@@ -230,7 +242,6 @@ confscheme = {
             },
             'set' : {
                 'type' : 'dict',
-                'allow-unknown-keys' : False,
                 'vars' : dict(
                     { 'default-buildtype' : { 'type': 'str' } },
                     **taskscheme
@@ -240,6 +251,8 @@ confscheme = {
     },
 }
 
-KNOWN_TASK_PARAM_NAMES = set(taskscheme.keys())
-KNOWN_CONF_PARAM_NAMES = set(confscheme.keys())
-KNOWN_CONFTEST_ACTS = set(_actToVars.keys())
+KNOWN_TASK_PARAM_NAMES = frozenset(taskscheme.keys())
+KNOWN_CONF_PARAM_NAMES = frozenset(confscheme.keys())
+KNOWN_CONDITION_PARAM_NAMES = \
+    frozenset(confscheme['conditions']['vars'][ANYAMOUNTSTRS_KEY]['dict-vars'].keys())
+KNOWN_CONFTEST_ACTS = frozenset(_actToVars.keys())

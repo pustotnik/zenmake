@@ -110,12 +110,12 @@ def _generateToolchainVars():
 
 def _getBuildConfProcessingHooks():
     modules = _getInitModules()
-    funcs = []
+    hooks = []
     for module in modules:
-        func = getattr(module, 'prepareBuildConfTaskParams', None)
+        func = getattr(module, 'getBuildConfTaskParamHooks', None)
         if func:
-            funcs.append(func)
-    return tuple(funcs)
+            hooks.extend(func())
+    return tuple(hooks)
 
 def _getFeatureDetectFuncs():
     modules = _getInitModules()
@@ -351,6 +351,9 @@ def loadFeatures(bconfManager):
     Load modules for selected features. Not existing modules are ignored.
     """
 
+    from zm import toolchains
+    toolchains.reset()
+
     _initHooks()
 
     modules = _cache.setdefault('feature-modules', {})
@@ -384,12 +387,21 @@ def loadFeatures(bconfManager):
         module = loadPyModule(moduleName, withImport = True)
         modules[feature] = module
 
+    _cache['features-are-loaded'] = True
+
 def getLoadedFeatures():
     """
     Get names of loaded features
     """
 
     return tuple(_cache.get('feature-modules', {}).keys())
+
+def areFeaturesLoaded():
+    """
+    Return True if loadFeatures was called at least one time
+    """
+
+    return _cache.get('features-are-loaded', False)
 
 class ConfValidation(object):
     """

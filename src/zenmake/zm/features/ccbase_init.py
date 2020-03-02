@@ -6,6 +6,8 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+from zm.buildconf.schemeutils import addSelectToParams
+
 VALIDATION_TASKSCHEME_SPEC = {
     'sys-libs' :    { 'type': ('str', 'list-of-strs') },
     'libpath':      { 'type': ('str', 'list-of-strs') },
@@ -19,23 +21,20 @@ VALIDATION_TASKSCHEME_SPEC = {
     'export-defines' :  { 'type': ('bool', 'str', 'list-of-strs') },
     'object-file-counter' : { 'type': 'int' },
 }
+addSelectToParams(VALIDATION_TASKSCHEME_SPEC)
 
-def prepareBuildConfTaskParams(bconf, taskparams):
+def getBuildConfTaskParamHooks():
     """
-    Function to call during processing of task params in buildconf
-    before actual processing
+    Get pairs of (param, function) where the function is called during
+    processing of task param in buildconf before actual processing
     """
 
-    def fixPathParam(taskparams, paramname, startdir):
-        param = taskparams.get(paramname)
+    def handleParam(bconf, param):
         if param is None:
-            return
-        taskparams[paramname] = dict(startdir = startdir, paths = param)
+            return None
 
-    startdir = bconf.startdir
+        # apply startdir
+        return dict(startdir = bconf.startdir, paths = param)
 
-    # 'includes'
-    fixPathParam(taskparams, 'includes', startdir)
-    fixPathParam(taskparams, 'export-includes', startdir)
-    # 'libpath'
-    fixPathParam(taskparams, 'libpath', startdir)
+    paramNames = ('includes', 'export-includes', 'libpath')
+    return [(x, handleParam) for x in paramNames]

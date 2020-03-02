@@ -27,7 +27,7 @@ parameters you can find :ref:`here<buildconf-taskparams>`.
 Sub buildconfs
 ------------------------------
 You can organize building of your project by using more than one
-:ref:`buildconf<buildconf>` files in some sub directories of your project.
+:ref:`buildconf<buildconf>` file in some sub directories of your project.
 In this case ZenMake merges parameters from all such buildconf files.
 But you must specify these sub directories by config parameter
 :ref:`subdirs<buildconf-subdirs>`.

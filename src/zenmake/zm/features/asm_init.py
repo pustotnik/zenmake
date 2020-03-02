@@ -7,11 +7,13 @@
 """
 
 from zm.constants import TASK_TARGET_KINDS, TASK_FEATURE_ALIESES
+from zm.buildconf.schemeutils import addSelectToParams
 
 VALIDATION_TASKSCHEME_SPEC = {
     'asflags' : { 'type': ('str', 'list-of-strs') },
     'aslinkflags' : { 'type': ('str', 'list-of-strs') },
 }
+addSelectToParams(VALIDATION_TASKSCHEME_SPEC)
 
 TASK_FEATURES_SETUP = {
     'asm' : {

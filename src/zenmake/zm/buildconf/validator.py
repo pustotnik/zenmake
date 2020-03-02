@@ -204,14 +204,21 @@ class Validator(object):
 
         _getAttrValue = Validator._getAttrValue
         subscheme = _getAttrValue(schemeAttrs, 'vars', 'dict')
-        allowUnknownKeys = _getAttrValue(schemeAttrs, 'allow-unknown-keys',
-                                         'dict', default = True)
+        disallowedKeys = _getAttrValue(schemeAttrs, 'disallowed-keys',
+                                       'dict', default = None)
+
+        if disallowedKeys:
+            allowUnknownKeys = False
+        else:
+            allowUnknownKeys = _getAttrValue(schemeAttrs, 'allow-unknown-keys',
+                                             'dict', default = False)
 
         if callable(subscheme):
             subscheme = subscheme(confnode, fullkey)
 
         try:
-            Validator._validate(confnode, subscheme, fullkey, allowUnknownKeys)
+            Validator._validate(confnode, subscheme, fullkey,
+                                allowUnknownKeys, disallowedKeys)
         except ZenMakeConfTypeError as ex:
             raise ZenMakeConfSubTypeError(ex = ex)
 
@@ -296,7 +303,7 @@ class Validator(object):
         return _handledKeys
 
     @staticmethod
-    def _validate(conf, scheme, keyprefix, allowUnknownKeys = True):
+    def _validate(conf, scheme, keyprefix, allowUnknownKeys = False, disallowedKeys = None):
 
         _anyAmountStrsKey = None
         _usualItems = []
@@ -316,6 +323,9 @@ class Validator(object):
             handler = Validator._getHandler(schemeAttrs['type'])
 
         for key, value in viewitems(conf):
+            if disallowedKeys and key in disallowedKeys:
+                msg = "The key %r is not allowed in the param %r." % (key, keyprefix)
+                raise ZenMakeConfError(msg)
             if key in _handledKeys:
                 continue
             if _anyAmountStrsKey is not None and isinstance(key, stringtype):
@@ -357,7 +367,7 @@ class Validator(object):
             btypesVars['default']['allowed'] = allowed
 
         try:
-            self._validate(_conf, _scheme, '')
+            self._validate(_conf, _scheme, '', allowUnknownKeys = True)
         except ZenMakeConfError as ex:
             origMsg = ex.msg
             ex.msg = "Error in the file %r:" % (conf.__file__)

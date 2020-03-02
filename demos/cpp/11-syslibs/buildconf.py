@@ -1,8 +1,29 @@
 
+# This is an example of a project which uses boost libraries with g++/clang++ on
+# POSIX platform(Linux/MacOS) and msvc on MS Windows.
+
+# There is special case for a boost libraries on Windows.
+# This setup for boost libraries installed on Windows as C:\local\boost_1_67_0
+# For example, command 'choco install boost-msvc-14.1' produces such an installation.
+# OS Windows needs to know path to dir with boost dlls to run program linked
+# with boost dlls. In console it can be made like this:
+# set PATH=C:\local\boost_1_67_0\lib64-msvc-14.1;%PATH%
+
 tasks = {
     'util' : {
         'features' : 'cxxshlib',
         'source'   :  dict( include = 'shlib/**/*.cpp' ),
+        'includes.select' : {
+            'windows' : 'C:\\local\\boost_1_67_0',
+        },
+        'libpath.select' : {
+            'windows' : r'C:\local\boost_1_67_0\lib64-msvc-14.1',
+        },
+        'sys-libs' : 'boost_timer',
+        'conftests'  : [
+            dict(act = 'check-headers', names = 'cmath iostream'),
+            dict(act = 'check-sys-libs'),
+        ],
     },
     'program' : {
         'features' : 'cxxprogram',
@@ -11,83 +32,44 @@ tasks = {
     },
 }
 
+conditions = {
+    'util-on-windows' : {
+        'task' : 'util',
+        'platform' : 'windows',
+    }
+}
+
+buildtypes = {
+    'debug' : {
+        'cxxflags.select' : {
+            'default': '-fPIC -O0 -g', # g++/clang++
+            'msvc' : '/Od /EHsc',
+        },
+        'sys-libs.select' : {
+            'util-on-windows' : 'boost_timer-vc141-mt-gd-x64-1_67',
+        },
+    },
+    'release' : {
+        'cxxflags.select' : {
+            'default': '-fPIC -O2', # g++/clang++
+            'msvc' : '/O2 /EHsc',
+        },
+        'sys-libs.select' : {
+            'util-on-windows' : 'boost_timer-vc141-mt-x64-1_67',
+        },
+    },
+    'default' : 'debug',
+}
+
 matrix = [
-    # ==========================================================
-    # === BUILDTYPES
     {
         'for' : { 'buildtype' : ['debug', 'release'] },
         'set' : {
-            'toolchain' : 'auto-c++',
-            'rpath' : '.', # to have ability to run from buld directory
-            'default-buildtype' : 'debug',
-        }
-    },
-    # setup for g++/clang++
-    {
-        'for' : { 'buildtype' : 'debug' },
-        'set' : { 'cxxflags' : '-fPIC -O0 -g' }
-    },
-    {
-        'for' : { 'buildtype' : 'release' },
-        'set' : { 'cxxflags' : '-fPIC -O2' }
-    },
-    # setup for msvc on windows
-    {
-        'for' : { 'platform' : 'windows' },
-        'set' : { 'toolchain' : 'msvc' } # it's not necessary usually
-    },
-    {
-        'for' : { 'buildtype' : 'debug', 'platform' : 'windows' },
-        'set' : { 'cxxflags' : '/Od /EHsc' }
-    },
-    {
-        'for' : { 'buildtype' : 'release', 'platform' : 'windows' },
-        'set' : { 'cxxflags' : '/O2 /EHsc' }
-    },
-    # ==========================================================
-    # === DEPS
-    {
-        'for' : { 'task' : 'util' },
-        'not-for' : { 'platform' : 'windows' },
-        'set' : {
-            'sys-libs' : 'boost_timer',
-        }
-    },
-    # Special case for a boost on windows
-    # This setup for a boost installed on windows as C:\local\boost_1_67_0
-    # For example, command 'choco install boost-msvc-14.1' produces such an installation.
-    # OS Windows needs to know path to dir with boost dlls to run program linked 
-    # with boost dlls. In console it can be made like this:
-    # set PATH=C:\local\boost_1_67_0\lib64-msvc-14.1;%PATH%
-    {
-        'for' : { 'task' : 'util', 'platform' : 'windows' },
-        'set' : {
-            'includes' : 'C:\\local\\boost_1_67_0',
-            #'libpath' : 'C:\\local\\boost_1_67_0\\lib64-msvc-14.1',
-            'libpath' : r'C:\local\boost_1_67_0\lib64-msvc-14.1',
-        }
-    },
-    {
-        'for' : { 'task' : 'util', 'platform' : 'windows', 'buildtype' : 'debug' },
-        'set' : {
-            'sys-libs' : 'boost_timer-vc141-mt-gd-x64-1_67',
-        }
-    },
-    {
-        'for' : { 'task' : 'util', 'platform' : 'windows', 'buildtype' : 'release' },
-        'set' : {
-            'sys-libs' : 'boost_timer-vc141-mt-x64-1_67',
-        }
-    },
-    # ==========================================================
-    # === CONFIGURATION TESTS
-    {
-        'for' : { 'task' : 'util' },
-        'set' : {
-            'conftests'  : [
-                dict(act = 'check-headers', names = 'cmath iostream'),
-                dict(act = 'check-sys-libs'),
-            ],
+            'toolchain.select' : {
+                'default' : 'auto-c++',
+                'windows' : 'msvc', # it's not necessary usually
+            },
+            'rpath' : '.', # to have ability to run from the build directory
         }
     },
 ]

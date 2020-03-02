@@ -19,6 +19,8 @@ ZenMake documentation
    quickstart
    installation
    buildconf
+   buildconf-taskparams
+   buildconf-select
    commands
    envvars
    langs

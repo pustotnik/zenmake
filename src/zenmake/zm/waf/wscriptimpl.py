@@ -25,8 +25,9 @@ from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext
 from zm.pyutils import viewitems, viewvalues
 from zm import cli, error, log
-from zm.waf import assist
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
+from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
+from zm.waf import assist
 from zm.features import TASK_LANG_FEATURES
 
 joinpath = os.path.join
@@ -82,8 +83,15 @@ def configure(conf):
 
     emptyEnv = ConfigSet()
 
+    # it's necessary to handle 'toolchain.select' before loading of toolchains
+    for taskParams in viewvalues(tasks):
+        handleOneTaskParamSelect(bconf, taskParams, 'toolchain')
+
     # load all toolchains envs
     toolchainsEnvs = conf.loadToolchains(bconf, emptyEnv)
+
+    # Other '*.select' params must be handled after loading of toolchains
+    handleTaskParamSelects(bconf)
 
     zmcachedir = bconf.confPaths.zmcachedir
     buildtype = bconf.selectedBuildType
@@ -249,7 +257,7 @@ def build(bld):
 
         bldParams = taskParams.copy()
         # Remove params that can conflict with waf in theory
-        dropKeys = KNOWN_TASK_PARAM_NAMES - assist.getUsedWafTaskKeys()
+        dropKeys = set(KNOWN_TASK_PARAM_NAMES) - assist.getUsedWafTaskKeys()
         dropKeys.update([k for k in bldParams if k[0] == '$' ])
         dropKeys = tuple(dropKeys)
         for k in dropKeys:

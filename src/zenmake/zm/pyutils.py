@@ -31,14 +31,18 @@ else:
     _t = unicode # pragma: no cover
 
 try:
-    from collections.abc import Mapping as maptype
+    from collections.abc import Mapping, MutableMapping
 except ImportError:
-    from collections import Mapping as maptype
+    from collections import Mapping, MutableMapping
+
+maptype = Mapping
 
 try:
-    from collections.abc import Sequence as seqtype
+    from collections.abc import Sequence
 except ImportError:
-    from collections import Sequence as seqtype
+    from collections import Sequence
+
+seqtype = Sequence
 
 if PY3:
     def iterkeys(d):

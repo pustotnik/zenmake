@@ -19,6 +19,13 @@ _langTable = {}
 # private cache
 _cache = _AutoDict()
 
+def reset():
+    """
+    Reset all cached values
+    """
+
+    _cache.clear()
+
 def regToolchains(lang, table):
     """
     Register table of toolchains for selected lang.
@@ -60,7 +67,7 @@ def getNames(lang, platform = PLATFORM, withAuto = False):
 
 def getAllNames(platform = PLATFORM, withAuto = False):
     """
-    Return tuple of unique toolchain names supported on selected platform
+    Return tuple of unique names of toolchains supported and loaded at the moment
     """
 
     cacheKey = 'all-toolchains-withauto' if withAuto else 'all-toolchains'

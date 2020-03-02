@@ -122,26 +122,35 @@ class Config(object):
         buildconf = self._conf
         startdir = self.startdir
 
-        def fixSrcParam(taskparams, startdir):
-            param = taskparams.get('source', None)
-            if not param:
-                return
+        def fixSrcParam(self, param):
+            startdir = self.startdir
             if isinstance(param, maptype):
                 param['startdir'] = startdir
             else:
                 param = dict(startdir = startdir, paths = param)
-                taskparams['source'] = param
+
             # premake lists to avoid conversions later
             for arg in ('include', 'exclude', 'paths'):
                 if arg in param:
                     param[arg] = toList(param[arg])
 
-        def fixTaskParams(taskparams, startdir):
-            # 'source'
-            fixSrcParam(taskparams, startdir)
+            return param
 
-            for hook in BUILDCONF_PREPARE_TASKPARAMS:
-                hook(self, taskparams)
+        hooks = (('source', fixSrcParam),) + BUILDCONF_PREPARE_TASKPARAMS
+
+        def prepareTaskParams(hooks, taskparams):
+
+            for hookInfo in hooks:
+                paramName = hookInfo[0]
+                handler   = hookInfo[1]
+                param = taskparams.get(paramName)
+                if param is not None:
+                    taskparams[paramName] = handler(self, param)
+
+                paramName += '.select'
+                param = taskparams.get(paramName, {})
+                for condition in param:
+                    param[condition] = handler(self, param[condition])
 
         # tasks, buildtypes
         for varName in ('tasks', 'buildtypes'):
@@ -150,13 +159,13 @@ class Config(object):
                 if not isinstance(taskparams, maptype):
                     # buildtypes has special key 'default'
                     continue
-                fixTaskParams(taskparams, startdir)
+                prepareTaskParams(hooks, taskparams)
 
         # matrix
         for entry in buildconf.matrix:
             taskparams = entry.get('set')
             if taskparams:
-                fixTaskParams(taskparams, startdir)
+                prepareTaskParams(hooks, taskparams)
 
         # 'toolchains'
         for params in viewvalues(buildconf.toolchains):
@@ -218,8 +227,8 @@ class Config(object):
         # buildroot, realbuildroot - see _makeBuildDirParams
         mergedParams.update(('buildroot', 'realbuildroot'))
 
-        # project, features
-        for param in ('project', 'features'):
+        # project, features, conditions
+        for param in ('project', 'features', 'conditions'):
             mergeDict(param)
             mergedParams.add(param)
 
@@ -529,11 +538,13 @@ class Config(object):
         """ Get calculated default build type """
 
         buildtypes = self._meta.buildtypes
-        if 'default' not in buildtypes:
+        default = buildtypes.get('default')
+        if default is None:
             self._handleDefaultBuildType()
             assert 'default' in buildtypes
+            default = buildtypes.default
 
-        return buildtypes.default
+        return default
 
     @property
     def selectedBuildType(self):
@@ -553,6 +564,24 @@ class Config(object):
     def features(self):
         """ Get features """
         return self._conf.features
+
+    @property
+    def conditions(self):
+        """ Get conditions """
+
+        conditions = self._meta.get('conditions')
+        if conditions is not None:
+            return conditions
+
+        conditions = self._conf.conditions
+        for condition in viewvalues(conditions):
+            for param in condition:
+                if param == 'environ':
+                    continue
+                condition[param] = toList(condition[param])
+
+        self._meta.conditions = conditions
+        return conditions
 
     @property
     def subdirs(self):
@@ -608,8 +637,9 @@ class Config(object):
         self._checkBuildTypeIsSet()
 
         buildtype = self.selectedBuildType
-        if buildtype in self._meta.tasks:
-            return self._meta.tasks[buildtype]
+        tasks = self._meta.tasks.get(buildtype)
+        if tasks is not None:
+            return tasks
 
         knownPlatforms = set(KNOWN_PLATFORMS)
         allTaskNames = self.taskNames
@@ -676,7 +706,7 @@ class Config(object):
                 task.update(params)
                 task.pop('default-buildtype', None)
 
-        # set task names
+        # save task names in task params
         for taskName, taskParams in viewitems(tasks):
             taskParams['name'] = taskName
 

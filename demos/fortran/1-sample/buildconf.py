@@ -47,9 +47,12 @@ buildtypes = {
         #'toolchain': 'auto-fc',
         #'toolchain': 'gfortran',
 
-        'fcflags' : '-O2',
+        'fcflags.select' : {
+            'windows ifort': '/O2',
+            'default': '-O2',
+        },
         'rpath' : '.',
-    }
+    },
 }
 
 toolchains = {

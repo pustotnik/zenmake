@@ -7,6 +7,7 @@
 """
 
 import os
+import platform
 from zm.utils import platform as _platform
 
 APPNAME = 'zenmake'
@@ -38,6 +39,7 @@ KNOWN_PLATFORMS = (
     'linux', 'windows', 'darwin', 'freebsd', 'openbsd', 'sunos', 'cygwin',
     'msys', 'riscos', 'atheos', 'os2', 'os2emx', 'hp-ux', 'hpux', 'aix', 'irix',
 )
+CPU_ARCH = platform.machine()
 
 if PLATFORM == 'windows':
     EXE_FILE_EXTS = '.exe,.com,.bat,.cmd'
