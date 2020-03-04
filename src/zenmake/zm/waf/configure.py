@@ -470,9 +470,12 @@ class ConfigurationContext(WafConfContext):
         kwargs = dict(
             name     = taskName,
             target   = targetPath,
-            #counter for the object file extension
-            idx      = taskParams.get('object-file-counter', 1),
         )
+
+        #counter for the object file extension
+        idx = taskParams.get('object-file-counter')
+        if idx is not None:
+            kwargs['idx'] = idx
 
         nameMap = (
             ('sys-libs','lib', 'tolist'),

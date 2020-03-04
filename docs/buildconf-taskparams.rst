@@ -550,7 +550,8 @@ normalize-target-name
 
 object-file-counter
 """""""""""""""""""""
-    Counter for the object file extension. By default it's 1.
+    Counter for the object file extension.
+    By default it's calculated automatically.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.

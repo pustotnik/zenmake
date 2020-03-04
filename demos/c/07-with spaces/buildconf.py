@@ -28,7 +28,6 @@ tasks = {
         'conftests'  : [
             dict(act = 'check-headers', names = 'stdio.h'),
         ],
-        'object-file-counter' : 2,
     },
     'my test alt' : {
         'features' : 'cprogram',
@@ -37,7 +36,6 @@ tasks = {
         'conftests'  : [
             dict(act = 'check-headers', names = 'stdio.h'),
         ],
-        'object-file-counter' : 2,
     },
     ########
     'alt script' : {
