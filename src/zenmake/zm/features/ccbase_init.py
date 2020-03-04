@@ -19,7 +19,6 @@ VALIDATION_TASKSCHEME_SPEC = {
     'defines' :     { 'type': ('str', 'list-of-strs') },
     'export-includes' : { 'type': ('bool', 'str', 'list-of-strs') },
     'export-defines' :  { 'type': ('bool', 'str', 'list-of-strs') },
-    'object-file-counter' : { 'type': 'int' },
 }
 addSelectToParams(VALIDATION_TASKSCHEME_SPEC)
 

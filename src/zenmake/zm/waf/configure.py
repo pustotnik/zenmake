@@ -18,14 +18,14 @@ import shlex
 
 from waflib.Context import Context as WafContext
 from waflib.Configure import ConfigurationContext as WafConfContext
-from waflib import Errors as waferror
+from waflib import ConfigSet, Errors as waferror
 from zm.autodict import AutoDict as _AutoDict
 from zm.pyutils import viewitems, viewvalues
 from zm import utils, log, toolchains, error
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
 from zm.features import ToolchainVars
 from zm.waf import assist
-from zm.conftests import CONFTEST_CACHE_FILE, handleConfTests
+from zm.conftests import handleConfTests
 
 #pylint: disable=unused-import
 # This modules must be just imported
@@ -33,6 +33,8 @@ from zm.waf import options, context
 #pylint: enable=unused-import
 
 joinpath = os.path.join
+
+CONF_CACHE_FILE = 'conf.cache'
 
 def _genToolAutoName(lang):
     return 'auto-%s' % lang.replace('xx', '++')
@@ -48,11 +50,35 @@ class ConfigurationContext(WafConfContext):
         super(ConfigurationContext, self).__init__(*args, **kwargs)
 
         self._loadedTools = {}
-        self.confChecks = {}
-        self.confChecks['cache'] = None
+        self._confCache = None
         self.monitFiles = []
 
         self.validToolchainNames = assist.getValidPreDefinedToolchainNames()
+
+    def _calcObjectsIndex(self, bconf, taskParams):
+
+        # In this way indexes for object files aren't changed from build to build
+        # while in Waf way they can be changed.
+
+        cache = self.getConfCache()
+        if 'object-idx' not in cache:
+            cache['object-idx'] = {}
+
+        indexes = cache['object-idx']
+        key = '%s%s%s' % (bconf.path, os.pathsep, taskParams['name'])
+        lastIdx = indexes.get('last-idx', 0)
+
+        idx = taskParams.get('object-file-index')
+        if idx is not None:
+            if idx > lastIdx:
+                indexes['last-idx'] = idx
+            indexes[key] = idx
+        else:
+            idx = indexes.get(key)
+            if idx is None:
+                indexes['last-idx'] = idx = lastIdx + 1
+                indexes[key] = idx
+        return idx
 
     def _loadTool(self, tool, **kwargs):
 
@@ -139,6 +165,29 @@ class ConfigurationContext(WafConfContext):
 
         return toolname, toolenv
 
+    def _loadConfCache(self):
+
+        # self.env can not be used for a cache because it is not loaded
+        # on 'configure' and always is empty at the begining
+
+        cachePath = joinpath(self.cachedir.abspath(), CONF_CACHE_FILE)
+        try:
+            cache = ConfigSet.ConfigSet(cachePath)
+        except EnvironmentError:
+            cache = ConfigSet.ConfigSet()
+
+        return cache
+
+    def getConfCache(self):
+        """
+        Get conf cache
+        """
+
+        if self._confCache is None:
+            self._confCache = self._loadConfCache()
+
+        return self._confCache
+
     # override
     def execute(self):
 
@@ -152,10 +201,9 @@ class ConfigurationContext(WafConfContext):
         filePath = self.bconfManager.root.confPaths.zmcmnconfset
         assist.dumpZenMakeCmnConfSet(self.monitFiles, filePath)
 
-        cache = self.confChecks['cache']
-        if cache is not None:
-            cachePath = joinpath(self.cachedir.abspath(), CONFTEST_CACHE_FILE)
-            cache.store(cachePath)
+        if self._confCache is not None:
+            cachePath = joinpath(self.cachedir.abspath(), CONF_CACHE_FILE)
+            self._confCache.store(cachePath)
 
     # override
     def post_recurse(self, node):
@@ -468,14 +516,11 @@ class ConfigurationContext(WafConfContext):
         assist.handleTaskExportDefinesParam(taskParams)
 
         kwargs = dict(
-            name     = taskName,
-            target   = targetPath,
+            name   = taskName,
+            target = targetPath,
+            #counter for the object file extension
+            idx = self._calcObjectsIndex(bconf, taskParams)
         )
-
-        #counter for the object file extension
-        idx = taskParams.get('object-file-counter')
-        if idx is not None:
-            kwargs['idx'] = idx
 
         nameMap = (
             ('sys-libs','lib', 'tolist'),

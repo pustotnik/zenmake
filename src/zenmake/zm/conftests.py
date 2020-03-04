@@ -16,7 +16,7 @@ import shutil
 import traceback
 import inspect
 
-from waflib import ConfigSet, Task, Options
+from waflib import Task, Options
 from waflib.Utils import SIG_NIL
 from waflib.Context import create_context as createContext
 from waflib.Configure import ConfigurationContext as WafConfContext, conf
@@ -33,8 +33,6 @@ try:
     inspectArgSpec = inspect.getfullargspec
 except AttributeError:
     inspectArgSpec = inspect.getargspec
-
-CONFTEST_CACHE_FILE = 'conf_check_cache'
 
 CONFTEST_HASH_USED_ENV_KEYS = set(
     ('DEST_BINFMT', 'DEST_CPU', 'DEST_OS')
@@ -85,7 +83,7 @@ def run_build(self, *k, **checkArgs):
     assert not hasattr(self, 'multicheck_task')
 
     checkHash = checkArgs['$conf-test-hash']
-    checkCache = cfgCtx.confChecks['cache']['checks'][checkHash]
+    checkCache = cfgCtx.getConfCache()['conf-checks'][checkHash]
 
     retval = checkCache['retval']
     if retval is not None:
@@ -368,20 +366,14 @@ def _checkInParallelImpl(cfgCtx, checkArgsList, **kwargs):
         if tsk.hasrun not in okStates and tsk.call['args'].get('mandatory', True):
             cfgCtx.fatal('One of the tests has failed, read config.log for more information')
 
-def _loadConfCheckCache(cfgCtx):
+def _loadConfCheckCache(cache):
     """
     Load cache data for conf checks.
     """
 
-    cachePath = joinpath(cfgCtx.cachedir.abspath(), CONFTEST_CACHE_FILE)
-    try:
-        cache = ConfigSet.ConfigSet(cachePath)
-    except EnvironmentError:
-        cache = ConfigSet.ConfigSet()
-
-    if 'checks' not in cache:
-        cache['checks'] = {}
-    checks = cache['checks']
+    if 'conf-checks' not in cache:
+        cache['conf-checks'] = {}
+    checks = cache['conf-checks']
 
     # reset all but not 'id'
     for v in viewvalues(checks):
@@ -390,18 +382,18 @@ def _loadConfCheckCache(cfgCtx):
             v.clear()
             v.update(_new)
 
-    return cache
+    return checks
 
 def _getConfCheckCache(cfgCtx, checkHash):
     """
     Get conf check cache by hash
     """
 
-    cache = cfgCtx.confChecks['cache']
-    if cache is None:
-        cfgCtx.confChecks['cache'] = cache = _loadConfCheckCache(cfgCtx)
+    cache = cfgCtx.getConfCache()
+    if 'conf-checks' not in cache:
+        _loadConfCheckCache(cache)
+    checks = cache['conf-checks']
 
-    checks = cache['checks']
     if checkHash not in checks:
         lastId = checks.get('last-id', 0)
         checks['last-id'] = currentId = lastId + 1

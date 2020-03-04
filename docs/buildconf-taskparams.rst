@@ -548,10 +548,22 @@ normalize-target-name
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
-object-file-counter
+object-file-index
 """""""""""""""""""""
     Counter for the object file extension.
-    By default it's calculated automatically.
+    By default it's calculated automatically as unique index number for each
+    build task.
+
+    If you set this for one task but not for others in the same project and your
+    selected index number is matched with an one of automatic generated indexes
+    then it can cause compilation errors if different tasks uses the same files in
+    parameter ``source``.
+
+    Also you can set the same value for the all build tasks and often it's not a
+    problem until different tasks uses the different files in
+    parameter ``source``.
+
+    Set this parameter only if you know what you do.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.

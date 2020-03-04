@@ -111,6 +111,7 @@ taskscheme = {
     'install-path' : { 'type': ('bool', 'str') },
     'conftests' : _genConfTestsScheme,
     'normalize-target-name' : { 'type': 'bool' },
+    'object-file-index' : { 'type': 'int' },
 }
 
 addSelectToParams(taskscheme, [x for x in taskscheme if x != 'features'])

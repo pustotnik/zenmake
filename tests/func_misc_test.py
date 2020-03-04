@@ -125,6 +125,7 @@ class TestParams(object):
             env['LINKFLAGS'] = info['linkflags']
             env['LDFLAGS'] = info['ldflags']
 
+            assert runZm(self, ['distclean'])[0] == 0
             assert runZm(self, cmdLine, env)[0] == 0
 
             targets = obtainBuildTargets(self, cmdLine)
