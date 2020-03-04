@@ -26,7 +26,8 @@ normpath = os.path.normpath
 relpath  = os.path.relpath
 isabs    = os.path.isabs
 
-toList = utils.toList
+toList       = utils.toList
+toListSimple = utils.toListSimple
 
 _usedWafTaskKeys = set([
     'name', 'target', 'features', 'source', 'includes', 'lib', 'libpath',
@@ -266,7 +267,7 @@ def detectTaskFeatures(ctx, taskParams):
     Param 'ctx' is used only if an alies exists in features.
     """
 
-    features = toList(taskParams.get('features', []))
+    features = toListSimple(taskParams.get('features', []))
     if aliesInFeatures(features):
         features = handleTaskFeatureAlieses(ctx, features, taskParams.get('source'))
 
@@ -296,7 +297,7 @@ def handleTaskFeatureAlieses(ctx, features, source):
     assert source
 
     if source.get('paths') is None:
-        patterns = toList(source.get('include', ''))
+        patterns = toList(source.get('include', []))
         #ignorecase = source.get('ignorecase', False)
         #if ignorecase:
         #    patterns = [x.lower() for x in patterns]

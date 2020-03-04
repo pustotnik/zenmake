@@ -154,6 +154,9 @@ source
 
     Any path or pattern should be relative to the :ref:`startdir<buildconf-startdir>`.
 
+    If paths contain spaces and all these paths are listed
+    in one string then each such a path must be in quotes.
+
     Examples in python format:
 
     .. code-block:: python
@@ -200,6 +203,9 @@ includes
     Paths should be relative to :ref:`startdir<buildconf-startdir>` or absolute.
     But last variant is not recommended.
 
+    If paths contain spaces and all these paths are listed
+    in one string then each such a path must be in quotes.
+
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
@@ -208,6 +214,9 @@ export-includes
     If it's True then it exports value of ``includes`` for all buld tasks
     depending on the current task. Also it can be one or more paths
     for explicit exporting. By default it's False.
+
+    If paths contain spaces and all these paths are listed
+    in one string then each such a path must be in quotes.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
@@ -240,6 +249,10 @@ toolchain
         be used for autodetecting of correct ``auto-*``. For example with
         ``cxxshlib`` ZenMake can set ``auto-c++`` itself but not
         with ``shlib``.
+
+    If toolchain from custom :ref:`toolchains<buildconf-toolchains>` contain
+    spaces and all these toolchains are listed in one string then each
+    such a toolchain must be in quotes.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
@@ -336,6 +349,10 @@ use
     It's used not for system libraries (see ``sys-libs``). Also it's used
     to declare dependencies between build tasks.
     It is one or more the other task names.
+
+    If a task name contain spaces and all these names are listed in one
+    string then each such a name must be in quotes.
+
     Examples:
 
     .. code-block:: python
@@ -343,6 +360,8 @@ use
         'use' : 'util'
         'use' : 'util mylib'
         'use' : ['util', 'mylib']
+        'use' : 'util "my lib"'
+        'use' : ['util', 'my lib']
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
@@ -382,11 +401,16 @@ libpath
 """""""""""""""""""""
     One or more additional paths to find libraries. Usually you don't need to
     set it.
+
+    If paths contain spaces and all these paths are listed
+    in one string then each such a path must be in quotes.
+
     Example:
 
     .. code-block:: python
 
         'libpath' : '/local/lib'
+        'libpath' : '/local/lib "my path"'
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
@@ -395,6 +419,9 @@ rpath
 """""""""""""""""""""
     One or more paths to hard-code into the binary during
     linking time. It's ignored on platforms that do not support it.
+
+    If paths contain spaces and all these paths are listed
+    in one string then each such a path must be in quotes.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.

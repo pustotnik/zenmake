@@ -124,6 +124,9 @@ features
                     can add such files to this variable and ZenMake will check
                     them for changes as it does so for regular buildconf file(s).
 
+                    If paths contain spaces and all these paths are listed
+                    in one string then each such a path must be in quotes.
+
 options
 """"""""
     A `dict <buildconf-dict-def_>`_ array with default values for command

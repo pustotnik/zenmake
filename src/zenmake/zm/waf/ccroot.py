@@ -14,7 +14,7 @@ from waflib.TaskGen import after_method, feature
 from waflib.Tools import ccroot # don't remove
 # pylint: enable = unused-import
 
-from zm.utils import toList, uniqueListWithOrder
+from zm.utils import toList, toListSimple, uniqueListWithOrder
 
 # waflib.Tools.ccroot must be always imported
 assert 'waflib.Tools.ccroot' in sys.modules
@@ -32,7 +32,7 @@ def propagate_uselib_vars(self):
     useLibVars = self.get_uselib_vars()
     env = self.env
 
-    useLibFeatures = self.features + toList(getattr(self, 'uselib', []))
+    useLibFeatures = self.features + toListSimple(getattr(self, 'uselib', []))
     for var in useLibVars:
         vals = []
         val = getattr(self, var.lower(), [])

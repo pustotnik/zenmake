@@ -14,11 +14,14 @@ from importlib import import_module as importModule
 from waflib import Utils as wafutils
 from zm.pyutils import stringtype
 
-WINDOWS_RESERVED_FILENAMES = (
+WINDOWS_RESERVED_FILENAMES = frozenset((
     'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5',
     'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5',
     'LPT6', 'LPT7', 'LPT8', 'LPT9'
-)
+))
+
+RE_UNSAFE_FILENAME_CHARS = re.compile(r'(?u)[^-\w.]')
+RE_TOLIST = re.compile(r"""((?:[^\s"']|"[^"]*"|'[^']*')+)""")
 
 def platform():
     """
@@ -57,19 +60,58 @@ def normalizeForFileName(s, spaceAsDash = False):
         s = s.replace(' ', '-')
     else:
         s = s.replace(' ', '_')
-    s = re.sub(r'(?u)[^-\w.]', '', s)
+    s = RE_UNSAFE_FILENAME_CHARS.sub('', s)
     if PLATFORM == 'windows' and s.upper() in WINDOWS_RESERVED_FILENAMES:
         s = '_%s' % s
     return s
 
-def toList(val):
+def stripQuotes(val):
+    """
+    Strip quotes ' or " from the begin and the end of a string but do it only
+    if they are the same on both sides.
+    """
+
+    if not val:
+        return val
+
+    if len(val) < 2:
+        return val
+
+    first = val[0]
+    last = val[-1]
+    if first == last and first in ("'", '"'):
+        return val[1:-1]
+
+    return val
+
+def toListSimple(val):
     """
     Converts a string argument to a list by splitting it by spaces.
     Returns the object if not a string
     """
-    if isinstance(val, stringtype):
+    if not isinstance(val, stringtype):
+        return val
+    return val.split()
+
+def toList(val):
+    """
+    Converts a string argument to a list by splitting it by spaces.
+    This version supports preserving quoted substrings with spaces by works
+    slower than toListSimple does.
+    Returns the object if not a string
+    """
+    if not isinstance(val, stringtype):
+        return val
+
+    if not ('"' in val or "'" in val): # optimization
         return val.split()
-    return val
+
+    # shlex.split worked quite well but did it too slowly
+
+    # It can be made without regexp but this solution works faster.
+    # Actually manual function should be faster but python regexp engine uses
+    # some C code and therefore it works faster.
+    return [stripQuotes(x) for x in RE_TOLIST.split(val)[1::2]]
 
 def uniqueListWithOrder(lst):
     """

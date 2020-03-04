@@ -28,7 +28,8 @@ relpath  = os.path.relpath
 isabs    = os.path.isabs
 isdir    = os.path.isdir
 
-toList = utils.toList
+toList      = utils.toList
+toListSimple = utils.toListSimple
 
 TOOLCHAIN_PATH_ENVVARS = frozenset(ToolchainVars.allSysVarsToSetToolchain())
 
@@ -287,7 +288,7 @@ class Config(object):
         def handleCondition(entry, name):
             condition = entry.get(name, {})
             buildtypes = toList(condition.get('buildtype', []))
-            platforms = toList(condition.get('platform', []))
+            platforms = toListSimple(condition.get('platform', []))
 
             if buildtypes:
                 if not platforms:
@@ -339,7 +340,7 @@ class Config(object):
         if destPlatform in platforms:
             platformFound = True
             supported = platforms[destPlatform].get('valid', [])
-            supported = toList(supported)
+            supported = toListSimple(supported)
         else:
             supported = self._conf.buildtypes.keys()
         supported = set(supported)
@@ -578,7 +579,11 @@ class Config(object):
             for param in condition:
                 if param == 'environ':
                     continue
-                condition[param] = toList(condition[param])
+                if param in ('platform', 'cpu-arch'):
+                    _toList = toListSimple
+                else:
+                    _toList = toList
+                condition[param] = _toList(condition[param])
 
         self._meta.conditions = conditions
         return conditions
@@ -668,7 +673,7 @@ class Config(object):
                 return result
 
             buildtypes = set(toList(condition.get('buildtype', [])))
-            platforms = set(toList(condition.get('platform', [])))
+            platforms = set(toListSimple(condition.get('platform', [])))
             tasks = set(toList(condition.get('task', [])))
 
             if not platforms:

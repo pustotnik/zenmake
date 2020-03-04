@@ -68,11 +68,25 @@ def testMkSymlink(tmpdir, monkeypatch):
     with pytest.raises(NotImplementedError):
         utils.mksymlink(testfile, symlink)
 
+def testToListSimple():
+
+    assert utils.toListSimple('') == list()
+    assert utils.toListSimple('abc') == ['abc']
+    assert utils.toListSimple('a1 a2   b1 b2') == ['a1', 'a2', 'b1', 'b2']
+    assert utils.toListSimple(['a1', 'a2', 'b1']) == ['a1', 'a2', 'b1']
+
 def testToList():
+
     assert utils.toList('') == list()
     assert utils.toList('abc') == ['abc']
-    assert utils.toList('a1 a2 b1 b2') == ['a1', 'a2', 'b1', 'b2']
+    assert utils.toList('a1 a2   b1 b2') == ['a1', 'a2', 'b1', 'b2']
     assert utils.toList(['a1', 'a2', 'b1']) == ['a1', 'a2', 'b1']
+
+    assert utils.toList('a1 "a2"   b1 b2') == ['a1', 'a2', 'b1', 'b2']
+
+    src = """   aa bb 'cc 111 ccc ' " aaa 'bb'"  dd   val1=" A1 " val2='A2'"""
+    assert utils.toList(src) == \
+        ['aa', 'bb', 'cc 111 ccc ', " aaa 'bb'", 'dd', 'val1=" A1 "', "val2='A2'"]
 
 def testNormalizeForFileName(monkeypatch):
     assert utils.normalizeForFileName('abc') == 'abc'

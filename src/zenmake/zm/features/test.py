@@ -15,7 +15,7 @@ from waflib.TaskGen import feature, after
 from waflib import Build, Task
 from waflib.Build import BuildContext
 from zm.pyutils import viewitems
-from zm import log, cli, error, utils
+from zm import log, cli, error
 from zm.autodict import AutoDict as _AutoDict
 from zm.features import precmd, postcmd
 
@@ -116,7 +116,7 @@ def preConf(conf):
 
     testTaskNames = []
     for name, params in viewitems(tasks):
-        features = utils.toList(params.get('features', []))
+        features = params['features']
 
         if 'test' in features:
             testTaskNames.append(name)

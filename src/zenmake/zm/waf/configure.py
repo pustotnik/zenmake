@@ -249,7 +249,7 @@ class ConfigurationContext(WafConfContext):
 
         for taskParams in viewvalues(bconf.tasks):
 
-            features = utils.toList(taskParams.get('features', []))
+            features = utils.toListSimple(taskParams.get('features', []))
             _toolchains = []
 
             # handle env vars to set toolchain
