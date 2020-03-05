@@ -501,6 +501,8 @@ class CmdLineParser(object):
         if args:
             for opt in globalOpts:
                 runcmd = opt.get('runcmd')
+                # check that global option is 'help' or has 'runcmd'
+                assert runcmd or opt.action == 'help'
                 if runcmd and args[0] in opt.names:
                     args[0] = runcmd
                     defaultCmdIsReady = True
@@ -508,7 +510,7 @@ class CmdLineParser(object):
 
         # simple hack to set default command
         if not defaultCmdIsReady:
-            if not args or not [ x for x in args if not x.startswith('-') ]:
+            if not args or args[0].startswith('-'):
                 optNames = set(y for x in globalOpts for y in x.names)
                 # don't use global options for default command
                 if not any(x in optNames for x in args):
