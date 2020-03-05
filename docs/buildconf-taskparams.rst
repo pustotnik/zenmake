@@ -137,10 +137,10 @@ source
     Main details from there:
 
         - Patterns may contain wildcards such as \* or \?, but they are
-            `Ant patterns <https://ant.apache.org/manual/dirtasks.html>`_,
-            not regular expressions.
+          `Ant patterns <https://ant.apache.org/manual/dirtasks.html>`_,
+          not regular expressions.
         - The symbol ``**`` enable recursion. Complex folder hierarchies may
-            take a lot of time, so use with care.
+          take a lot of time, so use with care.
         - The '..' sequence does not represent the parent directory.
 
     So such a ``dict`` can contain fields:
