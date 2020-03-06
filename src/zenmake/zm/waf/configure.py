@@ -68,7 +68,7 @@ class ConfigurationContext(WafConfContext):
         key = '%s%s%s' % (bconf.path, os.pathsep, taskParams['name'])
         lastIdx = indexes.get('last-idx', 0)
 
-        idx = taskParams.get('object-file-index')
+        idx = taskParams.get('objfile-index')
         if idx is not None:
             if idx > lastIdx:
                 indexes['last-idx'] = idx
@@ -515,43 +515,14 @@ class ConfigurationContext(WafConfContext):
         assist.handleTaskLibPathParam(taskParams, rootdir, startdir)
         assist.handleTaskExportDefinesParam(taskParams)
 
-        kwargs = dict(
-            name   = taskName,
-            target = targetPath,
-            #counter for the object file extension
-            idx = self._calcObjectsIndex(bconf, taskParams)
-        )
+        taskParams['target'] = targetPath
 
-        nameMap = (
-            ('sys-libs','lib', 'tolist'),
-            ('rpath','rpath', 'tolist'),
-            ('use', 'use', 'tolist'),
-            ('includes', 'includes', None),
-            ('libpath', 'libpath', None),
-            ('ver-num', 'vnum', None),
-            ('export-includes', 'export_includes', None),
-            ('export-defines', 'export_defines', None),
-            ('install-path', 'install_path', None),
-        )
-        for param in nameMap:
-            zmKey = param[0]
-            if zmKey in taskParams:
-                wafKey, toList = param[1], param[2] == 'tolist'
-                if toList:
-                    kwargs[wafKey] = utils.toList(taskParams[zmKey])
-                else:
-                    kwargs[wafKey] = taskParams[zmKey]
-                if zmKey != wafKey:
-                    del taskParams[zmKey]
-
-        # set of used keys in kwargs must be included in set from getUsedWafTaskKeys()
-        assert set(kwargs.keys()) <= assist.getUsedWafTaskKeys()
-
-        taskParams.update(kwargs)
+        #counter for the object file extension
+        taskParams['objfile-index'] = self._calcObjectsIndex(bconf, taskParams)
 
         prjver = bconf.projectVersion
-        if prjver and 'vnum' not in taskParams:
-            taskParams['vnum'] = prjver
+        if prjver and 'ver-num' not in taskParams:
+            taskParams['ver-num'] = prjver
 
         taskVariant = taskParams['$task.variant']
         taskEnv = self.all_envs[taskVariant]

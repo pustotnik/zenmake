@@ -17,7 +17,7 @@ from zm.error import ZenMakeError, ZenMakeLogicError, ZenMakeConfError
 from zm.pyutils import stringtype, maptype, viewitems, viewvalues
 from zm import utils, log
 from zm.buildconf import loader
-from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES
+from zm.buildconf.scheme import taskscheme, KNOWN_CONF_PARAM_NAMES
 from zm.features import ToolchainVars, BUILDCONF_PREPARE_TASKPARAMS
 
 joinpath = os.path.join
@@ -28,7 +28,7 @@ relpath  = os.path.relpath
 isabs    = os.path.isabs
 isdir    = os.path.isdir
 
-toList      = utils.toList
+toList       = utils.toList
 toListSimple = utils.toListSimple
 
 TOOLCHAIN_PATH_ENVVARS = frozenset(ToolchainVars.allSysVarsToSetToolchain())
@@ -39,6 +39,40 @@ TOOLCHAIN_PATH_ENVVARS = frozenset(ToolchainVars.allSysVarsToSetToolchain())
 #    """
 #    from zm import version
 #    return version.isDev()
+
+def _genTaskParamsToListMap():
+
+    result = {}
+    for name, scheme in viewitems(taskscheme):
+        if name in ('conftests', 'name'):
+            continue
+        types = scheme['type']
+        if 'str' in types and 'list-of-strs' in types:
+            if name.endswith('flags'):
+                result[name] = toListSimple
+            else:
+                result[name] = toList
+
+    # Value 'None' means: don't make a list
+    result.update({
+        'features'  : toListSimple,
+        'conftests' : None,
+        'name'      : None,
+    })
+    return result
+
+_TASKPARAMS_TOLIST_MAP = _genTaskParamsToListMap()
+
+def taskParamToList(paramName, paramVal):
+    """
+    Convert task param value to list if it's possible and return result
+    """
+
+    _toList = _TASKPARAMS_TOLIST_MAP.get(paramName, '')
+    if _toList is None:
+        return paramVal
+
+    return _toList(paramVal) if _toList else paramVal
 
 class Config(object):
     """
@@ -130,11 +164,6 @@ class Config(object):
             else:
                 param = dict(startdir = startdir, paths = param)
 
-            # premake lists to avoid conversions later
-            for arg in ('include', 'exclude', 'paths'):
-                if arg in param:
-                    param[arg] = toList(param[arg])
-
             return param
 
         hooks = (('source', fixSrcParam),) + BUILDCONF_PREPARE_TASKPARAMS
@@ -177,7 +206,7 @@ class Config(object):
                 if not isabs(param):
                     params[k] = utils.unfoldPath(startdir, v)
 
-    def _fixTaskPathParamsToStartDir(self, tasks):
+    def _postprocessTaskParams(self, tasks):
 
         # they are absolute paths
         rootdir = self.rootdir
@@ -186,18 +215,38 @@ class Config(object):
         # make 'startdir' for task and specific params as
         # the paths relative to the 'rootdir'
         taskStartDir = relpath(startdir, rootdir)
-        for taskParams in viewvalues(tasks):
+
+        for taskName, taskParams in viewitems(tasks):
+
+            # save task name in task params
+            taskParams['name'] = taskName
+
+            # set startdir
             taskParams['$startdir'] = taskStartDir
-            for param in viewvalues(taskParams):
-                if not isinstance(param, maptype):
+
+            for paramName, paramVal in viewitems(taskParams):
+                if not isinstance(paramVal, maptype):
+                    taskParams[paramName] = taskParamToList(paramName, paramVal)
                     continue
-                paramStartDir = param.get('startdir', None)
+
+                # premake lists to avoid conversions later
+                if paramName == 'source':
+                    subNames = ('include', 'exclude', 'paths')
+                else:
+                    subNames = ('paths', )
+                for name in subNames:
+                    val = paramVal.get(name)
+                    if val is not None:
+                        paramVal[name] = toList(val)
+
+                # set startdir
+                paramStartDir = paramVal.get('startdir')
                 if paramStartDir is None:
                     continue
                 if paramStartDir == startdir:
-                    param['startdir'] = taskStartDir
+                    paramVal['startdir'] = taskStartDir
                 else:
-                    param['startdir'] = relpath(paramStartDir, rootdir)
+                    paramVal['startdir'] = relpath(paramStartDir, rootdir)
 
     def _merge(self):
 
@@ -711,11 +760,7 @@ class Config(object):
                 task.update(params)
                 task.pop('default-buildtype', None)
 
-        # save task names in task params
-        for taskName, taskParams in viewitems(tasks):
-            taskParams['name'] = taskName
-
-        self._fixTaskPathParamsToStartDir(tasks)
+        self._postprocessTaskParams(tasks)
 
         self._meta.tasks[buildtype] = tasks
         return tasks

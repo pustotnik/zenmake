@@ -185,11 +185,11 @@ class TestBase(object):
 
         tasks = getBuildTasks(self.confManager)
         for taskParams in tasks.values():
-            toolchain = taskParams.get('toolchain', None)
-            assert toolchain is not None
-            if not toolchain.startswith('custom-'):
+            toolchain = taskParams.get('toolchain', [])
+            assert toolchain
+            if not toolchain[0].startswith('custom-'):
                 continue
-            emukind = toolchain[7:]
+            emukind = toolchain[0][7:]
             assert emukind
             checkmsg = '%s wrapper for custom toolchain test' % emukind
             assert checkmsg in stdout

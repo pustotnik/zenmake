@@ -256,6 +256,25 @@ def getTaskNamesWithDeps(tasks, names):
 
     return result
 
+def convertTaskParamNamesForWaf(taskParams):
+    """
+    Replace some ZenMake names with Waf names
+    """
+
+    nameMap = (
+        ('sys-libs','lib'),
+        ('ver-num', 'vnum'),
+        ('export-includes', 'export_includes'),
+        ('export-defines', 'export_defines'),
+        ('install-path', 'install_path'),
+        ('objfile-index', 'idx'),
+    )
+
+    for zmKey, wafKey in nameMap:
+        val = taskParams.pop(zmKey, None)
+        if val is not None:
+            taskParams[wafKey] = val
+
 def aliesInFeatures(features):
     """ Return True if any alies exists in features """
 

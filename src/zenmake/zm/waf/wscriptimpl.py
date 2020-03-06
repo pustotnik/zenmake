@@ -239,6 +239,8 @@ def build(bld):
         bld.env = ConfigSet(cacheFile)
         bld.env.parent = rootEnv
 
+        assist.convertTaskParamNamesForWaf(taskParams)
+
         if 'includes' in taskParams:
             # Add the build directory path.
             # It's needed to use config header with 'conftests'.

@@ -548,7 +548,7 @@ normalize-target-name
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
-object-file-index
+objfile-index
 """""""""""""""""""""
     Counter for the object file extension.
     By default it's calculated automatically as unique index number for each
