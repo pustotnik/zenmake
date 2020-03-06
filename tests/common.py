@@ -62,9 +62,13 @@ def removeAllTmpDirsForTests():
         shutil.rmtree(path)
     del _tempdirs[:]
 
-def asRealConf(_buildconf):
+def asRealConf(_buildconf, dirpath = None):
     buildconf = types.ModuleType('buildconf')
-    buildconf.__file__ = os.path.abspath('buildconf.py')
+    if dirpath is not None:
+        filepath = os.path.join(dirpath, 'buildconf.py')
+    else:
+        filepath = os.path.abspath('buildconf.py')
+    buildconf.__file__ = filepath
 
     # For in case I convert all AutoDict objects into dict ones
     # It ensures that there are no any side effects of AutoDict

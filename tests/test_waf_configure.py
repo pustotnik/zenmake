@@ -39,6 +39,14 @@ class FakeConfig(object):
 def cfgctx(monkeypatch, mocker, tmpdir):
 
     rundir = str(tmpdir.realpath())
+    outdir = joinpath(rundir, 'out')
+
+    monkeypatch.setattr(Context, 'launch_dir', rundir)
+    monkeypatch.setattr(Context, 'run_dir', rundir)
+    monkeypatch.setattr(Context, 'out_dir', outdir)
+
+    monkeypatch.chdir(Context.run_dir)
+
     monkeypatch.setattr(Options, 'options', AutoDict())
     cfgCtx = ConfigurationContext(run_dir = rundir)
 
@@ -84,9 +92,10 @@ def cfgctx(monkeypatch, mocker, tmpdir):
 
     cfgCtx.start_msg = mocker.MagicMock()
     cfgCtx.end_msg = mocker.MagicMock()
+    cfgCtx.to_log = mocker.MagicMock()
 
     cfgCtx.top_dir = rundir
-    cfgCtx.out_dir = joinpath(rundir, 'out')
+    cfgCtx.out_dir = outdir
     cfgCtx.init_dirs()
     assert cfgCtx.srcnode.abspath().startswith(rundir)
     assert cfgCtx.bldnode.abspath().startswith(rundir)

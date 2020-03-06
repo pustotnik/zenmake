@@ -48,8 +48,8 @@ def _allModuleNames():
 
     pkgPath = PkgPath(os.path.dirname(os.path.abspath(__file__)))
     fnames = pkgPath.files()
-    names = [ x for x in fnames if x.endswith('.py') ]
-    names = [ x[:-3] for x in names if x not in ('__init__', CURRENT_MODULE_NAME) ]
+    names = [ x[:-3] for x in fnames if x.endswith('.py') ]
+    names = [ x for x in names if x not in ('__init__', CURRENT_MODULE_NAME) ]
     return names
 
 @_cached('init-modules')
