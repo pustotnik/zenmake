@@ -57,6 +57,8 @@ def handleOneTaskParamSelect(bconf, taskParams, paramName):
         ('cpu-arch', CPU_ARCH),
     )
 
+    buildtype = bconf.selectedBuildType
+
     def tryToSelect(conditions, condName, taskParams):
         # pylint: disable = too-many-return-statements
 
@@ -80,6 +82,11 @@ def handleOneTaskParamSelect(bconf, taskParams, paramName):
         # check task
         filterVals = condition.get('task')
         if filterVals is not None and taskParams['name'] not in filterVals:
+            return False
+
+        # check buildtype
+        filterVals = condition.get('buildtype')
+        if filterVals is not None and buildtype not in filterVals:
             return False
 
         # check toolchain

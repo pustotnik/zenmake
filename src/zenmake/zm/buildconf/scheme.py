@@ -178,6 +178,7 @@ confscheme = {
                     'cpu-arch' :  { 'type': ('str', 'list-of-strs') },
                     'toolchain' : { 'type': ('str', 'list-of-strs') },
                     'task' :      { 'type': ('str', 'list-of-strs') },
+                    'buildtype' : { 'type': ('str', 'list-of-strs') },
                     'environ' :   { 'type' : 'dict' },
                 },
             },

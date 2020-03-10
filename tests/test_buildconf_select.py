@@ -351,6 +351,51 @@ def getFixtureCase7(_, testingBuildConf, paramName):
 
     return paramName, buildconf, expected
 
+def getFixtureCase8(_, testingBuildConf, paramName):
+
+    # select by 'buildtype'
+
+    paramTestValues = PARAM_TEST_VALUES[paramName]
+    buildconf = testingBuildConf
+
+    buildconf.tasks.mytask[paramName] = paramTestValues[1]
+
+    buildconf.buildtypes = {
+        'dbg' : {},
+        'release': {},
+        'default': 'release',
+    }
+
+    buildconf.tasks.task1 = {
+        'features' : ['c', 'cprogram'],
+    }
+
+    buildconf.conditions = {
+        'debug' : {
+            'buildtype': 'dbg',
+        },
+        'release' : {
+            'buildtype': 'release',
+        },
+    }
+
+    selectableParamName = "%s.select" % paramName
+    buildconf.tasks.mytask[selectableParamName] = {
+        'debug' : paramTestValues[2],
+        'release' : paramTestValues[0],
+        'default': paramTestValues[1],
+    }
+    buildconf.tasks.task1[selectableParamName] = {
+        'debug' : paramTestValues[2],
+        'default': paramTestValues[1],
+    }
+    expected = {
+        'mytask' :paramTestValues[0],
+        'task1' :paramTestValues[1],
+    }
+
+    return paramName, buildconf, expected
+
 def getParamTestCases():
     i = 1
     result = dict(params = [], ids = [])

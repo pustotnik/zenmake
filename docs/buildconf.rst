@@ -192,8 +192,9 @@ buildtypes
     A `dict <buildconf-dict-def_>`_ with build types like ``debug``, ``release``,
     ``debug-gcc`` and so on. Here is also a special value with name ``default``
     that is used to set default build type if nothing is specified. Names of
-    these build types are just names, they can be any except ``default``
-    but remember that these names are used as directory names. So don't use
+    these build types are just names, they can be any name but not ``default``.
+    Also you should remember that these names are used as
+    directory names. So don't use
     incorrect symbols if you don't want a problem with it.
 
     This variable can be empty or absent. In this case current buildtype is
