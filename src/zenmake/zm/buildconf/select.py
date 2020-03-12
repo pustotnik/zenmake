@@ -18,9 +18,11 @@ from zm.toolchains import getAllNames as getAllToolchainNames
 
 _local = {}
 
-def _getReadyConditions():
+def _getReadyConditions(bconf):
 
-    conditions = _local.get('ready-conditions')
+    bconfId = id(bconf)
+    _local.setdefault('ready-conditions', {})
+    conditions = _local['ready-conditions'].get(bconfId)
     if conditions is not None:
         return conditions
 
@@ -28,17 +30,27 @@ def _getReadyConditions():
         msg = "Programming error: task features have not been loaded yet"
         raise ZenMakeLogicError(msg)
 
-    conditions = {}
+    conditions = _local.get('common-ready-conditions')
+    if conditions is None:
+        conditions = {}
+        # platform conditions
+        for platform in KNOWN_PLATFORMS:
+            conditions[platform] = dict(platform = (platform, ))
+        # toolchain conditions
+        for toolchain in getAllToolchainNames(platform = 'all'):
+            assert toolchain not in conditions
+            conditions[toolchain] = dict(toolchain = (toolchain, ))
+        _local['common-ready-conditions'] = conditions
 
-    # platform conditions
-    for platform in KNOWN_PLATFORMS:
-        conditions[platform] = dict(platform = (platform, ))
+    # don't change common conditions
+    conditions = conditions.copy()
 
-    for toolchain in getAllToolchainNames(platform = 'all'):
-        assert toolchain not in conditions
-        conditions[toolchain] = dict(toolchain = (toolchain, ))
+    buildtypes = bconf.supportedBuildTypes
+    for buildtype in buildtypes:
+        if buildtype not in conditions:
+            conditions[buildtype] = dict(buildtype = (buildtype, ))
 
-    _local['ready-conditions'] = conditions
+    _local['ready-conditions'][bconfId] = conditions
     return conditions
 
 def handleOneTaskParamSelect(bconf, taskParams, paramName):
@@ -62,9 +74,8 @@ def handleOneTaskParamSelect(bconf, taskParams, paramName):
     def tryToSelect(conditions, condName, taskParams):
         # pylint: disable = too-many-return-statements
 
-        condition = conditions.get(condName)
-        if condition is None:
-            condition = _getReadyConditions().get(condName)
+        condition = conditions.get(condName,
+                                   _getReadyConditions(bconf).get(condName))
         if condition is None:
             msg = "Error in the task %r: " % taskParams['name']
             msg += "there is no condition %r in buildconf.conditions" % condName

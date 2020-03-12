@@ -195,7 +195,14 @@ at all because conditions with names ``linux`` and ``g++`` already exist:
         },
     }
 
-But there is one detail about internal conditions for toolchains - only toolchains
+Also you can use internal conditions for supported buildtypes. But if any name
+of supported buildtype is the same as one of known platforms or supported
+toolchains then such a buildtype can not be used as internal condition.
+For an example you can want to make/use buildtype 'linux' and it will be possible
+but for using in conditions you have to declare some different name in this case
+because 'linux' is one of known platforms.
+
+There is one detail about internal conditions for toolchains - only toolchains
 supported for current build tasks exist. ZenMake detects them with all ``features``
 of all existing build tasks in current project during configuring. For an example
 if tasks exist for C language only then supported toolchains for all other languages

@@ -374,9 +374,6 @@ def getFixtureCase8(_, testingBuildConf, paramName):
         'debug' : {
             'buildtype': 'dbg',
         },
-        'release' : {
-            'buildtype': 'release',
-        },
     }
 
     selectableParamName = "%s.select" % paramName
