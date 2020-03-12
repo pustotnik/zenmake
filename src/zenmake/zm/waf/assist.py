@@ -262,7 +262,8 @@ def convertTaskParamNamesForWaf(taskParams):
     """
 
     nameMap = (
-        ('sys-libs','lib'),
+        ('libs', 'lib'),
+        ('stlibs', 'stlib'),
         ('ver-num', 'vnum'),
         ('export-includes', 'export_includes'),
         ('export-defines', 'export_defines'),

@@ -52,9 +52,7 @@ class Validator(object):
 
     @staticmethod
     def _getAttrValue(attrs, key, typename, **kwargs):
-        value = attrs.get(key, None)
-        if value is None:
-            value = attrs.get('%s-%s' % (typename, key), None)
+        value = attrs.get(key, attrs.get('%s-%s' % (typename, key), None))
         if value is None:
             if 'default' in kwargs:
                 return kwargs['default']
@@ -131,7 +129,7 @@ class Validator(object):
             allowed = allowed(confnode, fullkey)
         if allowed is not None and confnode not in allowed:
             msg = "Value `%r` is invalid for the param %r." % (confnode, fullkey)
-            msg = '%s Allowed values: %r' %(msg, allowed)
+            msg = '%s Allowed values: %s' %(msg, str(list(allowed))[1:-1])
             raise ZenMakeConfValueError(msg)
 
     @staticmethod
@@ -160,7 +158,7 @@ class Validator(object):
         for i, elem in enumerate(confnode):
             if allowed is not None and elem not in allowed:
                 msg = "Value %r is invalid for the param %r." % (elem, fullkey)
-                msg = '%s Allowed values: %s' %(msg, str(allowed)[1:-1])
+                msg = '%s Allowed values: %s' %(msg, str(list(allowed))[1:-1])
                 raise ZenMakeConfValueError(msg)
             if varsType:
                 try:
@@ -193,7 +191,7 @@ class Validator(object):
                 raiseInvalidTypeErr(elem)
             if allowed is not None and elem not in allowed:
                 msg = "Value %r is invalid for the param %r." % (elem, fullkey)
-                msg = '%s\nAllowed values: %s' %(msg, str(allowed)[1:-1])
+                msg = '%s\nAllowed values: %s' %(msg, str(list(allowed))[1:-1])
                 raise ZenMakeConfValueError(msg)
 
     @staticmethod
@@ -203,7 +201,11 @@ class Validator(object):
             raise ZenMakeConfTypeError(msg)
 
         _getAttrValue = Validator._getAttrValue
-        subscheme = _getAttrValue(schemeAttrs, 'vars', 'dict')
+        subscheme = _getAttrValue(schemeAttrs, 'vars', 'dict', default = None)
+        if subscheme is None:
+            # don't validate keys
+            return
+
         disallowedKeys = _getAttrValue(schemeAttrs, 'disallowed-keys',
                                        'dict', default = None)
 
@@ -361,7 +363,7 @@ class Validator(object):
                 allowed.extend(buildtypes.keys())
 
         if allowed:
-            allowed = list(set(allowed))
+            allowed = set(allowed)
             if 'default' in allowed:
                 allowed.remove('default')
             btypesVars['default']['allowed'] = allowed

@@ -36,26 +36,20 @@ These configuration tests in ``dict`` format:
         to use in compiling of the test.
 
     ``act`` = ``check-libs``
-        *Parameters*: ``names``, ``defines`` = [],  ``autodefine`` = False,
-        ``mandatory`` = True.
+        *Parameters*: ``names`` = [], ``fromtask`` = True, ``defines`` = [],
+        ``autodefine`` = False, ``mandatory`` = True.
 
         *Supported languages*: C, C++.
 
-        Check existence of the system libraries from list in
-        the ``names``. If ``autodefine`` is set to True it generates
+        Check existence of the shared libraries from task
+        parameter ``libs`` or/and from list in the ``names``.
+        If ``fromtask`` is set to False then libraries from task
+        parameter ``libs`` will not be used.
+        If ``autodefine`` is set to True it generates
         C/C++ define name like ``HAVE_LIB_SOMELIB``.
 
         Parameter ``defines`` can be used to set additional C/C++ defines
         to use in compiling of the test.
-
-    ``act`` = ``check-sys-libs``
-        *Parameters*: ``defines`` = [],  ``autodefine`` = False, ``mandatory`` = True.
-
-        *Supported languages*: C, C++.
-
-        Check existence of all system libraries from
-        task parameter ``sys-libs``. All parameters for the act ``check-libs``
-        excluding ``names`` can be used here.
 
     ``act`` = ``check-code``
         *Parameters*: ``text`` = '', ``file`` = '', ``label`` = '',
@@ -124,8 +118,8 @@ These configuration tests in ``dict`` format:
 
         Run configuration tests from the parameter ``checks``
         in parallel. Not all types of tests are supported.
-        Allowed tests are ``check-sys-libs``, ``check-headers``,
-        ``check-libs``, ``check-by-pyfunc``.
+        Allowed tests are ``check-headers``, ``check-libs``,
+        ``check-by-pyfunc``, ``check-code``.
 
         If you use ``check-by-pyfunc`` in ``checks`` you should understand that
         python function must be thread safe. If you don't use any shared data
@@ -155,13 +149,13 @@ Example in python format:
 
     'myapp' : {
         'features'   : 'cxxshlib',
-        'sys-libs'   : ['m', 'rt'],
+        'libs'   : ['m', 'rt'],
         # ...
         'conftests'  : [
             # do checking in function 'check'
             check,
-            # Check libs from param 'sys-libs'
-            #dict(act = 'check-sys-libs'),
+            # Check libs from param 'libs'
+            #dict(act = 'check-libs'),
             dict(act = 'check-headers', names = 'cstdio', mandatory = True),
             dict(act = 'check-headers', names = 'cstddef stdint.h', mandatory = False),
             # Each lib will have define 'HAVE_LIB_<LIBNAME>' if autodefine = True
@@ -170,7 +164,7 @@ Example in python format:
             dict(act = 'check-programs', names = 'python'),
             dict( act = 'parallel',
                 checks = [
-                    dict(act = 'check-sys-libs', id = 'syslibs'),
+                    dict(act = 'check-libs', id = 'syslibs'),
                     dict(act = 'check-headers', names = 'stdlib.h iostream'),
                     dict(act = 'check-headers', names = 'stdlibasd.h', mandatory = False),
                     dict(act = 'check-headers', names = 'string', after = 'syslibs'),

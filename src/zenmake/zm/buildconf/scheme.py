@@ -44,10 +44,7 @@ _actToVars = {
     },
     'check-libs' : {
         'names' :      { 'type': ('str', 'list-of-strs') },
-        'autodefine' : { 'type': 'bool' },
-        'defines' :    { 'type': ('str', 'list-of-strs') },
-    },
-    'check-sys-libs' : {
+        'fromtask' :   { 'type': 'bool' },
         'autodefine' : { 'type': 'bool' },
         'defines' :    { 'type': ('str', 'list-of-strs') },
     },

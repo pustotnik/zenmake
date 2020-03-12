@@ -12,9 +12,9 @@ ZenMake supports several types of dependencies for build projects:
 
 System libraries
 ------------------------------
-System libraries can be specified using config parameter ``sys-libs``.
+System libraries can be specified using config parameter ``libs``.
 Usually you don't need to set paths to system libraries but you can set them
-using config parameter ``sys-lib-path``. More details about using of these
+using config parameter ``libpath``. More details about using of these
 parameters you can find :ref:`here<buildconf-taskparams>`.
 
 Local libraries

@@ -147,10 +147,10 @@ def testRunConfTestsCheckSysLibs(mocker, cfgctx):
     buildtype = 'buildtype'
     tasks = AutoDict()
     tasks.task.features = ['cxx', 'cxxshlib']
-    tasks.task['sys-libs'] = 'lib1 lib2'
+    tasks.task['libs'] = 'lib1 lib2'
     tasks.task['$task.variant'] = buildtype
     tasks.task.conftests = [
-        dict(act = 'check-sys-libs', mandatory = False),
+        dict(act = 'check-libs', fromtask = True, mandatory = False),
     ]
 
     ctx.check = mocker.MagicMock()

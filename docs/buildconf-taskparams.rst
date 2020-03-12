@@ -346,7 +346,7 @@ export-defines
 use
 """""""""""""""""""""
     This attribute enables the link against libraries (static or shared).
-    It's used not for system libraries (see ``sys-libs``). Also it's used
+    It's used for local libraries from other tasks. Also it's used
     to declare dependencies between build tasks.
     It is one or more the other task names.
 
@@ -385,14 +385,15 @@ install-path
 
 .. _buildconf-taskparams-run:
 
-sys-libs
+libs
 """""""""""""""""""""
-    One or more names of system libraries as dependencies.
+    One or more names of existing shared libraries as dependencies. Usually
+    it's used to set system libraries.
     Example:
 
     .. code-block:: python
 
-        'sys-libs' : 'm rt'
+        'libs' : 'm rt'
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
@@ -411,6 +412,20 @@ libpath
 
         'libpath' : '/local/lib'
         'libpath' : '/local/lib "my path"'
+
+    It's possible to use :ref:`selectable parameters<buildconf-select>`
+    to set this parameter.
+
+stlibs
+"""""""""""""""""""""
+    The same as ``libs`` but for static libraries.
+
+    It's possible to use :ref:`selectable parameters<buildconf-select>`
+    to set this parameter.
+
+stlibpath
+"""""""""""""""""""""
+    The same as ``libpath`` but for static libraries.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.

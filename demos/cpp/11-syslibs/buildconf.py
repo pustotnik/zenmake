@@ -19,10 +19,10 @@ tasks = {
         'libpath.select' : {
             'windows' : r'C:\local\boost_1_67_0\lib64-msvc-14.1',
         },
-        'sys-libs' : 'boost_timer',
+        'libs' : 'boost_timer',
         'conftests'  : [
             dict(act = 'check-headers', names = 'cmath iostream'),
-            dict(act = 'check-sys-libs'),
+            dict(act = 'check-libs'),
         ],
     },
     'program' : {
@@ -45,7 +45,7 @@ buildtypes = {
             'default': '-fPIC -O0 -g', # g++/clang++
             'msvc' : '/Od /EHsc',
         },
-        'sys-libs.select' : {
+        'libs.select' : {
             'util-on-windows' : 'boost_timer-vc141-mt-gd-x64-1_67',
         },
     },
@@ -54,7 +54,7 @@ buildtypes = {
             'default': '-fPIC -O2', # g++/clang++
             'msvc' : '/O2 /EHsc',
         },
-        'sys-libs.select' : {
+        'libs.select' : {
             'util-on-windows' : 'boost_timer-vc141-mt-x64-1_67',
         },
     },

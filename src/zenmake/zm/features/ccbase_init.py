@@ -9,8 +9,10 @@
 from zm.buildconf.schemeutils import addSelectToParams
 
 VALIDATION_TASKSCHEME_SPEC = {
-    'sys-libs' :    { 'type': ('str', 'list-of-strs') },
+    'libs' :        { 'type': ('str', 'list-of-strs') },
     'libpath':      { 'type': ('str', 'list-of-strs') },
+    'stlibs' :      { 'type': ('str', 'list-of-strs') },
+    'stlibpath':    { 'type': ('str', 'list-of-strs') },
     'rpath' :       { 'type': ('str', 'list-of-strs') },
     'ver-num' :     { 'type': 'str' },
     'includes':     { 'type': ('str', 'list-of-strs') },

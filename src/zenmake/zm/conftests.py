@@ -523,21 +523,19 @@ def checkPrograms(checkArgs, params):
         # therefore it's not needed to cache it here.
         cfgCtx.find_program(name, **checkArgs)
 
-def checkSysLibs(checkArgs, params):
-    """ Check libraries from task param 'sys-libs' """
-
-    taskParams = params['taskParams']
-
-    sysLibs = utils.toList(taskParams.get('sys-libs', []))
-    sysLibs.extend(utils.toList(taskParams.get('lib', [])))
-    checkArgs['names'] = sysLibs
-    checkLibs(checkArgs, params)
-
 def checkLibs(checkArgs, params):
-    """ Check libraries """
+    """ Check shared libraries """
 
-    libs = utils.toList(checkArgs.pop('names', []))
     autodefine = checkArgs.pop('autodefine', False)
+
+    libs = []
+    if checkArgs.pop('fromtask', True):
+        taskParams = params['taskParams']
+        libs.extend(utils.toList(taskParams.get('libs', [])))
+        libs.extend(utils.toList(taskParams.get('lib', [])))
+    libs.extend(utils.toList(checkArgs.pop('names', [])))
+    libs = utils.uniqueListWithOrder(libs)
+
     for lib in libs:
         _checkArgs = checkArgs.copy()
         _checkArgs['msg'] = 'Checking for library %s' % lib
@@ -708,8 +706,7 @@ def checkInParallel(checkArgs, params):
         return
 
     supportedActs = (
-        'check-sys-libs', 'check-headers',
-        'check-libs', 'check-by-pyfunc', 'check-code',
+        'check-headers', 'check-libs', 'check-by-pyfunc', 'check-code',
     )
 
     parallelCheckArgsList = []

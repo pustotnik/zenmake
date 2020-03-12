@@ -303,8 +303,9 @@ class TestSuite(object):
         self._checkParamsAsStr(buildconf, confnode, paramNames)
 
         paramNames = (
-            'features', 'sys-libs', 'libpath', 'rpath', 'use', 'includes',
-            'cflags', 'cxxflags', 'cppflags', 'linkflags', 'defines',
+            'features', 'libs', 'libpath', 'stlibs', 'stlibpath', 'rpath',
+            'use', 'includes', 'cflags', 'cxxflags', 'cppflags',
+            'linkflags', 'defines',
         )
         self._checkParamsAsStrOrListOfStrs(buildconf, confnode, paramNames)
 
@@ -338,11 +339,12 @@ class TestSuite(object):
                                ['names'])
         self._validateBoolValues(buildconf, confnode['conftests'][0], 'mandatory')
 
-        confnode['conftests'] = [ { 'act' : 'check-sys-libs', } ]
+        confnode['conftests'] = [ { 'act' : 'check-libs', } ]
         validator.validate(buildconf)
         self._checkParamsAsStr(buildconf, confnode['conftests'][0],
                                ['act'], list(KNOWN_CONFTEST_ACTS))
         self._validateBoolValues(buildconf, confnode['conftests'][0], 'autodefine')
+        self._validateBoolValues(buildconf, confnode['conftests'][0], 'fromtask')
 
         confnode['run'] = {}
         validTypesAndVals = { 'str' : None, 'func' : None, }

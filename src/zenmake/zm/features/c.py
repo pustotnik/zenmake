@@ -27,7 +27,6 @@ def _checkWrapper(func):
     return execute
 
 _confTestFuncs = {
-    'check-sys-libs'      : _checkWrapper(conftests.checkSysLibs),
     'check-headers'       : _checkWrapper(conftests.checkHeaders),
     'check-libs'          : _checkWrapper(conftests.checkLibs),
     'check-code'          : _checkWrapper(conftests.checkCode),

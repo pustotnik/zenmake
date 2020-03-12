@@ -22,7 +22,7 @@ tasks = {
     #######
     'my util alt' : {
         'features' : 'cshlib',
-        'source'   :  '"my shlib/my util.c" "my shlib/my util2.c"',
+        'source'   : '"my shlib/my util.c" "my shlib/my util2.c"',
         'includes' : '"my includes"',
         'export-includes' : True,
         'conftests'  : [
@@ -31,7 +31,7 @@ tasks = {
     },
     'my test alt' : {
         'features' : 'cprogram',
-        'source'   :  '"my prog/my test.c"',
+        'source'   : '"my prog/my test.c"',
         'use'      : "'my util alt'",
         'conftests'  : [
             dict(act = 'check-headers', names = 'stdio.h'),
