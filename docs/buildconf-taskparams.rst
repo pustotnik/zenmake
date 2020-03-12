@@ -387,8 +387,9 @@ install-path
 
 libs
 """""""""""""""""""""
-    One or more names of existing shared libraries as dependencies. Usually
-    it's used to set system libraries.
+    One or more names of existing shared libraries as dependencies,
+    without prefix or extension. Usually it's used to set system libraries.
+
     Example:
 
     .. code-block:: python
