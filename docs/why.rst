@@ -34,9 +34,10 @@ opinion. I considered only build systems that can build C/C++ projects.
 
 It's one of the most popular cross-platform build systems nowadays. But
 I don't understand why this system is so popular. I have never liked its
-internal language - for me it's terrible. As far as I know, a lot of people think
+internal language - for me it's terrible. And CMake is too complicated.
+As far as I know, a lot of people think
 the same but they choose to use it because it's popular and with good support
-for many platforms. Also, CMake is too complicated.
+for many platforms.
 
 One more fact: a lot of people decided to migrate to Meson after
 Meson was created. It was probably because Meson was better for them.
@@ -45,14 +46,14 @@ Meson was created. It was probably because Meson was better for them.
 
 It's a very old but still relevant build system. However, it has too many
 disadvantages and it has been mostly replaced by more recent build systems.
-It is used as a backend for some other build systems,
+And it is used as a backend for some other build systems,
 for example, by CMake.
 
-**WAF**
+**Waf**
 
-WAF is a great build system and has a lot of capabilities. I like it
+Waf is a great build system and has a lot of capabilities. I like it
 and have some experience with it but for me it's a meta build system. You
-can build your projects only by WAF but it has a long learning curve and
+can build your projects only by Waf but it has a long learning curve and
 is not easy to use.
 
 **ninja**
@@ -63,7 +64,7 @@ use and requires a lot of effort.
 
 **Meson**
 
-It’s really not a bad build system which uses ninja as a backend to build.
+It’s really not a bad build system which uses ninja as a backend to build by default.
 I have tried to use it but didn't like some of its features:
 
 -  It tries to be smart when it's not necessary.
@@ -84,15 +85,15 @@ The opinion that 'wildcard for target files is a bad thing' also exists in
 CMake. For example, authors of Meson wrote that wildcards slow things down.
 I don't agree with the position of developers of Meson and
 CMake that specifying target files with a wildcard is a bad thing.
-Yes, I agree that for big projects with a lot of files it can be slow in
+I agree that for big projects with a lot of files it can be slow in
 some cases. But for all others it should be fast enough. Why didn't they
 make it as an option? I don't know. An alternative with an external command
-in Meson doesn't work very well, and authors of Meson know about it. In WAF
-I have no problem with wildcards.
+in Meson doesn't work very well, and authors of Meson should know about it.
+There is no such a problem with wildcards in Waf.
 
 **Scons**
 
-Nowadays we have WAF. Scons is too old and slow.
+Nowadays we have Waf. Scons is too slow.
 
 **Premake/GENie**
 
@@ -106,7 +107,7 @@ Perhaps, I had to try to use it.
 
 I found some info about problems with premake:
 https://medium.com/@julienjorge/an-overview-of-build-systems-mostly-for-c-projects-ac9931494444.
-And I don't like it.
+And it doesn't look good to me.
 
 **Bazel**
 
