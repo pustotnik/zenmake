@@ -27,10 +27,9 @@ else:
 
 RE_WITH_TGT = re.compile(r'\$\{*TGT')
 
-def _processCmdLine(conf, cwd, shell, cmdArgs):
+def _processCmdLine(conf, bconf, cwd, shell, cmdArgs):
     """ Get and process 'cmd' at 'configure' stage """
 
-    bconf      = conf.getbconf()
     bconfPaths = bconf.confPaths
     btypeDir   = bconf.selectedBuildTypeDir
     startdir   = bconfPaths.startdir
@@ -89,7 +88,14 @@ def _processCmdLine(conf, cwd, shell, cmdArgs):
 def postConf(conf):
     """ Prepare task params after wscript.configure """
 
-    bconf      = conf.getbconf()
+    for bconf in conf.bconfManager.configs:
+        _postConf(conf, bconf)
+
+def _postConf(ctx, bconf):
+
+    # set context path
+    ctx.path = ctx.getPathNode(bconf.confdir)
+
     btypeDir   = bconf.selectedBuildTypeDir
     rootdir    = bconf.rootdir
     tasks      = bconf.tasks
@@ -123,7 +129,7 @@ def postConf(conf):
                 if not os.path.isabs(startdir):
                     startdir = os.path.join(rootdir, startdir)
                 cwd = os.path.join(startdir, cwd)
-            cwd = conf.root.make_node(cwd).abspath()
+            cwd = ctx.root.make_node(cwd).abspath()
         else:
             cwd = btypeDir
         cmdTaskArgs['cwd'] = cwd
@@ -138,7 +144,7 @@ def postConf(conf):
         else:
             # By default 'shell' is True to rid of some problems with Waf and Windows
             shell = cmdArgs.get('shell', True)
-            cmd, shell = _processCmdLine(conf, cwd, shell, cmdArgs)
+            cmd, shell = _processCmdLine(ctx, bconf, cwd, shell, cmdArgs)
             cmdTaskArgs['shell'] = shell
             cmdTaskArgs['cmd'] = cmd
 

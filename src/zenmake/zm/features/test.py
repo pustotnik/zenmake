@@ -109,8 +109,10 @@ def _isSuitableForRunCmd(taskParams):
 def preConf(conf):
     """ Preconfigure tasks """
 
-    bconfIndex = conf.bconfManager.configIndex(conf.path.abspath())
-    bconf = conf.bconfManager.configs[bconfIndex]
+    for idx, bconf in enumerate(conf.bconfManager.configs):
+        _preConf(bconf, idx)
+
+def _preConf(bconf, bconfIndex):
 
     tasks = bconf.tasks
 
@@ -142,17 +144,19 @@ def preConf(conf):
 def postConf(conf):
     """ Configure tasks """
 
+    for idx, bconf in enumerate(conf.bconfManager.configs):
+        _postConf(bconf, idx)
+
+def _postConf(bconf, bconfIndex):
+
     if not _shared.withTests:
         return
-
-    bconfIndex = conf.bconfManager.configIndex(conf.path.abspath())
 
     testTaskNames = _shared.testTaskNames[bconfIndex]
     assert testTaskNames is not None
     if not testTaskNames:
         return
 
-    bconf = conf.bconfManager.configs[bconfIndex]
     tasks = bconf.tasks
 
     for name in testTaskNames:

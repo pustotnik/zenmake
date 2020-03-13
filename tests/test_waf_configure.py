@@ -374,7 +374,6 @@ def testLoadToolchains(mocker, cfgctx):
     ctx.variant = 'old'
 
     bconf = AutoDict()
-    env = AutoDict()
 
     def setToolchains(bconf, toolchainNames):
         ctx.validToolchainNames = set(toolchainNames)
@@ -384,13 +383,13 @@ def testLoadToolchains(mocker, cfgctx):
             bconf.tasks['task%d' % i].toolchain = name
 
     #with pytest.raises(WafError):
-    #    ctx.loadToolchains(bconf, env)
+    #    ctx.loadToolchains(bconf)
 
     # load existing tools by name
     toolchainNames = ['gcc', 'g++', 'g++']
     setToolchains(bconf, toolchainNames)
     bconf.customToolchains = AutoDict()
-    toolchainsEnvs = ctx.loadToolchains(bconf, env)
+    toolchainsEnvs = ctx.loadToolchains(bconf)
     for name in toolchainNames:
         assert name in toolchainsEnvs
         assert toolchainsEnvs[name].loaded == 'loaded-' + name
@@ -400,7 +399,7 @@ def testLoadToolchains(mocker, cfgctx):
     bconf.customToolchains = AutoDict()
     toolchainNames = ['auto-c', 'auto-c++']
     setToolchains(bconf, toolchainNames)
-    toolchainsEnvs = ctx.loadToolchains(bconf, env)
+    toolchainsEnvs = ctx.loadToolchains(bconf)
     assert toolchainsEnvs
     for name in toolchainNames:
         assert name in toolchainsEnvs
@@ -420,7 +419,7 @@ def testLoadToolchains(mocker, cfgctx):
     })
     toolchainNames = ['local-g++', 'g++']
     setToolchains(bconf, toolchainNames)
-    toolchainsEnvs = ctx.loadToolchains(bconf, env)
+    toolchainsEnvs = ctx.loadToolchains(bconf)
     assert toolchainsEnvs['g++'].loaded == 'loaded-g++'
     assert toolchainsEnvs['local-g++'].loaded == 'loaded-g++'
     assert ctx.variant == 'old'
@@ -431,4 +430,4 @@ def testLoadToolchains(mocker, cfgctx):
     bconf.customToolchains = AutoDict()
     bconf.toolchainNames = ['auto-c', 'auto-c++']
     with pytest.raises(WafError):
-        ctx.loadToolchains(bconf, env)
+        ctx.loadToolchains(bconf)

@@ -19,6 +19,8 @@ from zm import utils, error
 from zm.waf import wscriptimpl
 
 joinpath = os.path.join
+normpath = os.path.normpath
+isabspath = os.path.isabs
 
 DEFAULT_TOOLDIRS = [
     joinpath(ZENMAKE_DIR, 'zm', 'tools'),
@@ -70,11 +72,11 @@ def _contextRecurse(ctx, dirs, name = None, mandatory = True, once = True, encod
     cache = ctx.zmcache().recurse
 
     for dirpath in utils.toList(dirs):
-        if not os.path.isabs(dirpath):
+        if not isabspath(dirpath):
             # absolute paths only
             dirpath = joinpath(ctx.path.abspath(), dirpath)
 
-        dirpath = os.path.normpath(dirpath)
+        dirpath = normpath(dirpath)
         bconf = ctx.bconfManager.config(dirpath)
         if not bconf:
             continue
@@ -103,19 +105,31 @@ def _contextRecurse(ctx, dirs, name = None, mandatory = True, once = True, encod
         finally:
             ctx.post_recurse(node)
 
-@ctxmethod(WafContext, 'getTaskPathNode')
-def _getTaskPathNode(self, taskStartDir):
+@ctxmethod(WafContext, 'getPathNode')
+def _getPathNode(self, path):
 
     cache = self.zmcache().ctxpath
-    if taskStartDir in cache:
-        return cache[taskStartDir]
+    node = cache.get(path)
+    if node is not None:
+        return node
 
-    bconf = self.getbconf()
-    taskPath = os.path.abspath(os.path.join(bconf.rootdir, taskStartDir))
-    pathNode = self.root.make_node(taskPath)
+    node = self.root.make_node(path)
+    cache[path] = node
+    return node
 
-    cache[taskStartDir] = pathNode
-    return pathNode
+@ctxmethod(WafContext, 'getStartDirNode')
+def _getStartDirNode(self, startdir):
+
+    cache = self.zmcache().startdirpath
+    node = cache.get(startdir)
+    if node is not None:
+        return node
+
+    rootdir = self.bconfManager.root.rootdir
+    path = normpath(joinpath(rootdir, startdir))
+    node = self.root.make_node(path)
+    cache[path] = node
+    return node
 
 @ctxmethod(WafContext, 'loadTasksFromFileCache')
 def _loadTasksFromFileCache(ctx, cachefile):

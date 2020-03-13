@@ -79,7 +79,7 @@ class Config(object):
     Class to get/process data from the certain buildconf module
     """
 
-    #pylint: disable=too-many-public-methods
+    # pylint: disable = too-many-public-methods
 
     __slots__ = '_conf', '_meta', '_confpaths', '_parent'
 
@@ -124,10 +124,10 @@ class Config(object):
         setattr(buildconf, 'startdir', meta.startdir)
 
     def _makeBuildDirParams(self, buildroot):
-        #pylint: disable=protected-access
+        # pylint: disable = protected-access
 
         # Get 'buildroot' and 'realbuildroot' from parent
-        # if that exists or from current.
+        # if they exist or from current.
         # If param buildroot from func args is not None then it overrides
         # the same param from buildconf.
 
@@ -250,7 +250,7 @@ class Config(object):
 
     def _merge(self):
 
-        #pylint: disable=protected-access
+        # pylint: disable = protected-access
 
         mergedParams = set()
         currentConf = self._conf
@@ -804,27 +804,28 @@ class ConfManager(object):
     __slots__ = '_buildroot', '_configs', '_virtConfigs', '_orderedConfigs'
 
     def __init__(self, topdir, buildroot):
-        topdir = abspath(topdir)
-        # forced buildroot (from cmdline)
-        self._buildroot = buildroot
+        """
+        buildroot - forced buildroot (from cmdline)
+        """
 
+        self._buildroot = buildroot
         self._orderedConfigs = []
         self._configs = {}
         self._virtConfigs = {}
 
-        rootConfig = self.makeConfig(topdir, buildroot = buildroot)
-        self._makeSubConfigs(rootConfig)
+        self.makeConfig(abspath(topdir))
 
-    def _makeSubConfigs(self, bconf):
-        subdirs = bconf.subdirs
-        for subdir in subdirs:
-            subconf = self.makeConfig(subdir, parent = bconf)
-            self._makeSubConfigs(subconf)
-
-    def makeConfig(self, dirpath, buildroot = None, parent = None):
+    def makeConfig(self, dirpath, parent = None):
         """
         Make Config object for dirpath.
         """
+
+        # It always must be an absolute norm path to avoid duplicates
+        dirpath = abspath(dirpath)
+
+        index = self._configs.get(dirpath)
+        if index is not None:
+            return self._orderedConfigs[index]
 
         filename = loader.findConfFile(dirpath)
         if not filename:
@@ -842,11 +843,17 @@ class ConfManager(object):
         index = len(self._orderedConfigs)
         self._configs[dirpath] = index
 
-        bconf = Config(buildconf, buildroot, parent)
+        bconf = Config(buildconf, self._buildroot, parent)
         self._orderedConfigs.append(bconf)
         startdir = bconf.startdir
         if startdir != dirpath:
             self._virtConfigs[startdir] = index
+
+        for subdir in bconf.subdirs:
+            if subdir in self._configs:
+                # skip circular dependencies
+                continue
+            self.makeConfig(subdir, parent = bconf)
 
         return bconf
 
@@ -871,10 +878,7 @@ class ConfManager(object):
         Return None if not found
         """
 
-        index = self._configs.get(dirpath, None)
-        if index is None:
-            index = self._virtConfigs.get(dirpath, None)
-        return index
+        return self._configs.get(dirpath, self._virtConfigs.get(dirpath, None))
 
     def config(self, dirpath):
         """

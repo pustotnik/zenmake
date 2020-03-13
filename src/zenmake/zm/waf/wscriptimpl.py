@@ -32,6 +32,7 @@ from zm.features import TASK_LANG_FEATURES
 
 joinpath = os.path.join
 abspath = os.path.abspath
+normpath = os.path.normpath
 
 # These variables are set in another place.
 # To detect possible errors these variables are set to 0, not to None.
@@ -69,32 +70,33 @@ def init(ctx):
 
     assist.printZenMakeHeader(ctx.bconfManager)
 
-def configure(conf):
-    """
-    Implementation for wscript.configure
-    """
+def _preconfigure(conf, bconf):
 
-    bconf = conf.getbconf()
-    tasks = bconf.tasks
-
-    if not bconf.parent: # for top-level conf only
-        # set/fix vars PREFIX, BINDIR, LIBDIR
-        assist.applyInstallPaths(conf.env, cli.selected)
-
-    emptyEnv = ConfigSet()
+    # set context path
+    conf.path = conf.getPathNode(bconf.confdir)
 
     # it's necessary to handle 'toolchain.select' before loading of toolchains
-    for taskParams in viewvalues(tasks):
+    for taskParams in viewvalues(bconf.tasks):
         handleOneTaskParamSelect(bconf, taskParams, 'toolchain')
 
     # load all toolchains envs
-    toolchainsEnvs = conf.loadToolchains(bconf, emptyEnv)
+    conf.loadToolchains(bconf)
 
     # Other '*.select' params must be handled after loading of toolchains
     handleTaskParamSelects(bconf)
 
+def _configure(conf, bconf):
+
+    # set context path
+    conf.path = conf.getPathNode(bconf.confdir)
+
     zmcachedir = bconf.confPaths.zmcachedir
     buildtype = bconf.selectedBuildType
+    tasks = bconf.tasks
+
+    emptyEnv = ConfigSet()
+
+    toolchainsEnvs = conf.getToolchainEnvs()
 
     # Prepare task envs based on toolchains envs
     for taskParams in viewvalues(tasks):
@@ -177,10 +179,21 @@ def configure(conf):
 
     conf.addExtraMonitFiles(bconf)
 
-    # gather tasks in subdirs
-    subdirs = bconf.subdirs
-    if subdirs:
-        conf.recurse(subdirs)
+def configure(conf):
+    """
+    Implementation for wscript.configure
+    """
+
+    # for top-level conf only
+    # set/fix vars PREFIX, BINDIR, LIBDIR
+    assist.applyInstallPaths(conf.env, cli.selected)
+
+    configs = conf.bconfManager.configs
+    for bconf in configs:
+        _preconfigure(conf, bconf)
+
+    for bconf in configs:
+        _configure(conf, bconf)
 
 def build(bld):
     """
@@ -228,7 +241,7 @@ def build(bld):
             continue
 
         # set bld.path to startdir of the buildconf from which the current task
-        bld.path = bld.getTaskPathNode(taskParams['$startdir'])
+        bld.path = bld.getStartDirNode(taskParams['$startdir'])
 
         # task env variables are stored in separative env
         # so it's need to switch in
@@ -260,7 +273,8 @@ def build(bld):
         bldParams = taskParams.copy()
         # Remove params that can conflict with waf in theory
         dropKeys = set(KNOWN_TASK_PARAM_NAMES) - assist.getUsedWafTaskKeys()
-        dropKeys.update([k for k in bldParams if k[0] == '$' ])
+        bldParamKeys = tuple(bldParams.keys())
+        dropKeys.update([k for k in bldParamKeys if k[0] == '$' ])
         dropKeys = tuple(dropKeys)
         for k in dropKeys:
             bldParams.pop(k, None)

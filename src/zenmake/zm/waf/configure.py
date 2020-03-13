@@ -16,9 +16,10 @@ import shlex
 # using of the Waf such classes are created in the 'wscript' because this
 # file is loaded always after all Waf context classes.
 
+from waflib import Errors as waferror
+from waflib.ConfigSet import ConfigSet
 from waflib.Context import Context as WafContext
 from waflib.Configure import ConfigurationContext as WafConfContext
-from waflib import ConfigSet, Errors as waferror
 from zm.autodict import AutoDict as _AutoDict
 from zm.pyutils import viewitems, viewvalues
 from zm import utils, log, toolchains, error
@@ -50,6 +51,7 @@ class ConfigurationContext(WafConfContext):
         super(ConfigurationContext, self).__init__(*args, **kwargs)
 
         self._loadedTools = {}
+        self._toolchainEnvs = {}
         self._confCache = None
         self.monitFiles = []
 
@@ -172,9 +174,9 @@ class ConfigurationContext(WafConfContext):
 
         cachePath = joinpath(self.cachedir.abspath(), CONF_CACHE_FILE)
         try:
-            cache = ConfigSet.ConfigSet(cachePath)
+            cache = ConfigSet(cachePath)
         except EnvironmentError:
-            cache = ConfigSet.ConfigSet()
+            cache = ConfigSet()
 
         return cache
 
@@ -337,7 +339,7 @@ class ConfigurationContext(WafConfContext):
         toolchainNames = tuple(toolchainNames)
         return toolchainNames
 
-    def loadToolchains(self, bconf, copyFromEnv):
+    def loadToolchains(self, bconf):
         """
         Load all selected toolchains
         """
@@ -345,10 +347,11 @@ class ConfigurationContext(WafConfContext):
         toolchainNames = self.handleToolchains(bconf)
         self._checkToolchainNames(bconf)
 
-        toolchainsEnvs = self.zmcache().toolchain.setdefault('envs', {})
+        toolchainsEnvs = self._toolchainEnvs
         oldEnvName = self.variant
         customToolchains = bconf.customToolchains
         detectedToolNames = {}
+        emptyEnv = ConfigSet()
 
         def loadToolchain(toolchain):
 
@@ -356,7 +359,7 @@ class ConfigurationContext(WafConfContext):
                 #don't load again
                 return
 
-            self.setenv(toolchain, env = copyFromEnv)
+            self.setenv(toolchain, env = emptyEnv)
 
             toolId = ''
             toolSettings  = customToolchains[toolchain]
@@ -406,6 +409,13 @@ class ConfigurationContext(WafConfContext):
         self.setenv(oldEnvName)
 
         return toolchainsEnvs
+
+    def getToolchainEnvs(self):
+        """
+        Get envs for all loaded toolchains
+        """
+
+        return self._toolchainEnvs
 
     def saveTasksInEnv(self, bconf):
         """

@@ -40,20 +40,16 @@ class BConfManager(ConfManager):
     def setBuildConf(self, dirpath, buildconf):
         self._buildconfs[dirpath] = buildconf
 
-    def makeConfig(self, dirpath, buildroot = None, parent = None):
+    def makeConfig(self, dirpath, parent = None):
 
         buildconf = self._buildconfs[dirpath]
 
         index = len(self._orderedConfigs)
         self._configs[dirpath] = index
-
-        bconf = Config(buildconf, buildroot, parent)
+        bconf = Config(buildconf, self._buildroot, parent)
         self._orderedConfigs.append(bconf)
-        startdir = bconf.startdir
-        if startdir != dirpath:
-            self._virtConfigs[startdir] = index
 
-        return bconf
+        return super(BConfManager, self).makeConfig(dirpath, parent)
 
 PARAM_TEST_VALUES = {
     'toolchain' : ['gcc', 'clang', 'auto-c'],
