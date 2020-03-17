@@ -16,7 +16,6 @@ import sys
 import traceback
 from waflib import Options, Context, Errors
 from zm import WAF_DIR
-#from zm.constants import BUILDCONF_FILENAMES
 from zm.constants import WAF_LOCKFILE
 from zm.pyutils import viewvalues
 from zm import log, utils, cli
@@ -24,51 +23,12 @@ from zm.error import ZenMakeConfError
 from zm.waf import wscriptimpl, assist
 from zm.waf.options import setupOptionVerbose
 
-#pylint: disable=unused-import
+# pylint: disable = unused-import
 # These modules must be just imported
 from zm.waf import context, configure, build, install
-#pylint: enable=unused-import
+# pylint: enable = unused-import
 
 joinpath = os.path.join
-
-#def _loadPathsFromLockfile(dirpath):
-#
-#    from waflib.ConfigSet import ConfigSet
-#    env = ConfigSet()
-#    try:
-#        env.load(joinpath(dirpath, Options.lockfile))
-#        ino = os.stat(dirpath)[stat.ST_INO]
-#    except EnvironmentError:
-#        return
-#
-#    import stat
-#    from waflib import Utils
-#    # check if the folder was not moved
-#    for _dir in (env.run_dir, env.top_dir, env.out_dir):
-#        if not _dir:
-#            continue
-#        if Utils.is_win32:
-#            if dirpath == _dir:
-#                load = True
-#                break
-#        else:
-#            # if the filesystem features symlinks, compare the inode numbers
-#            try:
-#                ino2 = os.stat(_dir)[stat.ST_INO]
-#            except OSError:
-#                pass
-#            else:
-#                if ino == ino2:
-#                    load = True
-#                    break
-#    else:
-#        log.warn('invalid lock file in %s', dirpath)
-#        load = False
-#
-#    if load:
-#        Context.run_dir = env.run_dir
-#        Context.top_dir = env.top_dir
-#        Context.out_dir = env.out_dir
 
 def _prepareBuildDir(bconfPaths):
     """
@@ -219,30 +179,16 @@ def run(cwd, cmd, wafCmdLine, bconfManager):
     os.environ['WAFLOCK'] = WAF_LOCKFILE
     Options.lockfile = WAF_LOCKFILE
 
+    # note: ZenMake doesn't use Waf lockfile in a project dir, only in a buildout dir
+
     # Store current directory before any chdir
     Context.waf_dir = WAF_DIR
 
     # bconfPaths.startdir == bconf.rootdir if bconf == bconfManager.root
-    #Context.launch_dir = cwd
-    Context.launch_dir = bconfPaths.startdir
-    Context.run_dir    = bconfPaths.startdir
+    rootdir = bconf.rootdir
+    Context.launch_dir = rootdir
+    Context.run_dir    = rootdir
     Context.out_dir    = bconfPaths.buildout
-
-    # ZenMake doesn't use lockfile in a project root
-
-    #startdir = bconfPaths.buildconfdir
-    #try:
-    #    dirfiles = os.listdir(startdir)
-    #except OSError:
-    #    dirfiles = []
-    #    log.error('Directory %r is unreadable!', startdir)
-
-    #if Options.lockfile in dirfiles:
-    #    _loadPathsFromLockfile(startdir)
-
-    #if not Context.run_dir:
-    #    if any(x in dirfiles for x in BUILDCONF_FILENAMES):
-    #        Context.run_dir = startdir
 
     try:
         os.chdir(Context.run_dir)
@@ -255,7 +201,7 @@ def run(cwd, cmd, wafCmdLine, bconfManager):
     cliArgs = cmd.args
     verbose = cliArgs.verbose
 
-    #pylint: disable=broad-except
+    # pylint: disable = broad-except
     try:
 
         if 'buildtype' in cliArgs:
@@ -274,4 +220,3 @@ def run(cwd, cmd, wafCmdLine, bconfManager):
     except KeyboardInterrupt:
         log.pprint('RED', 'Interrupted')
         sys.exit(68)
-    #pylint: enable=broad-except
