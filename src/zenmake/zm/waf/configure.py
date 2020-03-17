@@ -522,7 +522,7 @@ class ConfigurationContext(WafConfContext):
         targetPath = joinpath(btypeDir, target)
 
         assist.handleTaskIncludesParam(taskParams, rootdir, startdir)
-        assist.handleTaskLibPathParam(taskParams, rootdir, startdir)
+        assist.handleTaskLibPathParams(taskParams, rootdir, startdir)
         assist.handleTaskExportDefinesParam(taskParams)
 
         taskParams['target'] = targetPath

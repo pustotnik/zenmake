@@ -33,6 +33,8 @@ toListSimple = utils.toListSimple
 
 TOOLCHAIN_PATH_ENVVARS = frozenset(ToolchainVars.allSysVarsToSetToolchain())
 
+_TASKPARAMS_TOLIST_MAP = {}
+
 #def _isDevVersion():
 #    """
 #    Detect if it is development version of the ZenMake
@@ -40,11 +42,28 @@ TOOLCHAIN_PATH_ENVVARS = frozenset(ToolchainVars.allSysVarsToSetToolchain())
 #    from zm import version
 #    return version.isDev()
 
-def _genTaskParamsToListMap():
+def _applyStartDirToParam(bconf, param):
+    return dict(startdir = bconf.startdir, paths = param)
 
-    result = {}
+def _applyStartDirToSrcParam(bconf, param):
+    startdir = bconf.startdir
+    if isinstance(param, maptype):
+        param['startdir'] = startdir
+    else:
+        param = dict(startdir = startdir, paths = param)
+
+    return param
+
+_PREPARE_TASKPARAMS_HOOKS = [(x, _applyStartDirToParam)
+                             for x in ('includes', 'export-includes', 'libpath', 'stlibpath')]
+_PREPARE_TASKPARAMS_HOOKS = (('source', _applyStartDirToSrcParam),) \
+                            + tuple(_PREPARE_TASKPARAMS_HOOKS) \
+                            + BUILDCONF_PREPARE_TASKPARAMS
+
+def _genTaskParamsToListMap(result):
+
     for name, scheme in viewitems(taskscheme):
-        if name in ('conftests', 'name'):
+        if name in ('conftests', 'name') or name.endswith('.select'):
             continue
         types = scheme['type']
         if 'str' in types and 'list-of-strs' in types:
@@ -55,24 +74,36 @@ def _genTaskParamsToListMap():
 
     # Value 'None' means: don't make a list
     result.update({
+        'name'      : None,
         'features'  : toListSimple,
         'conftests' : None,
-        'name'      : None,
     })
     return result
 
-_TASKPARAMS_TOLIST_MAP = _genTaskParamsToListMap()
-
-def taskParamToList(paramName, paramVal):
+def convertTaskParamToList(taskParams, paramName):
     """
-    Convert task param value to list if it's possible and return result
+    Convert task param value to list where it's possible.
     """
 
-    _toList = _TASKPARAMS_TOLIST_MAP.get(paramName, '')
-    if _toList is None:
-        return paramVal
+    paramVal = taskParams[paramName]
 
-    return _toList(paramVal) if _toList else paramVal
+    if isinstance(paramVal, maptype):
+        if paramName == 'source':
+            subNames = ('include', 'exclude', 'paths')
+        else:
+            subNames = ('paths', )
+        for name in subNames:
+            val = paramVal.get(name)
+            if val is not None:
+                paramVal[name] = toList(val)
+        return
+
+    if not _TASKPARAMS_TOLIST_MAP:
+        _genTaskParamsToListMap(_TASKPARAMS_TOLIST_MAP)
+
+    _toList = _TASKPARAMS_TOLIST_MAP.get(paramName)
+    if _toList is not None:
+        taskParams[paramName] = _toList(paramVal)
 
 class Config(object):
     """
@@ -106,7 +137,7 @@ class Config(object):
         self._applyDefaults()
         self._postValidateConf()
         self._makeBuildDirParams(buildroot)
-        self._fixStartDirForConfPathParams()
+        self._prepareTaskParams()
         self._handleTaskNames() # must be called before merging
         self._merge()
 
@@ -152,21 +183,10 @@ class Config(object):
         else:
             mergeBuildRoot('realbuildroot')
 
-    def _fixStartDirForConfPathParams(self):
+    def _prepareTaskParams(self):
 
         buildconf = self._conf
         startdir = self.startdir
-
-        def fixSrcParam(self, param):
-            startdir = self.startdir
-            if isinstance(param, maptype):
-                param['startdir'] = startdir
-            else:
-                param = dict(startdir = startdir, paths = param)
-
-            return param
-
-        hooks = (('source', fixSrcParam),) + BUILDCONF_PREPARE_TASKPARAMS
 
         def prepareTaskParams(hooks, taskparams):
 
@@ -189,13 +209,13 @@ class Config(object):
                 if not isinstance(taskparams, maptype):
                     # buildtypes has special key 'default'
                     continue
-                prepareTaskParams(hooks, taskparams)
+                prepareTaskParams(_PREPARE_TASKPARAMS_HOOKS, taskparams)
 
         # matrix
         for entry in buildconf.matrix:
             taskparams = entry.get('set')
             if taskparams:
-                prepareTaskParams(hooks, taskparams)
+                prepareTaskParams(_PREPARE_TASKPARAMS_HOOKS, taskparams)
 
         # 'toolchains'
         for params in viewvalues(buildconf.toolchains):
@@ -225,19 +245,11 @@ class Config(object):
             taskParams['$startdir'] = taskStartDir
 
             for paramName, paramVal in viewitems(taskParams):
-                if not isinstance(paramVal, maptype):
-                    taskParams[paramName] = taskParamToList(paramName, paramVal)
-                    continue
 
-                # premake lists to avoid conversions later
-                if paramName == 'source':
-                    subNames = ('include', 'exclude', 'paths')
-                else:
-                    subNames = ('paths', )
-                for name in subNames:
-                    val = paramVal.get(name)
-                    if val is not None:
-                        paramVal[name] = toList(val)
+                taskParams[paramName] = paramVal
+                convertTaskParamToList(taskParams, paramName)
+                if not isinstance(paramVal, maptype):
+                    continue
 
                 # set startdir
                 paramStartDir = paramVal.get('startdir')
@@ -788,7 +800,7 @@ class Config(object):
                     if not os.path.exists(path):
                         log.warn("Path to toolchain '%s' doesn't exist" % path)
                     v = path
-                _vars[k] = utils.toList(v)
+                _vars[k] = toList(v)
 
             _customToolchains[name].kind = kind
             _customToolchains[name].vars = _vars

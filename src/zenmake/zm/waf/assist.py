@@ -29,13 +29,20 @@ isabs    = os.path.isabs
 toList       = utils.toList
 toListSimple = utils.toListSimple
 
+# These keys are not removed from waf task gen on 'build' step
+# Such keys as '*flags' and 'defines' are set in task envs, so they
+# don't need to be protected from removing from waf task gen.
 _usedWafTaskKeys = set([
-    'name', 'target', 'features', 'source', 'includes', 'lib', 'libpath',
+    'name', 'target', 'features', 'source', 'includes',
+    'lib', 'libpath', 'stlib', 'stlibpath',
     'rpath', 'use', 'vnum', 'idx', 'export_includes', 'export_defines',
     'install_path',
 ])
 
 _srcCache = {}
+
+_RE_TASKVARIANT_NAME = re.compile(r'(?u)[^-\w.]')
+_RE_EXT_AT_THE_END = re.compile(r'\.\w+$')
 
 def registerUsedWafTaskKeys(keys):
     ''' Register used Waf task keys '''
@@ -98,7 +105,7 @@ def makeCacheConfFileName(zmcachedir, name):
 def makeTaskVariantName(buildtype, taskName):
     """ Make 'variant' name for task """
     name = taskName.strip().replace(' ', '_')
-    return '%s.%s' % (buildtype, re.sub(r'(?u)[^-\w.]', '.', name))
+    return '%s.%s' % (buildtype, _RE_TASKVARIANT_NAME.sub('.', name))
 
 def copyEnv(env):
     """
@@ -249,9 +256,8 @@ def getTaskNamesWithDeps(tasks, names):
     """
     result = list(names)
     for name in names:
-        params = tasks.get(name, {})
-        deps = params.get('use')
-        if deps:
+        deps = tasks.get(name, {}).get('use')
+        if deps is not None:
             result.extend(getTaskNamesWithDeps(tasks, toList(deps)))
 
     return result
@@ -303,8 +309,6 @@ def detectTaskFeatures(ctx, taskParams):
     taskParams['features'] = features
 
     return features
-
-_RE_EXT_AT_THE_END = re.compile(r'\.\w+$')
 
 def handleTaskFeatureAlieses(ctx, features, source):
     """
@@ -377,25 +381,25 @@ def _makeTaskPathParam(param, rootdir, startdir, relative = True):
             path = joinpath(_startdir, path)
         if relative:
             # make path relative to the task startdir
-            path = normpath(relpath(path, startdir))
-        result.append(path)
+            path = relpath(path, startdir)
+        result.append(normpath(path))
 
     return result
 
-def handleTaskLibPathParam(taskParams, rootdir, startdir):
+def handleTaskLibPathParams(taskParams, rootdir, startdir):
     """
-    Make valid 'libpath' for build task
+    Make valid 'libpath','stlibpath' for a build task
     """
 
-    paramName = 'libpath'
-    param = taskParams.get(paramName, None)
-    if param is None:
-        return
+    for paramName in ('libpath', 'stlibpath'):
+        param = taskParams.get(paramName)
+        if param is None:
+            continue
 
-    # Waf doesn't change 'libpath' relative to current ctx.path as for 'includes'.
-    # So we use absolute paths here.
-    taskParams[paramName] = _makeTaskPathParam(
-                param, rootdir, startdir, relative = False)
+        # Waf doesn't change 'libpath' relative to current ctx.path as for 'includes'.
+        # So we use absolute paths here.
+        taskParams[paramName] = _makeTaskPathParam(
+                        param, rootdir, startdir, relative = False)
 
 def handleTaskIncludesParam(taskParams, rootdir, startdir):
     """

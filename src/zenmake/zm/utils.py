@@ -20,8 +20,8 @@ WINDOWS_RESERVED_FILENAMES = frozenset((
     'LPT6', 'LPT7', 'LPT8', 'LPT9'
 ))
 
-RE_UNSAFE_FILENAME_CHARS = re.compile(r'(?u)[^-\w.]')
-RE_TOLIST = re.compile(r"""((?:[^\s"']|"[^"]*"|'[^']*')+)""")
+_RE_UNSAFE_FILENAME_CHARS = re.compile(r'(?u)[^-\w.]')
+_RE_TOLIST = re.compile(r"""((?:[^\s"']|"[^"]*"|'[^']*')+)""")
 
 def platform():
     """
@@ -60,7 +60,7 @@ def normalizeForFileName(s, spaceAsDash = False):
         s = s.replace(' ', '-')
     else:
         s = s.replace(' ', '_')
-    s = RE_UNSAFE_FILENAME_CHARS.sub('', s)
+    s = _RE_UNSAFE_FILENAME_CHARS.sub('', s)
     if PLATFORM == 'windows' and s.upper() in WINDOWS_RESERVED_FILENAMES:
         s = '_%s' % s
     return s
@@ -111,7 +111,7 @@ def toList(val):
     # It can be made without regexp but this solution works faster.
     # Actually manual function should be faster but python regexp engine uses
     # some C code and therefore it works faster.
-    return [stripQuotes(x) for x in RE_TOLIST.split(val)[1::2]]
+    return [stripQuotes(x) for x in _RE_TOLIST.split(val)[1::2]]
 
 def uniqueListWithOrder(lst):
     """
