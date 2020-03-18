@@ -12,9 +12,9 @@ from importlib import import_module as importModule
 
 from waflib import Context as WafContextModule
 from waflib.Context import Context as WafContext
-from waflib.ConfigSet import ConfigSet
 from zm import ZENMAKE_DIR, WAF_DIR
 from zm.autodict import AutoDict as _AutoDict
+from zm.db import DBFile
 from zm import utils, error
 from zm.waf import wscriptimpl
 
@@ -141,14 +141,11 @@ def _loadTasksFromFileCache(ctx, cachefile):
 
     key = 'zmtasks'
 
-    result = {}
     try:
-        env = ConfigSet()
-        env.load(cachefile)
-        if key in env:
-            result = env[key]
+        data = DBFile.loadFrom(cachefile)
+        result = data.get(key, {})
     except EnvironmentError:
-        pass
+        result = {}
 
     return result
 

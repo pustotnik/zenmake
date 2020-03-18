@@ -22,12 +22,12 @@ from collections import defaultdict
 from copy import copy, deepcopy
 
 from waflib import Context
-from waflib.ConfigSet import ConfigSet
 from zm import starter
 from zm import pyutils, utils, zipapp
 from zm.pyutils import viewitems, viewvalues, stringtype
 from zm.waf import assist
 from zm.autodict import AutoDict
+from zm.db import DBFile
 from zm.buildconf import loader as bconfloader
 from zm.buildconf.processing import ConfManager as BuildConfManager
 from zm.constants import ZENMAKE_CMN_CFGSET_FILENAME, PLATFORM, APPNAME
@@ -190,7 +190,7 @@ def getTaskEnv(testSuit, taskName):
     taskVariant = assist.makeTaskVariantName(buildtype, taskName)
     cacheConfFile = assist.makeCacheConfFileName(
                                     bconf.confPaths.zmcachedir, taskVariant)
-    env = ConfigSet(cacheConfFile)
+    env = DBFile.loadFrom(cacheConfFile, asConfigSet = True)
     return env
 
 def getTargetPattern(env, features):

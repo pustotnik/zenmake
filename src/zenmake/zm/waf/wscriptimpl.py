@@ -24,6 +24,7 @@ import os
 from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext
 from zm.pyutils import viewitems, viewvalues
+from zm.db import DBFile
 from zm import cli, error, log
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
@@ -162,7 +163,8 @@ def _configure(conf, bconf):
         # build step. So it loads all stored variants even though they
         # aren't needed. And I decided to save variants in different files and
         # load only needed ones.
-        conf.env.store(assist.makeCacheConfFileName(zmcachedir, taskVariant))
+        filepath = assist.makeCacheConfFileName(zmcachedir, taskVariant)
+        DBFile.saveTo(filepath, conf.env)
 
         # It's necessary to delete variant from conf.all_envs. Otherwise
         # Waf will store it in 'c4che'
@@ -249,7 +251,7 @@ def build(bld):
 
         # load environment for this task
         cacheFile = assist.makeCacheConfFileName(bconfPaths.zmcachedir, bld.variant)
-        bld.env = ConfigSet(cacheFile)
+        bld.env = DBFile.loadFrom(cacheFile, asConfigSet = True)
         bld.env.parent = rootEnv
 
         assist.convertTaskParamNamesForWaf(taskParams)

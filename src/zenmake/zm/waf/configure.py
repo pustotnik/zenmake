@@ -21,6 +21,7 @@ from waflib.ConfigSet import ConfigSet
 from waflib.Context import Context as WafContext
 from waflib.Configure import ConfigurationContext as WafConfContext
 from zm.autodict import AutoDict as _AutoDict
+from zm.db import DBFile
 from zm.pyutils import viewitems, viewvalues
 from zm import utils, log, toolchains, error
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
@@ -175,7 +176,7 @@ class ConfigurationContext(WafConfContext):
 
         cachePath = joinpath(self.cachedir.abspath(), CONF_CACHE_FILE)
         try:
-            cache = ConfigSet(cachePath)
+            cache = DBFile.loadFrom(cachePath, asConfigSet = True)
         except EnvironmentError:
             cache = ConfigSet()
 
@@ -206,7 +207,7 @@ class ConfigurationContext(WafConfContext):
 
         if self._confCache is not None:
             cachePath = joinpath(self.cachedir.abspath(), CONF_CACHE_FILE)
-            self._confCache.store(cachePath)
+            DBFile.saveTo(cachePath, self._confCache)
 
     # override
     def post_recurse(self, node):

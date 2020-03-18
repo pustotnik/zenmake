@@ -12,6 +12,7 @@ import subprocess
 
 from waflib import Options, Context, Configure, Utils
 from waflib.ConfigSet import ConfigSet
+from zm.db import DBFile
 from zm import log
 from zm.pypkg import PkgPath
 from zm.waf import assist, launcher
@@ -33,7 +34,7 @@ def _isBuildTypeNotConfigured(bconfMngr):
         for taskName in bconf.taskNames:
             taskVariant = assist.makeTaskVariantName(buildtype, taskName)
             fname = assist.makeCacheConfFileName(zmcachedir, taskVariant)
-            if not os.path.isfile(fname):
+            if not DBFile.dbexists(fname):
                 return True
     return False
 

@@ -17,6 +17,7 @@ from waflib import Context
 from zm import utils
 from zm.waf import assist
 from zm.autodict import AutoDict
+from zm.db import DBFile
 from zm.constants import *
 from zm.features import ToolchainVars
 import tests.common as cmn
@@ -51,7 +52,8 @@ def testDumpZenMakeCommonFile(tmpdir):
     assist.dumpZenMakeCmnConfSet(monitFiles, fakeConfPaths.zmcmnconfset)
     assert os.path.isfile(fakeConfPaths.zmcmnconfset)
 
-    cfgenv = ConfigSet(fakeConfPaths.zmcmnconfset)
+    cfgenv = DBFile.loadFrom(fakeConfPaths.zmcmnconfset)
+    cfgenv = AutoDict(cfgenv)
     assert 'monitfiles' in cfgenv
     assert cfgenv.monitfiles == [ str(buildconffile), str(buildconffile2) ]
     assert 'monithash' in cfgenv

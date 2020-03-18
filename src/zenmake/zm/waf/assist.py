@@ -15,6 +15,8 @@ from copy import deepcopy
 from waflib.ConfigSet import ConfigSet
 from zm.pyutils import viewitems, stringtype, _unicode, _encode
 from zm import utils, log, version, toolchains
+from zm.autodict import AutoDict as _AutoDict
+from zm.db import DBFile
 from zm.error import ZenMakeError, ZenMakeConfError
 from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, TASK_FEATURE_ALIESES, PLATFORM
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
@@ -67,7 +69,7 @@ def dumpZenMakeCmnConfSet(monitfiles, filepath):
     monitored for changes.
     """
 
-    zmCmn = ConfigSet()
+    zmCmn = _AutoDict()
 
     zmCmn.zmversion = version.current()
 
@@ -83,16 +85,15 @@ def dumpZenMakeCmnConfSet(monitfiles, filepath):
     for name in envVarNames:
         zmCmn.toolenvs[name] = os.environ.get(name, '')
 
-    zmCmn.store(filepath)
+    DBFile.saveTo(filepath, zmCmn)
 
 def loadZenMakeCmnConfSet(bconfPaths):
     """
     Load ZenMake common ConfigSet file. Return None if failed
     """
 
-    zmCmn = ConfigSet()
     try:
-        zmCmn.load(bconfPaths.zmcmnconfset)
+        zmCmn = DBFile.loadFrom(bconfPaths.zmcmnconfset, asConfigSet = True)
     except EnvironmentError:
         return None
 
