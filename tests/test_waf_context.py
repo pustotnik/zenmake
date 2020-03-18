@@ -18,6 +18,7 @@ import pytest
 from waflib.ConfigSet import ConfigSet
 from waflib.Context import Context
 from zm.autodict import AutoDict
+from zm.db import DBFile
 from zm.waf import context
 import tests.common as cmn
 
@@ -31,14 +32,14 @@ def testLoadTasksFromCache(tmpdir):
     #ctx = Context()
     cachedata = ConfigSet()
     cachedata.something = 11
-    cachedata.store(str(cachefile))
+    DBFile.saveTo(str(cachefile), cachedata)
     assert ctx.loadTasksFromFileCache(str(cachefile)) == {}
 
     #ctx = Context()
     cachedata.zmtasks = dict( a = 1, b = 2 )
-    cachedata.store(str(cachefile))
+    DBFile.saveTo(str(cachefile), cachedata)
     assert ctx.loadTasksFromFileCache(str(cachefile)) == cachedata.zmtasks
 
     cachedata.zmtasks = dict( a = 3, b = 4 )
-    cachedata.store(str(cachefile))
+    DBFile.saveTo(str(cachefile), cachedata)
     assert ctx.loadTasksFromFileCache(str(cachefile)) == cachedata.zmtasks
