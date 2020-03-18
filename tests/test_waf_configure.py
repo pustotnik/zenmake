@@ -368,26 +368,23 @@ def testToolchainNames(testingBuildConf, cfgctx, monkeypatch):
     ]
     _checkToolchainNames(ctx, buildconf, buildtype, ['gxx', 'lgxx'])
 
-def testLoadToolchains(mocker, cfgctx):
+def _setToolchains(ctx, bconf, toolchainNames):
+    ctx.validToolchainNames = set(toolchainNames)
+    ctx.validToolchainNames.update(set(bconf.customToolchains.keys()))
+    bconf.tasks = AutoDict()
+    for i, name in enumerate(toolchainNames):
+        bconf.tasks['task%d' % i].toolchain = name
+
+def testLoadToolchains(cfgctx):
 
     ctx = cfgctx
     ctx.variant = 'old'
 
     bconf = AutoDict()
 
-    def setToolchains(bconf, toolchainNames):
-        ctx.validToolchainNames = set(toolchainNames)
-        ctx.validToolchainNames.update(set(bconf.customToolchains.keys()))
-        bconf.tasks = AutoDict()
-        for i, name in enumerate(toolchainNames):
-            bconf.tasks['task%d' % i].toolchain = name
-
-    #with pytest.raises(WafError):
-    #    ctx.loadToolchains(bconf)
-
     # load existing tools by name
     toolchainNames = ['gcc', 'g++', 'g++']
-    setToolchains(bconf, toolchainNames)
+    _setToolchains(ctx, bconf, toolchainNames)
     bconf.customToolchains = AutoDict()
     toolchainsEnvs = ctx.loadToolchains(bconf)
     for name in toolchainNames:
@@ -398,7 +395,7 @@ def testLoadToolchains(mocker, cfgctx):
     # auto load existing tool by lang
     bconf.customToolchains = AutoDict()
     toolchainNames = ['auto-c', 'auto-c++']
-    setToolchains(bconf, toolchainNames)
+    _setToolchains(ctx, bconf, toolchainNames)
     toolchainsEnvs = ctx.loadToolchains(bconf)
     assert toolchainsEnvs
     for name in toolchainNames:
@@ -418,16 +415,20 @@ def testLoadToolchains(mocker, cfgctx):
         })
     })
     toolchainNames = ['local-g++', 'g++']
-    setToolchains(bconf, toolchainNames)
+    _setToolchains(ctx, bconf, toolchainNames)
     toolchainsEnvs = ctx.loadToolchains(bconf)
     assert toolchainsEnvs['g++'].loaded == 'loaded-g++'
     assert toolchainsEnvs['local-g++'].loaded == 'loaded-g++'
     assert ctx.variant == 'old'
 
-    # errors
-    ctx.zmcache().clear()
+def testLoadToolchainsErrors(mocker, cfgctx):
+
+    ctx = cfgctx
+    bconf = AutoDict()
+
     ctx.loadTool = mocker.MagicMock(side_effect = WafError)
     bconf.customToolchains = AutoDict()
     bconf.toolchainNames = ['auto-c', 'auto-c++']
+    _setToolchains(ctx, bconf, ['local-g++', 'g++'])
     with pytest.raises(WafError):
         ctx.loadToolchains(bconf)

@@ -21,11 +21,11 @@ from zm.constants import PLATFORM, EXE_FILE_EXTS
 from zm.features import postcmd
 
 if PLATFORM == 'windows':
-    CMDFILE_EXTS = EXE_FILE_EXTS + '.py,.pl'
+    _CMDFILE_EXTS = EXE_FILE_EXTS + '.py,.pl'
 else:
-    CMDFILE_EXTS = EXE_FILE_EXTS
+    _CMDFILE_EXTS = EXE_FILE_EXTS
 
-RE_WITH_TGT = re.compile(r'\$\{*TGT')
+_RE_WITH_TGT = re.compile(r'\$\{*TGT')
 
 def _processCmdLine(conf, bconf, cwd, shell, cmdArgs):
     """ Get and process 'cmd' at 'configure' stage """
@@ -55,7 +55,7 @@ def _processCmdLine(conf, bconf, cwd, shell, cmdArgs):
     paths.extend(os.environ.get('PATH', '').split(os.pathsep))
     fkw = dict(
         path_list = paths, quiet = True,
-        exts = CMDFILE_EXTS, mandatory = False
+        exts = _CMDFILE_EXTS, mandatory = False
     )
 
     partsCount = len(cmdSplitted)
@@ -288,7 +288,7 @@ def applyRunCmd(tgen):
         for k, v in viewitems(ruleArgs):
             setattr(tgen, k, v)
         if hasattr(tgen, 'target'):
-            if cmdType == 'func' or not RE_WITH_TGT.search(cmd):
+            if cmdType == 'func' or not _RE_WITH_TGT.search(cmd):
                 delattr(tgen, 'target')
         tgen.process_rule()
         delattr(tgen, 'rule')

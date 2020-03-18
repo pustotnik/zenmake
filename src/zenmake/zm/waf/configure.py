@@ -45,7 +45,8 @@ TOOL_AUTO_NAMES = { _genToolAutoName(x) for x in ToolchainVars.allLangs() }
 class ConfigurationContext(WafConfContext):
     """ Context for command 'configure' """
 
-    # pylint: disable=no-member,attribute-defined-outside-init
+    # pylint: disable = no-member,attribute-defined-outside-init
+    # pylint: disable = too-many-instance-attributes
 
     def __init__(self, *args, **kwargs):
         super(ConfigurationContext, self).__init__(*args, **kwargs)

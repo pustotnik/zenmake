@@ -34,7 +34,7 @@ class AutoDict(dict):
         self[name] = value
 
     def __copy__(self):
-        return AutoDict(self.copy())
+        return self.copy()
 
     def __deepcopy__(self, memo):
         result = AutoDict()
@@ -45,6 +45,10 @@ class AutoDict(dict):
         #for k, v in self.__dict__.items():
         #    setattr(result, k, deepcopy(v, memo))
         return result
+
+    def copy(self):
+        """ shallow copy """
+        return AutoDict(super(AutoDict, self).copy())
 
     def getByDots(self, keystring, default = None):
         """

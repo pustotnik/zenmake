@@ -24,6 +24,7 @@ from zm import cli, utils
 from zm.waf import assist
 from zm.buildconf.processing import Config, ConfManager
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
+from zm.buildconf.select import clearLocalCache as clearSelectLocalCache
 from zm.waf.configure import ConfigurationContext
 from zm import features
 from tests.common import asRealConf
@@ -154,6 +155,9 @@ def checkExpectedIncludes(result, expected):
 checkExpectedExportIncludes = checkExpectedIncludes
 
 def checkExpectedLibpath(result, expected):
+    assert [os.path.basename(x) for x in result]  == utils.toList(expected)
+
+def checkExpectedStlibpath(result, expected):
     assert [os.path.basename(x) for x in result]  == utils.toList(expected)
 
 def checkExpectedRun(result, expected):
@@ -415,6 +419,11 @@ def paramfixture(monkeypatch, testingBuildConf, paramName, paramFixtureFunc):
 
 @pytest.mark.skipif(PLATFORM != 'linux', reason = "It's enough to test on linux only")
 def testParam(cfgctx, monkeypatch, paramfixture):
+
+    # it's necessary because 'id' is used for each bconf in cache and
+    # due to removing old objects by python garbage collector some new
+    # bconf objects can have an old id
+    clearSelectLocalCache()
 
     ctx = cfgctx
 

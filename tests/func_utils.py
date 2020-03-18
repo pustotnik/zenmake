@@ -5,6 +5,7 @@
 # pylint: disable = missing-docstring, invalid-name, bad-continuation
 # pylint: disable = unused-argument, no-member, attribute-defined-outside-init
 # pylint: disable = too-many-lines, too-many-branches, too-many-statements
+# pylint: disable = line-too-long
 
 """
  Copyright (c) 2020, Alexander Magola. All rights reserved.
@@ -344,6 +345,11 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False,
     targets = obtainBuildTargets(testSuit, cmdLine, withTests)
     checkBuildTargets(targets, resultExists, fakeBuild)
 
+_RE_ANY_TASK = re.compile(r"^\s*\[\s*-?\d+/(\d+)\s*\]\s+.+")
+_RE_LINK_TASK = re.compile(r"^\s*\[\s*-?\d+/\d+\s*\]\s+Linking\s+.+\%s(lib)?([\w\-\s]+)" % os.sep, re.U)
+_RE_RUNCMD_TASK = re.compile(r"^\s*\[\s*-?\d+/\d+\s*\]\s+Running\s+command\s+.*?\'([\w\s.\-]+)\'$", re.U)
+_RE_TEST_TASK = re.compile(r"\s*Running\s+test:\s+\'([\w\s.\-]+)\'$", re.U)
+
 def gatherEventsFromOutput(output):
 
     CMD_NAMES = ('build', 'test')
@@ -354,7 +360,6 @@ def gatherEventsFromOutput(output):
     taskRealCount = 0
     taskMaxCount = 0
     cmdIndexes = defaultdict(dict)
-    sep = os.path.sep
 
     def findCmdEnd(line):
         for cmdName in CMD_NAMES:
@@ -381,27 +386,27 @@ def gatherEventsFromOutput(output):
             continue
 
         isWafTaskStarting = False
-        m = re.match(r"^\s*\[\s*-?\d+/(\d+)\s*\]\s+.+", line)
+        m = _RE_ANY_TASK.match(line)
         if m:
             taskRealCount += 1
             taskMaxCount = int(m.group(1))
             isWafTaskStarting = True
 
-        m = re.match(r"^\s*\[\s*-?\d+/\d+\s*\]\s+Linking\s+.+\%s(lib)?([\w\-\s]+)" % sep, line)
+        m = _RE_LINK_TASK.match(line)
         if m:
             task = m.group(2)
             cmdEvents.append(['linking', task])
             cmdIndexes['linking'][task] = len(cmdEvents) - 1
             continue
 
-        m = re.match(r"^\s*\[\s*-?\d+/\d+\s*\]\s+Running\s+command\s+.*?\'([\w\s.\-]+)\'$", line)
+        m = _RE_RUNCMD_TASK.match(line)
         if m:
             task = m.group(1)
             cmdEvents.append(['running', task])
             cmdIndexes['running'][task] = len(cmdEvents) - 1
             continue
 
-        m = re.match(r"\s*Running\s+test:\s+\'([\w\s.\-]+)\'$", line)
+        m = _RE_TEST_TASK.match(line)
         if m:
             task = m.group(1)
             cmdEvents.append(['running', task])
