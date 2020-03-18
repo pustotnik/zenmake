@@ -24,11 +24,24 @@ if PY3:
     texttype = str # pragma: no cover
     binarytype = bytes # pragma: no cover
     _t = str # pragma: no cover
+
+    def _unicode(s):
+        return s
+
+    def _encode(s):
+        return s
+
 else:
     stringtype = basestring # pragma: no cover
     texttype = unicode # pragma: no cover
     binarytype = str # pragma: no cover
     _t = unicode # pragma: no cover
+
+    def _unicode(s):
+        return unicode(s, 'utf-8', 'replace')
+
+    def _encode(s):
+        return s.encode('utf-8', 'replace')
 
 try:
     from collections.abc import Mapping, MutableMapping

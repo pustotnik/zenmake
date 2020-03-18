@@ -54,6 +54,10 @@ def _getReadyConditions(bconf):
     _local['ready-conditions'][bconfId] = conditions
     return conditions
 
+def clearLocalCache():
+    """ Clear local cache. It's mostly for tests """
+    _local.clear()
+
 def handleOneTaskParamSelect(bconf, taskParams, paramName):
     """
     Handle one <param name>.select

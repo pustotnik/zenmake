@@ -13,7 +13,7 @@ import re
 from copy import deepcopy
 
 from waflib.ConfigSet import ConfigSet
-from zm.pyutils import viewitems, stringtype
+from zm.pyutils import viewitems, stringtype, _unicode, _encode
 from zm import utils, log, version, toolchains
 from zm.error import ZenMakeError, ZenMakeConfError
 from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, TASK_FEATURE_ALIESES, PLATFORM
@@ -41,8 +41,8 @@ _usedWafTaskKeys = set([
 
 _srcCache = {}
 
-_RE_TASKVARIANT_NAME = re.compile(r'(?u)[^-\w.]')
-_RE_EXT_AT_THE_END = re.compile(r'\.\w+$')
+_RE_TASKVARIANT_NAME = re.compile(r'[^-\w.]', re.UNICODE)
+_RE_EXT_AT_THE_END = re.compile(r'\.\w+$', re.UNICODE)
 
 def registerUsedWafTaskKeys(keys):
     ''' Register used Waf task keys '''
@@ -104,8 +104,10 @@ def makeCacheConfFileName(zmcachedir, name):
 
 def makeTaskVariantName(buildtype, taskName):
     """ Make 'variant' name for task """
-    name = taskName.strip().replace(' ', '_')
-    return '%s.%s' % (buildtype, _RE_TASKVARIANT_NAME.sub('.', name))
+
+    name = _unicode(taskName).strip().replace(' ', '_')
+    name = '%s.%s' % (buildtype, _RE_TASKVARIANT_NAME.sub('.', name))
+    return _encode(name)
 
 def copyEnv(env):
     """
@@ -327,7 +329,7 @@ def handleTaskFeatureAlieses(ctx, features, source):
         #    patterns = [x.lower() for x in patterns]
 
         for pattern in patterns:
-            if not _RE_EXT_AT_THE_END.search(pattern):
+            if not _RE_EXT_AT_THE_END.search(_unicode(pattern)):
                 msg = "Pattern %r in 'source'" % pattern
                 msg += " must have some file extension at the end."
                 raise ZenMakeConfError(msg)

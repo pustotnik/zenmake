@@ -12,7 +12,7 @@ import re
 from importlib import import_module as importModule
 
 from waflib import Utils as wafutils
-from zm.pyutils import stringtype
+from zm.pyutils import stringtype, _unicode, _encode
 
 WINDOWS_RESERVED_FILENAMES = frozenset((
     'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5',
@@ -20,12 +20,12 @@ WINDOWS_RESERVED_FILENAMES = frozenset((
     'LPT6', 'LPT7', 'LPT8', 'LPT9'
 ))
 
-_RE_UNSAFE_FILENAME_CHARS = re.compile(r'(?u)[^-\w.]')
+_RE_UNSAFE_FILENAME_CHARS = re.compile(r'[^-\w.]', re.UNICODE)
 _RE_TOLIST = re.compile(r"""((?:[^\s"']|"[^"]*"|'[^']*')+)""")
 
 def platform():
     """
-    Return current system platfom. For MS Windows paltfrom is always 'windows'.
+    Return current system platform. For MS Windows platform is always 'windows'.
     """
     result = wafutils.unversioned_sys_platform()
     if result.startswith('win32'):
@@ -55,12 +55,12 @@ def normalizeForFileName(s, spaceAsDash = False):
     """
     Convert a string into string suitable for file name
     """
-    s = str(s).strip()
+    s = _unicode(s).strip()
     if spaceAsDash:
         s = s.replace(' ', '-')
     else:
         s = s.replace(' ', '_')
-    s = _RE_UNSAFE_FILENAME_CHARS.sub('', s)
+    s = _encode(_RE_UNSAFE_FILENAME_CHARS.sub('', s))
     if PLATFORM == 'windows' and s.upper() in WINDOWS_RESERVED_FILENAMES:
         s = '_%s' % s
     return s

@@ -14,6 +14,7 @@ __all__ = [
 
 import os
 import sys
+import io
 
 from zm import log
 from zm.constants import BUILDCONF_FILENAMES, DEFAULT_BUILDROOTNAME
@@ -110,7 +111,7 @@ def _loadYaml(filepath):
     buildconf = types.ModuleType('buildconf')
     buildconf.__file__ = os.path.abspath(filepath)
     data = {}
-    with open(filepath, 'r') as stream:
+    with io.open(filepath, 'rt', encoding = 'utf-8') as stream:
         try:
             data = yaml.load(stream, SafeLoader)
         except yaml.YAMLError as ex:
