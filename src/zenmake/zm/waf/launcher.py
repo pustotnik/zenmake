@@ -68,10 +68,11 @@ def _prepareAndLoadFeatures(bconfManager):
                 assist.detectTaskFeatures(ctx, taskParams)
                 assist.validateTaskFeatures(taskParams)
     except ZenMakeConfError as ex:
-        origMsg = ex.msg
-        ex.msg = "Error in the file %r:" % bconf.path
-        for line in origMsg.splitlines():
-            ex.msg += "\n  %s" % line
+        if not ex.confpath:
+            origMsg = ex.msg
+            ex.msg = "Error in the file %r:" % bconf.path
+            for line in origMsg.splitlines():
+                ex.msg += "\n  %s" % line
         raise ex
 
     # load modules for all actual features from buildconf(s)

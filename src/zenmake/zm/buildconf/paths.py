@@ -78,12 +78,10 @@ class ConfPaths(object):
             checkingName = "%r" % checkingName
 
         if buildrootVal == checkingVal:
-            msg = "Error in file %r:\n" % self.buildconffile
-            msg += "Parameter %r cannot be the same as the %s" % (buildrootName, checkingName)
-            raise ZenMakeConfValueError(msg)
+            msg = "Parameter %r cannot be the same as the %s" % (buildrootName, checkingName)
+            raise ZenMakeConfValueError(msg, confpath = self.buildconffile)
 
         if checkingVal.startswith(buildrootVal):
-            msg = "Error in file %r:\n" % self.buildconffile
-            msg += "Parameter %r cannot be parent directory of the %s" % \
+            msg = "Parameter %r cannot be parent directory of the %s" % \
                    (buildrootName, checkingName)
-            raise ZenMakeConfValueError(msg)
+            raise ZenMakeConfValueError(msg, confpath = self.buildconffile)

@@ -249,7 +249,7 @@ class _RunnerBldCtx(object):
         # pylint: disable = unused-argument
         return
 
-def _applyParallelTasksDeps(tasks):
+def _applyParallelTasksDeps(tasks, bconfpath):
 
     idToTask = {}
     for tsk in tasks:
@@ -262,7 +262,8 @@ def _applyParallelTasksDeps(tasks):
         for key in utils.toList(tasks):
             otherTask = idToTask.get(key, None)
             if not otherTask:
-                raise error.ZenMakeConfError('No test named %r' % key)
+                msg = 'No test named %r' % key
+                raise error.ZenMakeConfError(msg, confpath = bconfpath)
             if before:
                 otherTask.run_after.add(task)
             else:
@@ -316,7 +317,10 @@ def _checkInParallelImpl(cfgCtx, checkArgsList, **kwargs):
 
         tasks.append(checkTask)
 
-    _applyParallelTasksDeps(tasks)
+    bconf = cfgCtx.getbconf()
+    bconfpath = bconf.path
+
+    _applyParallelTasksDeps(tasks, bconfpath)
 
     def getTasksGenerator():
         yield tasks
@@ -333,7 +337,7 @@ def _checkInParallelImpl(cfgCtx, checkArgsList, **kwargs):
         if ex.msg.startswith('Task dependency cycle'):
             msg = "Infinite recursion was detected in parallel tests."
             msg += " Check all parameters 'before' and 'after'."
-            raise error.ZenMakeConfError(msg)
+            raise error.ZenMakeConfError(msg, confpath = bconfpath)
         # it's a different error
         raise
 

@@ -136,7 +136,7 @@ class ConfigurationContext(WafConfContext):
                 if name not in validNames:
                     msg = 'Toolchain %r for the task %r is not valid.' % (name, taskName)
                     msg += ' Valid toolchains: %r' % list(validNames)
-                    raise error.ZenMakeConfError(msg)
+                    raise error.ZenMakeConfError(msg, confpath = bconf.path)
 
     def _loadDetectedToolchain(self, lang, toolId):
         """
@@ -285,10 +285,9 @@ class ConfigurationContext(WafConfContext):
 
         for toolchain in tuple(actualToolchains):
             if toolchain in customToolchains and toolchain in TOOL_AUTO_NAMES:
-                msg = "Error in the file %r:" % (bconf.path)
-                msg += "\n  %r is not valid name" % toolchain
+                msg = "%r is not valid name" % toolchain
                 msg += " in the variable 'toolchains'"
-                raise error.ZenMakeConfError(msg)
+                raise error.ZenMakeConfError(msg, confpath = bconf.path)
 
             settings = customToolchains[toolchain]
 
@@ -376,11 +375,10 @@ class ConfigurationContext(WafConfContext):
 
             allowedNames = toolchains.getAllNames(withAuto = True)
             if toolSettings.kind not in allowedNames:
-                msg = "Error in the file %r:" % (bconf.path)
-                msg += "\n  toolchains.%s" % toolchain
+                msg = "toolchains.%s" % toolchain
                 msg += " must have field 'kind' with one of the values: "
                 msg += str(allowedNames)[1:-1]
-                raise error.ZenMakeConfError(msg)
+                raise error.ZenMakeConfError(msg, confpath = bconf.path)
 
             # toolchain   - name of a system or custom toolchain
             # toolForLoad - name of module for toolchain

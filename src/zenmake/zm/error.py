@@ -10,8 +10,9 @@ from waflib.Errors import WafError as _WafError
 
 class ZenMakeError(_WafError):
     """Base class for all ZenMake errors"""
-    def __init__(self, *args, **kwargs):
-        super(ZenMakeError, self).__init__(*args, **kwargs)
+
+    def __init__(self, msg = '', ex = None):
+        super(ZenMakeError, self).__init__(msg, ex)
         self.fullmsg = self.verbose_msg
 
 class ZenMakeLogicError(ZenMakeError):
@@ -19,6 +20,16 @@ class ZenMakeLogicError(ZenMakeError):
 
 class ZenMakeConfError(ZenMakeError):
     """Invalid buildconf fle error"""
+
+    def __init__(self, msg = '', ex = None, confpath = None):
+        if confpath and msg:
+            _msg = "Error in the file %r:" % confpath
+            for line in msg.splitlines():
+                _msg += "\n  %s" % line
+            msg = _msg
+        self.confpath = confpath
+
+        super(ZenMakeConfError, self).__init__(msg, ex)
 
 class ZenMakeConfTypeError(ZenMakeConfError):
     """Invalid buildconf param type error"""

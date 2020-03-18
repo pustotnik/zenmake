@@ -82,9 +82,9 @@ def handleOneTaskParamSelect(bconf, taskParams, paramName):
         condition = conditions.get(condName,
                                    _getReadyConditions(bconf).get(condName))
         if condition is None:
-            msg = "Error in the task %r: " % taskParams['name']
+            msg = "Task %r: " % taskParams['name']
             msg += "there is no condition %r in buildconf.conditions" % condName
-            raise ZenMakeConfError(msg)
+            raise ZenMakeConfError(msg, confpath = bconf.path)
 
         # check we didn't forget any param
         assert frozenset(condition.keys()) <= KNOWN_CONDITION_PARAM_NAMES
@@ -109,11 +109,11 @@ def handleOneTaskParamSelect(bconf, taskParams, paramName):
         filterVals = condition.get('toolchain')
         if filterVals is not None:
             if paramName == 'toolchain':
-                msg = "Error in the task %r: " % taskParams['name']
+                msg = "Task %r: " % taskParams['name']
                 msg += "Condition %r in buildconf.conditions" % condName
                 msg += " can not be used to select toolchain because it"
                 msg += " contains 'toolchain'"
-                raise ZenMakeConfError(msg)
+                raise ZenMakeConfError(msg, confpath = bconf.path)
 
             filterVals = set(filterVals)
             taskToolchains = toList(taskParams.get('toolchain', []))

@@ -416,8 +416,8 @@ class Config(object):
             supported.remove('default')
 
         if platformFound and not supported:
-            raise ZenMakeConfError("No valid build types for platform '%s' "
-                                   "in config" % destPlatform)
+            msg = "No valid build types for platform '%s'" % destPlatform
+            raise ZenMakeConfError(msg, confpath = self.path)
 
         if not supported:
             # empty buildtype if others aren't detected
@@ -458,7 +458,7 @@ class Config(object):
             else:
                 supportedValues = "\nSupported values: %s." % supportedValues
             errmsg += supportedValues
-            raise ZenMakeConfError(errmsg)
+            raise ZenMakeConfError(errmsg, confpath = self.path)
 
         self._meta.buildtypes.default = buildtype
 
