@@ -22,9 +22,9 @@ __all__ = [
 import os
 
 from waflib.ConfigSet import ConfigSet
-from waflib.Build import BuildContext
+from waflib.Build import BuildContext, CFG_FILES
 from zm.pyutils import viewitems, viewvalues
-from zm.db import DBFile
+from zm.constants import WAF_CACHE_DIRNAME, CONFTEST_DIR_PREFIX
 from zm import cli, error, log
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
@@ -53,7 +53,7 @@ def options(_):
 
 def init(ctx):
     """
-    Implementation for wscript.init
+    Implementation of wscript.init
     It's called before all other commands but after 'options'
     """
 
@@ -91,7 +91,6 @@ def _configure(conf, bconf):
     # set context path
     conf.path = conf.getPathNode(bconf.confdir)
 
-    zmcachedir = bconf.confPaths.zmcachedir
     buildtype = bconf.selectedBuildType
     tasks = bconf.tasks
 
@@ -159,22 +158,9 @@ def _configure(conf, bconf):
         # running of conf tests then the vars will affect builds in the conf tests.
         assist.setTaskEnvVars(conf.env, taskParams, bconf.customToolchains)
 
-        # Waf always loads all *_cache.py files in directory 'c4che' during
-        # build step. So it loads all stored variants even though they
-        # aren't needed. And I decided to save variants in different files and
-        # load only needed ones.
-        filepath = assist.makeCacheConfFileName(zmcachedir, taskVariant)
-        DBFile.saveTo(filepath, conf.env)
-
-        # It's necessary to delete variant from conf.all_envs. Otherwise
-        # Waf will store it in 'c4che'
-        conf.all_envs.pop(taskVariant, None)
-
     # Remove unneccesary envs
     for toolchain in toolchainsEnvs:
         conf.all_envs.pop(toolchain, None)
-
-    conf.saveTasksInEnv(bconf)
 
     # switch current env to the root env
     conf.setenv('')
@@ -183,7 +169,7 @@ def _configure(conf, bconf):
 
 def configure(conf):
     """
-    Implementation for wscript.configure
+    Implementation of wscript.configure
     """
 
     # for top-level conf only
@@ -197,9 +183,23 @@ def configure(conf):
     for bconf in configs:
         _configure(conf, bconf)
 
+def _setupClean(bld, bconfPaths):
+
+    preserveFiles = []
+    for env in bld.all_envs.values():
+        preserveFiles.extend(bld.root.make_node(f) for f in env[CFG_FILES])
+    preserveFiles.append(bld.root.make_node(bconfPaths.zmmetafile))
+
+    excludes = '.lock* config.log'
+    excludes += ' %s*/** %s/*' % (CONFTEST_DIR_PREFIX, WAF_CACHE_DIRNAME)
+    removeFiles = set(bld.bldnode.ant_glob('**/*', excl = excludes, quiet = True))
+    removeFiles.difference_update(preserveFiles)
+
+    bld.clean_files = list(removeFiles)
+
 def build(bld):
     """
-    Implementation for wscript.build
+    Implementation of wscript.build
     """
 
     buildtype = bld.validateVariant()
@@ -211,8 +211,8 @@ def build(bld):
     isInstall = bld.cmd in ('install', 'uninstall')
     if isInstall:
         assist.applyInstallPaths(bld.env, cli.selected)
-
-    rootEnv = bld.env
+    elif bld.cmd == 'clean':
+        _setupClean(bld, bconfPaths)
 
     # Some comments just to remember some details.
     # - ctx.path represents the path to the wscript file being executed
@@ -231,7 +231,7 @@ def build(bld):
     bldPathNode = bld.path
 
     # tasks from bconf cannot be used here
-    tasks = bld.getTasks(buildtype)
+    tasks = bld.zmtasks
 
     allowedTasks = cli.selected.args.tasks
     if allowedTasks:
@@ -246,13 +246,8 @@ def build(bld):
         bld.path = bld.getStartDirNode(taskParams['$startdir'])
 
         # task env variables are stored in separative env
-        # so it's need to switch in
+        # so it's needed to switch in
         bld.variant = taskParams.get('$task.variant')
-
-        # load environment for this task
-        cacheFile = assist.makeCacheConfFileName(bconfPaths.zmcachedir, bld.variant)
-        bld.env = DBFile.loadFrom(cacheFile, asConfigSet = True)
-        bld.env.parent = rootEnv
 
         assist.convertTaskParamNamesForWaf(taskParams)
 
@@ -305,7 +300,7 @@ def test(_):
 
 def distclean(ctx):
     """
-    Implementation for wscript.distclean
+    Implementation of wscript.distclean
     """
 
     bconfPaths = ctx.getbconf().confPaths
@@ -313,7 +308,7 @@ def distclean(ctx):
 
 def shutdown(_):
     """
-    Implementation for wscript.shutdown
+    Implementation of wscript.shutdown
     """
 
     # Do nothing

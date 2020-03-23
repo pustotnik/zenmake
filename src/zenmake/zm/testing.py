@@ -63,6 +63,7 @@ def nobuildTaskRun(task):
     """
 
     tgen = task.generator
+    bld = tgen.bld
     for node in task.outputs:
         data = {}
         data['tgen-name'] = tgen.name
@@ -70,6 +71,7 @@ def nobuildTaskRun(task):
         data['inputs'] = task.inputs
         env = task.env.get_merged_dict()
         data['env'] = env
+        data['zmtasks'] = bld.zmtasks
         data = dumpToJson(data)
         node.write(data, encoding = 'utf-8')
 

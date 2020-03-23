@@ -47,4 +47,4 @@ def testAll(testingBuildConf):
     assert bcpaths.wafcachedir   == joinpath(bcpaths.buildout, WAF_CACHE_DIRNAME)
     assert bcpaths.wafcachefile  == joinpath(bcpaths.wafcachedir, WAF_CACHE_NAMESUFFIX)
     assert bcpaths.zmcachedir    == bcpaths.wafcachedir
-    assert bcpaths.zmcmnconfset  == joinpath(bcpaths.buildroot, ZENMAKE_CMN_CFGSET_FILENAME)
+    assert bcpaths.zmmetafile  == joinpath(bcpaths.buildroot, ZENMAKE_BUILDMETA_FILENAME)

@@ -14,7 +14,6 @@ from waflib import Context as WafContextModule
 from waflib.Context import Context as WafContext
 from zm import ZENMAKE_DIR, WAF_DIR
 from zm.autodict import AutoDict as _AutoDict
-from zm.db import DBFile
 from zm import utils, error
 from zm.waf import wscriptimpl
 
@@ -28,7 +27,7 @@ DEFAULT_TOOLDIRS = [
     joinpath(ZENMAKE_DIR, 'waf', 'waflib', 'extras'),
 ]
 
-def ctxmethod(ctxClass, methodName = None, wrap = False):
+def ctxmethod(ctxClass, methodName = None, wrap = False, callOrigFirst = True):
     """
     Decorator to replace/attach method to existing Waf context class
     """
@@ -36,10 +35,17 @@ def ctxmethod(ctxClass, methodName = None, wrap = False):
     def decorator(func):
         funcName = methodName if methodName else func.__name__
         if wrap:
-            method = getattr(ctxClass, funcName)
-            def execute(*args, **kwargs):
-                method(*args, **kwargs)
-                func(*args, **kwargs)
+            origMethod = getattr(ctxClass, funcName)
+
+            if callOrigFirst:
+                def execute(*args, **kwargs):
+                    origMethod(*args, **kwargs)
+                    func(*args, **kwargs)
+            else:
+                def execute(*args, **kwargs):
+                    func(*args, **kwargs)
+                    origMethod(*args, **kwargs)
+
             setattr(ctxClass, funcName, execute)
         else:
             setattr(ctxClass, funcName, func)
@@ -49,6 +55,10 @@ def ctxmethod(ctxClass, methodName = None, wrap = False):
 
 # Context is the base class for all other context classes and it is not auto
 # registering class. So it cannot be just declared for extending/changing.
+
+@ctxmethod(WafContext, '__init__', wrap = True, callOrigFirst = False)
+def _ctxInit(self, **kwargs):
+    self.bconfManager = kwargs.get('bconfManager')
 
 @ctxmethod(WafContext, 'getbconf')
 def _getCtxBuildConf(ctx):
@@ -130,24 +140,6 @@ def _getStartDirNode(self, startdir):
     node = self.root.make_node(path)
     cache[path] = node
     return node
-
-@ctxmethod(WafContext, 'loadTasksFromFileCache')
-def _loadTasksFromFileCache(ctx, cachefile):
-    """
-    Load cached tasks from config cache if it exists.
-    """
-
-    #pylint: disable = unused-argument
-
-    key = 'zmtasks'
-
-    try:
-        data = DBFile.loadFrom(cachefile)
-        result = data.get(key, {})
-    except EnvironmentError:
-        result = {}
-
-    return result
 
 def loadTool(tool, tooldirs = None, withSysPath = True):
     """

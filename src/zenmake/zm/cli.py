@@ -18,7 +18,7 @@ from zm import log
 from zm.error import ZenMakeLogicError
 from zm.autodict import AutoDict as _AutoDict
 
-ParsedCommand = namedtuple('ParsedCommand', 'name, args')
+ParsedCommand = namedtuple('ParsedCommand', 'name, args, orig')
 
 """
 Object of ParsedCommand with current command after last parsing of command line.
@@ -285,7 +285,7 @@ class CmdLineParser(object):
 
     __slots__ = (
         '_defaults', '_globalOptions', '_command', '_wafCmdLine',
-        '_parser', '_commandHelps', '_cmdNameMap'
+        '_parser', '_commandHelps', '_cmdNameMap', '_origArgs',
     )
 
     def __init__(self, progName, defaults):
@@ -295,6 +295,7 @@ class CmdLineParser(object):
         self._defaults.update(defaults)
 
         self._command = None
+        self._origArgs = None
         self._wafCmdLine = []
 
         self._setupOptions()
@@ -451,6 +452,7 @@ class CmdLineParser(object):
         self._command = ParsedCommand(
             name = cmd.name,
             args = args,
+            orig = self._origArgs,
         )
 
     def _fillWafCmdLine(self):
@@ -495,6 +497,8 @@ class CmdLineParser(object):
 
         if args is None:
             args = sys.argv[1:]
+
+        self._origArgs = args
 
         defaultCmdIsReady = False
         globalOpts = self._globalOptions

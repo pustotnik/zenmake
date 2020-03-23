@@ -11,58 +11,117 @@ import io
 
 from waflib import ConfigSet
 from zm.constants import PLATFORM
-from zm.pyutils import texttype, PY2
+from zm.pyutils import texttype, PY_MAJOR_VER, PY2
+from zm.utils import configSetToDict
 
 try:
     _ascii = ascii
 except NameError:
     _ascii = repr
 
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
+_MSGPACK_EXISTS = False
+if not PY2:
+    try:
+        import msgpack
+        _MSGPACK_EXISTS = True
+    except ImportError:
+        pass
+
+if PY2:
+    _PICKLE_PROTOCOL = 2 # highest protocol for python 2.x, was added in python 2.3
+else:
+    # use fixed proto to avoid problems with upgrading/downgrading of python
+    _PICKLE_PROTOCOL = 4 # version 4 was added in python 3.4
+
 class DBFile(object):
     """
-    Class to save/load dict data to/from file.
-    Not thread safe
+    General class to save/load dict data to/from file.
     """
 
-    __slots__ = ('_pathname', )
+    __slots__ = ('_pathname', '_extension')
 
-    def __init__(self, pathname):
-        self._pathname = pathname
+    def __init__(self, pathname, extension):
+        self._extension = extension
+        self._pathname = os.path.abspath(pathname + extension)
 
-    def save(self, data, preserve = False):
-        """
-        Save data.
-        If preserve is True then load old data before saving.
-        """
+    @staticmethod
+    def _asConfigSet(data):
+        configSet = ConfigSet.ConfigSet()
+        configSet.table = data
+        return configSet
 
-        pathname = self._pathname
+    @property
+    def path(self):
+        """ Get real path """
+        return self._pathname
+
+    @property
+    def extension(self):
+        """ Get file extension """
+        return self._extension
+
+    def save(self, data):
+        """ Save dict data """
 
         if isinstance(data, ConfigSet.ConfigSet):
-            data = data.get_merged_dict()
-            data.pop('undo_stack', None)
+            data = configSetToDict(data)
 
         try:
-            os.makedirs(os.path.dirname(pathname))
+            os.makedirs(os.path.dirname(self.path))
         except OSError:
             pass
 
-        if preserve:
-            try:
-                _data = self.load()
-            except EnvironmentError:
-                pass
-            else:
-                _data.update(data)
-                data = _data
+        self._save(data)
+
+    def load(self, asConfigSet = False):
+        """ Load dict data """
+
+        data = self._load()
+        if asConfigSet:
+            return self._asConfigSet(data)
+        return data
+
+    def exists(self):
+        """ Return True if db file exists """
+        return os.path.isfile(self.path)
+
+    def _save(self, data):
+        raise NotImplementedError
+
+    def _load(self):
+        raise NotImplementedError
+
+class PyDBFile(DBFile):
+    """
+    Implemetation of DBFile to save/load python dicts in text format
+    Not thread safe
+    """
+
+    __slots__ = ()
+
+    def __init__(self, pathname, extension = None):
+        extension = '.pydict' if extension is None else extension
+        super(PyDBFile, self).__init__(pathname, extension)
+
+    def _save(self, data):
+        """ Save to file """
 
         buff = []
         keys = sorted(data.keys())
         for key in keys:
             buff.append('%s = %s\n' % (key, _ascii(data[key])))
+        dump = ''.join(buff)
+
+        pathname = self._pathname
 
         tmppathname = pathname + '.tmp'
         with io.open(tmppathname, 'wt', encoding = "latin-1") as file:
-            file.write(texttype(''.join(buff)))
+            file.write(texttype(dump))
 
         try:
             stat = os.stat(pathname)
@@ -74,20 +133,8 @@ class DBFile(object):
 
         os.rename(tmppathname, pathname)
 
-    @staticmethod
-    def saveTo(pathname, data, preserve = False):
-        """
-        Save data.
-        If preserve is True then load old data before saving.
-        """
-
-        db = DBFile(pathname)
-        db.save(data, preserve)
-
-    def load(self, asConfigSet = False):
-        """
-        Load data
-        """
+    def _load(self):
+        """ Load from file """
 
         fname = self._pathname
 
@@ -101,40 +148,143 @@ class DBFile(object):
 
         if PY2:
             with open(fname, 'rt') as file:
-                body = file.read()
+                dump = file.read()
         else:
             # default encoding for 'open' in python 3.x is often 'utf-8'
             with open(fname, 'rt', encoding = "latin-1") as file:
-                body = file.read()
+                dump = file.read()
 
         data = {}
-        for reIt in ConfigSet.re_imp.finditer(body):
+        for reIt in ConfigSet.re_imp.finditer(dump):
             # pylint: disable = eval-used
             grp = reIt.group
             data[grp(2)] = eval(grp(3))
-
-        if asConfigSet:
-            configSet = ConfigSet.ConfigSet()
-            configSet.table = data
-            data = configSet
-
         return data
 
-    @staticmethod
-    def loadFrom(pathname, asConfigSet = False):
+_BINDB_FILEEXT_FORMAT = "." + PLATFORM + "%s"
+
+class _DBFileGen(DBFile):
+
+    __slots__ = ('_module', '_dumpArgs', '_loadArgs')
+
+    def __init__(self, pathname, module, extension, **kwargs):
+
+        if not extension:
+            extension = ''
+        # to avoid problems with different platforms
+        extension = _BINDB_FILEEXT_FORMAT % extension
+
+        self._module = module
+        self._dumpArgs = kwargs.get('dumpArgs', ([],{}))
+        self._loadArgs = kwargs.get('loadArgs', ([],{}))
+
+        super(_DBFileGen, self).__init__(pathname, extension)
+
+    def _save(self, data):
+        """ Save to file """
+
+        args, kwargs = self._dumpArgs
+        dump = self._module.dumps(data, *args, **kwargs)
+
+        pathname = self._pathname
+
+        tmppathname = pathname + '.tmp'
+        with open(tmppathname, 'wb') as file:
+            file.write(dump)
+
+        try:
+            stat = os.stat(pathname)
+            os.remove(pathname)
+            if PLATFORM != 'windows':
+                os.chown(tmppathname, stat.st_uid, stat.st_gid)
+        except (AttributeError, OSError):
+            pass
+
+        os.rename(tmppathname, pathname)
+
+    def _load(self):
+        """ Load from file """
+
+        with open(self._pathname, 'rb') as file:
+            dump = file.read()
+
+        args, kwargs = self._loadArgs
+        return self._module.loads(dump, *args, **kwargs)
+
+_PICKLE_ARGS = dict(
+    dumpArgs = ([_PICKLE_PROTOCOL], {}),
+    loadArgs = ([], {}),
+)
+
+class PickleDBFile(_DBFileGen):
+    """
+    Implemetation of DBFile to save/load python dicts in python pickle format
+    """
+
+    __slots__ = ()
+
+    def __init__(self, pathname, extension = None):
+        module = pickle
+        # To avoid compatible problems it's better to use different extensions
+        # for different python versions
+        extension = '.pickle%d' % PY_MAJOR_VER if extension is None else extension
+        super(PickleDBFile, self).__init__(pathname, module, extension,
+                                           **_PICKLE_ARGS)
+
+if _MSGPACK_EXISTS:
+    _MSGPACK_ARGS = dict(
+        dumpArgs = ([], { 'use_bin_type' : True }),
+        loadArgs = ([], { 'raw' : False }),
+    )
+
+    class MsgpackDBFile(_DBFileGen):
         """
-        Load data
+        Implemetation of DBFile to save/load python dicts in msgpack format
         """
 
-        db = DBFile(pathname)
-        return db.load(asConfigSet)
+        __slots__ = ()
 
-    def exists(self):
-        """ Return True if db file exists """
-        return os.path.isfile(self._pathname)
+        def __init__(self, pathname, extension = None):
+            module = msgpack
+            extension = '.msgpack' if extension is None else extension
+            super(MsgpackDBFile, self).__init__(pathname, module, extension,
+                                                **_MSGPACK_ARGS)
 
-    @staticmethod
-    def dbexists(pathname):
-        """ Return True if db file exists """
-        db = DBFile(pathname)
-        return db.exists()
+_defaultDbFormat = 'py'
+
+def useformat(dbformat):
+    """ Set default DB format """
+
+    if dbformat == 'msgpack' and not _MSGPACK_EXISTS:
+        dbformat = 'pickle'
+
+    # pylint: disable = global-statement
+    global _defaultDbFormat
+    _defaultDbFormat = dbformat
+
+def factory(pathname, dbformat = None):
+    """
+    Create DBFile instance by dbformat
+    """
+
+    if dbformat is None:
+        dbformat = _defaultDbFormat
+
+    implClsName = '%sDBFile' % dbformat.capitalize()
+    return globals()[implClsName](pathname)
+
+def saveTo(pathname, data):
+    """ Save data to db in current format """
+    factory(pathname).save(data)
+
+def loadFrom(pathname, asConfigSet = False):
+    """ Load data from db in current format """
+    return factory(pathname).load(asConfigSet)
+
+def exists(pathname):
+    """ Return True if db file exists """
+    return factory(pathname).exists()
+
+def realpath(pathname):
+    """ Return real path of db in current format """
+    return factory(pathname).path

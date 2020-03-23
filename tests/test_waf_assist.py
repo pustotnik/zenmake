@@ -14,10 +14,9 @@ import os
 from copy import deepcopy
 from waflib.ConfigSet import ConfigSet
 from waflib import Context
-from zm import utils
+from zm import utils, db
 from zm.waf import assist
 from zm.autodict import AutoDict
-from zm.db import DBFile
 from zm.constants import *
 from zm.features import ToolchainVars
 import tests.common as cmn
@@ -26,18 +25,19 @@ joinpath = os.path.join
 abspath = os.path.abspath
 normpath = os.path.normpath
 relpath = os.path.relpath
+isfile = os.path.isfile
 
-def testDumpZenMakeCommonFile(tmpdir):
+def testWriteZenMakeMetaFile(tmpdir):
     buildconffile = tmpdir.join("buildconf.py")
     buildconffile.write("buildconf")
     dir1 = tmpdir.mkdir("dir1")
     buildconffile2 = dir1.join("buildconf.yml")
     buildconffile2.write("buildconf")
-    zmcmnconfset = tmpdir.join("zmcmnconfset")
+    zmmetafile = tmpdir.join("zmmetafile")
 
     fakeConfPaths = AutoDict()
     fakeConfPaths.buildconffile = str(buildconffile)
-    fakeConfPaths.zmcmnconfset = str(zmcmnconfset)
+    fakeConfPaths.zmmetafile = str(zmmetafile)
 
     fakeConfManager = AutoDict()
     fakeConfManager.root.confPaths = fakeConfPaths
@@ -48,15 +48,21 @@ def testDumpZenMakeCommonFile(tmpdir):
 
     monitFiles = [x.path for x in fakeConfManager.configs]
 
-    assert not os.path.exists(fakeConfPaths.zmcmnconfset)
-    assist.dumpZenMakeCmnConfSet(monitFiles, fakeConfPaths.zmcmnconfset)
-    assert os.path.isfile(fakeConfPaths.zmcmnconfset)
+    assert not isfile(fakeConfPaths.zmmetafile)
+    taskNames = ['task1', 'task2']
+    assist.writeZenMakeMetaFile(fakeConfPaths, monitFiles, taskNames)
+    assert isfile(fakeConfPaths.zmmetafile)
 
-    cfgenv = DBFile.loadFrom(fakeConfPaths.zmcmnconfset)
-    cfgenv = AutoDict(cfgenv)
+    dbfile = db.PyDBFile(fakeConfPaths.zmmetafile, extension = '')
+    cfgenv = dbfile.load(asConfigSet = True)
+    assert 'rundir' in cfgenv
+    assert 'topdir' in cfgenv
+    assert 'outdir' in cfgenv
     assert 'monitfiles' in cfgenv
     assert cfgenv.monitfiles == [ str(buildconffile), str(buildconffile2) ]
     assert 'monithash' in cfgenv
+    assert 'tasknames' in cfgenv
+    assert sorted(cfgenv['tasknames']) == sorted(taskNames)
 
     _hash = 0
     for file in cfgenv.monitfiles:
@@ -69,10 +75,10 @@ def testDumpZenMakeCommonFile(tmpdir):
     for name in envVarNames:
         assert name in cfgenv.toolenvs
 
-def testMakeCacheConfFileName():
-    name, zmcachedir = ('somename', 'somedir')
-    path = assist.makeCacheConfFileName(zmcachedir, name)
-    assert path == joinpath(zmcachedir, name + ZENMAKE_CACHE_NAMESUFFIX)
+def testMakeTasksCachePath():
+    buildtype, zmcachedir = ('somename', 'somedir')
+    path = assist.makeTasksCachePath(zmcachedir, buildtype)
+    assert path == joinpath(zmcachedir, "%s.tasks" % buildtype)
 
 def testMakeTaskVariantName():
     buildtype = 'ddd'

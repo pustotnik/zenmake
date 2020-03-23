@@ -200,7 +200,7 @@ class TestFeatureTest(object):
         assert isdir(self.confPaths.buildroot)
         assert isdir(self.confPaths.buildout)
         assert isfile(self.confPaths.wafcachefile)
-        assert isfile(self.confPaths.zmcmnconfset)
+        assert isfile(self.confPaths.zmmetafile)
 
     def testCmdBuildRTAllVariants(self, projects):
 
@@ -228,7 +228,7 @@ class TestFeatureTest(object):
         assert isdir(self.confPaths.buildroot)
         assert isdir(self.confPaths.buildout)
         assert isfile(self.confPaths.wafcachefile)
-        assert isfile(self.confPaths.zmcmnconfset)
+        assert isfile(self.confPaths.zmmetafile)
 
     def testCmdTestRTAllVariants(self, projects):
 

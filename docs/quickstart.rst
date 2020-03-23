@@ -104,14 +104,14 @@ ZenMake does the build:
     $ zenmake
     Configuring the project
     Setting top to                           : /tmp/testproject
-    Setting out to                           : /tmp/testproject/build/out
+    Setting out to                           : /tmp/testproject/build
     Checking for 'g++'                       : /usr/bin/g++
-    Waf: Entering directory `/tmp/testproject/build/out/debug'
+    Waf: Entering directory `/tmp/testproject/build/debug'
     [1/4] Compiling shlib/util.cpp
     [2/4] Compiling prog/test.cpp
-    [3/4] Linking build/out/debug/libutil.so
-    [4/4] Linking build/out/debug/program
-    Waf: Leaving directory `/tmp/testproject/build/out/debug'
+    [3/4] Linking build/debug/libutil.so
+    [4/4] Linking build/debug/program
+    Waf: Leaving directory `/tmp/testproject/build/debug'
     'build' finished successfully (0.433s)
 
 Running ZenMake without any parameters in a directory with ``buildconf.py`` or
@@ -130,15 +130,15 @@ be used:
 
     $ zenmake build -b release
     Setting top to                           : /tmp/testproject
-    Setting out to                           : /tmp/testproject/build/out
+    Setting out to                           : /tmp/testproject/build
     Checking for program 'g++, c++'          : /usr/bin/g++
     Checking for program 'ar'                : /usr/bin/ar
-    Waf: Entering directory `/tmp/testproject/build/out/release'
+    Waf: Entering directory `/tmp/testproject/build/release'
     [1/4] Compiling shlib/util.cpp
     [2/4] Compiling prog/test.cpp
-    [3/4] Linking build/out/release/libutil.so
-    [4/4] Linking build/out/release/program
-    Waf: Leaving directory `/tmp/testproject/build/out/release'
+    [3/4] Linking build/release/libutil.so
+    [4/4] Linking build/release/program
+    Waf: Leaving directory `/tmp/testproject/build/release'
     'build' finished successfully (0.449s)
 
 One of the effective and simple ways to learn something is to use

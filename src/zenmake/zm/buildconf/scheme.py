@@ -159,6 +159,10 @@ confscheme = {
         'vars' : {
             'autoconfig' : { 'type': 'bool' },
             'monitor-files' : { 'type': ('str', 'list-of-strs') },
+            'db-format' : {
+                'type': 'str',
+                'allowed' : set(('py', 'pickle', 'msgpack', )),
+            },
         },
     },
     'options' : {

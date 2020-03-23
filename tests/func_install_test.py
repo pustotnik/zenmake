@@ -14,7 +14,6 @@
 import os
 
 import pytest
-from waflib.ConfigSet import ConfigSet
 from zm import cli, utils
 from zm.pyutils import viewitems
 from zm.autodict import AutoDict

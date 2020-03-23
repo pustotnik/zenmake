@@ -45,7 +45,7 @@ def _readLastSaved():
         line = line.strip()
         if not line or line.startswith('#'):
             continue
-        ver = line
+        ver = str(line) # convert from unicode in python 2.x
         break
 
     if not ver:

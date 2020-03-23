@@ -127,6 +127,29 @@ features
                     If paths contain spaces and all these paths are listed
                     in one string then each such a path must be in quotes.
 
+    :db-format: Set format for internal ZenMake db/cache files.
+                Use one of possible values: 'py', 'pickle', 'msgpack'.
+
+                The value 'py' means text file with python syntax. It's not fastest
+                format but it's human readable one.
+
+                The value 'pickle' means python pickle binary format. It has
+                good performance and python always supports this format.
+
+                The value 'msgpack' means msgpack binary
+                format by using python module 'msgpack'. Using of this format can
+                decrease ZenMake overhead in building of some big projects because
+                it has best performance among all supported formats.
+                It can be set only for python 3.x because the extension module
+                in msgpack was dropped for python 2.x and using of pure python
+                implementation has no sense. If it is set for python 2.x or
+                if package 'msgpack' doesn't exist in the current system then
+                it will be replaced by value 'pickle'.
+                Note: ZenMake doesn't try to install package 'msgpack'.
+                This package must be installed in some other way.
+
+                The default value is 'pickle'.
+
 options
 """"""""
     A `dict <buildconf-dict-def_>`_ array with default values for command

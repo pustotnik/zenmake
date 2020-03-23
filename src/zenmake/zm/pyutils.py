@@ -13,8 +13,9 @@
 import sys
 import operator
 
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] >= 3
+PY_MAJOR_VER = sys.version_info[0]
+PY2 = PY_MAJOR_VER == 2
+PY3 = PY_MAJOR_VER >= 3
 
 #pylint: disable=wrong-import-position,missing-docstring
 #pylint: disable=invalid-name,undefined-variable,unused-import

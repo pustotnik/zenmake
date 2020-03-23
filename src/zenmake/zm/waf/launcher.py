@@ -96,11 +96,7 @@ def setupWafOptions(bconfManager, wafCmdLine):
     del sys.argv[1:]
     sys.argv.extend(wafCmdLine)
 
-    ctx = Context.create_context('options')
-
-    # inject zenmake vars
-    setattr(ctx, 'bconfManager', bconfManager)
-
+    ctx = Context.create_context('options', bconfManager = bconfManager)
     ctx.execute()
     assert Options.commands
 
@@ -108,6 +104,8 @@ def runCommand(bconfManager, cmdName):
     """
     Executes a single Waf command.
     """
+
+    timer = utils.Timer()
 
     cliArgs = cli.selected.args
 
@@ -123,20 +121,17 @@ def runCommand(bconfManager, cmdName):
         Options.options.verbose = verbose
         setupOptionVerbose(Options.options)
 
-    ctx = Context.create_context(cmdName)
-    ctx.log_timer = utils.Timer()
+    ctx = Context.create_context(cmdName, bconfManager = bconfManager)
     ctx.options = Options.options # provided for convenience
     ctx.cmd = cmdName
-
-    # inject zenmake vars
-    setattr(ctx, 'bconfManager', bconfManager)
 
     try:
         ctx.execute()
     finally:
         # WAF issue 1374
         ctx.finalize()
-    return ctx
+
+    return timer
 
 def setupAndRunCommands(wafCmdLine, bconfManager):
     """
@@ -145,8 +140,8 @@ def setupAndRunCommands(wafCmdLine, bconfManager):
 
     def runNextCmd():
         cmdName = Options.commands.pop(0)
-        ctx = runCommand(bconfManager, cmdName)
-        log.info('%r finished successfully (%s)', cmdName, ctx.log_timer)
+        timer = runCommand(bconfManager, cmdName)
+        log.info('%r finished successfully (%s)', cmdName, timer)
 
     bconf = bconfManager.root
     setWscriptVars(wscriptimpl, bconf)
@@ -176,8 +171,6 @@ def run(cwd, cmd, wafCmdLine, bconfManager):
     bconf = bconfManager.root
     bconfPaths = bconf.confPaths
 
-    # use of Options.lockfile is not enough
-    os.environ['WAFLOCK'] = WAF_LOCKFILE
     Options.lockfile = WAF_LOCKFILE
 
     # note: ZenMake doesn't use Waf lockfile in a project dir, only in a buildout dir

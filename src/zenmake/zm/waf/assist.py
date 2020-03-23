@@ -14,11 +14,10 @@ from copy import deepcopy
 
 from waflib.ConfigSet import ConfigSet
 from zm.pyutils import viewitems, stringtype, _unicode, _encode
-from zm import utils, log, version, toolchains
 from zm.autodict import AutoDict as _AutoDict
-from zm.db import DBFile
+from zm import utils, log, version, toolchains, db
 from zm.error import ZenMakeError, ZenMakeConfError
-from zm.constants import ZENMAKE_CACHE_NAMESUFFIX, TASK_FEATURE_ALIESES, PLATFORM
+from zm.constants import TASK_FEATURE_ALIESES, PLATFORM
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
 from zm.features import SUPPORTED_TASK_FEATURES, resolveAliesesInFeatures
 from zm.features import ToolchainVars, getLoadedFeatures
@@ -63,45 +62,53 @@ def getAllToolchainEnvVarNames():
 
     return envVarNames
 
-def dumpZenMakeCmnConfSet(monitfiles, filepath):
+def writeZenMakeMetaFile(bconfPaths, monitfiles, taskNames):
     """
-    Dump ZenMake common ConfigSet file with some things like files
+    Write ZenMake meta file with some things like files
     monitored for changes.
     """
 
-    zmCmn = _AutoDict()
+    zmMeta = _AutoDict()
+    zmMeta.zmversion = version.current()
 
-    zmCmn.zmversion = version.current()
+    zmMeta.tasknames  = taskNames
+    zmMeta.monitfiles = sorted(set(monitfiles))
+    zmMeta.monithash  = 0
 
-    zmCmn.monitfiles = sorted(set(monitfiles))
-    zmCmn.monithash  = 0
+    for file in zmMeta.monitfiles:
+        zmMeta.monithash = utils.hashOfStrs((zmMeta.monithash,
+                                             utils.readFile(file, 'rb')))
 
-    for file in zmCmn.monitfiles:
-        zmCmn.monithash = utils.hashOfStrs((zmCmn.monithash,
-                                            utils.readFile(file, 'rb')))
-
-    zmCmn.toolenvs = {}
+    zmMeta.toolenvs = {}
     envVarNames = getAllToolchainEnvVarNames()
     for name in envVarNames:
-        zmCmn.toolenvs[name] = os.environ.get(name, '')
+        zmMeta.toolenvs[name] = os.environ.get(name, '')
 
-    DBFile.saveTo(filepath, zmCmn)
+    from waflib import Context
+    zmMeta.rundir = Context.run_dir
+    zmMeta.topdir = Context.top_dir
+    zmMeta.outdir = Context.out_dir
 
-def loadZenMakeCmnConfSet(bconfPaths):
+    dbfile = db.PyDBFile(bconfPaths.zmmetafile, extension = '')
+    dbfile.save(zmMeta)
+
+def loadZenMakeMetaFile(bconfPaths):
     """
     Load ZenMake common ConfigSet file. Return None if failed
     """
 
+    dbfile = db.PyDBFile(bconfPaths.zmmetafile, extension = '')
     try:
-        zmCmn = DBFile.loadFrom(bconfPaths.zmcmnconfset, asConfigSet = True)
+        data = dbfile.load(asConfigSet = True)
     except EnvironmentError:
         return None
 
-    return zmCmn
+    return data
 
-def makeCacheConfFileName(zmcachedir, name):
-    """ Make file name of specific zenmake cache config file"""
-    return joinpath(zmcachedir, name + ZENMAKE_CACHE_NAMESUFFIX)
+def makeTasksCachePath(zmcachedir, buildtype):
+    """ Make file path of zenmake tasks cache file for selected buildtype"""
+    name = "%s.tasks" % buildtype
+    return joinpath(zmcachedir, name)
 
 def makeTaskVariantName(buildtype, taskName):
     """ Make 'variant' name for task """
@@ -599,26 +606,26 @@ def isBuildConfFake(conf):
     """
     return conf.__name__.endswith('fakeconf')
 
-def areMonitoredFilesChanged(zmCmnConfSet):
+def areMonitoredFilesChanged(zmMetaConfSet):
     """
     Detect that current monitored files are changed.
     """
 
     _hash = 0
-    for file in zmCmnConfSet.monitfiles:
+    for file in zmMetaConfSet.monitfiles:
         try:
             _hash = utils.hashOfStrs((_hash, utils.readFile(file, 'rb')))
         except EnvironmentError:
             return True
 
-    return _hash != zmCmnConfSet.monithash
+    return _hash != zmMetaConfSet.monithash
 
-def areToolchainEnvVarsAreChanged(zmCmnConfSet):
+def areToolchainEnvVarsAreChanged(zmMetaConfSet):
     """
     Detect that current toolchain env vars are changed.
     """
 
-    lastEnvVars = zmCmnConfSet.toolenvs
+    lastEnvVars = zmMetaConfSet.toolenvs
     envVarNames = getAllToolchainEnvVarNames()
     for name in envVarNames:
         if name not in lastEnvVars:
@@ -628,12 +635,12 @@ def areToolchainEnvVarsAreChanged(zmCmnConfSet):
 
     return False
 
-def isZmVersionChanged(zmCmnConfSet):
+def isZmVersionChanged(zmMetaConfSet):
     """
     Detect that current version of ZenMake was changed from last building .
     """
 
-    return zmCmnConfSet.zmversion != version.current()
+    return zmMetaConfSet.zmversion != version.current()
 
 def isBuildConfChanged(buildconf, buildroot):
     """

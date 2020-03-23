@@ -2,7 +2,7 @@
 #
 
 # _pylint: skip-file
-# pylint: disable = wildcard-import, unused-wildcard-import, unused-import
+# pylint: disable = wildcard-import, unused-wildcard-import
 # pylint: disable = missing-docstring, invalid-name, bad-continuation
 # pylint: disable = no-member
 
@@ -12,34 +12,17 @@
 """
 
 import os
-import sys
-import pytest
 
-from waflib.ConfigSet import ConfigSet
-from waflib.Context import Context
-from zm.autodict import AutoDict
-from zm.db import DBFile
-from zm.waf import context
-import tests.common as cmn
+from zm.pyutils import maptype
+from zm.waf.context import WafContext
 
-def testLoadTasksFromCache(tmpdir):
+def testZmCache():
 
-    ctx = Context(run_dir = os.getcwd())
+    ctx = WafContext(run_dir = os.getcwd())
 
-    cachefile = tmpdir.join("cachefile")
-    assert ctx.loadTasksFromFileCache(str(cachefile)) == {}
+    cache = ctx.zmcache()
+    assert isinstance(cache, maptype)
+    assert not cache
 
-    #ctx = Context()
-    cachedata = ConfigSet()
-    cachedata.something = 11
-    DBFile.saveTo(str(cachefile), cachedata)
-    assert ctx.loadTasksFromFileCache(str(cachefile)) == {}
-
-    #ctx = Context()
-    cachedata.zmtasks = dict( a = 1, b = 2 )
-    DBFile.saveTo(str(cachefile), cachedata)
-    assert ctx.loadTasksFromFileCache(str(cachefile)) == cachedata.zmtasks
-
-    cachedata.zmtasks = dict( a = 3, b = 4 )
-    DBFile.saveTo(str(cachefile), cachedata)
-    assert ctx.loadTasksFromFileCache(str(cachefile)) == cachedata.zmtasks
+    cache['ttt'] = 'test val'
+    assert ctx.zmcache()['ttt'] == cache['ttt']

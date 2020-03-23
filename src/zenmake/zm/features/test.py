@@ -102,43 +102,45 @@ def postOpt(ctx):
     # init array of test task names for each bconf
     _shared.testTaskNames = [None] * len(ctx.bconfManager.configs)
 
-def _isSuitableForRunCmd(taskParams):
-    return taskParams['$runnable'] or taskParams.get('run', None)
+@precmd('init', before = ['runcmd'])
+def preInit(ctx):
+    """ Init before wscript.init """
 
-@precmd('configure', before = ['runcmd'])
-def preConf(conf):
-    """ Preconfigure tasks """
-
-    for idx, bconf in enumerate(conf.bconfManager.configs):
-        _preConf(bconf, idx)
-
-def _preConf(bconf, bconfIndex):
-
-    tasks = bconf.tasks
-
-    testTaskNames = []
-    for name, params in viewitems(tasks):
-        features = params['features']
-
-        if 'test' in features:
-            testTaskNames.append(name)
-
-    # preConf can be called recursively
-    if not _shared.testsFound:
-        _shared.testsFound = bool(testTaskNames)
-
-    assert not _shared.testTaskNames[bconfIndex]
-    _shared.testTaskNames[bconfIndex] = testTaskNames
-
-    if _shared.withTests:
-        allPreConfigured = all(x is not None for x in _shared.testTaskNames)
-        if allPreConfigured and not _shared.testsFound:
-            log.warn('There are no tests to configure')
+    cliArgs = cli.selected.args
+    if 'buildtype' not in cliArgs:
         return
 
-    # Remove test tasks
-    for name in testTaskNames:
-        tasks.pop(name, None)
+    testsFound = False
+    for idx, bconf in enumerate(ctx.bconfManager.configs):
+        tasks = bconf.tasks
+
+        testTaskNames = []
+        for name, params in viewitems(tasks):
+            features = params['features']
+
+            if 'test' in features:
+                testTaskNames.append(name)
+
+        if not testsFound:
+            testsFound = bool(testTaskNames)
+
+        assert not _shared.testTaskNames[idx]
+        _shared.testTaskNames[idx] = testTaskNames
+
+        if _shared.withTests:
+            continue
+
+        # Remove test tasks
+        for name in testTaskNames:
+            tasks.pop(name, None)
+
+    _shared.testsFound = testsFound
+
+    if _shared.withTests and not testsFound:
+        log.warn('There are no tests to configure')
+
+def _isSuitableForRunCmd(taskParams):
+    return taskParams['$runnable'] or taskParams.get('run', None)
 
 @postcmd('configure', before = ['runcmd'])
 def postConf(conf):
@@ -179,9 +181,7 @@ def preBuild(bld):
     Preprocess zm.waf.wscriptimpl.build
     """
 
-    buildtype = bld.validateVariant()
-
-    tasks = bld.getTasks(buildtype)
+    tasks = bld.zmtasks
 
     _shared.confTasks = tasks.copy()
     _shared.testsFound = False

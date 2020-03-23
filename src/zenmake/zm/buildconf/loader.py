@@ -55,20 +55,22 @@ def applyDefaults(buildconf, isTopLevel, projectDir):
 
     # Param 'realbuildroot' must not be set here
 
-    # options
-    if not hasattr(buildconf, 'options'):
-        setattr(buildconf, 'options', {})
-
     # features
     if not hasattr(buildconf, 'features'):
         setattr(buildconf, 'features', {})
     if isTopLevel:
         params = buildconf.features
         params['autoconfig'] = params.get('autoconfig', True)
+        params['db-format'] = params.get('db-format', 'pickle')
 
-    # conditions
-    if not hasattr(buildconf, 'conditions'):
-        setattr(buildconf, 'conditions', {})
+    # dict params
+    dictParams = (
+        'options', 'conditions', 'toolchains',
+        'platforms', 'buildtypes', 'tasks'
+    )
+    for param in dictParams:
+        if not hasattr(buildconf, param):
+            setattr(buildconf, param, {})
 
     # usedirs
     if not hasattr(buildconf, 'subdirs'):
@@ -83,11 +85,6 @@ def applyDefaults(buildconf, isTopLevel, projectDir):
         if params['name'] is None:
             params['name'] = os.path.basename(projectDir)
         params['version'] = params.get('version', '')
-
-    # toolchains, platforms, buildtypes, tasks
-    for param in ('toolchains', 'platforms', 'buildtypes', 'tasks'):
-        if not hasattr(buildconf, param):
-            setattr(buildconf, param, {})
 
     # matrix
     if not hasattr(buildconf, 'matrix'):

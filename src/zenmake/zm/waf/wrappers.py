@@ -10,41 +10,36 @@ import os
 import sys
 import subprocess
 
-from waflib import Options, Context, Configure, Utils
-from waflib.ConfigSet import ConfigSet
-from zm.db import DBFile
+from waflib import Context, Configure, Utils
+from zm.db import exists as dbexists
 from zm import log
 from zm.pypkg import PkgPath
 from zm.waf import assist, launcher
 
 joinpath = os.path.join
+_loadZenMakeMetaFile = assist.loadZenMakeMetaFile
 
 # Force to turn off internal WAF autoconfigure decorator.
 # It's just to rid of needless work and to save working time.
 Configure.autoconfig = False
 
-def _isBuildTypeNotConfigured(bconfMngr):
+def _isBuildTypeNotConfigured(zmMeta, bconfMngr):
 
     rootbconf  = bconfMngr.root
     buildtype  = rootbconf.selectedBuildType
     zmcachedir = rootbconf.confPaths.zmcachedir
 
-    for bconf in bconfMngr.configs:
-        # Check that all tasks have conf cache files
-        for taskName in bconf.taskNames:
-            taskVariant = assist.makeTaskVariantName(buildtype, taskName)
-            fname = assist.makeCacheConfFileName(zmcachedir, taskVariant)
-            if not DBFile.dbexists(fname):
-                return True
-    return False
+    cachePath = assist.makeTasksCachePath(zmcachedir, buildtype)
+    if not dbexists(cachePath):
+        return True
 
-def _loadLockfileEnv(bconfPaths):
-    env = ConfigSet()
-    try:
-        env.load(joinpath(bconfPaths.wscriptout, Options.lockfile))
-    except EnvironmentError:
-        return None
-    return env
+    taskNames = []
+    for bconf in bconfMngr.configs:
+        taskNames.extend(list(bconf.tasks.keys()))
+
+    taskNames = set(taskNames)
+    prevTaskNames = set(zmMeta.tasknames)
+    return not taskNames.issubset(prevTaskNames)
 
 def _handleNoLockInTop(ctx, envGetter):
 
@@ -59,9 +54,9 @@ def _handleNoLockInTop(ctx, envGetter):
         raise ZenMakeError('The project was not configured: run "configure" '
                            'first or enable features.autoconfig in buildconf !')
 
-    Context.run_dir = env.run_dir
-    Context.top_dir = env.top_dir
-    Context.out_dir = env.out_dir
+    Context.run_dir = env.rundir
+    Context.top_dir = env.topdir
+    Context.out_dir = env.outdir
 
     # It's needed to rerun command to apply changes in Context otherwise
     # Waf won't work correctly.
@@ -77,7 +72,7 @@ def wrapBldCtxNoLockInTop(method):
 
     def execute(ctx):
         bconfPaths = ctx.bconfManager.root.confPaths
-        if not _handleNoLockInTop(ctx, lambda: _loadLockfileEnv(bconfPaths)):
+        if not _handleNoLockInTop(ctx, lambda: _loadZenMakeMetaFile(bconfPaths)):
             method(ctx)
 
     return execute
@@ -89,8 +84,8 @@ def wrapBldCtxAutoConf(method):
     conf.env.NO_LOCK_IN_TOP = True
     """
 
-    def runConfigAndCommand(ctx, env):
-        launcher.runCommand(ctx.bconfManager, env.config_cmd or 'configure')
+    def runConfigAndCommand(ctx):
+        launcher.runCommand(ctx.bconfManager, 'configure')
         launcher.runCommand(ctx.bconfManager, ctx.cmd)
 
     def execute(ctx):
@@ -117,7 +112,7 @@ def wrapBldCtxAutoConf(method):
         autoconfig = bconf.features['autoconfig']
 
         if not autoconfig:
-            if not _handleNoLockInTop(ctx, lambda: _loadLockfileEnv(bconfPaths)):
+            if not _handleNoLockInTop(ctx, lambda: _loadZenMakeMetaFile(bconfPaths)):
                 method(ctx)
             return
 
@@ -125,28 +120,25 @@ def wrapBldCtxAutoConf(method):
         # FIXME: can be more stable solution?
         wrapBldCtxAutoConf.onlyRunMethod = True
 
-        env = _loadLockfileEnv(bconfPaths)
-        if not env:
+        zmMeta = _loadZenMakeMetaFile(bconfPaths)
+        if not zmMeta:
             log.warn('Configuring the project')
-            runConfigAndCommand(ctx, ConfigSet())
+            runConfigAndCommand(ctx)
             return
 
-        if env.run_dir != bconfPaths.startdir:
-            runConfigAndCommand(ctx, env)
+        # pylint: disable = no-member
+        if zmMeta.rundir != bconfPaths.startdir:
+            runConfigAndCommand(ctx)
             return
 
-        cmnConfSet = assist.loadZenMakeCmnConfSet(bconfPaths)
-        if not cmnConfSet or assist.isZmVersionChanged(cmnConfSet) or \
-                    assist.areMonitoredFilesChanged(cmnConfSet) or \
-                    assist.areToolchainEnvVarsAreChanged(cmnConfSet):
-            runConfigAndCommand(ctx, env)
+        if assist.isZmVersionChanged(zmMeta) or \
+                assist.areMonitoredFilesChanged(zmMeta) or \
+                assist.areToolchainEnvVarsAreChanged(zmMeta) or \
+                _isBuildTypeNotConfigured(zmMeta, bconfMngr):
+            runConfigAndCommand(ctx)
             return
 
-        if _isBuildTypeNotConfigured(bconfMngr):
-            runConfigAndCommand(ctx, env)
-            return
-
-        if not _handleNoLockInTop(ctx, lambda: env):
+        if not _handleNoLockInTop(ctx, lambda: zmMeta):
             method(ctx)
         return
 

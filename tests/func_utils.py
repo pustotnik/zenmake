@@ -22,15 +22,15 @@ from collections import defaultdict
 from copy import copy, deepcopy
 
 from waflib import Context
+from waflib.ConfigSet import ConfigSet
 from zm import starter
-from zm import pyutils, utils, zipapp
+from zm import pyutils, utils, zipapp, db
 from zm.pyutils import viewitems, viewvalues, stringtype
 from zm.waf import assist
 from zm.autodict import AutoDict
-from zm.db import DBFile
 from zm.buildconf import loader as bconfloader
 from zm.buildconf.processing import ConfManager as BuildConfManager
-from zm.constants import ZENMAKE_CMN_CFGSET_FILENAME, PLATFORM, APPNAME
+from zm.constants import ZENMAKE_BUILDMETA_FILENAME, PLATFORM, APPNAME
 from zm.features import TASK_TARGET_FEATURES
 from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES
 
@@ -140,7 +140,7 @@ def setupTest(self, request, tmpdir):
 
     def copytreeIgnore(src, names):
         # don't copy build dir/files
-        if ZENMAKE_CMN_CFGSET_FILENAME in names:
+        if ZENMAKE_BUILDMETA_FILENAME in names:
             return names
         return ['build', '_build']
 
@@ -182,15 +182,22 @@ def processConfManagerWithCLI(testSuit, cmdLine):
     assist.initBuildType(confManager, cmd.args.buildtype)
 
     testSuit.cmdLine = cmdLine
+    db.useformat(confManager.root.features['db-format'])
     return testSuit.confManager
 
 def getTaskEnv(testSuit, taskName):
     bconf = testSuit.confManager.root
     buildtype = bconf.selectedBuildType
+    cachedir = bconf.confPaths.zmcachedir
+
     taskVariant = assist.makeTaskVariantName(buildtype, taskName)
-    cacheConfFile = assist.makeCacheConfFileName(
-                                    bconf.confPaths.zmcachedir, taskVariant)
-    env = DBFile.loadFrom(cacheConfFile, asConfigSet = True)
+    cachedir = bconf.confPaths.zmcachedir
+    cachePath = assist.makeTasksCachePath(cachedir, buildtype)
+
+    tasksData = db.loadFrom(cachePath)
+    taskenvs = tasksData['taskenvs']
+    env = ConfigSet()
+    env.table = taskenvs[taskVariant]
     return env
 
 def getTargetPattern(env, features):

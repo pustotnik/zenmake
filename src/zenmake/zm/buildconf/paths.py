@@ -10,7 +10,7 @@ import os
 
 from zm.error import ZenMakeConfValueError
 from zm.constants import WAF_CACHE_DIRNAME, WAF_CACHE_NAMESUFFIX, \
-                         ZENMAKE_CMN_CFGSET_FILENAME, BUILDOUTNAME
+                         ZENMAKE_BUILDMETA_FILENAME, BUILDOUTNAME
 
 joinpath = os.path.join
 
@@ -24,7 +24,7 @@ class ConfPaths(object):
     __slots__ = (
         'buildconffile', 'buildconfdir', 'buildroot', 'realbuildroot',
         'startdir', 'buildout', 'wscripttop', 'wscriptout',
-        'wafcachedir', 'wafcachefile', 'zmcachedir', 'zmcmnconfset',
+        'wafcachedir', 'wafcachefile', 'zmcachedir', 'zmmetafile',
     )
 
     def __init__(self, bconf):
@@ -53,7 +53,7 @@ class ConfPaths(object):
         self.wafcachedir   = joinpath(self.buildout, WAF_CACHE_DIRNAME)
         self.wafcachefile  = joinpath(self.wafcachedir, WAF_CACHE_NAMESUFFIX)
         self.zmcachedir    = self.wafcachedir
-        self.zmcmnconfset  = joinpath(self.buildroot, ZENMAKE_CMN_CFGSET_FILENAME)
+        self.zmmetafile    = joinpath(self.buildroot, ZENMAKE_BUILDMETA_FILENAME)
 
         self._checkBuildRoot('buildroot', 'startdir')
         self._checkBuildRoot('buildroot', 'buildconfdir')

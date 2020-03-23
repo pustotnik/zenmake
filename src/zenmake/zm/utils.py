@@ -120,6 +120,14 @@ def uniqueListWithOrder(lst):
     used = set()
     return [x for x in lst if x not in used and (used.add(x) or True)]
 
+def configSetToDict(configSet):
+    """
+    Convert Waf ConfigSet to python dict
+    """
+    result = configSet.get_merged_dict()
+    result.pop('undo_stack', None)
+    return result
+
 def unfoldPath(cwd, path):
     """
     Unfold path applying os.path.expandvars, os.path.expanduser and

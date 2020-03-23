@@ -151,9 +151,7 @@ class TestParams(object):
                     data = loadFromJson(f.read())
                 zmTaskName = data['tgen-name']
                 usedEnv = data['env']
-                zmtasks = usedEnv['zmtasks']['all']
-                buildtype = list(zmtasks.keys())[0]
-                zmtasks = zmtasks[buildtype]
+                zmtasks = data['zmtasks']
                 taskParams = zmtasks[zmTaskName]
                 features = taskParams['features']
                 targetKind = getTargetPattern(usedEnv, features)[1]

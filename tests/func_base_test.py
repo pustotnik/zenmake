@@ -74,7 +74,7 @@ def collectProjectDirs():
         condition = TEST_CONDITIONS.get(prjdir, None)
         if not condition:
             for line in TEST_CONDITIONS[BY_REGEXPS]:
-                if re.search(line['regexp'], prjdir.replace('\\', '/')):
+                if re.search(line['regexp'], prjdir.replace('\\', '/'), re.U):
                     condition = line['condition']
                     break
         if condition:
@@ -121,7 +121,7 @@ class TestBase(object):
         assert self._runZm(cmdLine)[0] == 0
         checkBuildResults(self, cmdLine, False)
         assert isfile(self.confPaths.wafcachefile)
-        assert isfile(self.confPaths.zmcmnconfset)
+        assert isfile(self.confPaths.zmmetafile)
 
         cmdLine = ['build']
         assert self._runZm(cmdLine)[0] == 0
@@ -158,7 +158,7 @@ class TestBase(object):
         assert isdir(self.confPaths.buildroot)
         assert isdir(self.confPaths.buildout)
         assert isfile(self.confPaths.wafcachefile)
-        assert isfile(self.confPaths.zmcmnconfset)
+        assert isfile(self.confPaths.zmmetafile)
         checkBuildResults(self, cmdLine, False)
 
     def testBuildAndDistclean(self, allprojects):

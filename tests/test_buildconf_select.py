@@ -128,6 +128,8 @@ def cfgctx(monkeypatch, mocker, tmpdir):
     cfgCtx.cachedir = cfgCtx.bldnode.make_node(Build.CACHE_DIR)
     cfgCtx.cachedir.mkdir()
 
+    cfgCtx.loadCaches()
+
     return cfgCtx
 
 @pytest.fixture(params = TASKPARAM_NAMES)
@@ -429,7 +431,7 @@ def testParam(cfgctx, monkeypatch, paramfixture):
 
     paramname, buildconf, expected = paramfixture
 
-    clicmd = cli.ParsedCommand(name = 'build', args = AutoDict())
+    clicmd = cli.ParsedCommand(name = 'build', args = AutoDict(), orig = [])
     monkeypatch.setattr(cli, 'selected', clicmd)
 
     bconfDir = ctx.path.abspath()

@@ -9,6 +9,8 @@
 import os
 import sys
 import shlex
+import time
+import platform
 
 # NOTICE:This module must import modules with original Waf context classes
 # before declaring their alter implementions.
@@ -16,14 +18,12 @@ import shlex
 # using of the Waf such classes are created in the 'wscript' because this
 # file is loaded always after all Waf context classes.
 
-from waflib import Errors as waferror
+from waflib import Errors as waferror, Context as WafContext
 from waflib.ConfigSet import ConfigSet
-from waflib.Context import Context as WafContext
 from waflib.Configure import ConfigurationContext as WafConfContext
-from zm.autodict import AutoDict as _AutoDict
-from zm.db import DBFile
+from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFIG_LOG
 from zm.pyutils import viewitems, viewvalues
-from zm import utils, log, toolchains, error
+from zm import utils, log, toolchains, error, db, version, cli
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
 from zm.features import ToolchainVars
 from zm.waf import assist
@@ -36,12 +36,16 @@ from zm.waf import options, context
 
 joinpath = os.path.join
 
-CONF_CACHE_FILE = 'conf.cache'
-
 def _genToolAutoName(lang):
     return 'auto-%s' % lang.replace('xx', '++')
 
 TOOL_AUTO_NAMES = { _genToolAutoName(x) for x in ToolchainVars.allLangs() }
+
+CONFLOG_HEADER_TEMPLATE = '''# Project %(prj)s configured on %(now)s by
+# ZenMake %(zmver)s, based on Waf %(wafver)s (abi %(wafabi)s)
+# python %(pyver)s on %(systype)s
+# using %(args)s
+#'''
 
 class ConfigurationContext(WafConfContext):
     """ Context for command 'configure' """
@@ -169,51 +173,155 @@ class ConfigurationContext(WafConfContext):
 
         return toolname, toolenv
 
-    def _loadConfCache(self):
+    def loadCaches(self):
+        """
+        Load cache files needed for 'configure'
+        """
 
-        # self.env can not be used for a cache because it is not loaded
-        # on 'configure' and always is empty at the begining
-
-        cachePath = joinpath(self.cachedir.abspath(), CONF_CACHE_FILE)
+        cachePath = joinpath(self.cachedir.abspath(), ZENMAKE_CONF_CACHE_PREFIX)
         try:
-            cache = DBFile.loadFrom(cachePath, asConfigSet = True)
+            cache = db.loadFrom(cachePath)
         except EnvironmentError:
-            cache = ConfigSet()
+            cache = {}
 
-        return cache
+        # protect from format changes
+        zmversion = cache.get('zmversion', '')
+        if zmversion != version.current():
+            cache = { 'zmversion' : version.current() }
+
+        self._confCache = cache
+
+    def saveCaches(self):
+        """
+        Save cache files needed for 'configure' and for 'build'
+        """
+
+        bconfManager = self.bconfManager
+        bconf = bconfManager.root
+        bconfPaths = bconf.confPaths
+        cachedir = bconfPaths.zmcachedir
+
+        # common conf cache
+        if self._confCache is not None:
+            cachePath = joinpath(cachedir, ZENMAKE_CONF_CACHE_PREFIX)
+            db.saveTo(cachePath, self._confCache)
+
+        # Waf always loads all *_cache.py files in directory 'c4che' during
+        # build step. So it loads all stored variants even though they
+        # aren't needed. And therefore it's better to save variants in
+        # different files and load only needed ones.
+
+        # conf cache of tasks for selected buildtype
+        tasks = {}
+        for _bconf in bconfManager.configs:
+            tasks.update(_bconf.tasks)
+
+        envs = {}
+        for taskParams in viewvalues(tasks):
+            taskVariant = taskParams['$task.variant']
+
+            # It's necessary to delete variant from conf.all_envs. Otherwise
+            # Waf stores it in 'c4che'
+            env = self.all_envs.pop(taskVariant)
+            envs[taskVariant] = utils.configSetToDict(env)
+
+        buildtype = bconf.selectedBuildType
+
+        tasksData = dict(
+            tasks     = tasks,
+            taskenvs  = envs,
+            buildtype = buildtype,
+        )
+
+        cachePath = assist.makeTasksCachePath(cachedir, buildtype)
+        db.saveTo(cachePath, tasksData)
+
+        self.zmcache().tasksDb = tasksData
 
     def getConfCache(self):
         """
         Get conf cache
         """
-
-        if self._confCache is None:
-            self._confCache = self._loadConfCache()
-
         return self._confCache
 
     # override
     def execute(self):
 
+        bconf = self.bconfManager.root
+        bconfPaths = bconf.confPaths
+
         # See details here: https://gitlab.com/ita1024/waf/issues/1563
         self.env.NO_LOCK_IN_RUN = True
         self.env.NO_LOCK_IN_TOP = True
 
-        super(ConfigurationContext, self).execute()
+        self.init_dirs()
 
-        self.monitFiles.extend([x.path for x in self.bconfManager.configs])
-        filePath = self.bconfManager.root.confPaths.zmcmnconfset
-        assist.dumpZenMakeCmnConfSet(self.monitFiles, filePath)
+        self.cachedir = self.bldnode.make_node(WAF_CACHE_DIRNAME)
+        self.cachedir.mkdir()
 
-        if self._confCache is not None:
-            cachePath = joinpath(self.cachedir.abspath(), CONF_CACHE_FILE)
-            DBFile.saveTo(cachePath, self._confCache)
+        if bconfPaths.zmcachedir != self.cachedir.abspath():
+            try:
+                os.makedirs(bconfPaths.zmcachedir)
+            except OSError:
+                pass
+
+        path = joinpath(self.bldnode.abspath(), WAF_CONFIG_LOG)
+        self.logger = log.makeLogger(path, 'cfg')
+
+        projectDesc = "%s (ver: %s)" % (bconf.projectName, bconf.projectVersion)
+        pyDesc = "%s (%s)" % (platform.python_version(), platform.python_implementation())
+
+        cliArgs = [sys.argv[0]] + cli.selected.orig
+        confHeaderParams = {
+            'now'     : time.ctime(),
+            'zmver'   : version.current(),
+            'wafver'  : WafContext.WAFVERSION,
+            'wafabi'  : WafContext.ABI,
+            'pyver'   : pyDesc,
+            'systype' : sys.platform,
+            'args'    : " ".join(cliArgs),
+            'prj'     : projectDesc,
+        }
+
+        self.to_log(CONFLOG_HEADER_TEMPLATE % confHeaderParams)
+        self.msg('Setting top to', self.srcnode.abspath())
+        self.msg('Setting out to', self.bldnode.abspath())
+
+        if id(self.srcnode) == id(self.bldnode):
+            log.warn('Setting startdir == buildout')
+        elif id(self.path) != id(self.srcnode):
+            if self.srcnode.is_child_of(self.path):
+                log.warn('Are you certain that you do not want to set top="." ?')
+
+        self.loadCaches()
+
+        WafContext.Context.execute(self)
+
+        self.store()
+
+        instanceCache = self.zmcache()
+        bconfPathsAdded = instanceCache.get('confpaths-added-to-monit', False)
+        if not bconfPathsAdded:
+            self.monitFiles.extend([x.path for x in self.bconfManager.configs])
+            instanceCache['confpaths-added-to-monit'] = True
+
+        tasksDb = instanceCache.pop('tasksDb')
+        taskNames = list(tasksDb['tasks'].keys())
+        WafContext.top_dir = self.srcnode.abspath()
+        WafContext.out_dir = self.bldnode.abspath()
+
+        assist.writeZenMakeMetaFile(bconfPaths, self.monitFiles, taskNames)
 
     # override
     def post_recurse(self, node):
         # Avoid some actions from WafConfContext.post_recurse.
         # It's mostly for performance.
-        WafContext.post_recurse(self, node)
+        WafContext.Context.post_recurse(self, node)
+
+    # override
+    def store(self):
+        self.saveCaches()
+        super(ConfigurationContext, self).store()
 
     def setDirectEnv(self, name, env):
         """ Set env without deriving and other actions """
@@ -416,36 +524,6 @@ class ConfigurationContext(WafConfContext):
         """
 
         return self._toolchainEnvs
-
-    def saveTasksInEnv(self, bconf):
-        """
-        Merge current tasks with existing tasks and tasks from cache file
-        and save them in the root env.
-        """
-
-        # root env
-        env = self.all_envs['']
-
-        if 'zmtasks' not in env:
-            env.zmtasks = _AutoDict()
-
-        cache = self.zmcache()
-        if 'fcachetasks' in cache:
-            fcachedTasks = cache['fcachetasks']
-        else:
-            fcachedTasks = self.loadTasksFromFileCache(bconf.confPaths.wafcachefile)
-            cache['fcachetasks'] = fcachedTasks
-
-        # merge with tasks from file cache
-        fcachedTasks = fcachedTasks.get('all', {})
-        for btype, tasks in viewitems(fcachedTasks):
-            btypeTasks = env.zmtasks.all[btype]
-            btypeTasks.update(tasks)
-
-        # merge with existing tasks
-        buildtype = bconf.selectedBuildType
-        btypeTasks = env.zmtasks.all[buildtype]
-        btypeTasks.update(bconf.tasks)
 
     def makeTaskEnv(self, taskVariant):
         """

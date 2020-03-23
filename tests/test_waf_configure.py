@@ -105,6 +105,8 @@ def cfgctx(monkeypatch, mocker, tmpdir):
     cfgCtx.cachedir = cfgCtx.bldnode.make_node(Build.CACHE_DIR)
     cfgCtx.cachedir.mkdir()
 
+    cfgCtx.loadCaches()
+
     return cfgCtx
 
 def testsSetDirectEnv(cfgctx):

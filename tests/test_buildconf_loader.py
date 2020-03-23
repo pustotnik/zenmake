@@ -59,7 +59,10 @@ def testInitDefaults():
     assert hasattr(buildconf, 'buildroot')
     assert buildconf.buildroot == DEFAULT_BUILDROOTNAME
 
-    assert buildconf.features == { 'autoconfig': True }
+    assert buildconf.features == {
+        'autoconfig': True,
+        'db-format': 'pickle',
+    }
 
     assert buildconf.project == {
         'name' : 'tests', # name of directory with current test
@@ -84,7 +87,10 @@ def testInitDefaults():
     buildconf = FakeBuildConf()
     setattr(buildconf, 'features', { 'autoconfig' : False })
     bconfloader.applyDefaults(buildconf, True, '')
-    assert buildconf.features == { 'autoconfig': False }
+    assert buildconf.features == {
+        'autoconfig': False,
+        'db-format': 'pickle',
+    }
 
     buildconf = FakeBuildConf()
     buildtypes = {
