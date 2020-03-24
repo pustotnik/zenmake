@@ -34,6 +34,7 @@ def platform():
 
 PLATFORM = platform()
 
+md5                = wafutils.md5
 readFile           = wafutils.readf
 hashObj            = wafutils.h_list
 hashFunc           = wafutils.h_fun
@@ -43,16 +44,51 @@ libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
 threading          = wafutils.threading
 
+# Python 3.4 provides non-inheritable file handles by default
+if hasattr(os, 'O_NOINHERIT') and sys.hexversion < 0x3040000:
+    def _hashFile(hashobj, path):
+        # pylint: disable = no-member
+        try:
+            fd = os.open(path, os.O_BINARY | os.O_RDONLY | os.O_NOINHERIT)
+        except OSError:
+            raise OSError('Cannot read from %r' % path)
+
+        with os.fdopen(fd, 'rb') as file:
+            result = True
+            while result:
+                result = file.read(200000)
+                hashobj.update(result)
+        return hashobj
+else:
+    def _hashFile(hashobj, path):
+
+        with open(path, 'rb') as file:
+            result = True
+            while result:
+                result = file.read(200000)
+                hashobj.update(result)
+        return hashobj
+
+def hashFile(path):
+    """ Hash file by using md5 """
+    _hash = md5()
+    return _hashFile(_hash, path).digest()
+
 def hashFiles(paths):
     """
-    Hash files from paths
+    Hash files from paths by using md5
     """
 
-    _hash = 0
-    for path in paths:
-        _hash = hashObj((_hash, readFile(path, 'rb')))
+    # Old implementation:
+    #_hash = 0
+    #for path in paths:
+    #    _hash = hashObj((_hash, readFile(path, 'rb')))
+    #return _hash
 
-    return _hash
+    _hash = md5()
+    for path in paths:
+        _hashFile(_hash, path)
+    return _hash.digest()
 
 def normalizeForDefine(s):
     """
