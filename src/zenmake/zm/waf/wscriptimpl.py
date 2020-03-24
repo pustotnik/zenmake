@@ -213,6 +213,8 @@ def build(bld):
         assist.applyInstallPaths(bld.env, cli.selected)
     elif bld.cmd == 'clean':
         _setupClean(bld, bconfPaths)
+        # no need to make build tasks
+        return
 
     # Some comments just to remember some details.
     # - ctx.path represents the path to the wscript file being executed
