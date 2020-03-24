@@ -64,9 +64,7 @@ def testWriteZenMakeMetaFile(tmpdir):
     assert 'tasknames' in cfgenv
     assert sorted(cfgenv['tasknames']) == sorted(taskNames)
 
-    _hash = 0
-    for file in cfgenv.monitfiles:
-        _hash = utils.hashOfStrs((_hash, utils.readFile(file, 'rb')))
+    _hash = utils.hashFiles(cfgenv.monitfiles)
     assert cfgenv.monithash == _hash
 
     assert 'toolenvs' in cfgenv

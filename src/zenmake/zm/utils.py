@@ -35,13 +35,24 @@ def platform():
 PLATFORM = platform()
 
 readFile           = wafutils.readf
-hashOfStrs         = wafutils.h_list
-hashOfFunc         = wafutils.h_fun
+hashObj            = wafutils.h_list
+hashFunc           = wafutils.h_fun
 hexOfStr           = wafutils.to_hex
 substVars          = wafutils.subst_vars
 libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
 threading          = wafutils.threading
+
+def hashFiles(paths):
+    """
+    Hash files from paths
+    """
+
+    _hash = 0
+    for path in paths:
+        _hash = hashObj((_hash, readFile(path, 'rb')))
+
+    return _hash
 
 def normalizeForDefine(s):
     """

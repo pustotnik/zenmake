@@ -431,7 +431,7 @@ def _calcConfCheckHexHash(checkArgs, params):
         envStr += '%r %r ' % (k, val)
     buff.append('%s: %s' % ('env', envStr))
 
-    return utils.hexOfStr(utils.hashOfStrs(buff))
+    return utils.hexOfStr(utils.hashObj(buff))
 
 @conf
 def runCheckByPyFunc(self, **kwargs):

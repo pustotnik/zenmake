@@ -73,11 +73,7 @@ def writeZenMakeMetaFile(bconfPaths, monitfiles, taskNames):
 
     zmMeta.tasknames  = taskNames
     zmMeta.monitfiles = sorted(set(monitfiles))
-    zmMeta.monithash  = 0
-
-    for file in zmMeta.monitfiles:
-        zmMeta.monithash = utils.hashOfStrs((zmMeta.monithash,
-                                             utils.readFile(file, 'rb')))
+    zmMeta.monithash  = utils.hashFiles(zmMeta.monitfiles)
 
     zmMeta.toolenvs = {}
     envVarNames = getAllToolchainEnvVarNames()
@@ -611,12 +607,10 @@ def areMonitoredFilesChanged(zmMetaConfSet):
     Detect that current monitored files are changed.
     """
 
-    _hash = 0
-    for file in zmMetaConfSet.monitfiles:
-        try:
-            _hash = utils.hashOfStrs((_hash, utils.readFile(file, 'rb')))
-        except EnvironmentError:
-            return True
+    try:
+        _hash = utils.hashFiles(zmMetaConfSet.monitfiles)
+    except EnvironmentError:
+        return True
 
     return _hash != zmMetaConfSet.monithash
 
