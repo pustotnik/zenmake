@@ -9,9 +9,9 @@
 from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext as WafBuildContext
 from zm.pyutils import viewvalues
+from zm.utils import asmethod
 from zm import log, db
 from zm.waf.assist import makeTasksCachePath
-from zm.waf.context import ctxmethod
 
 class BuildContext(WafBuildContext):
     """ Context for command 'build' """
@@ -19,13 +19,13 @@ class BuildContext(WafBuildContext):
     # No methods here at present. See below.
 
 # WafBuildContext is used for many other waf commands as the base class
-# and so to insert new methods into this class the decorator @ctxmethod is used.
+# and so to insert new methods into this class the decorator @asmethod is used.
 
-@ctxmethod(WafBuildContext, 'load_envs', wrap = True, callOrigFirst = True)
+@asmethod(WafBuildContext, 'load_envs', wrap = True, callOrigFirst = True)
 def _loadEnvs(self):
     self.loadTasks()
 
-@ctxmethod(WafBuildContext, 'loadTasks')
+@asmethod(WafBuildContext, 'loadTasks')
 def _loadTasks(self):
 
     bconf = self.bconfManager.root
@@ -56,7 +56,7 @@ def _loadTasks(self):
         env.parent = rootenv
         self.all_envs[taskVariant] = env
 
-@ctxmethod(WafBuildContext, 'validateVariant')
+@asmethod(WafBuildContext, 'validateVariant')
 def _validateVariant(self):
     """ Check current variant and return it """
 

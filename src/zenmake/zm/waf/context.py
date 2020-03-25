@@ -14,7 +14,8 @@ from waflib import Context as WafContextModule
 from waflib.Context import Context as WafContext
 from zm import ZENMAKE_DIR, WAF_DIR
 from zm.autodict import AutoDict as _AutoDict
-from zm import utils, error
+from zm import error
+from zm.utils import toList, asmethod
 from zm.waf import wscriptimpl
 
 joinpath = os.path.join
@@ -27,44 +28,18 @@ DEFAULT_TOOLDIRS = [
     joinpath(ZENMAKE_DIR, 'waf', 'waflib', 'extras'),
 ]
 
-def ctxmethod(ctxClass, methodName = None, wrap = False, callOrigFirst = True):
-    """
-    Decorator to replace/attach method to existing Waf context class
-    """
-
-    def decorator(func):
-        funcName = methodName if methodName else func.__name__
-        if wrap:
-            origMethod = getattr(ctxClass, funcName)
-
-            if callOrigFirst:
-                def execute(*args, **kwargs):
-                    origMethod(*args, **kwargs)
-                    func(*args, **kwargs)
-            else:
-                def execute(*args, **kwargs):
-                    func(*args, **kwargs)
-                    origMethod(*args, **kwargs)
-
-            setattr(ctxClass, funcName, execute)
-        else:
-            setattr(ctxClass, funcName, func)
-        return func
-
-    return decorator
-
 # Context is the base class for all other context classes and it is not auto
 # registering class. So it cannot be just declared for extending/changing.
 
-@ctxmethod(WafContext, '__init__', wrap = True, callOrigFirst = False)
+@asmethod(WafContext, '__init__', wrap = True, callOrigFirst = False)
 def _ctxInit(self, **kwargs):
     self.bconfManager = kwargs.get('bconfManager')
 
-@ctxmethod(WafContext, 'getbconf')
+@asmethod(WafContext, 'getbconf')
 def _getCtxBuildConf(ctx):
     return ctx.bconfManager.config(ctx.path.abspath())
 
-@ctxmethod(WafContext, 'zmcache')
+@asmethod(WafContext, 'zmcache')
 def _getLocalCtxCache(ctx):
     #pylint: disable=protected-access
     try:
@@ -75,13 +50,13 @@ def _getLocalCtxCache(ctx):
     ctx._zmcache = _AutoDict()
     return ctx._zmcache
 
-@ctxmethod(WafContext, 'recurse')
+@asmethod(WafContext, 'recurse')
 def _contextRecurse(ctx, dirs, name = None, mandatory = True, once = True, encoding = None):
     #pylint: disable=too-many-arguments,unused-argument
 
     cache = ctx.zmcache().recurse
 
-    for dirpath in utils.toList(dirs):
+    for dirpath in toList(dirs):
         if not isabspath(dirpath):
             # absolute paths only
             dirpath = joinpath(ctx.path.abspath(), dirpath)
@@ -115,7 +90,7 @@ def _contextRecurse(ctx, dirs, name = None, mandatory = True, once = True, encod
         finally:
             ctx.post_recurse(node)
 
-@ctxmethod(WafContext, 'getPathNode')
+@asmethod(WafContext, 'getPathNode')
 def _getPathNode(self, path):
 
     cache = self.zmcache().ctxpath
@@ -127,7 +102,7 @@ def _getPathNode(self, path):
     cache[path] = node
     return node
 
-@ctxmethod(WafContext, 'getStartDirNode')
+@asmethod(WafContext, 'getStartDirNode')
 def _getStartDirNode(self, startdir):
 
     cache = self.zmcache().startdirpath
@@ -183,7 +158,7 @@ def _wafLoadTool(tool, tooldir = None, ctx = None, with_sys_path = True):
 
 WafContextModule.load_tool = _wafLoadTool
 
-@ctxmethod(WafContext, 'loadTool')
+@asmethod(WafContext, 'loadTool')
 def _loadToolWitFunc(ctx, tool, tooldirs = None, callFunc = None, withSysPath = True):
 
     module = loadTool(tool, tooldirs, withSysPath)
@@ -193,14 +168,14 @@ def _loadToolWitFunc(ctx, tool, tooldirs = None, callFunc = None, withSysPath = 
 
     return module
 
-@ctxmethod(WafContext, 'load')
+@asmethod(WafContext, 'load')
 def _loadTools(ctx, tools, *args, **kwargs):
     """ This function is for compatibility with Waf """
 
     # pylint: disable = unused-argument
 
-    tools = utils.toList(tools)
-    tooldirs = utils.toList(kwargs.get('tooldir', ''))
+    tools = toList(tools)
+    tooldirs = toList(kwargs.get('tooldir', ''))
     withSysPath = kwargs.get('with_sys_path', True)
     callFunc = kwargs.get('name', None)
 

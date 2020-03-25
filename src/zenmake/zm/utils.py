@@ -34,6 +34,32 @@ def platform():
 
 PLATFORM = platform()
 
+def asmethod(cls, methodName = None, wrap = False, callOrigFirst = True):
+    """
+    Decorator to replace/attach method to any existing class
+    """
+
+    def decorator(func):
+        funcName = methodName if methodName else func.__name__
+        if wrap:
+            origMethod = getattr(cls, funcName)
+
+            if callOrigFirst:
+                def execute(*args, **kwargs):
+                    origMethod(*args, **kwargs)
+                    func(*args, **kwargs)
+            else:
+                def execute(*args, **kwargs):
+                    func(*args, **kwargs)
+                    origMethod(*args, **kwargs)
+
+            setattr(cls, funcName, execute)
+        else:
+            setattr(cls, funcName, func)
+        return func
+
+    return decorator
+
 md5                = wafutils.md5
 readFile           = wafutils.readf
 hashObj            = wafutils.h_list
@@ -44,7 +70,7 @@ libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
 threading          = wafutils.threading
 
-# Python 3.4 provides non-inheritable file handles by default
+# Since python 3.4 non-inheritable file handles are provided by default
 if hasattr(os, 'O_NOINHERIT') and sys.hexversion < 0x3040000:
     def _hashFile(hashobj, path):
         # pylint: disable = no-member
@@ -79,7 +105,7 @@ def hashFiles(paths):
     Hash files from paths by using md5
     """
 
-    # Old implementation:
+    # Old implementation (slower and less accurate):
     #_hash = 0
     #for path in paths:
     #    _hash = hashObj((_hash, readFile(path, 'rb')))
