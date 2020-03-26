@@ -26,15 +26,13 @@ from zm.pyutils import viewitems, viewvalues
 from zm import utils, log, toolchains, error, db, version, cli
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
 from zm.features import ToolchainVars
-from zm.waf import assist
+from zm.waf import assist, context
 from zm.conftests import handleConfTests
 
-#pylint: disable=unused-import
-# This modules must be just imported
-from zm.waf import options, context
-#pylint: enable=unused-import
-
 joinpath = os.path.join
+
+toList       = utils.toList
+toListSimple = utils.toListSimple
 
 def _genToolAutoName(lang):
     return 'auto-%s' % lang.replace('xx', '++')
@@ -62,6 +60,41 @@ class ConfigurationContext(WafConfContext):
         self.monitFiles = []
 
         self.validToolchainNames = assist.getValidPreDefinedToolchainNames()
+
+    def _handleTaskExportDefinesParam(self, taskParams):
+        """
+        Get valid 'export-defines' for build task
+        """
+
+        exportDefines = taskParams.get('export-defines', None)
+        if not exportDefines:
+            taskParams.pop('export-defines', None)
+            return
+
+        if isinstance(exportDefines, bool) and exportDefines:
+            exportDefines = taskParams.get('defines', [])
+
+        taskParams['export-defines'] = toList(exportDefines)
+
+    def _handleMonitLibs(self, taskParams):
+
+        for libsparam in ('libs', 'stlibs'):
+            monitparam = 'monit' + libsparam
+            monitLibs = taskParams.get(monitparam, None)
+            if monitLibs is None:
+                continue
+
+            libs = taskParams.get(libsparam, [])
+            if isinstance(monitLibs, bool):
+                monitLibs = set(libs) if monitLibs else None
+            else:
+                monitLibs = set(monitLibs)
+                monitLibs.intersection_update(libs)
+
+            if not monitLibs:
+                taskParams.pop(monitparam, None)
+            else:
+                taskParams[monitparam] = sorted(monitLibs)
 
     def _calcObjectsIndex(self, bconf, taskParams):
 
@@ -408,7 +441,7 @@ class ConfigurationContext(WafConfContext):
 
         for taskParams in viewvalues(bconf.tasks):
 
-            features = utils.toListSimple(taskParams.get('features', []))
+            features = toListSimple(taskParams.get('features', []))
             _toolchains = []
 
             # handle env vars to set toolchain
@@ -427,7 +460,7 @@ class ConfigurationContext(WafConfContext):
 
             # try to get from the task
             if not _toolchains:
-                _toolchains = utils.toList(taskParams.get('toolchain', []))
+                _toolchains = toList(taskParams.get('toolchain', []))
 
             if not _toolchains:
                 # try to use auto-*
@@ -546,7 +579,7 @@ class ConfigurationContext(WafConfContext):
         if not files:
             return
 
-        files = utils.toList(files)
+        files = toList(files)
         startdir = bconf.confPaths.startdir
         for file in files:
             file = utils.getNativePath(file)
@@ -601,7 +634,8 @@ class ConfigurationContext(WafConfContext):
 
         assist.handleTaskIncludesParam(taskParams, rootdir, startdir)
         assist.handleTaskLibPathParams(taskParams, rootdir, startdir)
-        assist.handleTaskExportDefinesParam(taskParams)
+        self._handleTaskExportDefinesParam(taskParams)
+        self._handleMonitLibs(taskParams)
 
         taskParams['target'] = targetPath
 

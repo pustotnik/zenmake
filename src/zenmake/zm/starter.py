@@ -118,6 +118,8 @@ def run():
         noBuildConf = bconfDir is None
         cmd, wafCmdLine = handleCLI(sys.argv, noBuildConf, None)
 
+        error.verbose = cmd.args.verbose
+
         if cmd.name in _indyCmd:
             return runIndyCmd(cmd)
 

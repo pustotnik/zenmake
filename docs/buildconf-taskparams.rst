@@ -417,6 +417,32 @@ libpath
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
+monitlibs
+"""""""""""""""""""""
+    One or more names from ``libs`` to monitor changes.
+
+    For an example, a project has used some system library 'superlib' and once this
+    library was upgraded by a system package manager. After that the building of
+    the project will not make a relink with the new version of 'superlib'
+    if no changes in the project which can trigger such a relink.
+    Usually it is not a problem because a project is changed much more frequently than
+    upgrading of system libraries during development.
+
+    Any names not from ``libs`` are ignored.
+
+    It can be True or False as well. If it is True then value of ``libs``
+    is used. If it is False then it means an empty list.
+
+    By default it's False.
+
+    Using of this parameter can slow down a building of some
+    projects with a lot of values in this parameter.
+    ZenMake uses md5 (or sha1 if a rare "FIPS compliant" build of Python is used)
+    hashes to check changes of every library file.
+
+    It's possible to use :ref:`selectable parameters<buildconf-select>`
+    to set this parameter.
+
 stlibs
 """""""""""""""""""""
     The same as ``libs`` but for static libraries.
@@ -427,6 +453,14 @@ stlibs
 stlibpath
 """""""""""""""""""""
     The same as ``libpath`` but for static libraries.
+
+    It's possible to use :ref:`selectable parameters<buildconf-select>`
+    to set this parameter.
+
+monitstlibs
+"""""""""""""""""""""
+    The same as ``monitlibs`` but for static libraries. It means it's affected
+    by parameter ``stlibs``.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.

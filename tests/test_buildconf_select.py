@@ -166,6 +166,21 @@ def checkExpectedRun(result, expected):
     for name in expected:
         assert result[name] == expected[name]
 
+def _postBuildconfSetup(buildconf, paramName):
+
+    if paramName in ('monitlibs', 'monitstlibs'):
+        paramTestValues = PARAM_TEST_VALUES[paramName]
+        libsparamName = paramName[5:]
+
+        libsValues = [ utils.toList(x) for x in paramTestValues ]
+        values = set()
+        for vals in libsValues:
+            values.update(vals)
+        libsValues = list(values)
+
+        for params in viewvalues(buildconf.tasks):
+            params[libsparamName] = libsValues
+
 def getFixtureCase1(_, testingBuildConf, paramName):
 
     # select 'linux'
@@ -179,6 +194,7 @@ def getFixtureCase1(_, testingBuildConf, paramName):
         'linux' : paramTestValues[1],
         'darwin' : paramTestValues[2],
     }
+    _postBuildconfSetup(buildconf, paramName)
     expected = { 'mytask' : paramTestValues[1] }
 
     return paramName, buildconf, expected
@@ -196,6 +212,7 @@ def getFixtureCase2(_, testingBuildConf, paramName):
         'windows' : paramTestValues[1],
         'darwin' : paramTestValues[2],
     }
+    _postBuildconfSetup(buildconf, paramName)
     expected = { 'mytask' : paramTestValues[0] }
 
     return paramName, buildconf, expected
@@ -214,6 +231,7 @@ def getFixtureCase3(_, testingBuildConf, paramName):
         'windows' : paramTestValues[2],
         'darwin' : paramTestValues[0],
     }
+    _postBuildconfSetup(buildconf, paramName)
     expected = { 'mytask' :paramTestValues[1] }
 
     return paramName, buildconf, expected
@@ -239,6 +257,7 @@ def getFixtureCase4(_, testingBuildConf, paramName):
         'linux task1' : paramTestValues[1],
         'windows' : paramTestValues[2],
     }
+    _postBuildconfSetup(buildconf, paramName)
     expected = {
         'mytask': paramTestValues[0],
         'task1': paramTestValues[1],
@@ -269,6 +288,7 @@ def getFixtureCase5(_, testingBuildConf, paramName):
         'x64 task1' : paramTestValues[1],
         'arm' : paramTestValues[2],
     }
+    _postBuildconfSetup(buildconf, paramName)
     expected = {
         'mytask': paramTestValues[0],
         'task1': paramTestValues[1],
@@ -311,6 +331,7 @@ def getFixtureCase6(monkeypatch, testingBuildConf, paramName):
         'myenv-task1' : paramTestValues[1],
         'myenv2' : paramTestValues[2],
     }
+    _postBuildconfSetup(buildconf, paramName)
     expected = {
         'mytask': paramTestValues[0],
         'task1': paramTestValues[1],
@@ -346,6 +367,7 @@ def getFixtureCase7(_, testingBuildConf, paramName):
         'clang task1' : paramTestValues[1],
         'gcc' : paramTestValues[2],
     }
+    _postBuildconfSetup(buildconf, paramName)
     expected = {
         'mytask': paramTestValues[0],
         'task1': paramTestValues[1],
@@ -388,6 +410,7 @@ def getFixtureCase8(_, testingBuildConf, paramName):
         'debug' : paramTestValues[2],
         'default': paramTestValues[1],
     }
+    _postBuildconfSetup(buildconf, paramName)
     expected = {
         'mytask' :paramTestValues[0],
         'task1' :paramTestValues[1],

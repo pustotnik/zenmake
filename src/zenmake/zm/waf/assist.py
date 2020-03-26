@@ -35,7 +35,7 @@ toListSimple = utils.toListSimple
 # don't need to be protected from removing from waf task gen.
 _usedWafTaskKeys = set([
     'name', 'target', 'features', 'source', 'includes',
-    'lib', 'libpath', 'stlib', 'stlibpath',
+    'lib', 'libpath', 'monitlibs', 'stlib', 'stlibpath', 'monitstlibs',
     'rpath', 'use', 'vnum', 'idx', 'export_includes', 'export_defines',
     'install_path',
 ])
@@ -450,21 +450,6 @@ def handleTaskIncludesParam(taskParams, rootdir, startdir):
     else:
         exportIncludes = _makeTaskPathParam(param, rootdir, startdir)
     taskParams['export-includes'] = exportIncludes
-
-def handleTaskExportDefinesParam(taskParams):
-    """
-    Get valid 'export-defines' for build task
-    """
-
-    exportDefines = taskParams.get('export-defines', None)
-    if not exportDefines:
-        taskParams.pop('export-defines', None)
-        return
-
-    if isinstance(exportDefines, bool) and exportDefines:
-        exportDefines = taskParams.get('defines', [])
-
-    taskParams['export-defines'] = toList(exportDefines)
 
 def handleTaskSourceParam(ctx, src):
     """

@@ -8,6 +8,8 @@
 
 from waflib.Errors import WafError as _WafError
 
+verbose = 2
+
 class ZenMakeError(_WafError):
     """Base class for all ZenMake errors"""
 
@@ -29,7 +31,16 @@ class ZenMakeConfError(ZenMakeError):
             msg = _msg
         self.confpath = confpath
 
-        super(ZenMakeConfError, self).__init__(msg, ex)
+        if verbose == 0: # optimization
+            # pylint: disable = non-parent-init-called
+            Exception.__init__(self)
+            self.stack = []
+            if ex and not msg:
+                msg = str(ex)
+
+            self.fullmsg = self.verbose_msg = self.msg = msg
+        else:
+            super(ZenMakeConfError, self).__init__(msg, ex)
 
 class ZenMakeConfTypeError(ZenMakeConfError):
     """Invalid buildconf param type error"""

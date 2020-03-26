@@ -23,11 +23,6 @@ from zm.error import ZenMakeConfError
 from zm.waf import wscriptimpl, assist
 from zm.waf.options import setupOptionVerbose
 
-# pylint: disable = unused-import
-# These modules must be just imported
-from zm.waf import context, configure, build, install
-# pylint: enable = unused-import
-
 joinpath = os.path.join
 
 def _prepareBuildDir(bconfPaths):
