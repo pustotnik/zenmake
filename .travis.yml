@@ -41,7 +41,7 @@ addons:
       - ldc
     # https://travis-ci.community/t/macos-build-fails-because-of-homebrew-bundle-unknown-command/7296
     # https://github.com/travis-ci/packer-templates-mac/pull/13
-    update: true
+    #update: true
 
 # most problematic jobs are at first places
 jobs:
@@ -72,6 +72,12 @@ jobs:
     env:
       - PYENV_VERSION=2.7.17
       - NAME='Python 2.7 on macOS'
+    addons:
+      homebrew:
+        # https://travis-ci.community/t/macos-build-fails-because-of-homebrew-bundle-unknown-command/7296
+        # https://github.com/travis-ci/packer-templates-mac/pull/13
+        update: true
+
   #- name: Python 3.4 on macOS 10.13
   #  os: osx
   #  osx_image: xcode9.4
