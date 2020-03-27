@@ -158,6 +158,7 @@ install:
       else
         python -m pip install pyyaml
       fi
+      python -m pip install msgpack
       python -m pip install pytest
       python -m pip install pytest-cov
       python -m pip install pytest-mock
