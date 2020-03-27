@@ -3,6 +3,10 @@ buildroot = '_build'
 
 project = { 'version' : '0.3.1' }
 
+features = {
+    'db-format' : 'msgpack',
+}
+
 subdirs = [
     'libs',
     'main',
