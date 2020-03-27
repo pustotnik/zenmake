@@ -148,7 +148,8 @@ before_install:
       python --version
       #set +ex
 
-      #
+      # homebrew packages
+      export HOMEBREW_NO_INSTALL_CLEANUP=1
       export HOMEBREW_NO_AUTO_UPDATE=1
       brew install boost
       brew install boost-python
