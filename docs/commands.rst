@@ -5,7 +5,7 @@
 Commands
 =====================
 
-Here are some descriptions of main commands. You can get the list of the all
+Here are some descriptions of general commands. You can get the list of the all
 commands with a short description by ``zenmake help`` or ``zenmake --help``.
 To get help on selected command you
 can use ``zenmake help <selected command>`` or
@@ -14,35 +14,39 @@ For example you can use ``bld`` instead of ``build`` or ``dc``
 instead of ``distclean``.
 
 configure
-    Configures project. In most cases you don't need to call this command
-    directly. Command ``build`` will call this command itself if necessary.
-    This command processes most of values of :ref:`buildconf<buildconf>`.
-    So any change in :ref:`buildconf<buildconf>` leads to call of this command.
+    Configure a project. In most cases you don't need to call this command
+    directly. Command ``build`` calls this command itself if necessary.
+    This command processes most of values from :ref:`buildconf<buildconf>`
+    of a project. Any change in :ref:`buildconf<buildconf>` leads to call
+    of this command. You can change this behaviour with parameter ``autoconfig``
+    in buildconf :ref:`features<buildconf-features>`.
 
 build
-    Builds project of the current directory. It's the main command. To see all
+    Build a project of the current directory. It's the main command. To see all
     possible parameters use ``zenmake help build`` or
     ``zenmake build --help``. For example you can use ``-v`` to see more info
     about building process or ``-p`` to use progress bar instead of text logging.
-    It calls ``configure`` itself if necessary.
+    It calls ``configure`` itself if necessary by default.
 
 test
-    Builds and runs tests of the current directory. If no tests it's the same as running
-    ``build``. Command ``test`` builds and runs tests by default while
+    Build and run tests of the current directory. If current project has no tests
+    it's almost the same as running command ``build``.
+    Command ``test`` builds and runs tests by default while
     command ``build`` doesn't.
 
 clean
-    Removes build files for selected ``buildtype``. It doesn't touch other
-    build files.
+    Remove build files for selected ``buildtype`` of a project.
+    It doesn't touch other build files.
 
 distclean
-    Removes the build directory with everything in it.
+    Remove the build directory of a project with everything in it.
 
 install
-    Installs the build targets on the system. It builds targets itself
-    if necessary. You can control paths with :ref:`environment variables<envvars>`
+    Install the build targets in some destination directory using installation
+    prefix. It builds targets itself if necessary.
+    You can control paths with :ref:`environment variables<envvars>`
     or command line parameters (see ``zenmake help install``).
-    In common it looks like classic ``make install``.
+    It looks like classic ``make install`` in common.
 
 uninstall
-    Removes the build targets installed with command ``install``.
+    Remove the build targets installed with command ``install``.
