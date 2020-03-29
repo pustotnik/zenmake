@@ -50,7 +50,7 @@ def getBuildConfTaskParamHooks():
 
 def detectFeatures(bconf):
     """
-    Function for detect features in buildconfig.
+    Function to detect features in buildconfig.
     It's used by zm.features.loadFeatures.
     It should return a list of detected features.
     """

@@ -14,7 +14,7 @@ from collections import deque
 from waflib.TaskGen import feature, after
 from waflib import Build, Task
 from waflib.Build import BuildContext
-from zm.pyutils import viewitems
+from zm.pyutils import viewitems, viewvalues
 from zm import log, cli, error
 from zm.autodict import AutoDict as _AutoDict
 from zm.features import precmd, postcmd
@@ -32,9 +32,6 @@ _shared = _AutoDict(
     withTests = False,
     runTestsOnChanges = False,
 
-    # tasks from buildconf
-    confTasks = None,
-
     # names of test tasks
     testTaskNames = None,
 
@@ -48,6 +45,7 @@ _shared = _AutoDict(
     ctxCache = {},
 
     testsFound = False,
+    testsBuilt = False,
     buildHandled = False,
 )
 
@@ -130,14 +128,14 @@ def preInit(ctx):
         if _shared.withTests:
             continue
 
-        # Remove test tasks
+        # Remove test tasks.
+        # It's necessary to do it in 'init' before 'configure'/'build'
+        # otherwise detecting of configured tasks with 'autoconfig' == True
+        # doesn't work correctly.
         for name in testTaskNames:
             tasks.pop(name, None)
 
     _shared.testsFound = testsFound
-
-    if _shared.withTests and not testsFound:
-        log.warn('There are no tests to configure')
 
 def _isSuitableForRunCmd(taskParams):
     return taskParams['$runnable'] or taskParams.get('run', None)
@@ -146,13 +144,17 @@ def _isSuitableForRunCmd(taskParams):
 def postConf(conf):
     """ Configure tasks """
 
+    if not _shared.withTests:
+        return
+
+    if _shared.withTests and not _shared.testsFound:
+        log.warn('There are no tests to configure')
+        return
+
     for idx, bconf in enumerate(conf.bconfManager.configs):
         _postConf(bconf, idx)
 
 def _postConf(bconf, bconfIndex):
-
-    if not _shared.withTests:
-        return
 
     testTaskNames = _shared.testTaskNames[bconfIndex]
     assert testTaskNames is not None
@@ -181,12 +183,15 @@ def preBuild(bld):
     Preprocess zm.waf.wscriptimpl.build
     """
 
+    if _shared.withTests and not _shared.testsFound:
+        log.warn('There are no tests to build')
+        return
+
+    # use tasks from cache db, not from bconf
     tasks = bld.zmtasks
 
-    _shared.confTasks = tasks.copy()
-    _shared.testsFound = False
-    ignoredTasks = []
-    for name, params in viewitems(tasks):
+    _shared.testsBuilt = False
+    for params in viewvalues(tasks):
 
         features = params['features']
         if 'test' not in features:
@@ -197,16 +202,7 @@ def preBuild(bld):
         # Otherwise all tests will be executed in 'build' command.
         params['features'] = [ x for x in features if x != 'runcmd' ]
 
-        if not _shared.withTests:
-            ignoredTasks.append(name)
-
-        _shared.testsFound = True
-
-    for k in ignoredTasks:
-        tasks.pop(k, None)
-
-    if _shared.withTests and not _shared.testsFound:
-        log.warn('There are no tests to build')
+        _shared.testsBuilt = True
 
 @postcmd('build')
 def postBuild(bld):
@@ -220,10 +216,10 @@ def postBuild(bld):
     if 'runTests' in cli.selected.args:
         runTests = cli.selected.args.runTests
         runTests = runTests and runTests != 'none'
-        if runTests and not _shared.testsFound:
+        if runTests and not _shared.testsBuilt:
             log.warn('There are no tests to run')
 
-        runTests = _shared.testsFound and runTests
+        runTests = _shared.testsBuilt and runTests
 
     if not runTests:
         # Prevent running of command 'test' after the current command by
@@ -232,7 +228,8 @@ def postBuild(bld):
         Options.commands = [ x for x in Options.commands if x != 'test' ]
         return
 
-    processTasksForRun(_shared.confTasks)
+    assert _shared.testsBuilt
+    processTasksForRun(bld.zmtasks)
 
     #Gather some info from BuildContext at the end of the 'build' call.
     #It's just for optimisation.
