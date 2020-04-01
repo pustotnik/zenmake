@@ -53,10 +53,10 @@ def _processCmdLine(conf, bconf, cwd, shell, cmdArgs):
 
     paths = [cwd, startdir, btypeDir]
     paths.extend(os.environ.get('PATH', '').split(os.pathsep))
-    fkw = dict(
-        path_list = paths, quiet = True,
-        exts = _CMDFILE_EXTS, mandatory = False
-    )
+    fkw = {
+        'path_list' : paths, 'quiet' : True,
+        'exts' : _CMDFILE_EXTS, 'mandatory' : False
+    }
 
     partsCount = len(cmdSplitted)
     cmdExt = os.path.splitext(cmdSplitted[0])[1]
@@ -115,12 +115,12 @@ def _postConf(ctx, bconf):
         elif not isinstance(cmdArgs, maptype):
             cmdArgs = { 'cmd' : cmdArgs }
 
-        cmdTaskArgs = dict(
-            name     = taskName,
-            timeout  = cmdArgs.get('timeout', None),
-            env      = cmdArgs.get('env', {}),
-            repeat   = cmdArgs.get('repeat', 1),
-        )
+        cmdTaskArgs = {
+            'name'   : taskName,
+            'timeout': cmdArgs.get('timeout', None),
+            'env'    : cmdArgs.get('env', {}),
+            'repeat' : cmdArgs.get('repeat', 1),
+        }
 
         cwd = cmdArgs.get('cwd', None)
         if cwd:
@@ -188,11 +188,11 @@ def _isCmdStandalone(tgen):
 def _createRunCmdTask(tgen, ruleArgs):
     """ Create new rule task for runcmd """
 
-    classParams = dict(
-        shell = ruleArgs['shell'],
-        func  = ruleArgs['rule'],
-        color = ruleArgs['color'],
-    )
+    classParams = {
+        'shell' : ruleArgs['shell'],
+        'func'  : ruleArgs['rule'],
+        'color' : ruleArgs['color'],
+    }
 
     name = '%s[runcmd]' % tgen.name
     cls = Task.task_factory(name, **classParams)
@@ -252,19 +252,19 @@ def applyRunCmd(tgen):
     realTarget = zmTaskParams['$real.target']
 
     env = ctx.env.derive()
-    env.env = dict(env.env or os.environ)
+    env.env = (env.env or os.environ).copy()
     env.env.update(cmdArgs.pop('env', {}))
 
     # add new var to use in 'rule'
     env['TARGET'] = realTarget
 
     ruleArgs = cmdArgs.copy()
-    ruleArgs.update(dict(
-        env   = env,
-        color = getattr(tgen, 'color', 'BLUE'),
-        cls_keyword = lambda _: 'Running',
-        cls_str = lambda _: 'command for task %r' % tgen.name,
-    ))
+    ruleArgs.update({
+        'env'   : env,
+        'color' : getattr(tgen, 'color', 'BLUE'),
+        'cls_keyword' : lambda _: 'Running',
+        'cls_str' : lambda _: 'command for task %r' % tgen.name,
+    })
     repeat = ruleArgs.pop('repeat', 1)
 
     deepInputs = zmTaskParams.get('deep_inputs', False) or \

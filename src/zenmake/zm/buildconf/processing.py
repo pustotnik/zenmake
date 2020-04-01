@@ -43,14 +43,14 @@ _TASKPARAMS_TOLIST_MAP = {}
 #    return version.isDev()
 
 def _applyStartDirToParam(bconf, param):
-    return dict(startdir = bconf.startdir, paths = param)
+    return { 'startdir' : bconf.startdir, 'paths' : param }
 
 def _applyStartDirToSrcParam(bconf, param):
     startdir = bconf.startdir
     if isinstance(param, maptype):
         param['startdir'] = startdir
     else:
-        param = dict(startdir = startdir, paths = param)
+        param = { 'startdir' : startdir, 'paths' : param }
 
     return param
 
@@ -92,6 +92,7 @@ def convertTaskParamToList(taskParams, paramName):
             subNames = ('include', 'exclude', 'paths')
         else:
             subNames = ('paths', )
+
         for name in subNames:
             val = paramVal.get(name)
             if val is not None:
@@ -723,7 +724,7 @@ class Config(object):
 
         def getMatrixCondition(entry, name):
             condition = entry.get(name, None)
-            result = dict( condition = condition )
+            result = { 'condition' : condition }
 
             if condition is None:
                 if name == 'for':

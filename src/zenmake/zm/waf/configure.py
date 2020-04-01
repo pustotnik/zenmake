@@ -603,12 +603,12 @@ class ConfigurationContext(WafConfContext):
             if not confTests:
                 continue
             log.info('.. Checks for the %r:' % taskName)
-            params = dict(
-                cfgCtx = self,
-                buildtype = buildtype,
-                taskName = taskName,
-                taskParams = taskParams,
-            )
+            params = {
+                'cfgCtx' : self,
+                'buildtype' : buildtype,
+                'taskName' : taskName,
+                'taskParams' : taskParams,
+            }
             handleConfTests(confTests, params)
 
         self.setenv('')

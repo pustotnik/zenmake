@@ -149,7 +149,7 @@ class Validator(object):
         _schemeAttrs = schemeAttrs
         if varsType:
             handler = Validator._getHandler(varsType)
-            _schemeAttrs = dict(schemeAttrs)
+            _schemeAttrs = schemeAttrs.copy()
             _schemeAttrs['type'] = varsType
 
         if callable(allowed):

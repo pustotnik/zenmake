@@ -313,7 +313,7 @@ def _checkInParallelImpl(cfgCtx, checkArgsList, **kwargs):
         # bind a logger that will keep the info in memory
         checkTask.logger = log.makeMemLogger(str(id(checkTask)), cfgCtx.logger)
 
-        checkTask.call = dict( name = args.pop('$func-name'), args = args)
+        checkTask.call = { 'name' : args.pop('$func-name'), 'args' : args }
 
         tasks.append(checkTask)
 
@@ -498,7 +498,7 @@ def checkByPyFunc(checkArgs, params):
     func = checkArgs['func']
     argsSpec = inspectArgSpec(func)
     noFuncArgs = not any(argsSpec[0:3])
-    args = dict(task = taskName, buildtype = buildtype)
+    args = { 'task' : taskName, 'buildtype' : buildtype }
 
     checkArgs['args'] = None if noFuncArgs else args
     checkArgs['msg'] = 'Checking by function %r' % func.__name__
@@ -742,9 +742,9 @@ def checkInParallel(checkArgs, params):
     for args in parallelCheckArgsList:
         args['msg'] = "  %s" % args['msg']
 
-    params = dict(
-        msg = 'Checking in parallel',
-    )
+    params = {
+        'msg' : 'Checking in parallel',
+    }
     params.update(checkArgs)
 
     _checkInParallelImpl(cfgCtx, parallelCheckArgsList, **params)

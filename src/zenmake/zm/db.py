@@ -211,10 +211,10 @@ class _DBFileGen(DBFile):
         args, kwargs = self._loadArgs
         return self._module.loads(dump, *args, **kwargs)
 
-_PICKLE_ARGS = dict(
-    dumpArgs = ([_PICKLE_PROTOCOL], {}),
-    loadArgs = ([], {}),
-)
+_PICKLE_ARGS = {
+    'dumpArgs' : ([_PICKLE_PROTOCOL], {}),
+    'loadArgs' : ([], {}),
+}
 
 class PickleDBFile(_DBFileGen):
     """
@@ -232,10 +232,10 @@ class PickleDBFile(_DBFileGen):
                                            **_PICKLE_ARGS)
 
 if _MSGPACK_EXISTS:
-    _MSGPACK_ARGS = dict(
-        dumpArgs = ([], { 'use_bin_type' : True }),
-        loadArgs = ([], { 'raw' : False }),
-    )
+    _MSGPACK_ARGS = {
+        'dumpArgs' : ([], { 'use_bin_type' : True }),
+        'loadArgs' : ([], { 'raw' : False }),
+    }
 
     class MsgpackDBFile(_DBFileGen):
         """

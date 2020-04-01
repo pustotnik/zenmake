@@ -36,11 +36,11 @@ def _getReadyConditions(bconf):
         conditions = {}
         # platform conditions
         for platform in KNOWN_PLATFORMS:
-            conditions[platform] = dict(platform = (platform, ))
+            conditions[platform] = { 'platform' : (platform, ) }
         # toolchain conditions
         for toolchain in getAllToolchainNames(platform = 'all'):
             assert toolchain not in conditions
-            conditions[toolchain] = dict(toolchain = (toolchain, ))
+            conditions[toolchain] = { 'toolchain' : (toolchain, ) }
         _local['common-ready-conditions'] = conditions
 
     # don't change common conditions
@@ -49,7 +49,7 @@ def _getReadyConditions(bconf):
     buildtypes = bconf.supportedBuildTypes
     for buildtype in buildtypes:
         if buildtype not in conditions:
-            conditions[buildtype] = dict(buildtype = (buildtype, ))
+            conditions[buildtype] = { 'buildtype' : (buildtype, ) }
 
     _local['ready-conditions'][bconfId] = conditions
     return conditions
