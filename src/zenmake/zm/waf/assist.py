@@ -364,35 +364,7 @@ def validateTaskFeatures(taskParams):
 
     return features
 
-def _makeTaskPathParam(param, rootdir, startdir, relative = True):
-    """
-    Make correct param with path(s) according to param and task stardir
-    """
-
-    # rootdir and startdir parameters must have absolute paths
-
-    # param['startdir'] is relative to rootdir and can be different from
-    # the task startdir
-
-    # Must have this key, otherwise it's a programming error
-    _startdir = param['startdir']
-    # make valid absolute path for current param
-    _startdir = joinpath(rootdir, _startdir)
-
-    paths = toList(param['paths'])
-    result = []
-    for path in paths:
-        path = utils.getNativePath(path)
-        if not isabs(path):
-            path = joinpath(_startdir, path)
-        if relative:
-            # make path relative to the task startdir
-            path = relpath(path, startdir)
-        result.append(normpath(path))
-
-    return result
-
-def handleTaskLibPathParams(taskParams, rootdir, startdir):
+def handleTaskLibPathParams(taskParams):
     """
     Make valid 'libpath','stlibpath' for a build task
     """
@@ -404,25 +376,22 @@ def handleTaskLibPathParams(taskParams, rootdir, startdir):
 
         # Waf doesn't change 'libpath' relative to current ctx.path as for 'includes'.
         # So we use absolute paths here.
-        taskParams[paramName] = _makeTaskPathParam(
-                        param, rootdir, startdir, relative = False)
+        taskParams[paramName] = param.abspaths()
 
-def handleTaskIncludesParam(taskParams, rootdir, startdir):
+def handleTaskIncludesParam(taskParams, startdir):
     """
     Make valid 'includes' and 'export-includes' for build task
     """
 
-    # From wafbook:
-    # Includes paths are given relative to the directory containing the
-    # wscript file. Providing absolute paths are best avoided as they are
-    # a source of portability problems.
+    # Includes paths must be relative to the startdir
 
     #####################
     ### 'includes'
 
     if 'includes' in taskParams:
         param = taskParams['includes']
-        includes = _makeTaskPathParam(param, rootdir, startdir)
+        param.startdir = startdir
+        includes = param.relpaths()
     else:
         includes = []
 
@@ -439,16 +408,16 @@ def handleTaskIncludesParam(taskParams, rootdir, startdir):
         return
 
     param = taskParams['export-includes']
-    # Must have this key, otherwise it's a programming error
-    exportIncludes = param['paths']
+    if isinstance(param, bool):
+        exportIncludes = includes if param else None
+    else:
+        param.startdir = startdir
+        exportIncludes = param.relpaths()
+
     if not exportIncludes:
         taskParams.pop('export-includes', None)
         return
 
-    if isinstance(exportIncludes, bool) and exportIncludes:
-        exportIncludes = includes
-    else:
-        exportIncludes = _makeTaskPathParam(param, rootdir, startdir)
     taskParams['export-includes'] = exportIncludes
 
 def handleTaskSourceParam(ctx, src):

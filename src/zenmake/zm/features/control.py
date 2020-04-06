@@ -15,7 +15,8 @@ from zm.constants import TASK_TARGET_KINDS, TASK_FEATURE_ALIESES
 from zm.pyutils import stringtype, viewvalues, viewitems
 from zm.autodict import AutoDict as _AutoDict
 from zm.pypkg import PkgPath
-from zm.utils import loadPyModule, toList, getNativePath
+from zm.utils import loadPyModule, toList
+from zm.pathutils import getNativePath
 from zm.error import ZenMakeError
 
 # private cache
@@ -249,16 +250,16 @@ class FuncMeta(object):
     def __eq__(self, other):
         return self.func == other.func
     def __ne__(self, other):
-        return not self.__eq__(other)
+        return not self == other
     def __lt__(self, other):
         return (other.module in self.beforeModules) or \
                (self.module in other.afterModules)
     def __le__(self, other):
-        return self.__eq__(other) or self.__lt__(other)
+        return self == other or self < other
     def __gt__(self, other):
-        return not self.__lt__(other)
+        return not self < other
     def __ge__(self, other):
-        return self.__eq__(other) or self.__gt__(other)
+        return self == other or self > other
 
 def _initHooks():
 

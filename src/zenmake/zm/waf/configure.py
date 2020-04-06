@@ -22,14 +22,16 @@ from waflib import Errors as waferror, Context as WafContext
 from waflib.ConfigSet import ConfigSet
 from waflib.Configure import ConfigurationContext as WafConfContext
 from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFIG_LOG
-from zm.pyutils import viewitems, viewvalues
+from zm.pyutils import viewitems, viewvalues, viewkeys
 from zm import utils, log, toolchains, error, db, version, cli
+from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
 from zm.features import ToolchainVars
 from zm.waf import assist, context
 from zm.conftests import handleConfTests
 
 joinpath = os.path.join
+normpath = os.path.normpath
 
 toList       = utils.toList
 toListSimple = utils.toListSimple
@@ -230,8 +232,8 @@ class ConfigurationContext(WafConfContext):
         """
 
         bconfManager = self.bconfManager
-        bconf = bconfManager.root
-        bconfPaths = bconf.confPaths
+        rootbconf = bconfManager.root
+        bconfPaths = rootbconf.confPaths
         cachedir = bconfPaths.zmcachedir
 
         # common conf cache
@@ -254,17 +256,17 @@ class ConfigurationContext(WafConfContext):
             taskVariant = taskParams['$task.variant']
 
             # It's necessary to delete variant from conf.all_envs. Otherwise
-            # Waf stores it in 'c4che'
+            # Waf stores it in 'c4che'.
             env = self.all_envs.pop(taskVariant)
             envs[taskVariant] = utils.configSetToDict(env)
 
-        buildtype = bconf.selectedBuildType
+        buildtype = rootbconf.selectedBuildType
 
-        tasksData = dict(
-            tasks     = tasks,
-            taskenvs  = envs,
-            buildtype = buildtype,
-        )
+        tasksData = {
+            'tasks'     : tasks,
+            'taskenvs'  : envs,
+            'buildtype' : buildtype,
+        }
 
         cachePath = assist.makeTasksCachePath(cachedir, buildtype)
         db.saveTo(cachePath, tasksData)
@@ -276,74 +278,6 @@ class ConfigurationContext(WafConfContext):
         Get conf cache
         """
         return self._confCache
-
-    # override
-    def execute(self):
-
-        bconf = self.bconfManager.root
-        bconfPaths = bconf.confPaths
-
-        # See details here: https://gitlab.com/ita1024/waf/issues/1563
-        self.env.NO_LOCK_IN_RUN = True
-        self.env.NO_LOCK_IN_TOP = True
-
-        self.init_dirs()
-
-        self.cachedir = self.bldnode.make_node(WAF_CACHE_DIRNAME)
-        self.cachedir.mkdir()
-
-        if bconfPaths.zmcachedir != self.cachedir.abspath():
-            try:
-                os.makedirs(bconfPaths.zmcachedir)
-            except OSError:
-                pass
-
-        path = joinpath(self.bldnode.abspath(), WAF_CONFIG_LOG)
-        self.logger = log.makeLogger(path, 'cfg')
-
-        projectDesc = "%s (ver: %s)" % (bconf.projectName, bconf.projectVersion)
-        pyDesc = "%s (%s)" % (platform.python_version(), platform.python_implementation())
-
-        cliArgs = [sys.argv[0]] + cli.selected.orig
-        confHeaderParams = {
-            'now'     : time.ctime(),
-            'zmver'   : version.current(),
-            'wafver'  : WafContext.WAFVERSION,
-            'wafabi'  : WafContext.ABI,
-            'pyver'   : pyDesc,
-            'systype' : sys.platform,
-            'args'    : " ".join(cliArgs),
-            'prj'     : projectDesc,
-        }
-
-        self.to_log(CONFLOG_HEADER_TEMPLATE % confHeaderParams)
-        self.msg('Setting top to', self.srcnode.abspath())
-        self.msg('Setting out to', self.bldnode.abspath())
-
-        if id(self.srcnode) == id(self.bldnode):
-            log.warn('Setting startdir == buildout')
-        elif id(self.path) != id(self.srcnode):
-            if self.srcnode.is_child_of(self.path):
-                log.warn('Are you certain that you do not want to set top="." ?')
-
-        self.loadCaches()
-
-        WafContext.Context.execute(self)
-
-        self.store()
-
-        instanceCache = self.zmcache()
-        bconfPathsAdded = instanceCache.get('confpaths-added-to-monit', False)
-        if not bconfPathsAdded:
-            self.monitFiles.extend([x.path for x in self.bconfManager.configs])
-            instanceCache['confpaths-added-to-monit'] = True
-
-        tasksDb = instanceCache.pop('tasksDb')
-        taskNames = list(tasksDb['tasks'].keys())
-        WafContext.top_dir = self.srcnode.abspath()
-        WafContext.out_dir = self.bldnode.abspath()
-
-        assist.writeZenMakeMetaFile(bconfPaths, self.monitFiles, taskNames)
 
     # override
     def post_recurse(self, node):
@@ -575,21 +509,14 @@ class ConfigurationContext(WafConfContext):
         Add extra file paths to monitor for autoconfig feature
         """
 
-        files = bconf.features.get('monitor-files', [])
+        files = bconf.features.get('monitor-files')
         if not files:
             return
-
-        files = toList(files)
-        startdir = bconf.confPaths.startdir
-        for file in files:
-            file = utils.getNativePath(file)
-            path = joinpath(startdir, file)
+        for path in files.abspaths():
             if not os.path.isfile(path):
                 msg = "Error in the file %r:\n" % bconf.path
-                msg += "File path %r " % file
+                msg += "File path %r " % path
                 msg += "from the features.monitor-files doesn't exist"
-                if not os.path.abspath(file):
-                    msg += " in the directory %r" % startdir
                 self.fatal(msg)
             self.monitFiles.append(path)
 
@@ -621,7 +548,6 @@ class ConfigurationContext(WafConfContext):
         """
 
         btypeDir = bconf.selectedBuildTypeDir
-        rootdir  = bconf.rootdir
         startdir = bconf.startdir
         taskName = taskParams['name']
         features = taskParams['features']
@@ -632,8 +558,8 @@ class ConfigurationContext(WafConfContext):
             target = utils.normalizeForFileName(target, spaceAsDash = True)
         targetPath = joinpath(btypeDir, target)
 
-        assist.handleTaskIncludesParam(taskParams, rootdir, startdir)
-        assist.handleTaskLibPathParams(taskParams, rootdir, startdir)
+        assist.handleTaskIncludesParam(taskParams, startdir)
+        assist.handleTaskLibPathParams(taskParams)
         self._handleTaskExportDefinesParam(taskParams)
         self._handleMonitLibs(taskParams)
 
@@ -660,3 +586,99 @@ class ConfigurationContext(WafConfContext):
 
         taskParams['$real.target'] = realTarget
         taskParams['$runnable'] = runnable
+
+    def preconfigure(self):
+        """
+        Pre configure. It's called by 'execute' before call of actual 'configure'.
+        """
+
+        for bconf in self.bconfManager.configs:
+
+            # set context path
+            self.path = self.getPathNode(bconf.confdir)
+
+            # it's necessary to handle 'toolchain.select' before loading of toolchains
+            for taskParams in viewvalues(bconf.tasks):
+                handleOneTaskParamSelect(bconf, taskParams, 'toolchain')
+
+            # load all toolchains envs
+            self.loadToolchains(bconf)
+
+            # Other '*.select' params must be handled after loading of toolchains
+            handleTaskParamSelects(bconf)
+
+        toolchainEnvs = self.getToolchainEnvs()
+
+        # Remove toolchain envs from self.all_envs
+        # to avoid potential name conflicts and to free mem
+        for toolchain in viewkeys(toolchainEnvs):
+            self.all_envs.pop(toolchain, None)
+
+    # override
+    def execute(self):
+
+        bconf = self.bconfManager.root
+        bconfPaths = bconf.confPaths
+
+        # See details here: https://gitlab.com/ita1024/waf/issues/1563
+        self.env.NO_LOCK_IN_RUN = True
+        self.env.NO_LOCK_IN_TOP = True
+
+        self.init_dirs()
+
+        self.cachedir = self.bldnode.make_node(WAF_CACHE_DIRNAME)
+        self.cachedir.mkdir()
+
+        if bconfPaths.zmcachedir != self.cachedir.abspath():
+            try:
+                os.makedirs(bconfPaths.zmcachedir)
+            except OSError:
+                pass
+
+        path = joinpath(self.bldnode.abspath(), WAF_CONFIG_LOG)
+        self.logger = log.makeLogger(path, 'cfg')
+
+        projectDesc = "%s (ver: %s)" % (bconf.projectName, bconf.projectVersion)
+        pyDesc = "%s (%s)" % (platform.python_version(), platform.python_implementation())
+
+        cliArgs = [sys.argv[0]] + cli.selected.orig
+        confHeaderParams = {
+            'now'     : time.ctime(),
+            'zmver'   : version.current(),
+            'wafver'  : WafContext.WAFVERSION,
+            'wafabi'  : WafContext.ABI,
+            'pyver'   : pyDesc,
+            'systype' : sys.platform,
+            'args'    : " ".join(cliArgs),
+            'prj'     : projectDesc,
+        }
+
+        self.to_log(CONFLOG_HEADER_TEMPLATE % confHeaderParams)
+        self.msg('Setting top to', self.srcnode.abspath())
+        self.msg('Setting out to', self.bldnode.abspath())
+
+        if id(self.srcnode) == id(self.bldnode):
+            log.warn('Setting startdir == buildout')
+        elif id(self.path) != id(self.srcnode):
+            if self.srcnode.is_child_of(self.path):
+                log.warn('Are you certain that you do not want to set top="." ?')
+
+        self.loadCaches()
+        self.preconfigure()
+
+        WafContext.Context.execute(self)
+
+        self.store()
+
+        instanceCache = self.zmcache()
+        bconfPathsAdded = instanceCache.get('confpaths-added-to-monit', False)
+        if not bconfPathsAdded:
+            self.monitFiles.extend([x.path for x in self.bconfManager.configs])
+            instanceCache['confpaths-added-to-monit'] = True
+
+        tasksDb = instanceCache.pop('tasksDb')
+        taskNames = list(tasksDb['tasks'].keys())
+        WafContext.top_dir = self.srcnode.abspath()
+        WafContext.out_dir = self.bldnode.abspath()
+
+        assist.writeZenMakeMetaFile(bconfPaths, self.monitFiles, taskNames)

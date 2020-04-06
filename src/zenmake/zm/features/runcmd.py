@@ -18,6 +18,7 @@ from waflib import Task
 from zm.pyutils import viewitems, maptype
 from zm import log, error
 from zm.constants import PLATFORM, EXE_FILE_EXTS
+from zm.pathutils import PathsParam
 from zm.features import postcmd
 
 if PLATFORM == 'windows':
@@ -125,11 +126,7 @@ def _postConf(ctx, bconf):
         cwd = cmdArgs.get('cwd', None)
         if cwd:
             startdir = cmdArgs.get('startdir', bconf.startdir)
-            if not os.path.isabs(cwd):
-                if not os.path.isabs(startdir):
-                    startdir = os.path.join(rootdir, startdir)
-                cwd = os.path.join(startdir, cwd)
-            cwd = ctx.root.make_node(cwd).abspath()
+            cwd = PathsParam(cwd, startdir, rootdir).abspath()
         else:
             cwd = btypeDir
         cmdTaskArgs['cwd'] = cwd
@@ -222,7 +219,6 @@ def _createRuleWithFunc(bconf, funcName):
             'taskname'  : tgen.name,
             'startdir'  : bconfPaths.startdir,
             'buildroot' : bconfPaths.buildroot,
-            'buildout'  : bconfPaths.buildout,
             'buildtype' : bconf.selectedBuildType,
             'target'    : zmTaskParams.get('$real.target', ''),
             'waftask'   : task,

@@ -8,6 +8,7 @@
 
 import os
 
+from zm.pyutils import PY2
 from zm.error import ZenMakeConfValueError
 from zm.constants import WAF_CACHE_DIRNAME, WAF_CACHE_NAMESUFFIX, \
                          ZENMAKE_BUILDMETA_FILENAME, BUILDOUTNAME
@@ -63,10 +64,16 @@ class ConfPaths(object):
             self._checkBuildRoot('realbuildroot', 'buildconfdir')
 
     def __eq__(self, other):
+        if id(self) == id(other):
+            return True
         for name in self.__slots__:
             if getattr(self, name, None) != getattr(other, name, None):
                 return False
         return True
+
+    if PY2: # python 3 has it by default and it's more performant
+        def __ne__(self, other):
+            return not self == other
 
     def _checkBuildRoot(self, buildrootName, checkingName):
         buildrootVal = getattr(self, buildrootName)

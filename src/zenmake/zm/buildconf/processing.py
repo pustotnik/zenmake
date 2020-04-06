@@ -16,6 +16,7 @@ from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeLogicError, ZenMakeConfError
 from zm.pyutils import stringtype, maptype, viewitems, viewvalues
 from zm import utils, log
+from zm.pathutils import unfoldPath, getNativePath, PathsParam
 from zm.buildconf import loader
 from zm.buildconf.scheme import taskscheme, KNOWN_CONF_PARAM_NAMES
 from zm.features import ToolchainVars, BUILDCONF_PREPARE_TASKPARAMS
@@ -28,8 +29,8 @@ relpath  = os.path.relpath
 isabs    = os.path.isabs
 isdir    = os.path.isdir
 
-toList       = utils.toList
-toListSimple = utils.toListSimple
+toList        = utils.toList
+toListSimple  = utils.toListSimple
 
 TOOLCHAIN_PATH_ENVVARS = frozenset(ToolchainVars.allSysVarsToSetToolchain())
 
@@ -43,7 +44,9 @@ _TASKPARAMS_TOLIST_MAP = {}
 #    return version.isDev()
 
 def _applyStartDirToParam(bconf, param):
-    return { 'startdir' : bconf.startdir, 'paths' : param }
+    if isinstance(param, bool):
+        return param
+    return PathsParam(param, bconf.startdir, kind = 'paths')
 
 def _applyStartDirToSrcParam(bconf, param):
     startdir = bconf.startdir
@@ -138,7 +141,7 @@ class Config(object):
         self._applyDefaults()
         self._postValidateConf()
         self._makeBuildDirParams(buildroot)
-        self._prepareTaskParams()
+        self._prepareParams()
         self._handleTaskNames() # must be called before merging
         self._merge()
 
@@ -149,11 +152,11 @@ class Config(object):
         buildconf = self._conf
         meta = self._meta
         try:
-            startdir = utils.getNativePath(buildconf.startdir)
+            startdir = getNativePath(buildconf.startdir)
         except AttributeError:
             startdir = os.curdir
-        meta.startdir = utils.unfoldPath(meta.buildconfdir, startdir)
-        setattr(buildconf, 'startdir', meta.startdir)
+        meta.startdir = unfoldPath(meta.buildconfdir, startdir)
+        buildconf.startdir = meta.startdir
 
     def _makeBuildDirParams(self, buildroot):
         # pylint: disable = protected-access
@@ -168,19 +171,17 @@ class Config(object):
 
         def mergeBuildRoot(param):
             value = getattr(srcbconf._conf, param)
-            value = utils.getNativePath(value)
-            value = utils.unfoldPath(srcbconf.startdir, value)
+            value = unfoldPath(srcbconf.startdir, getNativePath(value))
             setattr(currentConf, param, value)
 
         if buildroot and not self._parent:
-            buildroot = utils.getNativePath(buildroot)
-            buildroot = utils.unfoldPath(self.startdir, buildroot)
-            setattr(currentConf, 'buildroot', buildroot)
+            buildroot = unfoldPath(self.startdir, getNativePath(buildroot))
+            currentConf.buildroot = buildroot
         else:
             mergeBuildRoot('buildroot')
 
         if not hasattr(srcbconf._conf, 'realbuildroot'):
-            setattr(srcbconf._conf, 'realbuildroot', currentConf.buildroot)
+            srcbconf._conf.realbuildroot = currentConf.buildroot
         else:
             mergeBuildRoot('realbuildroot')
 
@@ -221,11 +222,23 @@ class Config(object):
         # 'toolchains'
         for params in viewvalues(buildconf.toolchains):
             for k, v in viewitems(params):
-                if k == 'kind' or k not in TOOLCHAIN_PATH_ENVVARS:
+                if k not in TOOLCHAIN_PATH_ENVVARS:
                     continue
-                param = utils.getNativePath(v)
-                if not isabs(param):
-                    params[k] = utils.unfoldPath(startdir, v)
+                params[k] = unfoldPath(startdir, getNativePath(v))
+
+    def _prepareParams(self):
+
+        startdir = self.startdir
+
+        # features
+        confFeatures = self._conf.features
+        monitFiles = confFeatures.get('monitor-files')
+        if monitFiles is not None:
+            monitFiles = PathsParam(monitFiles, startdir, kind = 'paths')
+            confFeatures['monitor-files'] = monitFiles
+
+        # taskparams
+        self._prepareTaskParams()
 
     def _postprocessTaskParams(self, tasks):
 
@@ -249,13 +262,12 @@ class Config(object):
 
                 taskParams[paramName] = paramVal
                 convertTaskParamToList(taskParams, paramName)
-                if not isinstance(paramVal, maptype):
+
+                if paramName != 'source':
                     continue
 
                 # set startdir
-                paramStartDir = paramVal.get('startdir')
-                if paramStartDir is None:
-                    continue
+                paramStartDir = paramVal['startdir']
                 if paramStartDir == startdir:
                     paramVal['startdir'] = taskStartDir
                 else:
@@ -502,7 +514,7 @@ class Config(object):
         which the found value.
         """
 
-        #pylint: disable=protected-access
+        # pylint: disable = protected-access
 
         def getValue(name):
             attr = self._meta.getattr[name]
@@ -666,7 +678,7 @@ class Config(object):
             subdirs = []
 
         def fixpath(bconfdir, path):
-            path = utils.getNativePath(path)
+            path = getNativePath(path)
             if not isabs(path):
                 path = joinpath(bconfdir, path)
             return path
@@ -769,7 +781,8 @@ class Config(object):
             for taskName in enabledTasks:
                 if taskName in disabledTasks:
                     continue
-                task = tasks.setdefault(taskName, {})
+
+                task = tasks[taskName]
                 task.update(params)
                 task.pop('default-buildtype', None)
 
@@ -797,7 +810,7 @@ class Config(object):
             for k, v in viewitems(_vars):
                 if k in TOOLCHAIN_PATH_ENVVARS:
                     # try to identify path and do warning if not
-                    path = utils.unfoldPath(self.startdir, v)
+                    path = unfoldPath(self.startdir, v)
                     if not os.path.exists(path):
                         log.warn("Path to toolchain '%s' doesn't exist" % path)
                     v = path

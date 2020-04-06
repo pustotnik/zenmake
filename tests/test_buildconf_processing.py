@@ -18,7 +18,7 @@ from zm.autodict import AutoDict
 from zm.error import *
 from zm.constants import *
 from zm.pyutils import viewitems
-from zm import utils
+from zm.pathutils import unfoldPath
 from zm.buildconf.processing import convertTaskParamToList, Config as BuildConfig
 from tests.common import asRealConf, randomstr
 
@@ -528,7 +528,7 @@ class TestSuite(object):
         confPaths = bconf.confPaths
         expected = deepcopy(buildconf.toolchains)
         expected['something']['vars'] = {
-            'CXX' : [utils.unfoldPath(confPaths.startdir,
+            'CXX' : [unfoldPath(confPaths.startdir,
                                      buildconf.toolchains['something']['CXX'])]
         }
         del expected['something']['CXX']

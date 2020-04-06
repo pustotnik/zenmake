@@ -76,7 +76,7 @@ class TaskItem(object):
     def __eq__(self, other):
         return (self.weight() == other.weight()) and (self.name == other.name)
     def __ne__(self, other):
-        return not self.__eq__(other)
+        return not self == other
     def __lt__(self, other):
         return self.weight() < other.weight()
     def __le__(self, other):
@@ -347,7 +347,7 @@ class TestContext(BuildContext):
 
         runTestsOnChanges = _shared.runTestsOnChanges
 
-        #pylint: disable=no-member
+        # pylint: disable = no-member
         bconfPaths = self.getbconf().confPaths
 
         taskItems = _shared.taskItems

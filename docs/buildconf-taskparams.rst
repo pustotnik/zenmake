@@ -511,8 +511,6 @@ run
             Current :ref:`startdir<buildconf-startdir>`
         :buildroot:
             Root directory for building
-        :buildout:
-            Directory for build target(s)
         :buildtype:
             Current buildtype
         :target:
@@ -610,7 +608,7 @@ objfile-index
     parameter ``source``.
 
     Also you can set the same value for the all build tasks and often it's not a
-    problem until different tasks uses the different files in
+    problem while different tasks uses the different files in
     parameter ``source``.
 
     Set this parameter only if you know what you do.

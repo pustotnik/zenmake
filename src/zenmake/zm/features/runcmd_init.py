@@ -6,6 +6,8 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+from os.path import relpath
+
 from zm.pyutils import viewvalues, maptype
 from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY, addSelectToParams
 
@@ -43,7 +45,7 @@ def getBuildConfTaskParamHooks():
             return None
         if not isinstance(param, maptype):
             param = { 'cmd' : param }
-        param['startdir'] = bconf.startdir
+        param['startdir'] = relpath(bconf.startdir, bconf.rootdir)
         return param
 
     return [('run', handleParam)]

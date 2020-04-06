@@ -27,7 +27,6 @@ from zm.pyutils import viewitems, viewvalues
 from zm.constants import WAF_CACHE_DIRNAME, CONFTEST_DIR_PREFIX
 from zm import cli, error, log
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
-from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
 from zm.waf import assist
 from zm.features import TASK_LANG_FEATURES
 
@@ -70,21 +69,6 @@ def init(ctx):
     setattr(BuildContext, 'variant', buildtype)
 
     assist.printZenMakeHeader(ctx.bconfManager)
-
-def _preconfigure(conf, bconf):
-
-    # set context path
-    conf.path = conf.getPathNode(bconf.confdir)
-
-    # it's necessary to handle 'toolchain.select' before loading of toolchains
-    for taskParams in viewvalues(bconf.tasks):
-        handleOneTaskParamSelect(bconf, taskParams, 'toolchain')
-
-    # load all toolchains envs
-    conf.loadToolchains(bconf)
-
-    # Other '*.select' params must be handled after loading of toolchains
-    handleTaskParamSelects(bconf)
 
 def _configure(conf, bconf):
 
@@ -158,10 +142,6 @@ def _configure(conf, bconf):
         # running of conf tests then the vars will affect builds in the conf tests.
         assist.setTaskEnvVars(conf.env, taskParams, bconf.customToolchains)
 
-    # Remove unneccesary envs
-    for toolchain in toolchainsEnvs:
-        conf.all_envs.pop(toolchain, None)
-
     # switch current env to the root env
     conf.setenv('')
 
@@ -177,9 +157,6 @@ def configure(conf):
     assist.applyInstallPaths(conf.env, cli.selected)
 
     configs = conf.bconfManager.configs
-    for bconf in configs:
-        _preconfigure(conf, bconf)
-
     for bconf in configs:
         _configure(conf, bconf)
 

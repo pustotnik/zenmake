@@ -14,6 +14,8 @@ from importlib import import_module as importModule
 from waflib import Utils as wafutils
 from zm.pyutils import stringtype, _unicode, _encode
 
+_joinpath = os.path.join
+
 WINDOWS_RESERVED_FILENAMES = frozenset((
     'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5',
     'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5',
@@ -201,30 +203,6 @@ def configSetToDict(configSet):
     result.pop('undo_stack', None)
     return result
 
-def unfoldPath(cwd, path):
-    """
-    Unfold path applying os.path.expandvars, os.path.expanduser and
-    os.path.abspath
-    """
-    if not path:
-        return path
-
-    if not os.path.isabs(path):
-        path = os.path.join(cwd, path)
-
-    path = os.path.expandvars(path)
-    path = os.path.expanduser(path)
-    path = os.path.abspath(path) # abspath returns normalized absolutized version
-    return path
-
-def getNativePath(path):
-    """
-    Return native path from POSIX path
-    """
-    if not path:
-        return path
-    return path.replace('/', os.sep) if os.sep != '/' else path
-
 def mksymlink(src, dst, force = True):
     """
     Make symlink, force delete if destination exists already
@@ -265,7 +243,6 @@ def _loadPyModuleWithoutImport(name):
     import types
     from zm.error import ZenMakeError
     from zm.pypkg import PkgPath
-    joinpath = os.path.join
 
     module = types.ModuleType(name)
     filename = name.replace('.', os.path.sep)
@@ -273,12 +250,12 @@ def _loadPyModuleWithoutImport(name):
     # try to find module
     isPkg = False
     for path in sys.path:
-        modulePath = joinpath(path, filename)
+        modulePath = _joinpath(path, filename)
         path = PkgPath(modulePath + '.py')
         if path.isfile():
             modulePath = path
             break
-        path = PkgPath(joinpath(modulePath, '__init__.py'))
+        path = PkgPath(_joinpath(modulePath, '__init__.py'))
         if path.isfile():
             modulePath = path
             isPkg = True

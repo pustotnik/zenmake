@@ -15,9 +15,9 @@ from zm.pyutils import texttype, PY_MAJOR_VER, PY2
 from zm.utils import configSetToDict
 
 try:
-    _ascii = ascii
+    _repr = ascii
 except NameError:
-    _ascii = repr
+    _repr = repr
 
 try:
     import cPickle as pickle
@@ -114,7 +114,7 @@ class PyDBFile(DBFile):
         buff = []
         keys = sorted(data.keys())
         for key in keys:
-            buff.append('%s = %s\n' % (key, _ascii(data[key])))
+            buff.append('%s = %s\n' % (key, _repr(data[key])))
         dump = ''.join(buff)
 
         pathname = self._pathname

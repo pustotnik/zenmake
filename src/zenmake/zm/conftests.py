@@ -25,6 +25,7 @@ from waflib.Tools.c_config import DEFKEYS
 from zm.constants import CONFTEST_DIR_PREFIX
 from zm.pyutils import maptype, stringtype, viewitems, viewvalues
 from zm import utils, log, error
+from zm.pathutils import getNativePath
 from zm.features import ToolchainVars, TASK_TARGET_FEATURES_TO_LANG
 
 joinpath = os.path.join
@@ -585,7 +586,7 @@ def checkCode(checkArgs, params):
     if file:
         bconf = cfgCtx.getbconf()
         startdir = bconf.confPaths.startdir
-        file = utils.getNativePath(file)
+        file = getNativePath(file)
         path = joinpath(startdir, file)
         if not os.path.isfile(path):
             msg = "Error in declaration of a conf test "

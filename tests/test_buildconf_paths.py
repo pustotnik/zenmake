@@ -15,6 +15,7 @@ from zm import utils
 from zm.autodict import AutoDict
 from zm.buildconf.paths import ConfPaths
 from zm.constants import *
+from zm.pathutils import unfoldPath
 
 joinpath = os.path.join
 
@@ -22,7 +23,6 @@ def testAll(testingBuildConf):
 
     dirname    = os.path.dirname
     abspath    = os.path.abspath
-    unfoldPath = utils.unfoldPath
 
     fakeBuildConf = testingBuildConf
     fakeBuildConf.startdir = '.'

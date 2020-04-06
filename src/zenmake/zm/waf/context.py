@@ -36,45 +36,45 @@ def _ctxInit(self, **kwargs):
     self.bconfManager = kwargs.get('bconfManager')
 
 @asmethod(WafContext, 'getbconf')
-def _getCtxBuildConf(ctx):
-    return ctx.bconfManager.config(ctx.path.abspath())
+def _getBuildConf(self):
+    return self.bconfManager.config(self.path.abspath())
 
 @asmethod(WafContext, 'zmcache')
-def _getLocalCtxCache(ctx):
+def _getLocalCache(self):
     #pylint: disable=protected-access
     try:
-        return ctx._zmcache
+        return self._zmcache
     except AttributeError:
         pass
 
-    ctx._zmcache = _AutoDict()
-    return ctx._zmcache
+    self._zmcache = _AutoDict()
+    return self._zmcache
 
 @asmethod(WafContext, 'recurse')
-def _contextRecurse(ctx, dirs, name = None, mandatory = True, once = True, encoding = None):
+def _ctxRecurse(self, dirs, name = None, mandatory = True, once = True, encoding = None):
     #pylint: disable=too-many-arguments,unused-argument
 
-    cache = ctx.zmcache().recurse
+    cache = self.zmcache().recurse
 
     for dirpath in toList(dirs):
         if not isabspath(dirpath):
             # absolute paths only
-            dirpath = joinpath(ctx.path.abspath(), dirpath)
+            dirpath = joinpath(self.path.abspath(), dirpath)
 
         dirpath = normpath(dirpath)
-        bconf = ctx.bconfManager.config(dirpath)
+        bconf = self.bconfManager.config(dirpath)
         if not bconf:
             continue
 
-        node = ctx.root.make_node(joinpath(dirpath, 'virtual-buildconf'))
-        funcName = name or ctx.fun
+        node = self.root.make_node(joinpath(dirpath, 'virtual-buildconf'))
+        funcName = name or self.fun
 
         tup = (node, funcName)
         if once and tup in cache:
             continue
 
         cache[tup] = True
-        ctx.pre_recurse(node)
+        self.pre_recurse(node)
 
         try:
             # try to get function for command
@@ -86,9 +86,9 @@ def _contextRecurse(ctx, dirs, name = None, mandatory = True, once = True, encod
                             (funcName, wscriptimpl.__file__)
                 raise error.ZenMakeError(errmsg)
             # call function for command
-            func(ctx)
+            func(self)
         finally:
-            ctx.post_recurse(node)
+            self.post_recurse(node)
 
 @asmethod(WafContext, 'getPathNode')
 def _getPathNode(self, path):
@@ -159,17 +159,17 @@ def _wafLoadTool(tool, tooldir = None, ctx = None, with_sys_path = True):
 WafContextModule.load_tool = _wafLoadTool
 
 @asmethod(WafContext, 'loadTool')
-def _loadToolWitFunc(ctx, tool, tooldirs = None, callFunc = None, withSysPath = True):
+def _loadToolWitFunc(self, tool, tooldirs = None, callFunc = None, withSysPath = True):
 
     module = loadTool(tool, tooldirs, withSysPath)
-    func = getattr(module, callFunc or ctx.fun, None)
+    func = getattr(module, callFunc or self.fun, None)
     if func:
-        func(ctx)
+        func(self)
 
     return module
 
 @asmethod(WafContext, 'load')
-def _loadTools(ctx, tools, *args, **kwargs):
+def _loadTools(self, tools, *args, **kwargs):
     """ This function is for compatibility with Waf """
 
     # pylint: disable = unused-argument
@@ -180,4 +180,4 @@ def _loadTools(ctx, tools, *args, **kwargs):
     callFunc = kwargs.get('name', None)
 
     for tool in tools:
-        _loadToolWitFunc(ctx, tool, tooldirs, callFunc, withSysPath)
+        _loadToolWitFunc(self, tool, tooldirs, callFunc, withSysPath)
