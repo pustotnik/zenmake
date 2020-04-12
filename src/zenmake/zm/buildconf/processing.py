@@ -651,7 +651,7 @@ class Config(object):
         conditions = self._conf.conditions
         for condition in viewvalues(conditions):
             for param in condition:
-                if param == 'environ':
+                if param == 'env':
                     continue
                 if param in ('platform', 'cpu-arch'):
                     _toList = toListSimple

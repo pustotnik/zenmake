@@ -121,7 +121,7 @@ def handleOneTaskParamSelect(bconf, taskParams, paramName):
                 return False
 
         # check system env vars
-        filterVals = condition.get('environ', {})
+        filterVals = condition.get('env', {})
         for var, val in viewitems(filterVals):
             if os.environ.get(var) != val:
                 return False

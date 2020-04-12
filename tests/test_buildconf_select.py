@@ -310,13 +310,13 @@ def getFixtureCase6(monkeypatch, testingBuildConf, paramName):
     buildconf.conditions = {
         'myenv-task1' : {
             'task': 'task1',
-            'environ': {
+            'env': {
                 'TVAR1' : 'true',
                 'TVAR2' : '3',
             },
         },
         'myenv2' : {
-            'environ': {
+            'env': {
                 'TVAR3' : 'test',
             },
         },

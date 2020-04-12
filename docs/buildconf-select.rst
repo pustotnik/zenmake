@@ -106,7 +106,7 @@ one or more such parameters:
         It can be one value or list of values or string with more than one value
         separated by spaces like this: 'debug release'.
 
-    :environ:
+    :env:
         Check system environment variables. It's a dict of pairs <variable> : <value>.
         Example:
 
@@ -114,7 +114,7 @@ one or more such parameters:
 
            conditions = {
                 'my-env' : {
-                    'environ' : {
+                    'env' : {
                         'TEST' : 'true',
                         'CXX' : 'gcc',
                     }
@@ -125,7 +125,7 @@ If a parameter in a condition contains more than one value then any of these
 values will fulfill selected condition. It means if some condition, for an example,
 has ``platform`` which contains ``'linux windows'`` without other parameters then
 this condition will be selected on any of these platforms (on GNU/Linux and
-on MS Windows). But with parameter ``environ`` the situation is different. This
+on MS Windows). But with parameter ``env`` the situation is different. This
 parameter can contain more than one environment variable and a condition will be
 selected only when all of these variables are equal to existing variables from the
 system environment. If you want to have condition to select by any of such

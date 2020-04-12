@@ -194,7 +194,7 @@ confscheme = {
                     'toolchain' : { 'type': ('str', 'list-of-strs') },
                     'task' :      { 'type': ('str', 'list-of-strs') },
                     'buildtype' : { 'type': ('str', 'list-of-strs') },
-                    'environ' :   { 'type' : 'dict' },
+                    'env' :       { 'type' : 'dict' },
                 },
             },
         },
