@@ -80,7 +80,7 @@ one or more such parameters:
         Selected current CPU architecture. Actual it's a result of the python function
         platform.machine() See https://docs.python.org/library/platform.html.
         Some possible values are: arm, i386, i686, x86_64, AMD64.
-        Real value depends also on platform. For an example on Windows you can get
+        Real value depends also on platform. For example, on Windows you can get
         AMD64 while on Linux you gets x86_64 on the same host.
 
         Current value can be obtained also with the command ``zenmake sysinfo``.
@@ -122,7 +122,7 @@ one or more such parameters:
             }
 
 If a parameter in a condition contains more than one value then any of these
-values will fulfill selected condition. It means if some condition, for an example,
+values will fulfill selected condition. It means if some condition, for example,
 has ``platform`` which contains ``'linux windows'`` without other parameters then
 this condition will be selected on any of these platforms (on GNU/Linux and
 on MS Windows). But with parameter ``env`` the situation is different. This
@@ -198,13 +198,13 @@ at all because conditions with names ``linux`` and ``g++`` already exist:
 Also you can use internal conditions for supported buildtypes. But if any name
 of supported buildtype is the same as one of known platforms or supported
 toolchains then such a buildtype can not be used as internal condition.
-For an example you can want to make/use buildtype 'linux' and it will be possible
+For example, you can want to make/use buildtype 'linux' and it will be possible
 but for using in conditions you have to declare some different name in this case
 because 'linux' is one of known platforms.
 
 There is one detail about internal conditions for toolchains - only toolchains
 supported for current build tasks exist. ZenMake detects them with all ``features``
-of all existing build tasks in current project during configuring. For an example
+of all existing build tasks in current project during configuring. For example,
 if tasks exist for C language only then supported toolchains for all other languages
 don't exist in internal conditions.
 

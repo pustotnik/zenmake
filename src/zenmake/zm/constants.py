@@ -46,3 +46,8 @@ if PLATFORM == 'windows':
     EXE_FILE_EXTS = '.exe,.com,.bat,.cmd'
 else:
     EXE_FILE_EXTS = ',.sh,.pl,.py'
+
+if PLATFORM == 'windows':
+    SYSTEM_LIB_PATHS = []
+else:
+    SYSTEM_LIB_PATHS = ['/usr/lib64', '/usr/lib', '/usr/local/lib64', '/usr/local/lib']

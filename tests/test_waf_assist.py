@@ -18,6 +18,7 @@ from zm import utils, db
 from zm.waf import assist
 from zm.autodict import AutoDict
 from zm.constants import *
+from zm.pathutils import PathsParam
 from zm.features import ToolchainVars
 import tests.common as cmn
 
@@ -190,7 +191,7 @@ def testHandleTaskIncludesParam():
     startdir = abspath(joinpath(rootdir, 'subdir'))
     taskParams = {}
     _taskParams = deepcopy(taskParams)
-    assist.handleTaskIncludesParam(_taskParams, rootdir, startdir)
+    assist.handleTaskIncludesParam(_taskParams, startdir)
     assert _taskParams['includes'] == ['.']
 
     startDirs = [
@@ -198,7 +199,6 @@ def testHandleTaskIncludesParam():
         abspath(joinpath(rootdir, '..')),
         abspath(joinpath(rootdir, 'subdir')),
     ]
-    paramStartDirs = [ '.', 'sub1', '..', ]
     pathsIncludes = [
         'inc1 inc2',
         [
@@ -216,27 +216,29 @@ def testHandleTaskIncludesParam():
         ],
     ]
 
-    def calcExpectedPaths(rootdir, startdir, paramStartDir, paths):
-        expectedStartDir = joinpath(rootdir, paramStartDir)
+    def calcExpectedPaths(newStartdir, paramStartDir, paths):
         paths = utils.toList(paths)
-        paths = [ joinpath(expectedStartDir, x) for x in paths ]
-        paths = [ normpath(relpath(x, startdir)) for x in paths ]
+        paths = [ joinpath(paramStartDir, x) for x in paths ]
+        paths = [ normpath(relpath(x, newStartdir)) for x in paths ]
         return paths
 
-    _startDirs = [(x, y) for x in startDirs for y in paramStartDirs]
     _paths = [(x, y) for x in pathsIncludes for y in pathsExportIncludes]
-    for startdir, paramStartDir in _startDirs:
+    for paramStartDir in startDirs:
         for incPaths, expPaths in _paths:
             taskParams = {
-                'includes': { 'paths': incPaths, 'startdir' : paramStartDir, },
-                'export-includes' : { 'paths': expPaths, 'startdir' : paramStartDir, },
+                'includes': PathsParam(incPaths, paramStartDir, kind = 'paths'),
             }
 
-            _taskParams = deepcopy(taskParams)
-            assist.handleTaskIncludesParam(_taskParams, rootdir, startdir)
+            if isinstance(expPaths, bool):
+                taskParams['export-includes'] = expPaths
+            else:
+                taskParams['export-includes'] = \
+                    PathsParam(expPaths, paramStartDir, kind = 'paths')
 
-            includePaths = calcExpectedPaths(rootdir, startdir, paramStartDir,
-                                            taskParams['includes']['paths'])
+            _taskParams = deepcopy(taskParams)
+            assist.handleTaskIncludesParam(_taskParams, startdir)
+
+            includePaths = calcExpectedPaths(startdir, paramStartDir, incPaths)
             expected = ['.']
             expected.extend(includePaths)
             assert _taskParams['includes'] == expected
@@ -247,8 +249,8 @@ def testHandleTaskIncludesParam():
                 else:
                     assert 'export-includes' not in _taskParams
             else:
-                exportPaths = calcExpectedPaths(rootdir, startdir, paramStartDir,
-                                        taskParams['export-includes']['paths'])
+                exportPaths = calcExpectedPaths(startdir, paramStartDir,
+                                                expPaths)
                 assert _taskParams['export-includes'] == exportPaths
 
 def testHandleTaskSourceParam(tmpdir, mocker):
@@ -276,7 +278,11 @@ def testHandleTaskSourceParam(tmpdir, mocker):
 
     ctx = Context.Context(run_dir = str(cwd)) # ctx.path = Node(run_dir)
 
-    bconf = AutoDict(rootdir = str(rootdir), path = str(cwd))
+    bconf = AutoDict(
+        rootdir = str(rootdir),
+        path = str(cwd),
+        confPaths = AutoDict(buildroot = "build"),
+    )
     def getbconf():
         return bconf
     ctx.getbconf = mocker.MagicMock(side_effect = getbconf)
@@ -292,7 +298,7 @@ def testHandleTaskSourceParam(tmpdir, mocker):
     realStartDir = abspath(joinpath(bconf.rootdir, srcParams['startdir']))
 
     # case 1
-    srcParams['include'] = 'some/**/*.cpp'
+    srcParams['include'] = ['some/**/*.cpp']
     for _ in range(2): # to check with cache
         rv = assist.handleTaskSourceParam(ctx, srcParams)
         assert sorted([x.abspath() for x in rv]) == sorted([
@@ -302,8 +308,8 @@ def testHandleTaskSourceParam(tmpdir, mocker):
         ])
 
     # case 2
-    srcParams['include'] = '**/*.cpp'
-    srcParams['exclude'] = '**/*test*'
+    srcParams['include'] = ['**/*.cpp']
+    srcParams['exclude'] = ['**/*test*']
     for _ in range(2): # to check with cache
         rv = assist.handleTaskSourceParam(ctx, srcParams)
         assert sorted([x.abspath() for x in rv]) == sorted([
@@ -312,8 +318,8 @@ def testHandleTaskSourceParam(tmpdir, mocker):
         ])
 
     # case 3
-    srcParams['include'] = '**/*.cpp **/*.c'
-    srcParams['exclude'] = '**/*test*'
+    srcParams['include'] = ['**/*.cpp', '**/*.c']
+    srcParams['exclude'] = ['**/*test*']
     srcParams['ignorecase'] = True
     for _ in range(2): # to check with cache
         rv = assist.handleTaskSourceParam(ctx, srcParams)
@@ -325,7 +331,7 @@ def testHandleTaskSourceParam(tmpdir, mocker):
     # find as is
 
     # case 4
-    srcParams['paths'] = 'some/2/main.c'
+    srcParams['paths'] = ['some/2/main.c']
     for _ in range(2): # to check with cache
         rv = assist.handleTaskSourceParam(ctx, srcParams)
         assert sorted([x.abspath() for x in rv]) == sorted([
@@ -333,7 +339,7 @@ def testHandleTaskSourceParam(tmpdir, mocker):
         ])
 
     # case 5
-    srcParams['paths'] = 'some/2/main.c some/2/test.c'
+    srcParams['paths'] = ['some/2/main.c', 'some/2/test.c']
     for _ in range(2): # to check with cache
         rv = assist.handleTaskSourceParam(ctx, srcParams)
         assert sorted([x.abspath() for x in rv]) == sorted([

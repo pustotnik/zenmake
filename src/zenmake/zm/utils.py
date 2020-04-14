@@ -9,10 +9,13 @@
 import os
 import sys
 import re
+import shlex
 from importlib import import_module as importModule
+from types import ModuleType
 
 from waflib import Utils as wafutils
 from zm.pyutils import stringtype, _unicode, _encode
+from zm.error import ZenMakeError, ZenMakeProcessTimeoutExpired
 
 _joinpath = os.path.join
 
@@ -71,6 +74,16 @@ substVars          = wafutils.subst_vars
 libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
 threading          = wafutils.threading
+subprocess         = wafutils.subprocess
+
+try:
+    TimeoutExpired = subprocess.TimeoutExpired
+    PROCESS_TIMEOUT_SUPPORTED = True
+except AttributeError:
+    class TimeoutExpired(Exception):
+        """ Emulation of TimeoutExpired """
+
+    PROCESS_TIMEOUT_SUPPORTED = False
 
 # Since python 3.4 non-inheritable file handles are provided by default
 if hasattr(os, 'O_NOINHERIT') and sys.hexversion < 0x3040000:
@@ -104,7 +117,8 @@ def hashFile(path):
 
 def hashFiles(paths):
     """
-    Hash files from paths by using md5
+    Hash files from paths by using md5.
+    Order of paths must be constant. Simple way to do it is to sort the path items.
     """
 
     # Old implementation (slower and less accurate):
@@ -195,6 +209,12 @@ def uniqueListWithOrder(lst):
     used = set()
     return [x for x in lst if x not in used and (used.add(x) or True)]
 
+def cmdHasShellSymbols(cmdline):
+    """
+    Return True if string 'cmdline' contains some specific shell symbols
+    """
+    return any(s in cmdline for s in ('<', '>', '&&', '||'))
+
 def configSetToDict(configSet):
     """
     Convert Waf ConfigSet to python dict
@@ -240,11 +260,9 @@ def _loadPyModuleWithoutImport(name):
     # In this case we should compile python file manually
     # WARN: It has no support for all python module attributes.
 
-    import types
-    from zm.error import ZenMakeError
     from zm.pypkg import PkgPath
 
-    module = types.ModuleType(name)
+    module = ModuleType(name)
     filename = name.replace('.', os.path.sep)
 
     # try to find module
@@ -270,7 +288,7 @@ def _loadPyModuleWithoutImport(name):
 
     module.__file__ = modulePath.path
 
-    #pylint: disable=exec-used
+    # pylint: disable = exec-used
     exec(compile(code, modulePath.path, 'exec'), module.__dict__)
 
     # From https://docs.python.org/3/reference/import.html:
@@ -311,3 +329,43 @@ def loadPyModule(name, dirpath = None, withImport = True):
     else:
         module = loadModule(name)
     return module
+
+def runExternalCmd(cmdLine, cwd = None, env = None, shell = False, timeout = None):
+    """
+    Run external command in a subprocess.
+    Returns tuple (exitcode, stdout, stderr).
+    """
+
+    origCmdLine = cmdLine
+    cmdAsStr = isinstance(cmdLine, stringtype)
+    if shell and not cmdAsStr:
+        cmdLine = ' '.join(cmdLine)
+    elif not shell and cmdAsStr:
+        shell = cmdHasShellSymbols(cmdLine)
+        if not shell:
+            cmdLine = shlex.split(cmdLine)
+
+    kwargs = {
+        'cwd' : cwd,
+        'shell' : shell,
+        'stdout' : subprocess.PIPE,
+        'stderr' : subprocess.STDOUT,
+        'env' : env,
+        'universal_newlines' : True,
+    }
+
+    ckwargs = {}
+
+    if PROCESS_TIMEOUT_SUPPORTED:
+        ckwargs['timeout'] = timeout
+
+    proc = subprocess.Popen(cmdLine, **kwargs)
+
+    try:
+        stdout, stderr = proc.communicate(**ckwargs)
+    except TimeoutExpired:
+        proc.kill()
+        stdout, stderr = proc.communicate()
+        raise ZenMakeProcessTimeoutExpired(origCmdLine, timeout, stdout)
+
+    return proc.returncode, stdout, stderr

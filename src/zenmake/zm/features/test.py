@@ -18,6 +18,7 @@ from zm.pyutils import viewitems, viewvalues
 from zm import log, cli, error
 from zm.autodict import AutoDict as _AutoDict
 from zm.features import precmd, postcmd
+from zm.deps import produceExternalDeps
 
 # This module relies on module 'runcmd'. So module 'runcmd' must be loaded.
 # pylint: disable = unused-import
@@ -235,6 +236,8 @@ def postBuild(bld):
     #It's just for optimisation.
     ctxCache = _shared.ctxCache
     ctxCache['envs'] = bld.all_envs
+    ctxCache['zmtasks'] = bld.zmtasks
+    ctxCache['zmdepconfs'] = bld.zmdepconfs
     ctxCache['saved.attrs'] = {}
     for attr in Build.SAVED_ATTRS:
         ctxCache['saved.attrs'][attr] = getattr(bld, attr, {})
@@ -318,6 +321,10 @@ class TestContext(BuildContext):
         self.all_envs = ctxCache.get('envs', {})
         if not self.all_envs:
             self.load_envs()
+
+        # pylint: disable = attribute-defined-outside-init
+        self.zmtasks = ctxCache['zmtasks']
+        self.zmdepconfs = ctxCache['zmdepconfs']
 
         # clear cache to allow gc to free some memory
         ctxCache.clear()
@@ -434,10 +441,7 @@ class TestContext(BuildContext):
         """
 
         self._prepareExecute()
+        produceExternalDeps(self)
 
-        log.info("Entering directory `%s'", self.variant_dir)
-        try:
-            self._makeTasks()
-            self._runTasks()
-        finally:
-            log.info("Leaving directory `%s'", self.variant_dir)
+        self._makeTasks()
+        self._runTasks()

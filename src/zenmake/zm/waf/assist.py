@@ -15,8 +15,10 @@ from copy import deepcopy
 from waflib.ConfigSet import ConfigSet
 from zm.pyutils import viewitems, stringtype, _unicode, _encode
 from zm.autodict import AutoDict as _AutoDict
+from zm.pathutils import getNodesFromPathsDict
 from zm import utils, log, version, toolchains, db
 from zm.error import ZenMakeError, ZenMakeConfError
+from zm.error import ZenMakeDirNotFoundError, ZenMakeFileNotFoundError
 from zm.constants import TASK_FEATURE_ALIESES, PLATFORM
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
 from zm.features import SUPPORTED_TASK_FEATURES, resolveAliesesInFeatures
@@ -428,45 +430,30 @@ def handleTaskSourceParam(ctx, src):
     if not src:
         return []
 
-    cacheKey = hash( repr(sorted(src.items())) )
+    cacheKey = repr(sorted(src.items()))
     cached = _srcCache.get(cacheKey)
     if cached is not None:
         return [ctx.root.make_node(x) for x in cached]
 
     bconf = ctx.getbconf()
-    startdir = joinpath(bconf.rootdir, src['startdir'])
 
-    # Path must be relative to the ctx.path
-    srcDir = relpath(startdir, ctx.path.abspath())
+    try:
+        buildrootNode = ctx.brootNode
+    except AttributeError:
+        buildroot = bconf.confPaths.buildroot
+        buildrootNode = ctx.root.make_node(buildroot)
+        ctx.brootNode = buildrootNode
 
-    # Since ant_glob can traverse both source and build folders, it is a best
-    # practice to call this method only from the most specific build node.
-    srcDirNode = ctx.path.find_dir(srcDir)
-
-    files = src.get('paths', None)
-    if files is not None:
-        # process each source file
-        files = toList(files)
-        result = []
-        for file in files:
-            assert isinstance(file, stringtype)
-            v = srcDirNode.find_node(file)
-            if v:
-                result.append(v)
-            else:
-                msg = "Error in the file %r:" % bconf.path
-                msg += "\nFile %r from the 'source' not found." % file
-                raise ZenMakeError(msg)
-    else:
-        result = srcDirNode.ant_glob(
-            incl = src.get('include', ''),
-            excl = src.get('exclude', ''),
-            ignorecase = src.get('ignorecase', False),
-            #FIXME: Waf says: Calling ant_glob on build folders is
-            # dangerous. Such a case can be seen if build
-            # the demos/cpp/002-simple
-            remove = False,
-        )
+    try:
+        result = getNodesFromPathsDict(ctx, src, bconf.rootdir,
+                                       excludeExtraPaths = [buildrootNode])
+    except ZenMakeDirNotFoundError as ex:
+        msg = "Directory %r for the 'source' doesn't exist." % ex.path
+        raise ZenMakeError(msg)
+    except ZenMakeFileNotFoundError as ex:
+        msg = "Error in the file %r:" % bconf.path
+        msg += "\n  File %r from the 'source' not found." % ex.path
+        raise ZenMakeError(msg)
 
     _srcCache[cacheKey] = [x.abspath() for x in result]
     return result

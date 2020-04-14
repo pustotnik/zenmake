@@ -26,6 +26,7 @@ from zm import pyutils
 import tests
 
 ZENMAKE_DIR = tests.ZENMAKE_DIR
+RANDINT_DEFMAXVAL = 2 ** 32
 
 _tempdirs = []
 
@@ -35,7 +36,7 @@ def randomstr(length = 16, withDigits = False):
         letters += string.digits
     return ''.join(random.choice(letters) for i in range(length))
 
-def randomint(minVal = 0, maxVal = 2 ** 32):
+def randomint(minVal = 0, maxVal = RANDINT_DEFMAXVAL):
     return random.randint(minVal, maxVal)
 
 @contextmanager

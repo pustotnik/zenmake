@@ -26,7 +26,7 @@ from zm.constants import CONFTEST_DIR_PREFIX
 from zm.pyutils import maptype, stringtype, viewitems, viewvalues
 from zm import utils, log, error
 from zm.pathutils import getNativePath
-from zm.features import ToolchainVars, TASK_TARGET_FEATURES_TO_LANG
+from zm.features import ToolchainVars
 
 joinpath = os.path.join
 
@@ -779,14 +779,8 @@ def _handleConfChecks(checks, params):
                     % (checkArgs, taskName)
             ctx.fatal(msg)
 
-        lang = None
-        features = params['taskParams']['features']
-        for feature in features:
-            lang = TASK_TARGET_FEATURES_TO_LANG.get(feature)
-            if lang:
-                break
-
-        table = _confTestsTable.get(lang, _commonConfTestsFuncs)
+        targetLang = params['taskParams'].get('$tlang')
+        table = _confTestsTable.get(targetLang, _commonConfTestsFuncs)
         func = table.get(act)
         if not func:
             msg = "Unsupported act %r in the configuration test %r for task %r!" \

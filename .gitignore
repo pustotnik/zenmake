@@ -62,6 +62,7 @@ c4che
 *.log
 *~
 _build/
+_build_/
 
 .vscode/
 .pytest_cache/

@@ -1,7 +1,8 @@
 # coding=utf-8
 #
 
-# pylint: skip-file
+# pylint: disable = missing-docstring, invalid-name, bad-continuation
+# pylint: disable = too-many-statements, protected-access
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
@@ -10,33 +11,12 @@
 
 import os
 import sys
-import shutil
 import pytest
-import tests.common as cmn
 from zm import utils, error
 from zm.constants import PLATFORM
 from zm.pypkg import PkgPath
 
 joinpath = os.path.join
-
-def testUnfoldPath(monkeypatch):
-    # it should be always absolute path
-    cwd = os.getcwd()
-
-    abspath = joinpath(cwd, 'something')
-    relpath = joinpath('a', 'b', 'c')
-
-    assert utils.unfoldPath(cwd, None) is None
-    assert utils.unfoldPath(cwd, abspath) == abspath
-
-    path = utils.unfoldPath(cwd, relpath)
-    assert joinpath(cwd, relpath) == path
-    assert os.path.isabs(utils.unfoldPath(abspath, relpath))
-
-    monkeypatch.setenv('ABC', 'qwerty')
-
-    assert joinpath(cwd, 'qwerty', relpath) == \
-                    utils.unfoldPath(cwd, joinpath('$ABC', relpath))
 
 def testMkSymlink(tmpdir, monkeypatch):
 
@@ -185,13 +165,3 @@ def testLoadPyModule(mocker, monkeypatch):
 
 
     assert oldSysPath == sys.path
-
-def testGetNativePath(monkeypatch):
-
-    monkeypatch.setattr(os, 'sep', '/')
-    path = 'my/path/to/something'
-    assert utils.getNativePath(path) == path
-
-    monkeypatch.setattr(os, 'sep', '\\')
-    path = 'my/path/to/something'
-    assert utils.getNativePath(path) == path.replace('/', '\\')

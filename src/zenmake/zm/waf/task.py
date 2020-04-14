@@ -7,8 +7,7 @@
 """
 
 from waflib import Task as WafTask, Node as WafNode, Errors as waferror
-from waflib.Tools.ccroot import SYSTEM_LIB_PATHS
-from zm.constants import TASK_TARGET_KINDS
+from zm.constants import TASK_TARGET_KINDS, SYSTEM_LIB_PATHS
 from zm.utils import asmethod
 from zm.features import TASK_TARGET_FEATURES_TO_LANG
 
@@ -36,7 +35,6 @@ def _signatureExplicitDeps(self):
             continue
 
         libpaths = getattr(taskgen, libsparam + 'path', [])
-        libpaths += [bld.path]
         libpaths += SYSTEM_LIB_PATHS
 
         lang = TASK_TARGET_FEATURES_TO_LANG[cname]

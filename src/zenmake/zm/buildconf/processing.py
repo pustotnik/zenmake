@@ -16,7 +16,8 @@ from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeLogicError, ZenMakeConfError
 from zm.pyutils import stringtype, maptype, viewitems, viewvalues
 from zm import utils, log
-from zm.pathutils import unfoldPath, getNativePath, PathsParam
+from zm.pathutils import unfoldPath, getNativePath
+from zm.pathutils import PathsParam, makePathsDict, pathsDictParamsToList
 from zm.buildconf import loader
 from zm.buildconf.scheme import taskscheme, KNOWN_CONF_PARAM_NAMES
 from zm.features import ToolchainVars, BUILDCONF_PREPARE_TASKPARAMS
@@ -49,13 +50,7 @@ def _applyStartDirToParam(bconf, param):
     return PathsParam(param, bconf.startdir, kind = 'paths')
 
 def _applyStartDirToSrcParam(bconf, param):
-    startdir = bconf.startdir
-    if isinstance(param, maptype):
-        param['startdir'] = startdir
-    else:
-        param = { 'startdir' : startdir, 'paths' : param }
-
-    return param
+    return makePathsDict(param, bconf.startdir)
 
 _PREPARE_TASKPARAMS_HOOKS = [(x, _applyStartDirToParam)
                              for x in ('includes', 'export-includes', 'libpath', 'stlibpath')]
@@ -90,16 +85,11 @@ def convertTaskParamToList(taskParams, paramName):
 
     paramVal = taskParams[paramName]
 
-    if isinstance(paramVal, maptype):
-        if paramName == 'source':
-            subNames = ('include', 'exclude', 'paths')
-        else:
-            subNames = ('paths', )
+    if paramName == 'source' and isinstance(paramVal, maptype):
+        pathsDictParamsToList(paramVal)
+        return
 
-        for name in subNames:
-            val = paramVal.get(name)
-            if val is not None:
-                paramVal[name] = toList(val)
+    if paramName.endswith('.select'):
         return
 
     if not _TASKPARAMS_TOLIST_MAP:
@@ -229,13 +219,47 @@ class Config(object):
     def _prepareParams(self):
 
         startdir = self.startdir
+        relStartDir = relpath(startdir, self.rootdir)
+
+        def makePathParam(param, name, kind):
+            value = param.get(name)
+            if value:
+                param[name] = PathsParam(value, startdir, kind)
+            else:
+                param.pop(name, None)
+
+        def _makePathParamWithPattern(param, name):
+            value = param.get(name)
+            if value:
+                param[name] = makePathsDict(value, relStartDir)
+            else:
+                param.pop(name, None)
 
         # features
         confFeatures = self._conf.features
-        monitFiles = confFeatures.get('monitor-files')
-        if monitFiles is not None:
-            monitFiles = PathsParam(monitFiles, startdir, kind = 'paths')
-            confFeatures['monitor-files'] = monitFiles
+        makePathParam(confFeatures, 'monitor-files', kind = 'paths')
+
+        # dependencies
+        for dep in viewvalues(self._conf.dependencies):
+            makePathParam(dep, 'rootdir', kind = 'path')
+            makePathParam(dep, 'export-includes', kind = 'paths')
+
+            targets = dep.get('targets', {})
+            for params in viewvalues(targets):
+                makePathParam(params, 'dir', kind = 'path')
+
+            rules = dep.get('rules', {})
+            for params in viewvalues(rules):
+                if not isinstance(params, maptype):
+                    continue
+                makePathParam(params, 'cwd', kind = 'path')
+
+                triggers = params.get('trigger', {})
+                _makePathParamWithPattern(triggers, 'paths-exist')
+                _makePathParamWithPattern(triggers, 'paths-dont-exist')
+                func = triggers.get('func')
+                if func:
+                    triggers['func'] = (self.confdir, func.__name__)
 
         # taskparams
         self._prepareTaskParams()
@@ -302,8 +326,8 @@ class Config(object):
         # buildroot, realbuildroot - see _makeBuildDirParams
         mergedParams.update(('buildroot', 'realbuildroot'))
 
-        # project, features, conditions
-        for param in ('project', 'features', 'conditions'):
+        # project, features, conditions, 'dependencies'
+        for param in ('project', 'features', 'conditions', 'dependencies'):
             mergeDict(param)
             mergedParams.add(param)
 
@@ -661,6 +685,12 @@ class Config(object):
 
         self._meta.conditions = conditions
         return conditions
+
+    @property
+    def dependencies(self):
+        """ Get dependencies """
+
+        return self._conf.dependencies
 
     @property
     def subdirs(self):

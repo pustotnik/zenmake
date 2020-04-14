@@ -21,14 +21,13 @@ __all__ = [
 
 import os
 
-from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext, CFG_FILES
 from zm.pyutils import viewitems, viewvalues
 from zm.constants import WAF_CACHE_DIRNAME, CONFTEST_DIR_PREFIX
 from zm import cli, error, log
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
 from zm.waf import assist
-from zm.features import TASK_LANG_FEATURES
+from zm.deps import produceExternalDeps
 
 joinpath = os.path.join
 abspath = os.path.abspath
@@ -78,50 +77,7 @@ def _configure(conf, bconf):
     buildtype = bconf.selectedBuildType
     tasks = bconf.tasks
 
-    emptyEnv = ConfigSet()
-
-    toolchainsEnvs = conf.getToolchainEnvs()
-
-    # Prepare task envs based on toolchains envs
     for taskParams in viewvalues(tasks):
-
-        taskName = taskParams['name']
-
-        # make variant name for each task: 'buildtype.taskname'
-        taskVariant = assist.makeTaskVariantName(buildtype, taskName)
-        # store it
-        taskParams['$task.variant'] = taskVariant
-
-        # set up env with toolchain for task
-        toolchains = taskParams['toolchain']
-        if toolchains:
-            baseEnv = toolchainsEnvs[toolchains[0]]
-            if len(toolchains) > 1:
-                # make copy of env to avoid using 'update' on original
-                # toolchain env
-                baseEnv = assist.copyEnv(baseEnv)
-            for toolname in toolchains[1:]:
-                baseEnv.update(toolchainsEnvs[toolname])
-        else:
-            needToolchain = set(taskParams['features']) & TASK_LANG_FEATURES
-            if needToolchain:
-                msg = "No toolchain for task %r found." % taskName
-                msg += " Is buildconf correct?"
-                conf.fatal(msg)
-            else:
-                baseEnv = emptyEnv
-
-        # and save selected env (conf.setenv makes the new object that is
-        # not desirable here)
-        conf.setDirectEnv(taskVariant, baseEnv)
-
-        # Create env for task from root env with cleanup
-        taskEnv = conf.makeTaskEnv(taskVariant)
-
-        # conf.setenv with unknown name or non-empty env makes deriving or
-        # creates the new object and it is not really needed here
-        conf.setDirectEnv(taskVariant, taskEnv)
-
         # configure all possible task params
         conf.configureTaskParams(bconf, taskParams)
 
@@ -152,9 +108,7 @@ def configure(conf):
     Implementation of wscript.configure
     """
 
-    # for top-level conf only
-    # set/fix vars PREFIX, BINDIR, LIBDIR
-    assist.applyInstallPaths(conf.env, cli.selected)
+    produceExternalDeps(conf)
 
     configs = conf.bconfManager.configs
     for bconf in configs:
@@ -184,6 +138,8 @@ def build(bld):
     bconf = bld.bconfManager.root
     assert id(bconf) == id(bld.getbconf())
     bconfPaths = bconf.confPaths
+
+    produceExternalDeps(bld)
 
     isInstall = bld.cmd in ('install', 'uninstall')
     if isInstall:

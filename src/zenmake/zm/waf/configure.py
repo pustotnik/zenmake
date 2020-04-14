@@ -22,9 +22,11 @@ from waflib import Errors as waferror, Context as WafContext
 from waflib.ConfigSet import ConfigSet
 from waflib.Configure import ConfigurationContext as WafConfContext
 from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFIG_LOG
+from zm.constants import TASK_TARGET_KINDS
 from zm.pyutils import viewitems, viewvalues, viewkeys
 from zm import utils, log, toolchains, error, db, version, cli
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
+from zm.deps import configureExternalDeps
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
 from zm.features import ToolchainVars
 from zm.waf import assist, context
@@ -128,7 +130,6 @@ class ConfigurationContext(WafConfContext):
         tooldirs = kwargs.get('tooldirs', None)
         withSysPath = kwargs.get('withSysPath', True)
         toolId = kwargs.get('id', '')
-        toolId = hash(toolId)
 
         loadedTool = self._loadedTools.setdefault(tool, {})
         toolInfo = loadedTool.get(toolId)
@@ -266,6 +267,7 @@ class ConfigurationContext(WafConfContext):
             'tasks'     : tasks,
             'taskenvs'  : envs,
             'buildtype' : buildtype,
+            'depconfs'  : self.zmdepconfs,
         }
 
         cachePath = assist.makeTasksCachePath(cachedir, buildtype)
@@ -492,18 +494,6 @@ class ConfigurationContext(WafConfContext):
 
         return self._toolchainEnvs
 
-    def makeTaskEnv(self, taskVariant):
-        """
-        Create env for task from root env with cleanup
-        """
-
-        # make deep copy to rid of side effects with different flags
-        # in different tasks
-        taskEnv = assist.deepcopyEnv(self.all_envs.pop(taskVariant))
-
-        assert 'zmtasks' not in taskEnv
-        return taskEnv
-
     def addExtraMonitFiles(self, bconf):
         """
         Add extra file paths to monitor for autoconfig feature
@@ -525,10 +515,14 @@ class ConfigurationContext(WafConfContext):
         Run supported configuration tests/checks
         """
 
+        printLogo = True
         for taskName, taskParams in viewitems(tasks):
             confTests = taskParams.get('conftests', [])
             if not confTests:
                 continue
+            if printLogo:
+                log.warn('Running configuration tests')
+                printLogo = False
             log.info('.. Checks for the %r:' % taskName)
             params = {
                 'cfgCtx' : self,
@@ -550,7 +544,6 @@ class ConfigurationContext(WafConfContext):
         btypeDir = bconf.selectedBuildTypeDir
         startdir = bconf.startdir
         taskName = taskParams['name']
-        features = taskParams['features']
 
         normalizeTarget = taskParams.get('normalize-target-name', False)
         target = taskParams.get('target', taskName)
@@ -572,27 +565,93 @@ class ConfigurationContext(WafConfContext):
         if prjver and 'ver-num' not in taskParams:
             taskParams['ver-num'] = prjver
 
-        taskVariant = taskParams['$task.variant']
-        taskEnv = self.all_envs[taskVariant]
-
-        runnable = False
-        realTarget = targetPath
-        for feature in features:
-            pattern = taskEnv[feature + '_PATTERN']
-            if pattern:
-                realTarget = joinpath(btypeDir, pattern % target)
-            if feature.endswith('program'):
-                runnable = True
+        targetKind = taskParams['$tkind']
+        pattern = taskParams['$tpatterns'].get(targetKind)
+        if pattern is not None:
+            realTarget = joinpath(btypeDir, pattern % target)
+        else:
+            realTarget = targetPath
 
         taskParams['$real.target'] = realTarget
-        taskParams['$runnable'] = runnable
+        taskParams['$runnable'] = targetKind == 'program'
+
+    def _setTaskTargetAttrs(self, taskParams, taskEnv):
+
+        features = taskParams['features']
+        targetKind = lang = None
+        for feature in features:
+            lang = TASK_TARGET_FEATURES_TO_LANG.get(feature)
+            if lang is not None:
+                targetKind = feature[len(lang):]
+                break
+        taskParams['$tlang'] = lang
+        taskParams['$tkind'] = targetKind
+
+        if not lang:
+            taskParams['$tpatterns'] = {}
+            return
+
+        patterns = {}
+        for kind in TASK_TARGET_KINDS:
+            key = '%s%s_PATTERN' % (lang, kind)
+            pattern = taskEnv[key]
+            if pattern:
+                patterns[kind] = pattern
+        taskParams['$tpatterns'] = patterns
+
+    def _makeTaskEnvs(self, bconf):
+
+        buildtype = bconf.selectedBuildType
+        tasks = bconf.tasks
+
+        emptyEnv = ConfigSet()
+        toolchainEnvs = self.getToolchainEnvs()
+
+        # Prepare task envs based on toolchains envs
+        for taskParams in viewvalues(tasks):
+
+            taskName = taskParams['name']
+
+            # make variant name for each task: 'buildtype.taskname'
+            taskVariant = assist.makeTaskVariantName(buildtype, taskName)
+            # store it
+            taskParams['$task.variant'] = taskVariant
+
+            # set up env with toolchain for task
+            _toolchains = taskParams['toolchain']
+            if _toolchains:
+                baseEnv = toolchainEnvs[_toolchains[0]]
+                if len(_toolchains) > 1:
+                    # make copy of env to avoid using 'update' on original
+                    # toolchain env
+                    baseEnv = assist.copyEnv(baseEnv)
+                for toolname in _toolchains[1:]:
+                    baseEnv.update(toolchainEnvs[toolname])
+            else:
+                needToolchain = set(taskParams['features']) & TASK_LANG_FEATURES
+                if needToolchain:
+                    msg = "No toolchain for task %r found." % taskName
+                    msg += " Is buildconf correct?"
+                    self.fatal(msg)
+                else:
+                    baseEnv = emptyEnv
+
+            # Create env for task
+            taskEnv = assist.deepcopyEnv(baseEnv)
+            self._setTaskTargetAttrs(taskParams, taskEnv)
+
+            # conf.setenv with unknown name or non-empty env makes deriving or
+            # creates the new object and it is not really needed here
+            self.setDirectEnv(taskVariant, taskEnv)
 
     def preconfigure(self):
         """
         Pre configure. It's called by 'execute' before call of actual 'configure'.
         """
 
-        for bconf in self.bconfManager.configs:
+        configs = self.bconfManager.configs
+
+        for bconf in configs:
 
             # set context path
             self.path = self.getPathNode(bconf.confdir)
@@ -613,6 +672,17 @@ class ConfigurationContext(WafConfContext):
         # to avoid potential name conflicts and to free mem
         for toolchain in viewkeys(toolchainEnvs):
             self.all_envs.pop(toolchain, None)
+
+        # set/fix vars PREFIX, BINDIR, LIBDIR
+        assist.applyInstallPaths(self.all_envs[''], cli.selected)
+
+        for bconf in configs:
+            self._makeTaskEnvs(bconf)
+
+        self.zmdepconfs = configureExternalDeps(self.bconfManager)
+
+        # switch current env to the root env
+        self.setenv('')
 
     # override
     def execute(self):

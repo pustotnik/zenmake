@@ -15,9 +15,10 @@ import shlex
 from waflib.TaskGen import feature, after
 from waflib.Errors import WafError
 from waflib import Task
+from zm.constants import PLATFORM, EXE_FILE_EXTS
 from zm.pyutils import viewitems, maptype
 from zm import log, error
-from zm.constants import PLATFORM, EXE_FILE_EXTS
+from zm.utils import cmdHasShellSymbols
 from zm.pathutils import PathsParam
 from zm.features import postcmd
 
@@ -40,8 +41,7 @@ def _processCmdLine(conf, bconf, cwd, shell, cmdArgs):
         return cmdline, shell
 
     if not shell:
-        if any(s in cmdline for s in ('<', '>', '&&')):
-            shell = True
+        shell = cmdHasShellSymbols(cmdline)
 
     cmdSplitted = shlex.split(cmdline)
 
@@ -134,7 +134,7 @@ def _postConf(ctx, bconf):
         cmdTaskArgs['$type'] = ''
         cmd = cmdArgs.get('cmd', None)
         if cmd and callable(cmd):
-            # it's needed because Waf cannot save function in file as is
+            # it's needed because a function cannot be saved in a file as is
             cmdTaskArgs['cmd'] = cmd.__name__
             cmdTaskArgs['shell'] = False
             cmdTaskArgs['$type'] = 'func'

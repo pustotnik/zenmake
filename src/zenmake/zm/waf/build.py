@@ -34,6 +34,7 @@ def _loadTasks(self):
     cachePath = makeTasksCachePath(cachedir, buildtype)
 
     self.zmtasks = {}
+    self.zmdepconfs = {}
 
     if not db.exists(cachePath):
         if self.cmd == 'clean':
@@ -55,6 +56,8 @@ def _loadTasks(self):
         env.table = taskenvs[taskVariant]
         env.parent = rootenv
         self.all_envs[taskVariant] = env
+
+    self.zmdepconfs = tasksData['depconfs']
 
 @asmethod(WafBuildContext, 'validateVariant')
 def _validateVariant(self):

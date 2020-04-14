@@ -8,14 +8,19 @@
 
 import os
 
-from zm.pyutils import PY2
-from zm.utils import toList
+from waflib.Node import exclude_regs as DEFAULT_PATH_EXCLUDES
+from zm.pyutils import PY2, maptype, stringtype
+from zm.utils import toList, toListSimple
+from zm.error import ZenMakeDirNotFoundError, ZenMakeFileNotFoundError
+
+DEFAULT_PATH_EXCLUDES = toListSimple(DEFAULT_PATH_EXCLUDES)
 
 _joinpath = os.path.join
 _abspath = os.path.abspath
 _normpath = os.path.normpath
 _relpath = os.path.relpath
 _isabs = os.path.isabs
+_isdir = os.path.isdir
 _expandvars = os.path.expandvars
 _expanduser = os.path.expanduser
 
@@ -282,3 +287,86 @@ class PathsParam(object):
     if PY2: # python 3 has it by default and it's more performant
         def __ne__(self, other):
             return not self == other
+
+def makePathsDict(param, startdir):
+    """
+    Convert/Adjust param with paths/patterns to dict which is used in
+    buildconf params, as storage for such paths in db, etc.
+    """
+
+    if isinstance(param, maptype):
+        _startdir = param.get('startdir')
+        if _startdir is not None:
+            startdir = _normpath(_joinpath(startdir, _startdir))
+        param['startdir'] = startdir
+    else:
+        param = { 'startdir' : startdir, 'paths' : param }
+
+    return param
+
+def pathsDictParamsToList(paths):
+    """
+    Call 'toList' to all appropriate params of paths dict
+    """
+
+    for name in ('include', 'exclude', 'paths'):
+        val = paths.get(name)
+        if val is not None:
+            paths[name] = toList(val)
+
+def getNodesFromPathsDict(ctx, param, rootdir, withDirs = False, excludeExtraPaths = None):
+    """
+    Get list of Waf nodes from 'paths dict'.
+    """
+
+    if not param:
+        return []
+
+    startdir = _normpath(_joinpath(rootdir, param['startdir']))
+    if not _isdir(startdir):
+        raise ZenMakeDirNotFoundError(startdir)
+
+    ctxPathNode = ctx.path
+    ctxAbsPath = ctxPathNode.abspath()
+
+    # Waf method Node.ant_glob can traverse both source and build folders, so
+    # it is better to call this method only from the most specific node.
+    # Also it is better, for performance, to use the ctx.path, not ctx.root
+    if startdir == ctxAbsPath:
+        startNode = ctxPathNode
+    else:
+        startNodeDir = _normpath(_relpath(startdir, ctxAbsPath))
+        startNode = ctxPathNode.make_node(startNodeDir)
+
+    files = param.get('paths')
+    if files is None:
+        include = param.get('include', [])
+        exclude = param.get('exclude', [])
+        exclude.extend(DEFAULT_PATH_EXCLUDES)
+
+        if excludeExtraPaths:
+            for path in excludeExtraPaths:
+                if isinstance(path, stringtype):
+                    path = ctx.root.make_node(path)
+                if path.is_child_of(startNode):
+                    pathPattern = path.path_from(startNode)
+                    if os.sep == '\\':
+                        pathPattern = pathPattern.replace('\\', '/')
+                    exclude.append(pathPattern)
+                    exclude.append(pathPattern + '/**')
+
+        return startNode.ant_glob(
+            incl = include,
+            excl = exclude,
+            ignorecase = param.get('ignorecase', False),
+            dir = withDirs,
+        )
+
+    result = []
+    for file in files:
+        v = startNode.make_node(file)
+        if not v.exists():
+            raise ZenMakeFileNotFoundError(v.abspath())
+        result.append(v)
+
+    return result

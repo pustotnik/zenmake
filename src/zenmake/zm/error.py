@@ -47,3 +47,40 @@ class ZenMakeConfTypeError(ZenMakeConfError):
 
 class ZenMakeConfValueError(ZenMakeConfError):
     """Invalid buildconf param value error"""
+
+class ZenMakeDirNotFoundError(ZenMakeError):
+    """ Directory doesn't exist """
+
+    def __init__(self, path):
+        self.path = path
+        msg = "Directory %r doesn't exist." % path
+        super(ZenMakeDirNotFoundError, self).__init__(msg)
+
+class ZenMakeFileNotFoundError(ZenMakeError):
+    """ File doesn't exist """
+
+    def __init__(self, path):
+        self.path = path
+        msg = "File %r doesn't exist." % path
+        super(ZenMakeFileNotFoundError, self).__init__(msg)
+
+class ZenMakeProcessFailed(ZenMakeError):
+    """ Process failed with exitcode """
+
+    def __init__(self, cmd, exitcode):
+        self.cmd = cmd
+        self.exitcode = exitcode
+        msg = "Command %r failed with exit code %d." % (cmd, exitcode)
+        super(ZenMakeProcessFailed, self).__init__(msg)
+
+class ZenMakeProcessTimeoutExpired(ZenMakeError):
+    """ Raised when a timeout expires while waiting for a process """
+
+    def __init__(self, cmd, timeout, output):
+        self.cmd = cmd
+        self.timeout = timeout
+        self.output = output
+        msg = "Timeout for command %r expired. Timeout: %d sec." % (cmd, timeout)
+        msg += '\nCaptured output:\n'
+        msg += output
+        super(ZenMakeProcessTimeoutExpired, self).__init__(msg)

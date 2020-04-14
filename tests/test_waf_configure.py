@@ -120,6 +120,7 @@ def testsSetDirectEnv(cfgctx):
 def testRunConfTestsCheckPrograms(mocker, cfgctx):
 
     mocker.patch('zm.log.info')
+    mocker.patch('zm.log.warn')
 
     ctx = cfgctx
     buildtype = 'buildtype'
@@ -144,6 +145,7 @@ def testRunConfTestsCheckPrograms(mocker, cfgctx):
 def testRunConfTestsCheckSysLibs(mocker, cfgctx):
 
     mocker.patch('zm.log.info')
+    mocker.patch('zm.log.warn')
 
     ctx = cfgctx
     buildtype = 'buildtype'
@@ -151,6 +153,7 @@ def testRunConfTestsCheckSysLibs(mocker, cfgctx):
     tasks.task.features = ['cxx', 'cxxshlib']
     tasks.task['libs'] = 'lib1 lib2'
     tasks.task['$task.variant'] = buildtype
+    tasks.task['$tlang'] = 'cxx'
     tasks.task.conftests = [
         dict(act = 'check-libs', fromtask = True, mandatory = False),
     ]
@@ -172,12 +175,14 @@ def testRunConfTestsCheckSysLibs(mocker, cfgctx):
 def testRunConfTestsCheckHeaders(mocker, cfgctx):
 
     mocker.patch('zm.log.info')
+    mocker.patch('zm.log.warn')
 
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
     tasks.task.features = ['c', 'cshlib']
     tasks.task['$task.variant'] = buildtype
+    tasks.task['$tlang'] = 'c'
     tasks.task.conftests = [
         dict(act = 'check-headers', names = 'header1 header2', mandatory = False),
     ]
@@ -201,12 +206,14 @@ def testRunConfTestsCheckHeaders(mocker, cfgctx):
 def testRunConfTestsCheckLibs(mocker, cfgctx):
 
     mocker.patch('zm.log.info')
+    mocker.patch('zm.log.warn')
 
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
     tasks.task.features = ['c', 'cshlib']
     tasks.task['$task.variant'] = buildtype
+    tasks.task['$tlang'] = 'c'
     tasks.task.conftests = [
         dict(act = 'check-libs', names = 'lib1 lib2', mandatory = False),
         dict(act = 'check-libs', names = 'lib3', autodefine = True),
@@ -233,12 +240,14 @@ def testRunConfTestsCheckLibs(mocker, cfgctx):
 def testRunConfTestsWriteHeader(mocker, cfgctx):
 
     mocker.patch('zm.log.info')
+    mocker.patch('zm.log.warn')
 
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
     tasks['some task'].features = ['c', 'cshlib']
     tasks['some task']['$task.variant'] = buildtype
+    tasks['some task']['$tlang'] = 'c'
     tasks['some task'].conftests = [
         dict(act = 'write-config-header',),
         dict(act = 'write-config-header', file = 'file1'),
@@ -277,6 +286,7 @@ def testRunConfTestsWriteHeader(mocker, cfgctx):
 def testRunConfTestsUnknown(mocker, cfgctx):
 
     mocker.patch('zm.log.info')
+    mocker.patch('zm.log.warn')
 
     ctx = cfgctx
     buildtype = 'buildtype'

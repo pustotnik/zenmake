@@ -134,7 +134,7 @@ source
     a :ref:`dict<buildconf-dict-def>`.
     Type ``dict`` is used for Waf_ ``ant_glob`` function. Format of patterns
     for ``ant_glob`` you can find on https://waf.io/book/.
-    Main details from there:
+    Most significant details from there:
 
         - Patterns may contain wildcards such as \* or \?, but they are
           `Ant patterns <https://ant.apache.org/manual/dirtasks.html>`_,
@@ -151,8 +151,14 @@ source
             Ant pattern or list of patterns to exclude, optional field.
         :ignorecase:
             Ignore case while matching (False by default), optional field.
+        :startdir:
+            Start directory for patterns, optional field. It must be relative to
+            the :ref:`startdir<buildconf-startdir>` or an absolute path.
+            By default it's '.', that is, it's equal to
+            :ref:`startdir<buildconf-startdir>`.
 
     Any path or pattern should be relative to the :ref:`startdir<buildconf-startdir>`.
+    But for pattern (in dict) can be used custom ``startdir`` parameter.
 
     If paths contain spaces and all these paths are listed
     in one string then each such a path must be in quotes.
@@ -224,7 +230,7 @@ export-includes
 toolchain
 """""""""""""""""""""
     Name of toolchain/compiler to use in the task. It can be any system
-    compiler that is supported by Waf or toolchain from custom
+    compiler that is supported by ZenMake or a toolchain from custom
     :ref:`toolchains<buildconf-toolchains>`.
     There are also the special names for autodetecting in format
     ``auto-*`` where ``*`` is a 'lang' feature for programming language,
@@ -246,12 +252,17 @@ toolchain
 
     ..
         But feature with autodetecting of language by file extensions cannot
-        be used for autodetecting of correct ``auto-*``. For example with
+        be used for autodetecting of correct ``auto-*``. For example, with
         ``cxxshlib`` ZenMake can set ``auto-c++`` itself but not
         with ``shlib``.
 
-    If toolchain from custom :ref:`toolchains<buildconf-toolchains>` contain
-    spaces and all these toolchains are listed in one string then each
+    In some rare cases this parameter can contain more than one value as a
+    string with values separated by space or as list. For example, for case
+    when C and Assembler files are used in one task, it can be ``"gcc gas"``.
+
+    If toolchain from custom :ref:`toolchains<buildconf-toolchains>` or some
+    system toolchain contain spaces in their names and all these toolchains are
+    listed in one string then each
     such a toolchain must be in quotes.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
@@ -421,7 +432,7 @@ monitlibs
 """""""""""""""""""""
     One or more names from ``libs`` to monitor changes.
 
-    For an example, a project has used some system library 'superlib' and once this
+    For example, a project has used some system library 'superlib' and once this
     library was upgraded by a system package manager. After that the building of
     the project will not make a relink with the new version of 'superlib'
     if no changes in the project which can trigger such a relink.

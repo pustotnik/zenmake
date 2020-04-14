@@ -12,7 +12,6 @@ import subprocess
 
 from waflib import Context, Configure, Utils
 from zm.db import exists as dbexists
-from zm import log
 from zm.pypkg import PkgPath
 from zm.waf import assist, launcher
 
@@ -122,7 +121,6 @@ def wrapBldCtxAutoConf(method):
 
         zmMeta = _loadZenMakeMetaFile(bconfPaths)
         if not zmMeta:
-            log.warn('Configuring the project')
             runConfigAndCommand(ctx)
             return
 

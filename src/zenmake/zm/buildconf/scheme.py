@@ -6,7 +6,7 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-from zm.constants import KNOWN_PLATFORMS
+from zm.constants import KNOWN_PLATFORMS, TASK_TARGET_KINDS
 from zm.pyutils import stringtype
 from zm.cli import config as cliConfig
 from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY, addSelectToParams
@@ -92,34 +92,37 @@ def _genConfTestsDictVarsScheme(confnode, fullkey):
         schemeDictVars.update(_actToVars.get(act, {}))
     return schemeDictVars
 
-taskscheme = {
-    'target' :      { 'type': 'str' },
-    'features' :    { 'type': ('str', 'list-of-strs') },
-    'use' :         { 'type': ('str', 'list-of-strs') },
-    'source' :      {
-        'type': ('str', 'list-of-strs', 'dict'),
-        'dict-vars' : {
-            'include' :    { 'type': ('str', 'list-of-strs') },
-            'exclude' :    { 'type': ('str', 'list-of-strs') },
-            'ignorecase' : { 'type': 'bool' },
-        },
+_PATHS_SCHEME = {
+    'type': ('str', 'list-of-strs', 'dict'),
+    'dict-vars' : {
+        'include'    : { 'type': ('str', 'list-of-strs') },
+        'exclude'    : { 'type': ('str', 'list-of-strs') },
+        'ignorecase' : { 'type': 'bool' },
+        'startdir'   : { 'type': 'str' },
     },
-    'toolchain' : { 'type': ('str', 'list-of-strs') },
-    'libs' :        { 'type': ('str', 'list-of-strs') },
-    'libpath':      { 'type': ('str', 'list-of-strs') },
-    'monitlibs':    { 'type': ('bool', 'str', 'list-of-strs') },
-    'stlibs' :      { 'type': ('str', 'list-of-strs') },
-    'stlibpath':    { 'type': ('str', 'list-of-strs') },
-    'monitstlibs':  { 'type': ('bool', 'str', 'list-of-strs') },
-    'rpath' :       { 'type': ('str', 'list-of-strs') },
-    'ver-num' :     { 'type': 'str' },
-    'includes':     { 'type': ('str', 'list-of-strs') },
-    'linkflags' :   { 'type': ('str', 'list-of-strs') },
-    'ldflags' :     { 'type': ('str', 'list-of-strs') },
-    'defines' :     { 'type': ('str', 'list-of-strs') },
+}
+
+taskscheme = {
+    'target' :          { 'type': 'str' },
+    'features' :        { 'type': ('str', 'list-of-strs') },
+    'use' :             { 'type': ('str', 'list-of-strs') },
+    'source' :          _PATHS_SCHEME,
+    'toolchain' :       { 'type': ('str', 'list-of-strs') },
+    'libs' :            { 'type': ('str', 'list-of-strs') },
+    'libpath':          { 'type': ('str', 'list-of-strs') },
+    'monitlibs':        { 'type': ('bool', 'str', 'list-of-strs') },
+    'stlibs' :          { 'type': ('str', 'list-of-strs') },
+    'stlibpath':        { 'type': ('str', 'list-of-strs') },
+    'monitstlibs':      { 'type': ('bool', 'str', 'list-of-strs') },
+    'rpath' :           { 'type': ('str', 'list-of-strs') },
+    'ver-num' :         { 'type': 'str' },
+    'includes':         { 'type': ('str', 'list-of-strs') },
+    'linkflags' :       { 'type': ('str', 'list-of-strs') },
+    'ldflags' :         { 'type': ('str', 'list-of-strs') },
+    'defines' :         { 'type': ('str', 'list-of-strs') },
     'export-includes' : { 'type': ('bool', 'str', 'list-of-strs') },
     'export-defines' :  { 'type': ('bool', 'str', 'list-of-strs') },
-    'install-path' : { 'type': ('bool', 'str') },
+    'install-path' :    { 'type': ('bool', 'str') },
     'conftests' : _genConfTestsScheme,
     'normalize-target-name' : { 'type': 'bool' },
     'objfile-index' : { 'type': 'int' },
@@ -151,6 +154,35 @@ def _genOptionsVarsScheme(confnode, fullkey):
     )
 
     return scheme
+
+_DEP_RULE_SCHEME = {
+    'type': ('str', 'dict',),
+    'dict-vars' : {
+        'trigger' : {
+            'type': 'dict',
+            'vars' : {
+                'always' : { 'type': 'bool' },
+                'no-targets' : { 'type': 'bool' },
+                'paths-exist' : _PATHS_SCHEME,
+                'paths-dont-exist' : _PATHS_SCHEME,
+                'func' : { 'type': 'func' },
+                'env' : {
+                    'type': 'dict',
+                    'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
+                },
+            },
+        },
+        'cmd' : { 'type': 'str' },
+        'cwd' : { 'type': 'str' },
+        'env' : {
+            'type': 'dict',
+            'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
+        },
+        'timeout' : { 'type': 'int' },
+        'shell' : { 'type': 'bool' },
+        'zm-commands' : { 'type': ('str', 'list-of-strs') },
+    },
+}
 
 confscheme = {
     'startdir' : { 'type': 'str' },
@@ -196,6 +228,40 @@ confscheme = {
                     'buildtype' : { 'type': ('str', 'list-of-strs') },
                     'env' :       { 'type' : 'dict' },
                 },
+            },
+        },
+    },
+    'dependencies' : {
+        'type' : 'vars-in-dict',
+        'keys-kind' : 'anystr',
+        'vars-type' : 'dict',
+        'vars' : {
+            'rootdir' :  { 'type': 'str' },
+            'export-includes' : { 'type': ('str', 'list-of-strs') },
+            'targets' :  {
+                'type': 'dict',
+                'vars' : {
+                    ANYAMOUNTSTRS_KEY: {
+                        'type': 'dict',
+                        'vars': {
+                            'dir'  : {'type' : 'str' },
+                            'type' : {'type' : 'str', 'allowed' : TASK_TARGET_KINDS },
+                            'name' : {'type' : 'str' },
+                            #'fallback' : {'type' : 'str' },
+                        },
+                    },
+                },
+            },
+            'rules'   :  {
+                'type': 'dict',
+                'vars': {
+                    'configure' : _DEP_RULE_SCHEME,
+                    'build' : _DEP_RULE_SCHEME,
+                    'test' : _DEP_RULE_SCHEME,
+                    'clean' : _DEP_RULE_SCHEME,
+                    'install' : _DEP_RULE_SCHEME,
+                    'uninstall' : _DEP_RULE_SCHEME,
+                }
             },
         },
     },

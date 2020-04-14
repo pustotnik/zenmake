@@ -33,6 +33,7 @@ RE_ALL_D   = '^d/'
 RE_ALL_LUA = '^lua/'
 RE_ALL_FC  = '^fortran/'
 RE_ALL_DBUS  = '^dbus/'
+RE_EXT_DEPS  = '^external-deps/'
 
 TEST_CONDITIONS = {
     CUSTOM_TOOLCHAIN_PRJDIR: dict( os = ['linux', 'darwin'], ),
@@ -45,6 +46,7 @@ TEST_CONDITIONS = {
         dict(regexp = RE_ALL_LUA, condition = dict( os = ['linux'], )),
         dict(regexp = RE_ALL_FC, condition = dict( os = ['linux'], )),
         dict(regexp = RE_ALL_DBUS, condition = dict( os = ['linux'], )),
+        dict(regexp = RE_EXT_DEPS, condition = dict( os = ['linux', 'darwin'], )),
     ],
 }
 

@@ -18,8 +18,8 @@ class OptionsContext(WafOptionsContext):
         setupOptionVerbose(options)
 
         # TODO: in debug only mode?
-        #if verbose >= 1:
-        #    self.load('errcheck')
+        if options.verbose >= 2:
+            self.load('errcheck')
 
 def setupOptionVerbose(wafOptions):
     """

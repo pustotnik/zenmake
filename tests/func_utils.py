@@ -73,28 +73,26 @@ def getZmExecutables():
 
 def runZm(self, cmdline, env = None):
 
-    cwd = self.cwd
     zmExe = self.zmExe if hasattr(self, 'zmExe') else [PYTHON_EXE, ZM_BIN]
     cmdLine = zmExe + utils.toList(cmdline)
 
-    timeout = 60 * 15
     _env = os.environ.copy()
     if env:
         _env.update(env)
-    proc = subprocess.Popen(cmdLine, stdout = subprocess.PIPE,
-                        stderr = subprocess.STDOUT, cwd = cwd,
-                        env = _env, universal_newlines = True)
-    kw = {}
-    if pyutils.PY3:
-        kw['timeout'] = timeout
-    stdout, stderr = proc.communicate(**kw)
+
+    kwargs = {
+        'cwd' : self.cwd,
+        'env' : _env,
+        'timeout' : 60 * 15,
+    }
+    exitcode, stdout, stderr = utils.runExternalCmd(cmdLine, **kwargs)
 
     self.zm = dict(
         stdout = stdout,
         stderr = stderr,
-        exitcode = proc.returncode,
+        exitcode = exitcode,
     )
-    return proc.returncode, stdout, stderr
+    return exitcode, stdout, stderr
 
 def printOutputs(testSuit):
     zmInfo = getattr(testSuit, 'zm', None)
