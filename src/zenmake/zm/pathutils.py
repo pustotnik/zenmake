@@ -341,7 +341,7 @@ def getNodesFromPathsDict(ctx, param, rootdir, withDirs = False, excludeExtraPat
     files = param.get('paths')
     if files is None:
         include = param.get('include', [])
-        exclude = param.get('exclude', [])
+        exclude = list(param.get('exclude', []))
         exclude.extend(DEFAULT_PATH_EXCLUDES)
 
         if excludeExtraPaths:

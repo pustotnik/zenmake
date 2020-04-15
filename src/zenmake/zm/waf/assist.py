@@ -430,10 +430,14 @@ def handleTaskSourceParam(ctx, src):
     if not src:
         return []
 
-    cacheKey = repr(sorted(src.items()))
-    cached = _srcCache.get(cacheKey)
-    if cached is not None:
-        return [ctx.root.make_node(x) for x in cached]
+    pathsWithPattern = not src.get('paths')
+    if pathsWithPattern:
+        # There is no reasons to cache lists of paths and
+        # the cache key for them can be too big
+        cacheKey = repr(sorted(src.items()))
+        cached = _srcCache.get(cacheKey)
+        if cached is not None:
+            return [ctx.root.make_node(x) for x in cached]
 
     bconf = ctx.getbconf()
 
@@ -455,7 +459,8 @@ def handleTaskSourceParam(ctx, src):
         msg += "\n  File %r from the 'source' not found." % ex.path
         raise ZenMakeError(msg)
 
-    _srcCache[cacheKey] = [x.abspath() for x in result]
+    if pathsWithPattern:
+        _srcCache[cacheKey] = [x.abspath() for x in result]
     return result
 
 def checkWafTasksForFeatures(taskParams):
