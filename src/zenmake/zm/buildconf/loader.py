@@ -61,6 +61,7 @@ def applyDefaults(buildconf, isTopLevel, projectDir):
     if isTopLevel:
         params = buildconf.features
         params['autoconfig'] = params.get('autoconfig', True)
+        params['hash-algo'] = params.get('hash-algo', 'sha1')
         params['db-format'] = params.get('db-format', 'pickle')
 
     # dict params

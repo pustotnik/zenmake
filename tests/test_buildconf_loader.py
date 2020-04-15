@@ -62,6 +62,7 @@ def testInitDefaults():
     assert buildconf.features == {
         'autoconfig': True,
         'db-format': 'pickle',
+        'hash-algo': 'sha1',
     }
 
     assert buildconf.project == {
@@ -90,6 +91,7 @@ def testInitDefaults():
     assert buildconf.features == {
         'autoconfig': False,
         'db-format': 'pickle',
+        'hash-algo': 'sha1',
     }
 
     buildconf = FakeBuildConf()

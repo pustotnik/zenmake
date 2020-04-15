@@ -10,6 +10,7 @@ import os
 import sys
 import re
 import shlex
+from hashlib import sha1
 from importlib import import_module as importModule
 from types import ModuleType
 
@@ -66,6 +67,7 @@ def asmethod(cls, methodName = None, wrap = False, callOrigFirst = True):
     return decorator
 
 md5                = wafutils.md5
+HashAlgo           = sha1
 readFile           = wafutils.readf
 hashObj            = wafutils.h_list
 hashFunc           = wafutils.h_fun
@@ -84,6 +86,18 @@ except AttributeError:
         """ Emulation of TimeoutExpired """
 
     PROCESS_TIMEOUT_SUPPORTED = False
+
+def setDefaultHashAlgo(algo):
+    """
+    Set default hash algo. Can be 'sha1' or 'md5'.
+    """
+
+    # pylint: disable = global-statement
+    global HashAlgo
+    if algo == 'md5':
+        HashAlgo = wafutils.md5 = md5
+    else:
+        HashAlgo = wafutils.md5 = sha1
 
 # Since python 3.4 non-inheritable file handles are provided by default
 if hasattr(os, 'O_NOINHERIT') and sys.hexversion < 0x3040000:
@@ -111,13 +125,13 @@ else:
         return hashobj
 
 def hashFile(path):
-    """ Hash file by using md5 """
-    _hash = md5()
+    """ Hash file by using sha1/md5 """
+    _hash = HashAlgo()
     return _hashFile(_hash, path).digest()
 
 def hashFiles(paths):
     """
-    Hash files from paths by using md5.
+    Hash files from paths by using sha1/md5.
     Order of paths must be constant. Simple way to do it is to sort the path items.
     """
 
@@ -127,7 +141,7 @@ def hashFiles(paths):
     #    _hash = hashObj((_hash, readFile(path, 'rb')))
     #return _hash
 
-    _hash = md5()
+    _hash = HashAlgo()
     for path in paths:
         _hashFile(_hash, path)
     return _hash.digest()

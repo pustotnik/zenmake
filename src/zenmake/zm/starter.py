@@ -143,7 +143,8 @@ def run():
             # Do parsing of CLI again to apply defaults from buildconf
             cmd, wafCmdLine = handleCLI(sys.argv, noBuildConf, bconf.options)
 
-        from zm import db
+        from zm import utils, db
+        utils.setDefaultHashAlgo(bconf.features['hash-algo'])
         db.useformat(bconf.features['db-format'])
 
     except error.ZenMakeError as ex:

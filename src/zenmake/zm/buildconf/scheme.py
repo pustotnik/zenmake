@@ -193,6 +193,7 @@ confscheme = {
         'vars' : {
             'autoconfig' : { 'type': 'bool' },
             'monitor-files' : { 'type': ('str', 'list-of-strs') },
+            'hash-algo' : { 'type': 'str', 'allowed' : ('sha1', 'md5') },
             'db-format' : {
                 'type': 'str',
                 'allowed' : set(('py', 'pickle', 'msgpack', )),

@@ -127,6 +127,17 @@ features
                     If paths contain spaces and all these paths are listed
                     in one string then each such a path must be in quotes.
 
+    :hash-algo: Set hash algorithm to use in ZenMake. It can be ``sha1`` or
+                ``md5``. By default ZenMake uses sha1 algorithm to control
+                changes of config/built files and for some other things.
+                Sha1 has much less collisions than md5
+                and that's why it's used by default. Modern CPUs often has support
+                for this algorithm and sha1 show better or almost the same
+                performance than md5 in this cases. But in some cases md5 can be
+                faster and you can set here this variant. However, don't expect big
+                difference in performance of ZenMake. Also, if a rare
+                "FIPS compliant" build of Python is used it's always sha1 anyway.
+
     :db-format: Set format for internal ZenMake db/cache files.
                 Use one of possible values: 'py', 'pickle', 'msgpack'.
 

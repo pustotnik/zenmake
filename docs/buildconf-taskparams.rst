@@ -448,8 +448,7 @@ monitlibs
 
     Using of this parameter can slow down a building of some
     projects with a lot of values in this parameter.
-    ZenMake uses md5 (or sha1 if a rare "FIPS compliant" build of Python is used)
-    hashes to check changes of every library file.
+    ZenMake uses sha1/md5 hashes to check changes of every library file.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.

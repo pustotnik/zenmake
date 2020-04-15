@@ -27,6 +27,7 @@ ZenMake documentation
    conftests
    dependencies
    tests
+   perftips
    faq
    changelog
    license
