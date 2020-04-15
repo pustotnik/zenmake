@@ -1,15 +1,25 @@
 
+UNAME := $(shell uname)
+
 CC = clang
 AR = ar
 CFLAGS = -Wall -fPIC
-SHAREDLIB_LDFLAGS = -shared
+ifeq ($(UNAME),Darwin)
+	SHAREDLIB_LDFLAGS := -dynamiclib
+else
+	SHAREDLIB_LDFLAGS := -shared
+endif
 
 BUILDROOT = _build_
 
 SRC  = fooutil.c
 DEPS = fooutil.h
 OBJS = $(SRC:.c=.o)
-TARGET_SO = libfooutil.so
+ifeq ($(UNAME),Darwin)
+	TARGET_SO := libfooutil.dylib
+else
+	TARGET_SO := libfooutil.so
+endif
 TARGET_A  = libfooutil.a
 
 # debug
@@ -56,7 +66,7 @@ $(RELEASE_BUILDOUT)/%.o: %.c $(DEPS)
 
 prep:
 	@mkdir -p $(BUILDOUT)
-	# for testing only, doesn't make a sense in a real project
+# for testing only, doesn't make a sense in a real project
 	@touch $(BUILDOUT)/test.label
 
 clean:
