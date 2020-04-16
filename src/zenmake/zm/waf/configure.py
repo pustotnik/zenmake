@@ -26,7 +26,7 @@ from zm.constants import TASK_TARGET_KINDS
 from zm.pyutils import viewitems, viewvalues, viewkeys
 from zm import utils, log, toolchains, error, db, version, cli
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
-from zm.deps import configureExternalDeps
+from zm.deps import configureExternalDeps, produceExternalDeps
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
 from zm.features import ToolchainVars
 from zm.waf import assist, context
@@ -515,13 +515,17 @@ class ConfigurationContext(WafConfContext):
         Run supported configuration tests/checks
         """
 
-        printLogo = True
+        try:
+            printLogo = self._printLogo
+        except AttributeError:
+            self._printLogo = printLogo = True
+
         for taskName, taskParams in viewitems(tasks):
             confTests = taskParams.get('conftests', [])
             if not confTests:
                 continue
             if printLogo:
-                log.warn('Running configuration tests')
+                log.printStep('Running configuration tests')
                 printLogo = False
             log.info('.. Checks for the %r:' % taskName)
             params = {
@@ -532,6 +536,7 @@ class ConfigurationContext(WafConfContext):
             }
             handleConfTests(confTests, params)
 
+        self._printLogo = printLogo
         self.setenv('')
 
     def configureTaskParams(self, bconf, taskParams):
@@ -736,6 +741,7 @@ class ConfigurationContext(WafConfContext):
         self.loadCaches()
         self.preconfigure()
 
+        produceExternalDeps(self)
         WafContext.Context.execute(self)
 
         self.store()

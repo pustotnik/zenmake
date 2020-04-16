@@ -41,3 +41,14 @@ def setVerbose(value):
 def setZones(zones):
     """ Set value of Logs.zones """
     Logs.zones = zones
+
+def printStep(*args, **kwargs):
+    """
+    Log some step in zenmake command
+    """
+
+    extra = kwargs.get('extra', {})
+    if 'c1' not in extra:
+        extra.update({ 'c1': colors.CYAN })
+        kwargs.update({'extra' : extra})
+    info(*args, **kwargs)

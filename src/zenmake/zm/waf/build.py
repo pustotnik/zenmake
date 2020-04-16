@@ -12,11 +12,9 @@ from zm.pyutils import viewvalues
 from zm.utils import asmethod
 from zm import log, db
 from zm.waf.assist import makeTasksCachePath
+from zm.deps import produceExternalDeps
 
-class BuildContext(WafBuildContext):
-    """ Context for command 'build' """
-
-    # No methods here at present. See below.
+BuildContext = WafBuildContext
 
 # WafBuildContext is used for many other waf commands as the base class
 # and so to insert new methods into this class the decorator @asmethod is used.
@@ -58,6 +56,12 @@ def _loadTasks(self):
         self.all_envs[taskVariant] = env
 
     self.zmdepconfs = tasksData['depconfs']
+
+@asmethod(WafBuildContext, 'execute_build', wrap = True, callOrigFirst = False)
+def _executeBuild(self):
+    if self.cmd in ('build', 'install', 'uninstall', 'clean'):
+        produceExternalDeps(self)
+        log.printStep(self.cmd.capitalize() + 'ing')
 
 @asmethod(WafBuildContext, 'validateVariant')
 def _validateVariant(self):

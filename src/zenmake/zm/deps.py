@@ -426,6 +426,6 @@ def produceExternalDeps(ctx):
         if not doRun:
             continue
         if printLogo:
-            log.warn('Running rules for external dependencies')
+            log.printStep('Running rules for external dependencies')
             printLogo = False
         _runRule(ctx, rule)

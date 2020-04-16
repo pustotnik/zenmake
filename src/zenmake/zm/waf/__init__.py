@@ -9,5 +9,5 @@
 # pylint: disable = unused-import
 # These modules must be just imported
 from zm.waf import errors, task, options
-from zm.waf import context, configure, build, install
+from zm.waf import context, configure, build, clean, install
 # pylint: enable = unused-import

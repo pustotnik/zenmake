@@ -27,7 +27,6 @@ from zm.constants import WAF_CACHE_DIRNAME, CONFTEST_DIR_PREFIX
 from zm import cli, error, log
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
 from zm.waf import assist
-from zm.deps import produceExternalDeps
 
 joinpath = os.path.join
 abspath = os.path.abspath
@@ -108,8 +107,6 @@ def configure(conf):
     Implementation of wscript.configure
     """
 
-    produceExternalDeps(conf)
-
     configs = conf.bconfManager.configs
     for bconf in configs:
         _configure(conf, bconf)
@@ -138,8 +135,6 @@ def build(bld):
     bconf = bld.bconfManager.root
     assert id(bconf) == id(bld.getbconf())
     bconfPaths = bconf.confPaths
-
-    produceExternalDeps(bld)
 
     isInstall = bld.cmd in ('install', 'uninstall')
     if isInstall:
