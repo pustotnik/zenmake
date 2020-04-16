@@ -46,6 +46,7 @@ dependencies = {
             #'clean' : 'make cleandebug',
             'clean' : {
                 'cmd' : 'make cleandebug',
+                'shell' : False,
                 'zm-commands' : 'clean',
             },
         },
@@ -76,18 +77,18 @@ dependencies = {
 tasks = {
     'util' : {
         'features' : 'cxxshlib',
-        'source'   :  dict( include = 'shlib/**/*.cpp' ),
+        'source'   :  { 'include' : 'shlib/**/*.cpp' },
         'use.select' : {
             'debug'   : 'foo-lib-d:static-lib',
             'release' : 'foo-lib-r:static-lib',
         },
         'conftests'  : [
-            dict(act = 'check-headers', names = 'cstdio iostream'),
+            { 'act' : 'check-headers', 'names' : 'cstdio iostream' },
         ],
     },
     'program' : {
         'features' : 'cxxprogram',
-        'source'   :  dict( include = 'prog/**/*.cpp' ),
+        'source'   :  { 'include' : 'prog/**/*.cpp' },
         'includes' : foolibdir,
         'use.select' : {
             'debug'   : 'util foo-lib-d:shared-lib',
