@@ -13,7 +13,7 @@ from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext as WafBuildContext
 from zm.constants import DEFAULT_BUILDWORKNAME
 from zm.pyutils import viewvalues
-from zm.utils import asmethod
+from zm.utils import asmethod, Timer
 from zm import log, db
 from zm.waf.assist import makeTasksCachePath
 from zm.deps import produceExternalDeps
@@ -73,11 +73,37 @@ def _initDirs(self):
         self.bldnode = self.root.make_node(blddir)
         self.bldnode.mkdir()
 
-@asmethod(WafBuildContext, 'execute_build', wrap = True, callOrigFirst = False)
+@asmethod(WafBuildContext, 'execute_build')
 def _executeBuild(self):
+
     if self.cmd in ('build', 'install', 'uninstall', 'clean'):
         produceExternalDeps(self)
         log.printStep(self.cmd.capitalize() + 'ing')
+
+    self.recurse([self.run_dir])
+
+    # display the time elapsed in the progress bar
+    self.timer = Timer()
+
+    try:
+        self.compile()
+    finally:
+        if self.progress_bar == 1 and sys.stderr.isatty():
+            colors = log.colors
+            prgsState = self.producer.processed or 1
+            msg = self.progress_line(prgsState, prgsState, colors.BLUE, colors.NORMAL)
+            logExtra = {
+                'stream': sys.stderr,
+                'c1': colors.cursor_off,
+                'c2': colors.cursor_on,
+            }
+            log.info(msg, extra = logExtra)
+
+    try:
+        self.producer.bld = None
+        del self.producer
+    except AttributeError:
+        pass
 
 @asmethod(WafBuildContext, 'validateVariant')
 def _validateVariant(self):
