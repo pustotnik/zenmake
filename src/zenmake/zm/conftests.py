@@ -51,8 +51,8 @@ def _makeRunBuildBldCtx(ctx, checkArgs, topdir, bdir):
 
     bld = createContext('build', top_dir = topdir, out_dir = bdir)
 
-    # avoid unnecessary directory
-    bld.variant = ''
+    # avoid unnecessary directories
+    bld.buildWorkDirName = bld.variant = ''
 
     bld.init_dirs()
     bld.progress_bar = 0
@@ -180,7 +180,8 @@ class _CfgCheckTask(Task.Task):
         bdir = cfgCtx.bldnode.abspath()
         bld = createContext('build', top_dir = topdir, out_dir = bdir)
 
-        bld.variant = '' # avoid unnecessary directory
+        # avoid unnecessary directories
+        bld.buildWorkDirName = bld.variant = ''
         bld.env = cfgCtx.env
         bld.init_dirs()
         bld.in_msg = 1 # suppress top-level start_msg

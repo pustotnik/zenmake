@@ -118,9 +118,12 @@ def _setupClean(bld, bconfPaths):
         preserveFiles.extend(bld.root.make_node(f) for f in env[CFG_FILES])
     preserveFiles.append(bld.root.make_node(bconfPaths.zmmetafile))
 
+    btypeDir = bld.bconfManager.root.selectedBuildTypeDir
+    btypeNode = bld.root.make_node(btypeDir)
+
     excludes = '.lock* config.log'
     excludes += ' %s*/** %s/*' % (CONFTEST_DIR_PREFIX, WAF_CACHE_DIRNAME)
-    removeFiles = set(bld.bldnode.ant_glob('**/*', excl = excludes, quiet = True))
+    removeFiles = set(btypeNode.ant_glob('**/*', excl = excludes, quiet = True))
     removeFiles.difference_update(preserveFiles)
 
     bld.clean_files = list(removeFiles)
@@ -152,13 +155,11 @@ def build(bld):
     # The build context provides two additional nodes:
     #   srcnode: node representing the top-level directory (== top)
     #   bldnode: node representing the build directory     (== out)
-    # To obtain a build node from a src node and vice-versa, the following methods may be used:
-    #   Node.get_src()
-    #   Node.get_bld()
     # top == bld.srcnode.abspath()
     # out == bld.bldnode.abspath()
 
     bldPathNode = bld.path
+    btypeDir = bconf.selectedBuildTypeDir
 
     # tasks from bconf cannot be used here
     tasks = bld.zmtasks
@@ -184,7 +185,7 @@ def build(bld):
         if 'includes' in taskParams:
             # Add the build directory path.
             # It's needed to use config header with 'conftests'.
-            taskParams['includes'].append(bld.bldnode.abspath())
+            taskParams['includes'].append(btypeDir)
 
         if 'source' in taskParams:
             source = assist.handleTaskSourceParam(bld, taskParams['source'])

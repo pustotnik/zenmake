@@ -6,15 +6,23 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+import os
+import sys
+
 from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext as WafBuildContext
+from zm.constants import DEFAULT_BUILDWORKNAME
 from zm.pyutils import viewvalues
 from zm.utils import asmethod
 from zm import log, db
 from zm.waf.assist import makeTasksCachePath
 from zm.deps import produceExternalDeps
 
+joinpath = os.path.join
+
 BuildContext = WafBuildContext
+
+BuildContext.buildWorkDirName = DEFAULT_BUILDWORKNAME
 
 # WafBuildContext is used for many other waf commands as the base class
 # and so to insert new methods into this class the decorator @asmethod is used.
@@ -56,6 +64,14 @@ def _loadTasks(self):
         self.all_envs[taskVariant] = env
 
     self.zmdepconfs = tasksData['depconfs']
+
+@asmethod(WafBuildContext, 'init_dirs', wrap = True, callOrigFirst = True)
+def _initDirs(self):
+    blddir = self.variant_dir
+    if self.buildWorkDirName:
+        blddir = joinpath(blddir, self.buildWorkDirName)
+        self.bldnode = self.root.make_node(blddir)
+        self.bldnode.mkdir()
 
 @asmethod(WafBuildContext, 'execute_build', wrap = True, callOrigFirst = False)
 def _executeBuild(self):

@@ -8,7 +8,7 @@ tasks = {
             dict(act = 'check-headers', names = 'cstdio iostream'),
         ],
     },
-    'program' : {
+    'prog' : {
         'features' : 'cxxprogram',
         'source'   :  dict( include = 'prog/**/*.cpp' ),
         'includes' : '.',
