@@ -24,13 +24,14 @@ from copy import copy, deepcopy
 from waflib import Context
 from waflib.ConfigSet import ConfigSet
 from zm import starter
-from zm import pyutils, utils, zipapp, db
+from zm import utils, zipapp, db
 from zm.pyutils import viewitems, viewvalues, stringtype
 from zm.waf import assist
 from zm.autodict import AutoDict
 from zm.buildconf import loader as bconfloader
 from zm.buildconf.processing import ConfManager as BuildConfManager
 from zm.constants import ZENMAKE_BUILDMETA_FILENAME, PLATFORM, APPNAME
+from zm.constants import BUILDOUTNAME, WAF_CONFIG_LOG
 from zm.features import TASK_TARGET_FEATURES
 from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES
 
@@ -103,10 +104,17 @@ def printOutputs(testSuit):
         if out:
             print('\n' + out)
 
-    configLog = joinpath(testSuit.cwd, 'build', 'out', 'config.log')
+    def makeConfigLogPath(buildDirName):
+        path = joinpath(testSuit.cwd, buildDirName)
+        if BUILDOUTNAME:
+            path = joinpath(path, BUILDOUTNAME)
+        return joinpath(path, WAF_CONFIG_LOG)
+
+    configLog = makeConfigLogPath('build')
     if not isfile(configLog):
-        configLog = joinpath(testSuit.cwd, '_build', 'out', 'config.log')
+        configLog = makeConfigLogPath('_build')
     if isfile(configLog):
+        print('\n== CONFIG LOG %s:\n' % configLog)
         with open(configLog) as file:
             print(file.read())
 
