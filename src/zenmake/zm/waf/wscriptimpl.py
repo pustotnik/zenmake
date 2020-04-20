@@ -166,6 +166,13 @@ def build(bld):
 
     allowedTasks = cli.selected.args.tasks
     if allowedTasks:
+        if not set(allowedTasks).issubset(tasks):
+            unknownTasks = list(set(allowedTasks) - set(tasks))
+            if len(unknownTasks) == 1:
+                msg = "Unknown task name %r" % unknownTasks[0]
+            else:
+                msg = "Unknown task names: %s" % str(unknownTasks)[1:-1]
+            raise error.ZenMakeError(msg)
         allowedTasks = set(assist.getTaskNamesWithDeps(tasks, allowedTasks))
 
     for taskName, taskParams in viewitems(tasks):
