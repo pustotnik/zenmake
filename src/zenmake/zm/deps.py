@@ -13,8 +13,12 @@ from copy import deepcopy
 from zm.constants import SYSTEM_LIB_PATHS
 from zm.pyutils import viewvalues, viewitems, listvalues, maptype
 from zm import error, log
-from zm.utils import toListSimple, runExternalCmd
-from zm.pathutils import PathsParam, getNodesFromPathsDict, pathsDictParamsToList
+from zm.utils import toListSimple, runCmd, uniqueListWithOrder
+from zm.pathutils import PathsParam, getNodesFromPathsDict, \
+                         pathsDictParamsToList, makePathsDict
+from zm.buildconf import loader as buildconfLoader
+from zm.buildconf.processing import Config as BuildConfig
+from zm.buildconf.paths import ConfPaths as BuildConfPaths
 
 joinpath   = os.path.join
 isabs      = os.path.isabs
@@ -398,21 +402,24 @@ def _runRule(ctx, rule):
     }
 
     ctx.log_command(cmd, kwargs)
-    exitcode, stdout, stderr = runExternalCmd(cmd, **kwargs)
 
-    if stdout:
-        sys.stdout.write(stdout)
-        sys.stdout.flush()
-    if stderr:
-        sys.stderr.write(stderr)
-        sys.stderr.flush()
+    def printLine(line, err):
+        line = '  %s' % line
+        if err:
+            sys.stderr.write(line)
+            sys.stderr.flush()
+        else:
+            sys.stdout.write(line)
+            sys.stdout.flush()
 
+    kwargs['outCallback'] = printLine
+    exitcode = runCmd(cmd, **kwargs)
     if exitcode < 0:
         raise error.ZenMakeProcessFailed(cmd, exitcode)
 
 def produceExternalDeps(ctx):
     """
-    Run command for external dependencies
+    Run commands for external dependencies
     """
 
     cmd = ctx.cmd

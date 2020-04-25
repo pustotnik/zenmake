@@ -8,14 +8,20 @@
 
 import os
 import sys
+import signal
 import re
 import shlex
 from hashlib import sha1
 from importlib import import_module as importModule
 from types import ModuleType
 
+try:
+    import threading
+except ImportError:
+    raise ImportError('Python must have threading support')
+
 from waflib import Utils as wafutils
-from zm.pyutils import stringtype, _unicode, _encode
+from zm.pyutils import stringtype, _unicode, _encode, PY3
 from zm.error import ZenMakeError, ZenMakeProcessTimeoutExpired
 
 _joinpath = os.path.join
@@ -75,17 +81,7 @@ hexOfStr           = wafutils.to_hex
 substVars          = wafutils.subst_vars
 libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
-threading          = wafutils.threading
 subprocess         = wafutils.subprocess
-
-try:
-    TimeoutExpired = subprocess.TimeoutExpired
-    PROCESS_TIMEOUT_SUPPORTED = True
-except AttributeError:
-    class TimeoutExpired(Exception):
-        """ Emulation of TimeoutExpired """
-
-    PROCESS_TIMEOUT_SUPPORTED = False
 
 def setDefaultHashAlgo(algo):
     """
@@ -344,42 +340,129 @@ def loadPyModule(name, dirpath = None, withImport = True):
         module = loadModule(name)
     return module
 
-def runExternalCmd(cmdLine, cwd = None, env = None, shell = False, timeout = None):
+class ProcCmd(object):
+    """
+    Class to run external command in a subprocess
+    """
+
+    def __init__(self, cmdLine, shell = False):
+
+        self._origCmdLine = cmdLine
+
+        cmdAsStr = isinstance(cmdLine, stringtype)
+        if shell and not cmdAsStr:
+            cmdLine = ' '.join(cmdLine)
+        elif not shell and cmdAsStr:
+            shell = cmdHasShellSymbols(cmdLine)
+            if not shell:
+                cmdLine = shlex.split(cmdLine)
+
+        self._cmdLine = cmdLine
+        self._proc = None
+        self._timeoutExpired = False
+        self._popenArgs = {
+            'shell' : shell,
+            'stdout' : subprocess.PIPE,
+            'stderr' : subprocess.STDOUT,
+            'universal_newlines' : True,
+        }
+
+        if PY3:
+            # start_new_session was added in python 3.2
+            # Use 'start_new_session' to change the process(forked) group id to itself
+            # so os.killpg with proc.pid can be used.
+            # This parameter does nothing on Windows.
+            self._popenArgs['start_new_session'] = True
+
+    def _communicate(self):
+        stdout, stderr = self._proc.communicate()
+        return self._proc.returncode, stdout, stderr
+
+    def _communicateCallback(self, callback):
+        proc = self._proc
+        while True:
+            noData = True
+            if proc.stdout:
+                line = proc.stdout.readline()
+                if line:
+                    noData = False
+                    callback(line, err = False)
+            if proc.stderr:
+                line = proc.stderr.readline()
+                if line:
+                    noData = False
+                    callback(line, err = True)
+            if noData and proc.poll() is not None:
+                break
+
+        if proc.stdout:
+            proc.stdout.close()
+        if proc.stderr:
+            proc.stderr.close()
+        return proc.returncode
+
+    def run(self, cwd = None, env = None, timeout = None, outCallback = None):
+        """
+        Run command.
+        Parameter outCallback can be used to handle stdout/stderr line by line
+        without waiting for a process to exit.
+        Returns tuple (exitcode, stdout, stderr) or exitcode if outCallback is not None.
+        """
+
+        kwargs = self._popenArgs
+        kwargs.update({
+            'cwd' : cwd,
+            'env' : env,
+        })
+
+        self._proc = subprocess.Popen(self._cmdLine, **kwargs)
+
+        timer = None
+        if timeout is not None:
+            self._timeoutExpired = False
+
+            def killProc(self):
+                proc = self._proc
+                if kwargs.get('start_new_session') and hasattr(os, 'killpg'):
+                    # If 'shell' is true then killing of current process is killing of
+                    # executed shell but not childs.
+                    # Unix only.
+                    os.killpg(proc.pid, signal.SIGKILL)
+                else:
+                    proc.kill()
+                self._timeoutExpired = True
+
+            timer = threading.Timer(timeout, killProc, args = [self])
+            timer.start()
+
+        if outCallback is None:
+            result = self._communicate()
+        else:
+            result = self._communicateCallback(outCallback)
+
+        if self._timeoutExpired:
+            stdout = ''
+            if outCallback is None:
+                stdout = result[1]
+            raise ZenMakeProcessTimeoutExpired(self._origCmdLine, timeout, stdout)
+
+        if timer:
+            timer.cancel()
+
+        # release Popen object
+        self._proc = None
+        return result
+
+def runCmd(cmdLine, cwd = None, env = None, shell = False,
+           timeout = None, outCallback = None):
     """
     Run external command in a subprocess.
-    Returns tuple (exitcode, stdout, stderr).
+    Parameter outCallback can be used to handle stdout/stderr line by line
+    without waiting for a process to exit.
+    Returns tuple (exitcode, stdout, stderr) or exitcode if outCallback is not None.
     """
 
-    origCmdLine = cmdLine
-    cmdAsStr = isinstance(cmdLine, stringtype)
-    if shell and not cmdAsStr:
-        cmdLine = ' '.join(cmdLine)
-    elif not shell and cmdAsStr:
-        shell = cmdHasShellSymbols(cmdLine)
-        if not shell:
-            cmdLine = shlex.split(cmdLine)
+    # pylint: disable = too-many-arguments
 
-    kwargs = {
-        'cwd' : cwd,
-        'shell' : shell,
-        'stdout' : subprocess.PIPE,
-        'stderr' : subprocess.STDOUT,
-        'env' : env,
-        'universal_newlines' : True,
-    }
-
-    ckwargs = {}
-
-    if PROCESS_TIMEOUT_SUPPORTED:
-        ckwargs['timeout'] = timeout
-
-    proc = subprocess.Popen(cmdLine, **kwargs)
-
-    try:
-        stdout, stderr = proc.communicate(**ckwargs)
-    except TimeoutExpired:
-        proc.kill()
-        stdout, stderr = proc.communicate()
-        raise ZenMakeProcessTimeoutExpired(origCmdLine, timeout, stdout)
-
-    return proc.returncode, stdout, stderr
+    procCmd = ProcCmd(cmdLine, shell)
+    return procCmd.run(cwd, env, timeout, outCallback)

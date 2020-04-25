@@ -86,7 +86,7 @@ def runZm(self, cmdline, env = None):
         'env' : _env,
         'timeout' : 60 * 15,
     }
-    exitcode, stdout, stderr = utils.runExternalCmd(cmdLine, **kwargs)
+    exitcode, stdout, stderr = utils.runCmd(cmdLine, **kwargs)
 
     self.zm = dict(
         stdout = stdout,

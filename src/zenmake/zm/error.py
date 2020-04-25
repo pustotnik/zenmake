@@ -80,7 +80,9 @@ class ZenMakeProcessTimeoutExpired(ZenMakeError):
         self.cmd = cmd
         self.timeout = timeout
         self.output = output
-        msg = "Timeout for command %r expired. Timeout: %d sec." % (cmd, timeout)
-        msg += '\nCaptured output:\n'
-        msg += output
+        msg = "Timeout (%d sec.) for command expired." % timeout
+        msg += "\nCommand: %r" % cmd
+        if output:
+            msg += '\nCaptured output:\n'
+            msg += output
         super(ZenMakeProcessTimeoutExpired, self).__init__(msg)
