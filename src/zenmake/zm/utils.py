@@ -48,7 +48,7 @@ PLATFORM = platform()
 
 def asmethod(cls, methodName = None, wrap = False, callOrigFirst = True):
     """
-    Decorator to replace/attach method to any existing class
+    Decorator to replace/attach/wrap method to any existing class
     """
 
     def decorator(func):
@@ -345,7 +345,7 @@ class ProcCmd(object):
     Class to run external command in a subprocess
     """
 
-    def __init__(self, cmdLine, shell = False):
+    def __init__(self, cmdLine, shell = False, stdErrToOut = True):
 
         self._origCmdLine = cmdLine
 
@@ -363,9 +363,12 @@ class ProcCmd(object):
         self._popenArgs = {
             'shell' : shell,
             'stdout' : subprocess.PIPE,
-            'stderr' : subprocess.STDOUT,
+            'stderr' : subprocess.PIPE,
             'universal_newlines' : True,
         }
+
+        if stdErrToOut:
+            self._popenArgs['stderr'] = subprocess.STDOUT
 
         if PY3:
             # start_new_session was added in python 3.2
@@ -433,6 +436,8 @@ class ProcCmd(object):
                 self._timeoutExpired = True
 
             timer = threading.Timer(timeout, killProc, args = [self])
+            # allow entire program to exit on unexpected exception like KeyboardInterrupt
+            timer.daemon = True
             timer.start()
 
         if outCallback is None:
@@ -454,7 +459,7 @@ class ProcCmd(object):
         return result
 
 def runCmd(cmdLine, cwd = None, env = None, shell = False,
-           timeout = None, outCallback = None):
+           timeout = None, stdErrToOut = True, outCallback = None):
     """
     Run external command in a subprocess.
     Parameter outCallback can be used to handle stdout/stderr line by line
@@ -464,5 +469,5 @@ def runCmd(cmdLine, cwd = None, env = None, shell = False,
 
     # pylint: disable = too-many-arguments
 
-    procCmd = ProcCmd(cmdLine, shell)
+    procCmd = ProcCmd(cmdLine, shell, stdErrToOut)
     return procCmd.run(cwd, env, timeout, outCallback)
