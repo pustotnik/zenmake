@@ -576,14 +576,12 @@ def areToolchainEnvVarsAreChanged(zmMetaConf):
 
     return False
 
-def isBuildTypeConfigured(bconfManager):
+def isBuildTypeConfigured(bconfPaths, buildtype):
     """
     Detect that data for current buildtype is configured.
     """
 
-    rootbconf  = bconfManager.root
-    buildtype  = rootbconf.selectedBuildType
-    zmcachedir = rootbconf.confPaths.zmcachedir
+    zmcachedir = bconfPaths.zmcachedir
 
     cachePath = makeTasksCachePath(zmcachedir, buildtype)
     if not db.exists(cachePath):
@@ -591,7 +589,7 @@ def isBuildTypeConfigured(bconfManager):
 
     return True
 
-def needToConfigure(bconfManager, zmMetaConf):
+def needToConfigure(zmMetaConf, bconfPaths, buildtype):
     """
     Detect if it's needed to run 'configure' command
     """
@@ -599,7 +597,7 @@ def needToConfigure(bconfManager, zmMetaConf):
     if zmMetaConf.zmversion != version.current():
         return True
 
-    rootdir = bconfManager.root.rootdir
+    rootdir = bconfPaths.rootdir
     if zmMetaConf.rundir != rootdir or zmMetaConf.platform != PLATFORM:
         return True
 
@@ -609,7 +607,7 @@ def needToConfigure(bconfManager, zmMetaConf):
     if areToolchainEnvVarsAreChanged(zmMetaConf):
         return True
 
-    if not isBuildTypeConfigured(bconfManager):
+    if not isBuildTypeConfigured(bconfPaths, buildtype):
         return True
 
     return False

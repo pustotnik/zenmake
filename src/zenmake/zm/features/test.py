@@ -90,9 +90,9 @@ class TaskItem(object):
 
 def _wrapNeedToConfigure(_needToConfigure):
 
-    def execute(bconfManager, zmMetaConf):
+    def execute(zmMetaConf, bconfPaths, buildtype):
 
-        if _needToConfigure(bconfManager, zmMetaConf):
+        if _needToConfigure(zmMetaConf, bconfPaths, buildtype):
             return True
         if not _shared.withTests:
             return False

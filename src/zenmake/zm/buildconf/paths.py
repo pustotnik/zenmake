@@ -24,7 +24,7 @@ class ConfPaths(object):
 
     __slots__ = (
         'buildconffile', 'buildconfdir', 'buildroot', 'realbuildroot',
-        'startdir', 'buildout', 'wscripttop', 'wscriptout',
+        'rootdir', 'startdir', 'buildout', 'wscripttop', 'wscriptout',
         'wafcachedir', 'wafcachefile', 'zmcachedir', 'zmmetafile',
     )
 
@@ -40,6 +40,7 @@ class ConfPaths(object):
         # See buildconf.Config
         self.buildconffile = bconf.path
         self.buildconfdir  = bconf.confdir
+        self.rootdir       = bconf.rootdir
         self.startdir      = buildconf.startdir
         self.buildroot     = buildconf.buildroot
         self.realbuildroot = buildconf.realbuildroot

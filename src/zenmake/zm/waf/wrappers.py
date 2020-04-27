@@ -105,7 +105,7 @@ def wrapBldCtxAutoConf(method):
             runConfigAndCommand(ctx)
             return
 
-        if assist.needToConfigure(bconfMngr, zmMeta):
+        if assist.needToConfigure(zmMeta, bconfPaths, bconf.selectedBuildType):
             runConfigAndCommand(ctx)
             return
 
