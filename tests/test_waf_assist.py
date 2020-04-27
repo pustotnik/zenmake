@@ -50,8 +50,8 @@ def testWriteZenMakeMetaFile(tmpdir):
     monitFiles = [x.path for x in fakeConfManager.configs]
 
     assert not isfile(fakeConfPaths.zmmetafile)
-    taskNames = ['task1', 'task2']
-    assist.writeZenMakeMetaFile(fakeConfPaths, monitFiles, taskNames)
+    attrs = {'var': 1, 'd': 'zxc'}
+    assist.writeZenMakeMetaFile(fakeConfPaths, monitFiles, attrs)
     assert isfile(fakeConfPaths.zmmetafile)
 
     dbfile = db.PyDBFile(fakeConfPaths.zmmetafile, extension = '')
@@ -62,8 +62,8 @@ def testWriteZenMakeMetaFile(tmpdir):
     assert 'monitfiles' in cfgenv
     assert cfgenv.monitfiles == [ str(buildconffile), str(buildconffile2) ]
     assert 'monithash' in cfgenv
-    assert 'tasknames' in cfgenv
-    assert sorted(cfgenv['tasknames']) == sorted(taskNames)
+    assert 'attrs' in cfgenv
+    assert cfgenv.attrs == attrs
 
     _hash = utils.hashFiles(cfgenv.monitfiles)
     assert cfgenv.monithash == _hash

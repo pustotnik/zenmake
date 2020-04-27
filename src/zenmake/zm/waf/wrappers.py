@@ -7,11 +7,10 @@
 """
 
 import os
-import sys
 import subprocess
 
 from waflib import Context, Configure, Utils
-from zm.db import exists as dbexists
+from zm.constants import PYTHON_EXE
 from zm.pypkg import PkgPath
 from zm.waf import assist, launcher
 
@@ -21,24 +20,6 @@ _loadZenMakeMetaFile = assist.loadZenMakeMetaFile
 # Force to turn off internal WAF autoconfigure decorator.
 # It's just to rid of needless work and to save working time.
 Configure.autoconfig = False
-
-def _isBuildTypeNotConfigured(zmMeta, bconfMngr):
-
-    rootbconf  = bconfMngr.root
-    buildtype  = rootbconf.selectedBuildType
-    zmcachedir = rootbconf.confPaths.zmcachedir
-
-    cachePath = assist.makeTasksCachePath(zmcachedir, buildtype)
-    if not dbexists(cachePath):
-        return True
-
-    taskNames = []
-    for bconf in bconfMngr.configs:
-        taskNames.extend(list(bconf.tasks.keys()))
-
-    taskNames = set(taskNames)
-    prevTaskNames = set(zmMeta.tasknames)
-    return not taskNames.issubset(prevTaskNames)
 
 def _handleNoLockInTop(ctx, envGetter):
 
@@ -124,15 +105,7 @@ def wrapBldCtxAutoConf(method):
             runConfigAndCommand(ctx)
             return
 
-        # pylint: disable = no-member
-        if zmMeta.rundir != bconfPaths.startdir:
-            runConfigAndCommand(ctx)
-            return
-
-        if assist.isZmVersionChanged(zmMeta) or \
-                assist.areMonitoredFilesChanged(zmMeta) or \
-                assist.areToolchainEnvVarsAreChanged(zmMeta) or \
-                _isBuildTypeNotConfigured(zmMeta, bconfMngr):
+        if assist.needToConfigure(bconfMngr, zmMeta):
             runConfigAndCommand(ctx)
             return
 
@@ -159,7 +132,7 @@ def wrapUtilsGetProcess(_):
         if Utils.process_pool:
             return Utils.process_pool.pop()
 
-        cmd = [sys.executable, '-c', code]
+        cmd = [PYTHON_EXE, '-c', code]
         return subprocess.Popen(cmd, stdout = subprocess.PIPE,
                                 stdin = subprocess.PIPE, bufsize = 0)
 

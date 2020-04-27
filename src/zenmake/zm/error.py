@@ -48,6 +48,14 @@ class ZenMakeConfTypeError(ZenMakeConfError):
 class ZenMakeConfValueError(ZenMakeConfError):
     """Invalid buildconf param value error"""
 
+class ZenMakePathNotFoundError(ZenMakeError):
+    """ Path doesn't exist """
+
+    def __init__(self, path):
+        self.path = path
+        msg = "Path %r doesn't exist." % path
+        super(ZenMakePathNotFoundError, self).__init__(msg)
+
 class ZenMakeDirNotFoundError(ZenMakeError):
     """ Directory doesn't exist """
 
@@ -55,14 +63,6 @@ class ZenMakeDirNotFoundError(ZenMakeError):
         self.path = path
         msg = "Directory %r doesn't exist." % path
         super(ZenMakeDirNotFoundError, self).__init__(msg)
-
-class ZenMakeFileNotFoundError(ZenMakeError):
-    """ File doesn't exist """
-
-    def __init__(self, path):
-        self.path = path
-        msg = "File %r doesn't exist." % path
-        super(ZenMakeFileNotFoundError, self).__init__(msg)
 
 class ZenMakeProcessFailed(ZenMakeError):
     """ Process failed with exitcode """

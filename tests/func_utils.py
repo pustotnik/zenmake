@@ -12,7 +12,6 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-import sys
 import os
 import re
 import subprocess
@@ -31,7 +30,7 @@ from zm.autodict import AutoDict
 from zm.buildconf import loader as bconfloader
 from zm.buildconf.processing import ConfManager as BuildConfManager
 from zm.constants import ZENMAKE_BUILDMETA_FILENAME, PLATFORM, APPNAME
-from zm.constants import BUILDOUTNAME, WAF_CONFIG_LOG
+from zm.constants import BUILDOUTNAME, WAF_CONFIG_LOG, PYTHON_EXE
 from zm.features import TASK_TARGET_FEATURES
 from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES
 
@@ -42,7 +41,6 @@ isfile = os.path.isfile
 isdir = os.path.isdir
 
 ZM_BIN = cmn.ZENMAKE_DIR # it's a dir but it contains __main__.py
-PYTHON_EXE = sys.executable if sys.executable else 'python'
 PYTHON_VER = _platform.python_version()
 
 zmExes = {}

@@ -62,6 +62,7 @@ class ConfigurationContext(WafConfContext):
         self._toolchainEnvs = {}
         self._confCache = None
         self.monitFiles = []
+        self.zmMetaConfAttrs = {}
 
         self.validToolchainNames = assist.getValidPreDefinedToolchainNames()
 
@@ -752,9 +753,9 @@ class ConfigurationContext(WafConfContext):
             self.monitFiles.extend([x.path for x in self.bconfManager.configs])
             instanceCache['confpaths-added-to-monit'] = True
 
-        tasksDb = instanceCache.pop('tasksDb')
-        taskNames = list(tasksDb['tasks'].keys())
+        instanceCache.pop('tasksDb')
         WafContext.top_dir = self.srcnode.abspath()
         WafContext.out_dir = self.bldnode.abspath()
 
-        assist.writeZenMakeMetaFile(bconfPaths, self.monitFiles, taskNames)
+        assist.writeZenMakeMetaFile(bconfPaths, self.monitFiles,
+                                    self.zmMetaConfAttrs)

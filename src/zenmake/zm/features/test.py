@@ -19,6 +19,7 @@ from zm import log, cli, error
 from zm.autodict import AutoDict as _AutoDict
 from zm.features import precmd, postcmd
 from zm.deps import produceExternalDeps
+from zm.waf import assist
 
 # This module relies on module 'runcmd'. So module 'runcmd' must be loaded.
 # pylint: disable = unused-import
@@ -87,6 +88,22 @@ class TaskItem(object):
     def __ge__(self, other):
         return self.weight() >= other.weight()
 
+def _wrapNeedToConfigure(_needToConfigure):
+
+    def execute(bconfManager, zmMetaConf):
+
+        if _needToConfigure(bconfManager, zmMetaConf):
+            return True
+        if not _shared.withTests:
+            return False
+
+        testsConfigured = zmMetaConf.attrs.get('tests-configured', False)
+        return not testsConfigured
+
+    return execute
+
+assist.needToConfigure = _wrapNeedToConfigure(assist.needToConfigure)
+
 @postcmd('options')
 def postOpt(ctx):
     """ Extra init after wscript.options """
@@ -150,10 +167,13 @@ def postConf(conf):
 
     if _shared.withTests and not _shared.testsFound:
         log.warn('There are no tests to configure')
+        conf.zmMetaConfAttrs['tests-configured'] = True
         return
 
     for idx, bconf in enumerate(conf.bconfManager.configs):
         _postConf(bconf, idx)
+
+    conf.zmMetaConfAttrs['tests-configured'] = True
 
 def _postConf(bconf, bconfIndex):
 

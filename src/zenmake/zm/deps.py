@@ -330,12 +330,18 @@ def _checkTriggerPathsExist(ctx, rule):
             continue
 
         pathsDictParamsToList(paths)
-        paths = getNodesFromPathsDict(ctx, paths, rootdir, withDirs = True)
+        try:
+            paths = getNodesFromPathsDict(ctx, paths, rootdir, withDirs = True)
+            pathsExist = True
+        except error.ZenMakePathNotFoundError:
+            pathsExist = False
+            paths = None
+
         if triggerName == 'paths-exist':
-            if paths  and all(x.exists() for x in paths):
+            if paths and pathsExist:
                 return True
         else:
-            if not paths or any(not x.exists() for x in paths):
+            if not paths or not pathsExist:
                 return True
 
     return False

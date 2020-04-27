@@ -7,6 +7,7 @@
 """
 
 import os
+import sys
 import platform
 from zm.utils import platform as _platform
 
@@ -14,6 +15,8 @@ APPNAME = 'zenmake'
 CAP_APPNAME = 'ZenMake'
 AUTHOR = 'Alexander Magola'
 COPYRIGHT_ONE_LINE = '2019, 2020 %s' % AUTHOR
+
+PYTHON_EXE = sys.executable if sys.executable else 'python'
 
 DEFAULT_BUILDROOTNAME = 'build'
 DEFAULT_BUILDWORKNAME = '@bld'

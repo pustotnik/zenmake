@@ -18,7 +18,7 @@ from zm.autodict import AutoDict as _AutoDict
 from zm.pathutils import getNodesFromPathsDict
 from zm import utils, log, version, toolchains, db
 from zm.error import ZenMakeError, ZenMakeConfError
-from zm.error import ZenMakeDirNotFoundError, ZenMakeFileNotFoundError
+from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
 from zm.constants import TASK_FEATURE_ALIESES, PLATFORM
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
 from zm.features import SUPPORTED_TASK_FEATURES, resolveAliesesInFeatures
@@ -64,7 +64,7 @@ def getAllToolchainEnvVarNames():
 
     return envVarNames
 
-def writeZenMakeMetaFile(bconfPaths, monitfiles, taskNames):
+def writeZenMakeMetaFile(bconfPaths, monitfiles, attrs):
     """
     Write ZenMake meta file with some things like files
     monitored for changes.
@@ -72,8 +72,9 @@ def writeZenMakeMetaFile(bconfPaths, monitfiles, taskNames):
 
     zmMeta = _AutoDict()
     zmMeta.zmversion = version.current()
+    zmMeta.platform = PLATFORM
 
-    zmMeta.tasknames  = taskNames
+    zmMeta.attrs = attrs
     zmMeta.monitfiles = sorted(set(monitfiles))
     zmMeta.monithash  = utils.hashFiles(zmMeta.monitfiles)
 
@@ -454,7 +455,7 @@ def handleTaskSourceParam(ctx, src):
     except ZenMakeDirNotFoundError as ex:
         msg = "Directory %r for the 'source' doesn't exist." % ex.path
         raise ZenMakeError(msg)
-    except ZenMakeFileNotFoundError as ex:
+    except ZenMakePathNotFoundError as ex:
         msg = "Error in the file %r:" % bconf.path
         msg += "\n  File %r from the 'source' not found." % ex.path
         raise ZenMakeError(msg)
@@ -548,24 +549,24 @@ def isBuildConfFake(conf):
     """
     return conf.__name__.endswith('fakeconf')
 
-def areMonitoredFilesChanged(zmMetaConfSet):
+def areMonitoredFilesChanged(zmMetaConf):
     """
     Detect that current monitored files are changed.
     """
 
     try:
-        _hash = utils.hashFiles(zmMetaConfSet.monitfiles)
+        _hash = utils.hashFiles(zmMetaConf.monitfiles)
     except EnvironmentError:
         return True
 
-    return _hash != zmMetaConfSet.monithash
+    return _hash != zmMetaConf.monithash
 
-def areToolchainEnvVarsAreChanged(zmMetaConfSet):
+def areToolchainEnvVarsAreChanged(zmMetaConf):
     """
     Detect that current toolchain env vars are changed.
     """
 
-    lastEnvVars = zmMetaConfSet.toolenvs
+    lastEnvVars = zmMetaConf.toolenvs
     envVarNames = getAllToolchainEnvVarNames()
     for name in envVarNames:
         if name not in lastEnvVars:
@@ -575,12 +576,43 @@ def areToolchainEnvVarsAreChanged(zmMetaConfSet):
 
     return False
 
-def isZmVersionChanged(zmMetaConfSet):
+def isBuildTypeConfigured(bconfManager):
     """
-    Detect that current version of ZenMake was changed from last building .
+    Detect that data for current buildtype is configured.
     """
 
-    return zmMetaConfSet.zmversion != version.current()
+    rootbconf  = bconfManager.root
+    buildtype  = rootbconf.selectedBuildType
+    zmcachedir = rootbconf.confPaths.zmcachedir
+
+    cachePath = makeTasksCachePath(zmcachedir, buildtype)
+    if not db.exists(cachePath):
+        return False
+
+    return True
+
+def needToConfigure(bconfManager, zmMetaConf):
+    """
+    Detect if it's needed to run 'configure' command
+    """
+
+    if zmMetaConf.zmversion != version.current():
+        return True
+
+    rootdir = bconfManager.root.rootdir
+    if zmMetaConf.rundir != rootdir or zmMetaConf.platform != PLATFORM:
+        return True
+
+    if areMonitoredFilesChanged(zmMetaConf):
+        return True
+
+    if areToolchainEnvVarsAreChanged(zmMetaConf):
+        return True
+
+    if not isBuildTypeConfigured(bconfManager):
+        return True
+
+    return False
 
 def isBuildConfChanged(buildconf, buildroot):
     """

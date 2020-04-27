@@ -11,7 +11,7 @@ import os
 from waflib.Node import exclude_regs as DEFAULT_PATH_EXCLUDES
 from zm.pyutils import PY2, maptype, stringtype
 from zm.utils import toList, toListSimple
-from zm.error import ZenMakeDirNotFoundError, ZenMakeFileNotFoundError
+from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
 
 DEFAULT_PATH_EXCLUDES = toListSimple(DEFAULT_PATH_EXCLUDES)
 
@@ -364,9 +364,10 @@ def getNodesFromPathsDict(ctx, param, rootdir, withDirs = False, excludeExtraPat
 
     result = []
     for file in files:
-        v = startNode.make_node(file)
+        node = startNode if not _isabs(file) else ctx.root
+        v = node.make_node(file)
         if not v.exists():
-            raise ZenMakeFileNotFoundError(v.abspath())
+            raise ZenMakePathNotFoundError(v.abspath())
         result.append(v)
 
     return result
