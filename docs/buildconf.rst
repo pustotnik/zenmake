@@ -219,6 +219,11 @@ tasks
         Parameters in this variable can be overridden by parameters in
         buildtypes_ and matrix_.
 
+    .. note::
+        Name of a task can not contain symbol ``:``. You can use
+        parameter ``target`` if you want to have this symbol in
+        resulting target file names.
+
 .. _buildconf-buildtypes:
 
 buildtypes

@@ -10,7 +10,7 @@ import os
 from collections import defaultdict
 from copy import deepcopy
 
-from zm.constants import PLATFORM, KNOWN_PLATFORMS
+from zm.constants import PLATFORM, KNOWN_PLATFORMS, DEPNAME_DELIMITER
 from zm.constants import CWD, INVALID_BUILDTYPES, CONFTEST_DIR_PREFIX
 from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeLogicError, ZenMakeConfError
@@ -376,6 +376,11 @@ class Config(object):
         names = list(self._conf.tasks.keys())
         for entry in self._conf.matrix:
             names.extend(toList(entry.get('for', {}).get('task', [])))
+        for name in names:
+            if DEPNAME_DELIMITER in name:
+                msg = 'Name of task %r is invalid.' % name
+                msg += ' Name can not contain symbol %r' % DEPNAME_DELIMITER
+                raise ZenMakeConfError(msg, confpath = self.path)
         names = set(names)
         self._meta.tasknames = names
 

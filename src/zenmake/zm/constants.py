@@ -18,6 +18,7 @@ COPYRIGHT_ONE_LINE = '2019, 2020 %s' % AUTHOR
 
 PYTHON_EXE = sys.executable if sys.executable else 'python'
 
+DEPNAME_DELIMITER = ':'
 DEFAULT_BUILDROOTNAME = 'build'
 DEFAULT_BUILDWORKNAME = '@bld'
 #BUILDOUTNAME = 'out'
