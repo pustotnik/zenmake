@@ -350,12 +350,19 @@ class ProcCmd(object):
         self._origCmdLine = cmdLine
 
         cmdAsStr = isinstance(cmdLine, stringtype)
-        if shell and not cmdAsStr:
-            cmdLine = ' '.join(cmdLine)
-        elif not shell and cmdAsStr:
-            shell = cmdHasShellSymbols(cmdLine)
+        if PLATFORM == 'windows':
+            # On Windows, if args is a sequence, it will be converted to a
+            # string in 'subprocess' module regardless of 'shell' value.
+            # So on Windows cmdLine can be used as a string in any case.
             if not shell:
-                cmdLine = shlex.split(cmdLine)
+                shell = cmdHasShellSymbols(cmdLine)
+        else:
+            if shell and not cmdAsStr:
+                cmdLine = ' '.join(cmdLine)
+            elif not shell and cmdAsStr:
+                shell = cmdHasShellSymbols(cmdLine)
+                if not shell:
+                    cmdLine = shlex.split(cmdLine)
 
         self._cmdLine = cmdLine
         self._proc = None
