@@ -60,6 +60,7 @@ class ConfigurationContext(WafConfContext):
 
         self._loadedTools = {}
         self._toolchainEnvs = {}
+        self._btasks = None
         self._confCache = None
         self.monitFiles = []
         self.zmMetaConfAttrs = {}
@@ -125,6 +126,25 @@ class ConfigurationContext(WafConfContext):
                 indexes['last-idx'] = idx = lastIdx + 1
                 indexes[key] = idx
         return idx
+
+    def _mergeTasks(self):
+
+        tasks = {}
+        for bconf in self.bconfManager.configs:
+            tasks.update(bconf.tasks)
+
+        self._btasks = tasks
+
+    def _postCheckTasks(self):
+
+        allTasks = self._btasks
+        for bconf in self.bconfManager.configs:
+            for taskParams in viewvalues(bconf.tasks):
+                for localDep in taskParams.get('use', []):
+                    if localDep not in allTasks:
+                        taskName = taskParams['name']
+                        msg = 'Task %r: local dependency %r not found.' % (taskName, localDep)
+                        raise error.ZenMakeConfError(msg, confpath = bconf.path)
 
     def _loadTool(self, tool, **kwargs):
 
@@ -248,10 +268,7 @@ class ConfigurationContext(WafConfContext):
         # aren't needed. And therefore it's better to save variants in
         # different files and load only needed ones.
 
-        # conf cache of tasks for selected buildtype
-        tasks = {}
-        for _bconf in bconfManager.configs:
-            tasks.update(_bconf.tasks)
+        tasks = self._btasks
 
         envs = {}
         for taskParams in viewvalues(tasks):
@@ -745,6 +762,8 @@ class ConfigurationContext(WafConfContext):
         produceExternalDeps(self)
         WafContext.Context.execute(self)
 
+        self._mergeTasks()
+        self._postCheckTasks()
         self.store()
 
         instanceCache = self.zmcache()
@@ -753,7 +772,6 @@ class ConfigurationContext(WafConfContext):
             self.monitFiles.extend([x.path for x in self.bconfManager.configs])
             instanceCache['confpaths-added-to-monit'] = True
 
-        instanceCache.pop('tasksDb')
         WafContext.top_dir = self.srcnode.abspath()
         WafContext.out_dir = self.bldnode.abspath()
 
