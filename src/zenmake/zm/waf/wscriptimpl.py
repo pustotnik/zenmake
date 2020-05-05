@@ -21,15 +21,17 @@ __all__ = [
 
 import os
 
-from waflib.Build import BuildContext, CFG_FILES
+from waflib.Build import BuildContext
 from zm.pyutils import viewitems, viewvalues
-from zm.constants import WAF_CACHE_DIRNAME, CONFTEST_DIR_PREFIX
+from zm.constants import WAF_CACHE_DIRNAME, WAF_CFG_FILES_ENV_KEY
+from zm.constants import WAF_CONFIG_LOG, CONFTEST_DIR_PREFIX
 from zm import cli, error, log
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
 from zm.waf import assist
 
 joinpath = os.path.join
 abspath = os.path.abspath
+realpath = os.path.realpath
 normpath = os.path.normpath
 
 # These variables are set in another place.
@@ -114,14 +116,16 @@ def configure(conf):
 def _setupClean(bld, bconfPaths):
 
     preserveFiles = []
+    envKey = WAF_CFG_FILES_ENV_KEY
     for env in bld.all_envs.values():
-        preserveFiles.extend(bld.root.make_node(f) for f in env[CFG_FILES])
-    preserveFiles.append(bld.root.make_node(bconfPaths.zmmetafile))
+        preserveFiles.extend(x for x in env[envKey])
+    preserveFiles.append(bconfPaths.zmmetafile)
+    preserveFiles = [bld.root.make_node(realpath(x)) for x in preserveFiles]
 
-    btypeDir = bld.bconfManager.root.selectedBuildTypeDir
+    btypeDir = realpath(bld.bconfManager.root.selectedBuildTypeDir)
     btypeNode = bld.root.make_node(btypeDir)
 
-    excludes = '.lock* config.log'
+    excludes = WAF_CONFIG_LOG
     excludes += ' %s*/** %s/*' % (CONFTEST_DIR_PREFIX, WAF_CACHE_DIRNAME)
     removeFiles = set(btypeNode.ant_glob('**/*', excl = excludes, quiet = True))
     removeFiles.difference_update(preserveFiles)
