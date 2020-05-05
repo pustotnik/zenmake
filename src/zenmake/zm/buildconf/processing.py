@@ -306,7 +306,7 @@ class Config(object):
         parentConf = self._parent._conf if self._parent else None
 
         def mergeDict(param):
-            if not parentConf:
+            if parentConf is None:
                 return
             _current = getattr(currentConf, param, {})
             _parent = getattr(parentConf, param, {})
@@ -320,14 +320,20 @@ class Config(object):
 
             setattr(currentConf, param, _new)
 
-        # startdir, options, subdirs - they are not merged
-        mergedParams.update(('startdir', 'options', 'subdirs'))
+        # startdir, subdirs - they are not merged
+        mergedParams.update(('startdir', 'subdirs'))
+
+        # features, options - they are not merged and always use parent values
+        for param in ('features', 'options'):
+            if parentConf is not None:
+                setattr(currentConf, param, getattr(parentConf, param))
+            mergedParams.add(param)
 
         # buildroot, realbuildroot - see _makeBuildDirParams
         mergedParams.update(('buildroot', 'realbuildroot'))
 
-        # project, features, conditions, 'dependencies'
-        for param in ('project', 'features', 'conditions', 'dependencies'):
+        # project, conditions, 'dependencies'
+        for param in ('project', 'conditions', 'dependencies'):
             mergeDict(param)
             mergedParams.add(param)
 

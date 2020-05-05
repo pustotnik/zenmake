@@ -37,7 +37,7 @@ from the parent :ref:`buildconf<buildconf>`. But some parameters are not changed
 
 These parameters can be set only in the the top-level buildconf:
 
-    ``options``, ``buildroot``, ``realbuildroot``
+    ``buildroot``, ``realbuildroot``, ``features``, ``options``
 
 Also default build type can be set only in the top-level buildconf.
 
