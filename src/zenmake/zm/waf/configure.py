@@ -564,41 +564,17 @@ class ConfigurationContext(WafConfContext):
         rarely than command 'build'.
         """
 
-        btypeDir = bconf.selectedBuildTypeDir
         startdir = bconf.startdir
-        taskName = taskParams['name']
-
-        normalizeTarget = taskParams.get('normalize-target-name', False)
-        target = taskParams.get('target', taskName)
-        if normalizeTarget:
-            target = utils.normalizeForFileName(target, spaceAsDash = True)
-        targetPath = joinpath(btypeDir, target)
 
         assist.handleTaskIncludesParam(taskParams, startdir)
         assist.handleTaskLibPathParams(taskParams)
         self._handleTaskExportDefinesParam(taskParams)
         self._handleMonitLibs(taskParams)
 
-        taskParams['target'] = targetPath
-
         #counter for the object file extension
         taskParams['objfile-index'] = self._calcObjectsIndex(bconf, taskParams)
 
-        prjver = bconf.projectVersion
-        if prjver and 'ver-num' not in taskParams:
-            taskParams['ver-num'] = prjver
-
-        targetKind = taskParams['$tkind']
-        pattern = taskParams['$tpatterns'].get(targetKind)
-        if pattern is not None:
-            realTarget = joinpath(btypeDir, pattern % target)
-        else:
-            realTarget = targetPath
-
-        taskParams['$real.target'] = realTarget
-        taskParams['$runnable'] = targetKind == 'program'
-
-    def _setTaskTargetAttrs(self, taskParams, taskEnv):
+    def _setupTaskTarget(self, taskParams, taskEnv, btypeDir):
 
         features = taskParams['features']
         targetKind = lang = None
@@ -610,27 +586,42 @@ class ConfigurationContext(WafConfContext):
         taskParams['$tlang'] = lang
         taskParams['$tkind'] = targetKind
 
-        if not lang:
-            taskParams['$tpatterns'] = {}
-            return
-
         patterns = {}
-        for kind in TASK_TARGET_KINDS:
-            key = '%s%s_PATTERN' % (lang, kind)
-            pattern = taskEnv[key]
-            if pattern:
-                patterns[kind] = pattern
+        if lang:
+            for kind in TASK_TARGET_KINDS:
+                key = '%s%s_PATTERN' % (lang, kind)
+                pattern = taskEnv[key]
+                if pattern:
+                    patterns[kind] = pattern
         taskParams['$tpatterns'] = patterns
 
-    def _makeTaskEnvs(self, bconf):
+        taskName = taskParams['name']
+
+        normalizeTarget = taskParams.get('normalize-target-name', False)
+        target = taskParams.get('target', taskName)
+        if normalizeTarget:
+            target = utils.normalizeForFileName(target, spaceAsDash = True)
+        targetPath = joinpath(btypeDir, target)
+        taskParams['target'] = targetPath
+
+        env = self.all_envs[taskParams['$task.variant']]
+        pattern = patterns.get(targetKind)
+        realTarget = assist.makeTargetRealName(targetPath, targetKind, pattern,
+                                               env, taskParams.get('ver-num'))
+
+        taskParams['$real.target'] = realTarget
+        taskParams['$runnable'] = targetKind == 'program'
+
+    def _preconfigureTasks(self, bconf):
 
         buildtype = bconf.selectedBuildType
+        btypeDir = bconf.selectedBuildTypeDir
         tasks = bconf.tasks
+        prjver = bconf.projectVersion
 
         emptyEnv = ConfigSet()
         toolchainEnvs = self.getToolchainEnvs()
 
-        # Prepare task envs based on toolchains envs
         for taskParams in viewvalues(tasks):
 
             taskName = taskParams['name']
@@ -661,11 +652,15 @@ class ConfigurationContext(WafConfContext):
 
             # Create env for task
             taskEnv = assist.deepcopyEnv(baseEnv)
-            self._setTaskTargetAttrs(taskParams, taskEnv)
 
             # conf.setenv with unknown name or non-empty env makes deriving or
             # creates the new object and it is not really needed here
             self.setDirectEnv(taskVariant, taskEnv)
+
+            if prjver and 'ver-num' not in taskParams:
+                taskParams['ver-num'] = prjver
+
+            self._setupTaskTarget(taskParams, taskEnv, btypeDir)
 
     def preconfigure(self):
         """
@@ -700,9 +695,7 @@ class ConfigurationContext(WafConfContext):
         assist.applyInstallPaths(self.all_envs[''], cli.selected)
 
         for bconf in configs:
-            self._makeTaskEnvs(bconf)
-
-        self.zmdepconfs = configureExternalDeps(self.bconfManager)
+            self._preconfigureTasks(bconf)
 
         # switch current env to the root env
         self.setenv('')

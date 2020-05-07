@@ -10,14 +10,42 @@ import sys
 
 from waflib import Utils
 from waflib.TaskGen import after_method, feature
-# pylint: disable = unused-import
-from waflib.Tools import ccroot # don't remove
-# pylint: enable = unused-import
+from waflib.Tools import ccroot as wafccroot # don't remove
 
-from zm.utils import toList, toListSimple, uniqueListWithOrder
+from zm.utils import asmethod, toList, toListSimple, uniqueListWithOrder
+from zm.features import TASK_TARGET_FEATURES_TO_LANG
+from zm.waf.assist import makeTargetRealName
 
 # waflib.Tools.ccroot must be always imported
 assert 'waflib.Tools.ccroot' in sys.modules
+
+@asmethod(wafccroot.link_task, 'add_target')
+def _addTargetToLinkTask(self, target):
+
+    if isinstance(target, str):
+        tgen = self.generator
+        baseNode = tgen.path
+
+        # This code was copied from Waf but it's not found where it's used.
+        # So this code is disabled while nobody reports a problem with it.
+        #if target.startswith('#'):
+        #    # for those who like flat structures
+        #    target = target[1:]
+        #    baseNode = tgen.bld.bldnode
+
+        zmTaskParams = getattr(tgen, 'zm-task-params', {})
+        # small optimization: don't calculate target if it exists already
+        _target = zmTaskParams.get('$real.target')
+        if not _target:
+            targetFeature = self.__class__.__name__
+            pattern = self.env[targetFeature + '_PATTERN']
+            lang = TASK_TARGET_FEATURES_TO_LANG[targetFeature]
+            targetKind = targetFeature[len(lang):]
+            _target = makeTargetRealName(target, targetKind, pattern,
+                                         self.env, getattr(tgen, 'vnum', None))
+        target = baseNode.find_or_declare(_target)
+
+    self.set_outputs(target)
 
 @feature('c', 'cxx', 'd', 'fc', 'javac', 'cs', 'uselib', 'asm')
 @after_method('process_use')

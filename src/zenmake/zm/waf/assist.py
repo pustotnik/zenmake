@@ -13,21 +13,22 @@ import re
 from copy import deepcopy
 
 from waflib.ConfigSet import ConfigSet
+from zm.constants import TASK_FEATURE_ALIESES, PLATFORM
 from zm.pyutils import viewitems, stringtype, _unicode, _encode
 from zm.autodict import AutoDict as _AutoDict
 from zm.pathutils import getNodesFromPathsDict
-from zm import utils, log, version, toolchains, db
 from zm.error import ZenMakeError, ZenMakeConfError
 from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
-from zm.constants import TASK_FEATURE_ALIESES, PLATFORM
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
 from zm.features import SUPPORTED_TASK_FEATURES, resolveAliesesInFeatures
 from zm.features import ToolchainVars, getLoadedFeatures
+from zm import utils, log, version, toolchains, db
 
-joinpath = os.path.join
-normpath = os.path.normpath
-relpath  = os.path.relpath
-isabs    = os.path.isabs
+joinpath  = os.path.join
+splitpath = os.path.split
+normpath  = os.path.normpath
+relpath   = os.path.relpath
+isabs     = os.path.isabs
 
 toList       = utils.toList
 toListSimple = utils.toListSimple
@@ -115,6 +116,42 @@ def makeTaskVariantName(buildtype, taskName):
     name = _unicode(taskName).strip().replace(' ', '_')
     name = '%s.%s' % (buildtype, _RE_TASKVARIANT_NAME.sub('.', name))
     return _encode(name)
+
+def makeTargetRealName(target, targetKind, pattern, env, verNum):
+    """
+    Make real file/path name of the target
+    """
+
+    if targetKind is None:
+        return target
+
+    if not pattern:
+        pattern = '%s'
+
+    dirpath, name = splitpath(target)
+
+    if verNum and targetKind.endswith('shlib'):
+        def getVerNumbers(verNum):
+            numbers = verNum.split('.')
+            if not numbers:
+                raise ZenMakeError("%r is invalid version number" % verNum)
+            return numbers
+
+        if env.DEST_BINFMT == 'pe':
+            nums = getVerNumbers(verNum)
+            # include the version in the dll file name
+            name = '%s-%s' % (name, nums[0])
+        elif env.DEST_OS == 'openbsd':
+            nums = getVerNumbers(verNum)
+            pattern = '%s.%s' % (pattern, nums[0])
+            if len(nums) >= 2:
+                pattern += '.%s' % nums[1]
+
+    target = pattern % name
+    if dirpath:
+        target = '%s%s%s' % (dirpath, os.sep, target)
+
+    return target
 
 def copyEnv(env):
     """

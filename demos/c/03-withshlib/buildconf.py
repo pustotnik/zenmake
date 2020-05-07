@@ -7,6 +7,7 @@ tasks = {
         'conftests'  : [
             dict(act = 'check-headers', names = 'stdio.h'),
         ],
+        'ver-num' : '0.1.2',
     },
     'test' : {
         'features' : 'cprogram',
