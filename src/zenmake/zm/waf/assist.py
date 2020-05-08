@@ -430,8 +430,7 @@ def handleTaskIncludesParam(taskParams, startdir):
 
     if 'includes' in taskParams:
         param = taskParams['includes']
-        param.startdir = startdir
-        includes = param.relpaths()
+        includes = param.relpaths(startdir)
     else:
         includes = []
 
@@ -451,8 +450,7 @@ def handleTaskIncludesParam(taskParams, startdir):
     if isinstance(param, bool):
         exportIncludes = includes if param else None
     else:
-        param.startdir = startdir
-        exportIncludes = param.relpaths()
+        exportIncludes = param.relpaths(startdir)
 
     if not exportIncludes:
         taskParams.pop('export-includes', None)

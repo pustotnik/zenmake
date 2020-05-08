@@ -80,12 +80,12 @@ class PathsParam(object):
             else:
                 raise NotImplementedError
 
+        if rootdir is not None:
+            startdir = _normpath(_joinpath(rootdir, startdir))
+
         value = [ getNativePath(x) for x in value ]
         # value can contain absolute and/or relative paths
         value = [ _normpath(_relpath(x, startdir) if _isabs(x) else x) for x in value ]
-
-        if rootdir is not None:
-            startdir = _normpath(_joinpath(rootdir, startdir))
 
         self._startdir = startdir
 
@@ -233,10 +233,13 @@ class PathsParam(object):
 
         return abspaths
 
-    def relpaths(self):
+    def relpaths(self, applyStartDir = None):
         """
         Get relative paths in sorted order
         """
+
+        if applyStartDir is not None:
+            self.startdir = applyStartDir
 
         relpaths = self._cache.get('relpaths')
 
@@ -259,14 +262,14 @@ class PathsParam(object):
         assert self._kind == 'path'
         return self.abspaths()[0]
 
-    def relpath(self):
+    def relpath(self, applyStartDir = None):
         """
         Get relative path if kind == 'path'.
         This method is for convenience only.
         """
 
         assert self._kind == 'path'
-        return self.relpaths()[0]
+        return self.relpaths(applyStartDir)[0]
 
     def __repr__(self):
         _repr = "%s(value = %r, startdir = %r, kind = %r)" % \
