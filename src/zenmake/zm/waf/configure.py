@@ -146,6 +146,16 @@ class ConfigurationContext(WafConfContext):
                         msg = 'Task %r: local dependency %r not found.' % (taskName, localDep)
                         raise error.ZenMakeConfError(msg, confpath = bconf.path)
 
+    def _finishToolConfig(self, toolenv):
+
+        # Waf skips all or some of these variables for toolchains like fortran, D, etc.
+        # And therefore 'vnum' feature doesn't work for some toolchains.
+        # This code fixes this problem.
+        if not toolenv.DEST_OS:
+            toolenv.DEST_OS = utils.getDefaultDestOS()
+        if not toolenv.DEST_BINFMT:
+            toolenv.DEST_BINFMT = utils.getDestBinFormatByOS(toolenv.DEST_OS)
+
     def _loadTool(self, tool, **kwargs):
 
         tooldirs = kwargs.get('tooldirs', None)
@@ -173,6 +183,8 @@ class ConfigurationContext(WafConfContext):
             # See https://github.com/PyCQA/pylint/issues/1493
             # pylint: disable = not-callable
             func(self)
+
+            self._finishToolConfig(self.env)
 
         if not loadedTool: # avoid duplicates for loading on build stage
             self.tools.append({'tool' : tool, 'tooldir' : tooldirs, 'funs' : None})

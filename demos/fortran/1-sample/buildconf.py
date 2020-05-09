@@ -19,6 +19,7 @@ tasks = {
         #'features' : 'fcshlib',
         'features' : 'shlib',
         'source'   : 'src/funcs.f90',
+        'ver-num'  : '2.1.3',
     },
     'staticlib' : {
         #'features' : 'fcstlib',

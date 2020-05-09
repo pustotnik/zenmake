@@ -46,6 +46,27 @@ def platform():
 
 PLATFORM = platform()
 
+def getDefaultDestOS():
+    """
+    Return value of current platform suitable for Waf env.DEST_OS
+    """
+
+    return 'win32' if PLATFORM == 'windows' else PLATFORM
+
+def getDestBinFormatByOS(destOS):
+    """
+    Return the binary format based on the platform name.
+	Returns 'elf' if nothing is found.
+    """
+
+    if destOS == 'darwin':
+        return 'mac-o'
+
+    if destOS in ('win32', 'cygwin', 'uwin', 'msys', 'windows'):
+        return 'pe'
+
+    return 'elf'
+
 def asmethod(cls, methodName = None, wrap = False, callOrigFirst = True):
     """
     Decorator to replace/attach/wrap method to any existing class
