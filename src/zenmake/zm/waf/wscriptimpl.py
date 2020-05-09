@@ -91,8 +91,8 @@ def _configure(conf, bconf):
         # It's not needed anymore.
         taskParams.pop('conftests', None)
 
-        taskVariant = taskParams['$task.variant']
-        conf.setenv(taskVariant)
+        # switch env
+        conf.variant = taskParams['$task.variant']
 
         # set task env variables
         # NOTICE: if set these env vars (-O2, -shared, etc) before

@@ -768,5 +768,6 @@ class ConfigurationContext(WafConfContext):
         WafContext.top_dir = self.srcnode.abspath()
         WafContext.out_dir = self.bldnode.abspath()
 
-        assist.writeZenMakeMetaFile(bconfPaths, self.monitFiles,
+        zmmetafile = bconfPaths.zmmetafile
+        assist.writeZenMakeMetaFile(zmmetafile, self.monitFiles,
                                     self.zmMetaConfAttrs)

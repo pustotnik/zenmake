@@ -65,7 +65,7 @@ def getAllToolchainEnvVarNames():
 
     return envVarNames
 
-def writeZenMakeMetaFile(bconfPaths, monitfiles, attrs):
+def writeZenMakeMetaFile(filePath, monitfiles, attrs):
     """
     Write ZenMake meta file with some things like files
     monitored for changes.
@@ -89,15 +89,15 @@ def writeZenMakeMetaFile(bconfPaths, monitfiles, attrs):
     zmMeta.topdir = Context.top_dir
     zmMeta.outdir = Context.out_dir
 
-    dbfile = db.PyDBFile(bconfPaths.zmmetafile, extension = '')
+    dbfile = db.PyDBFile(filePath, extension = '')
     dbfile.save(zmMeta)
 
-def loadZenMakeMetaFile(bconfPaths):
+def loadZenMakeMetaFile(filePath):
     """
     Load ZenMake common ConfigSet file. Return None if failed
     """
 
-    dbfile = db.PyDBFile(bconfPaths.zmmetafile, extension = '')
+    dbfile = db.PyDBFile(filePath, extension = '')
     try:
         data = dbfile.load(asConfigSet = True)
     except EnvironmentError:

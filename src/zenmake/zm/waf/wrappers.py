@@ -15,7 +15,6 @@ from zm.pypkg import PkgPath
 from zm.waf import assist, launcher
 
 joinpath = os.path.join
-_loadZenMakeMetaFile = assist.loadZenMakeMetaFile
 
 # Force to turn off internal WAF autoconfigure decorator.
 # It's just to rid of needless work and to save working time.
@@ -51,8 +50,7 @@ def wrapBldCtxNoLockInTop(method):
     """
 
     def execute(ctx):
-        bconfPaths = ctx.bconfManager.root.confPaths
-        if not _handleNoLockInTop(ctx, lambda: _loadZenMakeMetaFile(bconfPaths)):
+        if not _handleNoLockInTop(ctx, ctx.zmMetaConf):
             method(ctx)
 
     return execute
@@ -92,7 +90,7 @@ def wrapBldCtxAutoConf(method):
         autoconfig = bconf.features['autoconfig']
 
         if not autoconfig:
-            if not _handleNoLockInTop(ctx, lambda: _loadZenMakeMetaFile(bconfPaths)):
+            if not _handleNoLockInTop(ctx, ctx.zmMetaConf):
                 method(ctx)
             return
 
@@ -100,7 +98,7 @@ def wrapBldCtxAutoConf(method):
         # FIXME: can be more stable solution?
         wrapBldCtxAutoConf.onlyRunMethod = True
 
-        zmMeta = _loadZenMakeMetaFile(bconfPaths)
+        zmMeta = ctx.zmMetaConf()
         if not zmMeta:
             runConfigAndCommand(ctx)
             return

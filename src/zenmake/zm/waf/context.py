@@ -16,6 +16,7 @@ from zm import ZENMAKE_DIR, WAF_DIR
 from zm.autodict import AutoDict as _AutoDict
 from zm import error
 from zm.utils import toList, asmethod
+from zm.waf.assist import loadZenMakeMetaFile
 from zm.waf import wscriptimpl
 
 joinpath = os.path.join
@@ -31,9 +32,20 @@ DEFAULT_TOOLDIRS = [
 # Context is the base class for all other context classes and it is not auto
 # registering class. So it cannot be just declared for extending/changing.
 
+_cache = {}
+
 @asmethod(WafContext, '__init__', wrap = True, callOrigFirst = False)
 def _ctxInit(self, **kwargs):
     self.bconfManager = kwargs.get('bconfManager')
+
+@asmethod(WafContext, 'zmMetaConf')
+def _getZmMetaConf(self):
+    if 'zm-meta-conf' in _cache:
+        return _cache['zm-meta-conf']
+
+    bconfPaths = self.bconfManager.root.confPaths
+    _cache['zm-meta-conf'] = data = loadZenMakeMetaFile(bconfPaths.zmmetafile)
+    return data
 
 @asmethod(WafContext, 'getbconf')
 def _getBuildConf(self):
