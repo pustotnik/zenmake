@@ -14,7 +14,7 @@ from waflib.Build import BuildContext as WafBuildContext
 from zm.constants import DEFAULT_BUILDWORKNAME
 from zm.pyutils import viewvalues
 from zm.utils import asmethod, Timer
-from zm import log, db
+from zm import log, db, error
 from zm.waf.assist import makeTasksCachePath
 from zm.deps import produceExternalDeps
 
@@ -31,6 +31,36 @@ BuildContext.buildWorkDirName = DEFAULT_BUILDWORKNAME
 def _loadEnvs(self):
     self.loadTasks()
 
+def _loadTasksDataForClean(self, bconf, cachePath):
+    zmMetaConf = self.zmMetaConf()
+    if not zmMetaConf:
+        raise error.ZenMakeError("Project has not been configured")
+
+    try:
+        zmMetaConfAttrs = zmMetaConf.attrs
+        lastPyVer = zmMetaConfAttrs['last-python-ver']
+        lastPyVer = lastPyVer.split('.')[0]
+        lastDbFormat = zmMetaConfAttrs['last-dbformat']
+    except AttributeError:
+        zmmetafile = bconf.confPaths.zmmetafile
+        raise error.ZenMakeError("Invalid format of file %r" % zmmetafile)
+
+    curPyVer = str(sys.version_info[0])
+
+    if lastDbFormat == 'pickle' and lastPyVer != curPyVer:
+        msg = "ZenMake does not support using of python 2 and 3"
+        msg += " at the same time on the same projects."
+        msg += " Run 'distclean' or 'configure'"
+        raise error.ZenMakeError(msg)
+
+    tasksDb = db.factory(cachePath, lastDbFormat)
+    if not tasksDb.exists():
+        buildtype = bconf.selectedBuildType
+        log.info("Buildtype '%s' not found. Nothing to clean" % buildtype)
+        return None
+
+    return tasksDb.load()
+
 @asmethod(WafBuildContext, 'loadTasks')
 def _loadTasks(self):
 
@@ -42,15 +72,16 @@ def _loadTasks(self):
     self.zmtasks = {}
     self.zmdepconfs = {}
 
-    if not db.exists(cachePath):
-        if self.cmd == 'clean':
-            log.info("Buildtype '%s' not found. Nothing to clean" % buildtype)
+    if self.cmd == 'clean':
+        tasksData = _loadTasksDataForClean(self, bconf, cachePath)
+        if not tasksData:
             return
+    else:
+        if not db.exists(cachePath):
+            self.fatal("Buildtype '%s' not found! Was step 'configure' missed?"
+                       % buildtype)
 
-        self.fatal("Buildtype '%s' not found! Was step 'configure' missed?"
-                   % buildtype)
-
-    tasksData = db.loadFrom(cachePath)
+        tasksData = db.loadFrom(cachePath)
 
     self.zmtasks = tasks = tasksData['tasks']
     taskenvs = tasksData['taskenvs']
@@ -76,7 +107,7 @@ def _initDirs(self):
 @asmethod(WafBuildContext, 'execute_build')
 def _executeBuild(self):
 
-    if self.cmd in ('build', 'install', 'uninstall', 'clean'):
+    if self.cmd in ('build', 'install', 'uninstall'):
         produceExternalDeps(self)
         log.printStep(self.cmd.capitalize() + 'ing')
 

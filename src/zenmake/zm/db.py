@@ -262,6 +262,10 @@ def useformat(dbformat):
     global _defaultDbFormat
     _defaultDbFormat = dbformat
 
+def getformat():
+    """ Get default DB format """
+    return _defaultDbFormat
+
 def factory(pathname, dbformat = None):
     """
     Create DBFile instance by dbformat

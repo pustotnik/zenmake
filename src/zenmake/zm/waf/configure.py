@@ -768,6 +768,10 @@ class ConfigurationContext(WafConfContext):
         WafContext.top_dir = self.srcnode.abspath()
         WafContext.out_dir = self.bldnode.abspath()
 
+        self.zmMetaConfAttrs.update({
+            'last-python-ver': '.'.join(str(x) for x in sys.version_info[:3]),
+            'last-dbformat': db.getformat(),
+        })
         zmmetafile = bconfPaths.zmmetafile
         assist.writeZenMakeMetaFile(zmmetafile, self.monitFiles,
                                     self.zmMetaConfAttrs)
