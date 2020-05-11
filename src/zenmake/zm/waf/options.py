@@ -6,6 +6,8 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+import gc
+
 from waflib.Options import OptionsContext as WafOptionsContext
 from zm import log
 
@@ -20,6 +22,12 @@ class OptionsContext(WafOptionsContext):
         # TODO: in debug only mode?
         if options.verbose >= 2:
             self.load('errcheck')
+
+    def execute(self):
+        # WafOptionsContext.execute() makes preforked processes so it can
+        # be better for general performance to free some memory before it.
+        gc.collect()
+        super(OptionsContext, self).execute()
 
 def setupOptionVerbose(wafOptions):
     """
