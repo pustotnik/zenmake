@@ -24,9 +24,8 @@ from waflib.Configure import ConfigurationContext as WafConfContext
 from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFIG_LOG
 from zm.constants import TASK_TARGET_KINDS
 from zm.pyutils import viewitems, viewvalues, viewkeys
-from zm import utils, log, toolchains, error, db, version, cli
+from zm import utils, log, toolchains, error, db, version, cli, deps
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
-from zm.deps import configureExternalDeps, produceExternalDeps
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
 from zm.features import ToolchainVars
 from zm.waf import assist, context
@@ -60,8 +59,8 @@ class ConfigurationContext(WafConfContext):
 
         self._loadedTools = {}
         self._toolchainEnvs = {}
-        self._btasks = None
         self._confCache = None
+        self.allTasks = None
         self.monitFiles = []
         self.zmMetaConfAttrs = {}
 
@@ -133,11 +132,11 @@ class ConfigurationContext(WafConfContext):
         for bconf in self.bconfManager.configs:
             tasks.update(bconf.tasks)
 
-        self._btasks = tasks
+        self.allTasks = tasks
 
-    def _postCheckTasks(self):
+    def _checkTaskLocalDeps(self):
 
-        allTasks = self._btasks
+        allTasks = self.allTasks
         for bconf in self.bconfManager.configs:
             for taskParams in viewvalues(bconf.tasks):
                 for localDep in taskParams.get('use', []):
@@ -269,6 +268,8 @@ class ConfigurationContext(WafConfContext):
         rootbconf = bconfManager.root
         bconfPaths = rootbconf.confPaths
         cachedir = bconfPaths.zmcachedir
+        rootdir = rootbconf.rootdir
+        relBTypeDir = os.path.relpath(rootbconf.selectedBuildTypeDir, rootdir)
 
         # common conf cache
         if self._confCache is not None:
@@ -280,8 +281,9 @@ class ConfigurationContext(WafConfContext):
         # aren't needed. And therefore it's better to save variants in
         # different files and load only needed ones.
 
-        tasks = self._btasks
+        tasks = self.allTasks
 
+        targetsData = {}
         envs = {}
         for taskParams in viewvalues(tasks):
             taskVariant = taskParams['$task.variant']
@@ -290,6 +292,18 @@ class ConfigurationContext(WafConfContext):
             # Waf stores it in 'c4che'.
             env = self.all_envs.pop(taskVariant)
             envs[taskVariant] = utils.configSetToDict(env)
+
+            # prepare some targets info
+            taskName = taskParams['name']
+            targetsData[taskName] = {
+                'type' : taskParams['$tkind'],
+                'name' : os.path.basename(taskParams['target']),
+                'fname' : os.path.basename(taskParams['$real.target']),
+                'dest-os' : env.DEST_OS,
+                'dest-binfmt' : env.DEST_BINFMT,
+            }
+            if 'ver-num' in taskParams:
+                targetsData[taskName]['ver-num'] = taskParams['ver-num']
 
         buildtype = rootbconf.selectedBuildType
 
@@ -303,7 +317,18 @@ class ConfigurationContext(WafConfContext):
         cachePath = assist.makeTasksCachePath(cachedir, buildtype)
         db.saveTo(cachePath, tasksData)
 
-        self.zmcache().tasksDb = tasksData
+        # save targets info to use as external dependency in other projects
+        allDepTargets = [] if not self.zmdepconfs else self.zmdepconfs['$all-dep-targets']
+        targetsData = {
+            'rootdir' : rootdir,
+            'btypedir' : relBTypeDir,
+            'targets' : targetsData,
+            'deptargets' : allDepTargets,
+        }
+
+        dbTargetsPath = assist.makeTargetsCachePath(cachedir, buildtype)
+        dbfile = db.PyDBFile(dbTargetsPath)
+        dbfile.save(targetsData)
 
     def getConfCache(self):
         """
@@ -763,12 +788,20 @@ class ConfigurationContext(WafConfContext):
 
         self.loadCaches()
         self.preconfigure()
+        self._mergeTasks()
 
-        produceExternalDeps(self)
+        # prepare dep rules to run
+        deps.preconfigureExternalDeps(self)
+        self._checkTaskLocalDeps()
+
+        # run dep 'configure' rules and gather needed info after them
+        deps.produceExternalDeps(self)
+        deps.finishExternalDepsConfig(self)
+
+        # finally run rest configuration including conf tests
         WafContext.Context.execute(self)
 
-        self._mergeTasks()
-        self._postCheckTasks()
+        # store necessary info
         self.store()
 
         instanceCache = self.zmcache()

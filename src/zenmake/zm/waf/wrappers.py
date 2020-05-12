@@ -87,7 +87,15 @@ def wrapBldCtxAutoConf(method):
         bconfPaths = bconf.confPaths
 
         # Execute the configuration automatically
-        autoconfig = bconf.features['autoconfig']
+        autoconfig = os.environ.get('ZENMAKE_AUTOCONFIG', '')
+        if autoconfig:
+            try:
+                # value from os.environ is a string but it may be a digit
+                autoconfig = bool(int(autoconfig))
+            except ValueError:
+                autoconfig = autoconfig not in ('false', 'False', 'no')
+        else:
+            autoconfig = bconf.features['autoconfig']
 
         if not autoconfig:
             if not _handleNoLockInTop(ctx, ctx.zmMetaConf):
@@ -103,7 +111,10 @@ def wrapBldCtxAutoConf(method):
             runConfigAndCommand(ctx)
             return
 
-        if assist.needToConfigure(zmMeta, bconfPaths, bconf.selectedBuildType):
+        rootdir = bconfPaths.rootdir
+        zmcachedir = bconfPaths.zmcachedir
+        buildtype = bconf.selectedBuildType
+        if assist.needToConfigure(zmMeta, rootdir, zmcachedir, buildtype):
             runConfigAndCommand(ctx)
             return
 

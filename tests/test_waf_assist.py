@@ -51,7 +51,7 @@ def testWriteZenMakeMetaFile(tmpdir):
 
     assert not isfile(fakeConfPaths.zmmetafile)
     attrs = {'var': 1, 'd': 'zxc'}
-    assist.writeZenMakeMetaFile(fakeConfPaths, monitFiles, attrs)
+    assist.writeZenMakeMetaFile(fakeConfPaths.zmmetafile, monitFiles, attrs)
     assert isfile(fakeConfPaths.zmmetafile)
 
     dbfile = db.PyDBFile(fakeConfPaths.zmmetafile, extension = '')

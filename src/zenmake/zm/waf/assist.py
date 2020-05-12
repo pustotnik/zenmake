@@ -110,6 +110,11 @@ def makeTasksCachePath(zmcachedir, buildtype):
     name = "%s.tasks" % buildtype
     return joinpath(zmcachedir, name)
 
+def makeTargetsCachePath(zmcachedir, buildtype):
+    """ Make file path of zenmake targets cache file for selected buildtype"""
+    name = "%s.targets" % buildtype
+    return joinpath(zmcachedir, name)
+
 def makeTaskVariantName(buildtype, taskName):
     """ Make 'variant' name for task """
 
@@ -131,21 +136,19 @@ def makeTargetRealName(target, targetKind, pattern, env, verNum):
     dirpath, name = splitpath(target)
 
     if verNum and targetKind.endswith('shlib'):
-        def getVerNumbers(verNum):
-            numbers = verNum.split('.')
-            if not numbers:
-                raise ZenMakeError("%r is invalid version number" % verNum)
-            return numbers
-
-        if env.DEST_BINFMT == 'pe':
-            nums = getVerNumbers(verNum)
-            # include the version in the dll file name
-            name = '%s-%s' % (name, nums[0])
-        elif env.DEST_OS == 'openbsd':
-            nums = getVerNumbers(verNum)
-            pattern = '%s.%s' % (pattern, nums[0])
-            if len(nums) >= 2:
-                pattern += '.%s' % nums[1]
+        if env.DEST_OS == 'openbsd':
+            # https://www.openbsd.org/faq/ports/specialtopics.html
+            # the library naming scheme: libfoo.so.major.minor
+            nums = verNum.split('.')
+            major = nums[0]
+            minor = nums[1] if len(nums) >= 2 else 0
+            pattern = '%s.%s.%s' % (pattern, major, minor)
+        # This piece of code was copied from Waf but there is no standard
+        # library naming scheme on Windows. So it was disabled.
+        #elif env.DEST_BINFMT == 'pe':
+        #    nums = verNum.split('.')
+        #    # include the version in the dll file name
+        #    name = '%s-%s' % (name, nums[0])
 
     target = pattern % name
     if dirpath:
@@ -416,7 +419,7 @@ def handleTaskLibPathParams(taskParams):
 
         # Waf doesn't change 'libpath' relative to current ctx.path as for 'includes'.
         # So we use absolute paths here.
-        taskParams[paramName] = param.abspaths()
+        taskParams[paramName] = utils.uniqueListWithOrder(param.abspaths())
 
 def handleTaskIncludesParam(taskParams, startdir):
     """
@@ -611,12 +614,10 @@ def areToolchainEnvVarsAreChanged(zmMetaConf):
 
     return False
 
-def isBuildTypeConfigured(bconfPaths, buildtype):
+def isBuildTypeConfigured(zmcachedir, buildtype):
     """
     Detect that data for current buildtype is configured.
     """
-
-    zmcachedir = bconfPaths.zmcachedir
 
     cachePath = makeTasksCachePath(zmcachedir, buildtype)
     if not db.exists(cachePath):
@@ -624,7 +625,7 @@ def isBuildTypeConfigured(bconfPaths, buildtype):
 
     return True
 
-def needToConfigure(zmMetaConf, bconfPaths, buildtype):
+def needToConfigure(zmMetaConf, rootdir, zmcachedir, buildtype):
     """
     Detect if it's needed to run 'configure' command
     """
@@ -632,7 +633,6 @@ def needToConfigure(zmMetaConf, bconfPaths, buildtype):
     if zmMetaConf.zmversion != version.current():
         return True
 
-    rootdir = bconfPaths.rootdir
     if zmMetaConf.rundir != rootdir or zmMetaConf.platform != PLATFORM:
         return True
 
@@ -642,7 +642,7 @@ def needToConfigure(zmMetaConf, bconfPaths, buildtype):
     if areToolchainEnvVarsAreChanged(zmMetaConf):
         return True
 
-    if not isBuildTypeConfigured(bconfPaths, buildtype):
+    if not isBuildTypeConfigured(zmcachedir, buildtype):
         return True
 
     return False

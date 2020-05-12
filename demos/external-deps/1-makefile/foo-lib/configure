@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# this script for testing only
+
+echo "Configuring"
+
+# detect current directory
+BASEDIR=`realpath "$0"`
+BASEDIR=`dirname "$BASEDIR"`
+cd "$BASEDIR"
+
+BUILDROOT=_build_
+
+mkdir -p $BUILDROOT
+touch $BUILDROOT/test.label

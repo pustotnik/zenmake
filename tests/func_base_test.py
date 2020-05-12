@@ -46,7 +46,8 @@ TEST_CONDITIONS = {
         dict(regexp = RE_ALL_LUA, condition = dict( os = ['linux'], )),
         dict(regexp = RE_ALL_FC, condition = dict( os = ['linux'], )),
         dict(regexp = RE_ALL_DBUS, condition = dict( os = ['linux'], )),
-        dict(regexp = RE_EXT_DEPS, condition = dict( os = ['linux', 'darwin'], )),
+        dict(regexp = RE_EXT_DEPS + '1-makefile',
+            condition = dict( os = ['linux', 'darwin'], )),
     ],
 }
 
@@ -71,6 +72,10 @@ def collectProjectDirs():
             continue
         else:
             dirWithConf = dirpath
+
+        if os.path.isfile(os.path.join(dirpath, '.dontbuild')):
+            # ignore this dir
+            continue
 
         prjdir = os.path.relpath(dirpath, cmn.TEST_PROJECTS_DIR)
         condition = TEST_CONDITIONS.get(prjdir, None)

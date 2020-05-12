@@ -26,16 +26,15 @@ dependencies = {
             },
         },
         'rules' : {
-            #'configure': 'echo "Configuring"', # just for testing
             'configure': { # just for testing
-                'cmd' : 'echo "Configuring"',
+                'cmd' : './configure',
+                'shell' : True,
                 'trigger' : {
                     'paths-dont-exist' : dict(
                         startdir = foolibdir,
                         include = '**/*.label',
                     ),
                     'func' : triggerConfigure,
-                    'no-targets' : True,
                 },
             },
             'build' : 'make debug',
@@ -45,6 +44,7 @@ dependencies = {
             #},
             #'clean' : 'make cleandebug',
             'clean' : {
+                # clean 'foo-lib' with command 'clean', it's just demo
                 'cmd' : 'make cleandebug',
                 'shell' : False,
                 'zm-commands' : 'clean',

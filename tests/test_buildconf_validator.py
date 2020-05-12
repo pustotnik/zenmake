@@ -296,11 +296,10 @@ class TestSuite(object):
     def _checkTaskScheme(self, buildconf, confnode):
 
         self._validateBoolValues(buildconf, confnode, 'normalize-target-name')
+        self._checkParamsAsStr(buildconf, confnode, ['target'])
 
-        paramNames = (
-            'target', 'ver-num',
-        )
-        self._checkParamsAsStr(buildconf, confnode, paramNames)
+        validVals = ['2', '1.0', '4.5.6']
+        self._checkParamsAsStr(buildconf, confnode, ['ver-num'], validVals)
 
         paramNames = (
             'features', 'libs', 'libpath', 'stlibs', 'stlibpath', 'rpath',
@@ -385,8 +384,10 @@ class TestSuite(object):
 
         buildconf = FakeBuildConf()
         setattr(buildconf, 'project', {})
-        paramNames = ('name', 'version')
-        self._checkParamsAsStr(buildconf, buildconf.project, paramNames)
+
+        self._checkParamsAsStr(buildconf, buildconf.project, ['name'])
+        validVals = ['1.0', '4.5.6']
+        self._checkParamsAsStr(buildconf, buildconf.project, ['version'], validVals)
 
     def testValidateParamBuildtypes(self):
 

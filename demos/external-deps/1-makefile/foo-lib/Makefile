@@ -66,8 +66,6 @@ $(RELEASE_BUILDOUT)/%.o: %.c $(DEPS)
 
 prep:
 	@mkdir -p $(BUILDOUT)
-# for testing only, doesn't make a sense in a real project
-	@touch $(BUILDOUT)/test.label
 
 clean:
 	rm -fr $(BUILDROOT)

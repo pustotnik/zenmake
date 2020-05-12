@@ -6,11 +6,23 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+import re
+
 from zm.constants import KNOWN_PLATFORMS, TASK_TARGET_KINDS
 from zm.pyutils import stringtype
+from zm.error import ZenMakeConfValueError
 from zm.cli import config as cliConfig
 from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY, addSelectToParams
 from zm.features import ConfValidation
+
+_RE_VER_NUM = re.compile(r"^(0|[1-9]\d*)(\.(0|[1-9]\d*)){0,2}?$")
+
+def _checkVerNum(value, fullkey):
+
+    if value and not _RE_VER_NUM.match(value):
+        msg = "Value %r is invalid version number" % value
+        msg += " for the param %r." % fullkey
+        raise ZenMakeConfValueError(msg)
 
 def _genSameSchemeDict(keys, scheme):
     return { k:scheme for k in keys }
@@ -115,7 +127,7 @@ taskscheme = {
     'stlibpath':        { 'type': ('str', 'list-of-strs') },
     'monitstlibs':      { 'type': ('bool', 'str', 'list-of-strs') },
     'rpath' :           { 'type': ('str', 'list-of-strs') },
-    'ver-num' :         { 'type': 'str' },
+    'ver-num' :         { 'type': 'str', 'allowed' : _checkVerNum },
     'includes':         { 'type': ('str', 'list-of-strs') },
     'linkflags' :       { 'type': ('str', 'list-of-strs') },
     'ldflags' :         { 'type': ('str', 'list-of-strs') },
@@ -184,6 +196,8 @@ _DEP_RULE_SCHEME = {
     },
 }
 
+_ALLOWED_DEP_TARGET_TYPES = frozenset(list(TASK_TARGET_KINDS) + ['file'])
+
 confscheme = {
     'startdir' : { 'type': 'str' },
     'buildroot' : { 'type': 'str' },
@@ -198,6 +212,7 @@ confscheme = {
                 'type': 'str',
                 'allowed' : set(('py', 'pickle', 'msgpack', )),
             },
+            'provide-dep-targets' : { 'type': 'bool' },
         },
     },
     'options' : {
@@ -211,7 +226,7 @@ confscheme = {
         'type' : 'dict',
         'vars' : {
             'name' : { 'type': 'str' },
-            'version' : { 'type': 'str' },
+            'version' : { 'type': 'str', 'allowed' : _checkVerNum },
         },
     },
     'conditions' : {
@@ -246,8 +261,10 @@ confscheme = {
                         'type': 'dict',
                         'vars': {
                             'dir'  : {'type' : 'str' },
-                            'type' : {'type' : 'str', 'allowed' : TASK_TARGET_KINDS },
+                            'type' : {'type' : 'str', 'allowed' : _ALLOWED_DEP_TARGET_TYPES },
                             'name' : {'type' : 'str' },
+                            'ver-num' : { 'type': 'str', 'allowed' : _checkVerNum },
+                            'fname' : {'type' : 'str' },
                             #'fallback' : {'type' : 'str' },
                         },
                     },
@@ -263,6 +280,12 @@ confscheme = {
                     'install' : _DEP_RULE_SCHEME,
                     'uninstall' : _DEP_RULE_SCHEME,
                 }
+            },
+            'buildtypes-map' : {
+                'type': 'dict',
+                'vars' : {
+                    ANYAMOUNTSTRS_KEY : { 'type' : 'str' },
+                },
             },
         },
     },

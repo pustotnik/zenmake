@@ -235,10 +235,29 @@ def toList(val):
 
 def uniqueListWithOrder(lst):
     """
-    Return new list with preserved the original order of the list
+    Return new list with preserved the original order of the list.
+    Each element in lst must be hashable.
     """
+
     used = set()
     return [x for x in lst if x not in used and (used.add(x) or True)]
+
+def uniqueDictListWithOrder(lst):
+    """
+    Return new list with preserved the original order of the list.
+    It works only with list of dicts.
+    """
+
+    used = set()
+    result = []
+    for elem in lst:
+        key = frozenset(elem.items())
+        if key in used:
+            continue
+        result.append(elem)
+        used.add(key)
+
+    return result
 
 def cmdHasShellSymbols(cmdline):
     """
@@ -258,7 +277,7 @@ def mksymlink(src, dst, force = True):
     """
     Make symlink, force delete if destination exists already
     """
-    if force and (os.path.exists(dst) or os.path.lexists(dst)):
+    if force and os.path.lexists(dst):
         os.unlink(dst)
 
     _mksymlink = getattr(os, "symlink", None)

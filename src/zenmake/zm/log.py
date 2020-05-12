@@ -30,6 +30,10 @@ def enableColorsByCli(colorArg):
     setup = {'yes' : 2, 'auto' : 1, 'no' : 0}[colorArg]
     Logs.enable_colors(setup)
 
+def colorsEnabled():
+    """ Return True if color output is enabled """
+    return bool(Logs.colors_lst['USE'])
+
 def verbose():
     """ Get value of Logs.verbose """
     return Logs.verbose

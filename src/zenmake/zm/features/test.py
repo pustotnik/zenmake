@@ -90,9 +90,9 @@ class TaskItem(object):
 
 def _wrapNeedToConfigure(_needToConfigure):
 
-    def execute(zmMetaConf, bconfPaths, buildtype):
+    def execute(zmMetaConf, rootdir, zmcachedir, buildtype):
 
-        if _needToConfigure(zmMetaConf, bconfPaths, buildtype):
+        if _needToConfigure(zmMetaConf, rootdir, zmcachedir, buildtype):
             return True
         if not _shared.withTests:
             return False
@@ -148,8 +148,6 @@ def preInit(ctx):
 
         # Remove test tasks.
         # It's necessary to do it in 'init' before 'configure'/'build'
-        # otherwise detecting of configured tasks with 'autoconfig' == True
-        # doesn't work correctly.
         for name in testTaskNames:
             tasks.pop(name, None)
 
