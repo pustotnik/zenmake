@@ -754,7 +754,7 @@ def produceExternalDeps(ctx):
         _runRule(ctx, rule)
 
     bconfFeatures = ctx.bconfManager.root.features
-    if cmd == 'build' and bconfFeatures.get('provide-dep-targets', True):
+    if cmd == 'build' and bconfFeatures.get('provide-dep-targets', False):
         _provideDepTargetFiles(ctx)
 
     if cmd == 'configure':

@@ -1,4 +1,8 @@
 
+features = {
+    #'provide-dep-targets' : True,
+}
+
 zmdepdir = '../zmdep'
 dependencies = {
     'zmdep' : {

@@ -1,6 +1,7 @@
 
 features = {
     'db-format' : 'py',
+    'provide-dep-targets' : True,
 }
 
 foolibdir = '../foo-lib'
