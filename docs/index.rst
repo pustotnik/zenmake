@@ -21,6 +21,7 @@ ZenMake documentation
    buildconf
    buildconf-taskparams
    buildconf-select
+   buildconf-deps
    commands
    envvars
    langs

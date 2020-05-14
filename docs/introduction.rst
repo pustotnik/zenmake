@@ -26,6 +26,7 @@ Main features
       build and run tests only on changes. Details are :ref:`here<buildtests>`.
     - Running custom scripts during a build phase.
     - Build configs in sub directories.
+    - Building external dependencies.
     - Supported platforms: GNU/Linux, MacOS, MS Windows. Some other
       platforms like OpenBSD/FreeBSD should work as well but it
       hasn't been tested.

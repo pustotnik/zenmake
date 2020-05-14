@@ -31,6 +31,7 @@ Simplified scheme of buildconf is:
     platforms_ = { name: parameters }
     matrix_ = [ { for: {...}, set: :ref:`task parameters<buildconf-taskparams>` }, ... ]
     :ref:`buildconf-subdirs` = []
+    dependencies_ = { ... }
 
 .. _buildconf-dict-def:
 
@@ -70,6 +71,8 @@ startdir
     relative to directory with the current buildconf file.
     But you can change this by setting different value to this variable.
 
+.. _buildconf-buildroot:
+
 buildroot
 """""""""
     A path to the root of a project build directory. By default it is
@@ -77,6 +80,18 @@ buildroot
     the project. Path can be absolute or relative to the startdir_.
     It is important to be able to remove the build
     directory safely, so it should never be given as ``.`` or ``..``.
+
+    .. note::
+      If you change value of ``buildroot`` with already using/existing
+      build directory then ZenMake will not touch previous build directory.
+      You can remove previous build directory manually or run
+      command ``distclean`` before changing of ``buildroot``.
+      ZenMake can not do it because it stores all
+      meta information in current build directory and if you change this
+      directory it loses all this information.
+
+      This can be changed in the future by storing extra information in some
+      other place like user home directory but now it is.
 
 realbuildroot
 """""""""""""
@@ -160,6 +175,19 @@ features
                 This package must be installed in some other way.
 
                 The default value is 'pickle'.
+
+    :provide-dep-targets: Provide target files of external
+                :ref:`dependencies<buildconf-dependencies>`
+                in the :ref:`buildroot<buildconf-buildroot>` directory.
+                It is useful to run built files from the build directory without
+                the need to use such a thing as LD_LIBRARY_PATH for each dependency.
+                Only existing and used target files are provided.
+                Static libraries are also ignored because they are not needed
+                to run built files.
+                On Windows ZenMake copies these files while on other OS
+                (Linux, MacOS, etc) it makes symlinks.
+
+                It's ``False`` by default.
 
 options
 """"""""
@@ -398,10 +426,42 @@ subdirs
 
     - If it is list of paths then ZenMake will try to use this list as paths
       to sub directories with the buildconf files and will use all found ones.
-      Paths can be absolute or relative to the startdir_.
+      Paths can be absolute or relative to the :ref:`startdir<buildconf-startdir>`.
     - If it is an empty list or just absent at all
       then ZenMake will not try to use any
       sub directories of the project to find buildconf files.
+
+    Example in Python format:
+
+    .. code-block:: python
+
+        subdirs = [
+            'libs/core',
+            'libs/engine',
+            'main',
+        ]
+
+    Example in YAML format:
+
+    .. code-block:: yaml
+
+        subdirs:
+            - libs/core
+            - libs/engine
+            - main
+
+    See some details :ref:`here<dependencies-subdirs>`.
+
+.. _buildconf-dependencies:
+
+dependencies
+""""""""""""
+    A `dict <buildconf-dict-def_>`_ with configurations of external non-system
+    dependencies. Each such a dependency has own unique name which can be used in
+    task parameter :ref:`use<buildconf-taskparams-use>`.
+
+    See full description of parameters :ref:`here<buildconf-dep-params>`.
+    Description of external dependencies is :ref:`here<dependencies-external>`.
 
 .. note::
 

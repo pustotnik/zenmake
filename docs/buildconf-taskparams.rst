@@ -354,12 +354,18 @@ export-defines
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
+.. _buildconf-taskparams-use:
+
 use
 """""""""""""""""""""
     This attribute enables the link against libraries (static or shared).
-    It's used for local libraries from other tasks. Also it's used
-    to declare dependencies between build tasks.
-    It is one or more the other task names.
+    It can be used for local libraries from other tasks or to declare
+    dependencies between build tasks. Also it can be used to declare using of
+    :ref:`external dependencies<dependencies-external>`.
+    For external dependencies the format of any dependency in ``use`` must be:
+    ``dependency-name:target-reference-name``.
+
+    It can contain one or more the other task names.
 
     If a task name contain spaces and all these names are listed in one
     string then each such a name must be in quotes.
@@ -373,6 +379,7 @@ use
         'use' : ['util', 'mylib']
         'use' : 'util "my lib"'
         'use' : ['util', 'my lib']
+        'use' : 'util mylib someproject:somelib'
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
@@ -400,6 +407,17 @@ libs
 """""""""""""""""""""
     One or more names of existing shared libraries as dependencies,
     without prefix or extension. Usually it's used to set system libraries.
+
+    If you use this parameter to specify non-system shared libraries for some
+    task you may need to specify the same libraries for all other tasks which
+    depends on the current task. For example, you set library 'mylib'
+    to the task A but the task B has parameter ``use`` with 'A',
+    then it's recommended to add 'mylib' to the parameter ``libs`` of the
+    task B. Otherwise you can get link error ``... undefined reference to ...``
+    or something like that.
+    Some other ways to solve this problem includes using environment variable
+    ``LD_LIBRARY_PATH`` or changing of /etc/ld.so.conf file. But last way usually
+    is not recommended.
 
     Example:
 
@@ -489,7 +507,7 @@ rpath
 ver-num
 """""""""""""""""""""
     Enforce version numbering on shared libraries. It can be used with
-    \*shlib ``features`` for example. It's ignored on platforms that do
+    \*shlib ``features`` for example. It can be ignored on platforms that do
     not support it.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`

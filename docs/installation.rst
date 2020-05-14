@@ -7,8 +7,10 @@ Installation
 
 **Dependencies**
 
-* Python_ >=2.7 or >=3.4
-* `PyYAML <https://pyyaml.org/>`_ Optional. It's needed only
+* Python_ >=2.7 or >=3.4. Python must have threading support.
+  Python has threading in most cases while nobody uses ``--without-threads``
+  for Python building. Python >= 3.7 always has threading.
+* `PyYAML <https://pyyaml.org/>`_ It's optional and needed only
   if you use yaml :ref:`buildconf<buildconf>`.
 
 
