@@ -46,7 +46,7 @@ Meson was created. It was probably because Meson was better for them.
 
 It's a very old but still relevant build system. However, it has too many
 disadvantages and it has been mostly replaced by more recent build systems.
-And it is used as a backend for some other build systems,
+It is used as a backend for some other build systems,
 for example, by CMake.
 
 **Waf**
@@ -91,9 +91,17 @@ make it as an option? I don't know. An alternative with an external command
 in Meson doesn't work very well, and authors of Meson should know about it.
 There is no such a problem with wildcards in Waf.
 
-**Scons**
+**SCons**
 
-Nowadays we have Waf. Scons is too slow.
+Waf was created as alternative to this build system because:
+
+::
+
+   Thomas Nagy decided that SCons's fundamental issues (most notably the poor
+   scalability) were too complex ...
+
+It was taken from https://en.wikipedia.org/wiki/Waf. So in some things it's
+similar to Waf and, as well as for Waf, it has a long learning curve.
 
 **Premake/GENie**
 

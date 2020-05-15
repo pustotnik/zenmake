@@ -206,7 +206,7 @@ rules
         By default each rule can be run in the ZenMake command with the same name only.
         For example, rule 'configure' by default can be run with the command
         'configure' and rule 'build' with the command 'build', etc.
-        But here you can setup a different behavior.
+        But here you can set up a different behavior.
 
 .. _buildconf-dep-params-buildtypes-map:
 
@@ -218,7 +218,7 @@ buildtypes-map
     can be not matched. For example, current project can have buildtypes
     ``debug`` and ``release`` but project from dependency can have
     buildtypes ``dbg`` and ``rls``. In this case
-    you can use this parameter to setup the map of these buildtype names.
+    you can use this parameter to set up the map of these buildtype names.
 
     Example in Python format:
 

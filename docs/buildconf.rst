@@ -176,8 +176,8 @@ features
 
                 The default value is 'pickle'.
 
-    :provide-dep-targets: Provide target files of external
-                :ref:`dependencies<buildconf-dependencies>`
+    :provide-dep-targets: Provide target files of
+                :ref:`external dependencies<dependencies-external>`
                 in the :ref:`buildroot<buildconf-buildroot>` directory.
                 It is useful to run built files from the build directory without
                 the need to use such a thing as LD_LIBRARY_PATH for each dependency.

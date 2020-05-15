@@ -401,7 +401,7 @@ install-path
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
-.. _buildconf-taskparams-run:
+.. _buildconf-taskparams-libs:
 
 libs
 """""""""""""""""""""
@@ -427,6 +427,8 @@ libs
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
+
+.. _buildconf-taskparams-libpath:
 
 libpath
 """""""""""""""""""""
@@ -512,6 +514,8 @@ ver-num
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
+
+.. _buildconf-taskparams-run:
 
 run
 """""""""""""""""""""
