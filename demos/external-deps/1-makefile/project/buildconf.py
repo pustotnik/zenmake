@@ -90,7 +90,6 @@ tasks = {
     'program' : {
         'features' : 'cxxprogram',
         'source'   :  { 'include' : 'prog/**/*.cpp' },
-        'includes' : foolibdir,
         'use.select' : {
             'debug'   : 'util foo-lib-d:shared-lib',
             'release' : 'util foo-lib-r:shared-lib',
