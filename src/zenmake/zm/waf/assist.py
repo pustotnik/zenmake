@@ -259,8 +259,7 @@ def setTaskEnvVars(env, taskParams, toolchainSettings):
     cfgFlagVars = ToolchainVars.allCfgFlagVars()
     # read flags from the buildconf and USELIB_VARS
     for var in cfgFlagVars:
-        paramName = var.lower()
-        val = taskParams.get(paramName)
+        val = taskParams.get(var.lower())
         if val:
             # bconf
             _gathered[var] = toList(val)
@@ -407,19 +406,30 @@ def validateTaskFeatures(taskParams):
 
     return features
 
-def handleTaskLibPathParams(taskParams):
+def handleTaskLibPathParams(taskParams, taskEnv):
     """
     Make valid 'libpath','stlibpath' for a build task
     """
 
     for paramName in ('libpath', 'stlibpath'):
+        paths = []
         param = taskParams.get(paramName)
-        if param is None:
-            continue
+        if param is not None:
+            # Waf doesn't change 'libpath' relative to current ctx.path as for 'includes'.
+            # So we use absolute paths here.
+            paths = param.abspaths()
 
-        # Waf doesn't change 'libpath' relative to current ctx.path as for 'includes'.
-        # So we use absolute paths here.
-        taskParams[paramName] = utils.uniqueListWithOrder(param.abspaths())
+        envVar = paramName.upper()
+        envLibPath = taskEnv[envVar]
+        if envLibPath:
+            # Some waf tools (see msvc, ifort) set up env.LIBPATH but it's wrong
+            # Actually it's better to move them in 'uselib_feature' env var
+            # but I was lazy.
+            paths.extend(envLibPath)
+            del taskEnv[envVar]
+
+        if paths:
+            taskParams[paramName] = utils.uniqueListWithOrder(paths)
 
 def handleTaskIncludesParam(taskParams, startdir):
     """

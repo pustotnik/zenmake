@@ -57,23 +57,37 @@ def propagate_uselib_vars(self):
 
     # pylint: disable = invalid-name
 
+    # RIGHT ORDERS
+    # by default (waf order): env + tgen attr + uselib_feature
+    # flags: uselib_feature (defaults) + tgen attr + env (custom)
+    # (st)lib: env (from 'use') + tgen attr (deps + custom + system) + uselib_feature (?)
+    # (st)libpath: env (from 'use') + tgen attr (custom + system) + uselib_feature (defaults?)
+
     useLibVars = self.get_uselib_vars()
     env = self.env
 
     useLibFeatures = self.features + toListSimple(getattr(self, 'uselib', []))
     for var in useLibVars:
-        vals = []
-        val = getattr(self, var.lower(), [])
-        if val:
-            vals += toList(val)
+        param = var.lower()
 
+        tgenVals = getattr(self, param, [])
+        if tgenVals:
+            tgenVals = toList(tgenVals)
+
+        featureVals = []
         for _feature in useLibFeatures:
             val = env['%s_%s' % (var, _feature)]
             if val:
-                vals += val
+                featureVals += val
 
-        if vals:
-            vals += env[var]
+        if tgenVals or featureVals:
+
+            if param.endswith('flags'):
+                # User flags are set in env, so env must be last in order
+                vals = featureVals + tgenVals + env[var]
+            else:
+                vals = env[var] + tgenVals + featureVals
+
             # remove duplicates: keep only last unique values in the list
             vals = uniqueListWithOrder(reversed(vals))
             vals.reverse()

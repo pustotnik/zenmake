@@ -602,9 +602,10 @@ class ConfigurationContext(WafConfContext):
         """
 
         startdir = bconf.startdir
+        taskEnv = self.all_envs[taskParams['$task.variant']]
 
         assist.handleTaskIncludesParam(taskParams, startdir)
-        assist.handleTaskLibPathParams(taskParams)
+        assist.handleTaskLibPathParams(taskParams, taskEnv)
         self._handleTaskExportDefinesParam(taskParams)
         self._handleMonitLibs(taskParams)
 
