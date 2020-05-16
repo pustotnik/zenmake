@@ -321,16 +321,19 @@ def _addLibPathToTask(taskParams, paramName, newPath):
         libpath.insertFrom(0, newPath)
     taskParams[paramName] = libpath
 
-def _updateParentTaskLibs(ctx, taskParams, libName, libPath):
+def _updateParentTaskLibs(ctx, taskParams, libAttr, libPathAttr):
+
+    libsParamName, libName = libAttr
+    libPathParamName, libPath = libPathAttr
 
     allTasks = ctx.allTasks
     parent = taskParams.get('$parent')
     while parent:
         taskParams = allTasks[parent]
-        libs = taskParams.setdefault('libs', [])
+        libs = taskParams.setdefault(libsParamName, [])
         libs.insert(0, libName)
         if libPath:
-            _addLibPathToTask(taskParams, 'libpath', libPath)
+            _addLibPathToTask(taskParams, libPathParamName, libPath)
         parent = taskParams.get('$parent')
 
 def _setupTaskDepTarget(ctx, depConf, targetConf, taskParams):
@@ -357,8 +360,9 @@ def _setupTaskDepTarget(ctx, depConf, targetConf, taskParams):
     if targetPath is not None:
         _addLibPathToTask(taskParams, libpathParamName, targetPath)
 
-    if targetType == 'shlib':
-        _updateParentTaskLibs(ctx, taskParams, libName, targetPath)
+    lib = (libsParamName, libName)
+    libPath = (libpathParamName, targetPath)
+    _updateParentTaskLibs(ctx, taskParams, lib, libPath)
 
     monitParamName = 'monit%s' % libsParamName
     taskParams[monitParamName] = taskParams.get(monitParamName, []) + [libName]
