@@ -43,7 +43,8 @@ def _processCmdLine(conf, bconf, cwd, shell, cmdArgs):
     if not shell:
         shell = cmdHasShellSymbols(cmdline)
 
-    cmdSplitted = shlex.split(cmdline)
+    posixMode = os.name == 'posix'
+    cmdSplitted = shlex.split(cmdline, posix = posixMode)
 
     if not shell:
         # Waf can not work correctly with paths with whitespaces when
