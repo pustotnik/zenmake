@@ -8,7 +8,6 @@
 
 import os
 import sys
-import shlex
 import time
 import platform
 
@@ -55,6 +54,8 @@ class ConfigurationContext(WafConfContext):
     # pylint: disable = too-many-instance-attributes
 
     def __init__(self, *args, **kwargs):
+
+        self._fixSysEnvVars()
         super(ConfigurationContext, self).__init__(*args, **kwargs)
 
         self._loadedTools = {}
@@ -65,6 +66,14 @@ class ConfigurationContext(WafConfContext):
         self.zmMetaConfAttrs = {}
 
         self.validToolchainNames = assist.getValidPreDefinedToolchainNames()
+
+    def _fixSysEnvVars(self):
+        flagVars = ToolchainVars.allSysFlagVars()
+        environ = os.environ
+        for var in flagVars:
+            val = environ.get(var)
+            if val is not None:
+                environ[var] = val.replace('"', '').replace("'", '')
 
     def _handleTaskExportDefinesParam(self, taskParams):
         """
@@ -413,7 +422,7 @@ class ConfigurationContext(WafConfContext):
         sysEnvToolVars = \
             { var:osenv[var] for var in toolchainVars if var in osenv }
         sysEnvFlagVars = \
-            { var:shlex.split(osenv[var]) for var in flagVars if var in osenv}
+            { var:osenv[var].split() for var in flagVars if var in osenv}
 
         for toolchain in tuple(actualToolchains):
             if toolchain in customToolchains and toolchain in TOOL_AUTO_NAMES:
