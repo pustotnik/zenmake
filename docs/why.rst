@@ -13,40 +13,39 @@ https://news.ycombinator.com/item?id=18789162
 
 Yes, I know, we already have a lot of them. I decided to create this project
 because I couldn’t find a build tool for Linux which is quick and easy to use,
-flexible, ready to use, with declarative configuration and suitable for my needs.
-I know about lots of build systems. I have read about almost all such modern and
-popular systems. And I have tried some of them. Eventually, I concluded that
-I had to try to make my own build tool. I have some experience creating custom
-build tools based on the WAF.
+flexible, ready to use, with declarative configuration, without the need to learn one more
+special language and suitable for my needs.
+I know about lots of build systems and I have tried some of them.
+Eventually, I concluded that I had to try to make my own build tool.
+Actually I began this project in `2013 <https://bitbucket.org/pustotnik/zenmake.old/src/master/>`_
+year but I had no time to develop it at that time.
 I would do it mostly for myself, but I would be glad if my tool was useful
 for others.
 
-The main purpose of this project is to make a build tool for most
-(but not exclusively) of simple use cases. By simple cases I mean when there is
-no need to make very complex build configurations. However, the tool must not
-compromise on flexibility, and provide good performance. I want a simple,
-stable build tool that just works.
+The main purpose of ZenMake is to be as simple to use as possible
+but remain flexible. It uses declarative configuration files and should provide
+good performance.
 
-Below I describe what is wrong with some of existing build systems in my
-opinion. I considered only build systems that can build C/C++ projects.
+Below I describe what is wrong with some of existing popular build systems in my
+opinion. I considered only opensource cross-platform build systems that can
+build C/C++ projects on GNU/Linux.
+Remember it's only my opinion and it doesn't mean that other build systems are bad.
+And it's not complete technical comparation.
 
 **CMake**
 
-It's one of the most popular cross-platform build systems nowadays. But
-I don't understand why this system is so popular. I have never liked its
-internal language - for me it's terrible. And CMake is too complicated.
+It's one of the most popular cross-platform build systems nowadays as I know.
+But I have never liked its internal language - for me it's not very convenient.
+And CMake is too complicated.
 As far as I know, a lot of people think
 the same but they choose to use it because it's popular and with good support
 for many platforms.
 
-One more fact: a lot of people decided to migrate to Meson after
-Meson was created. It was probably because Meson was better for them.
-
 **Make**
 
 It's a very old but still relevant build system. However, it has too many
-disadvantages and it has been mostly replaced by more recent build systems.
-It is used as a backend for some other build systems,
+disadvantages and it has been mostly replaced by more recent build systems in many projects.
+But it is used as a backend in some other build systems,
 for example, by CMake.
 
 **Waf**
@@ -59,12 +58,13 @@ is not easy to use.
 **ninja**
 
 Well, I don't know a lot about this system. I know that it is used as
-a backend in Meson and CMake. And as far as I know ninja is not easy to
-use and requires a lot of effort.
+a backend in Meson and CMake. But "it is designed to have its input files generated
+by a higher-level build system" and "Ninja build files are not meant to be written by hand".
+So this build system is not for direct using.
 
 **Meson**
 
-It’s really not a bad build system which uses ninja as a backend to build by default.
+It's really not a bad build system which uses ninja as a backend to build by default.
 I have tried to use it but didn't like some of its features:
 
 -  It tries to be smart when it's not necessary.
@@ -119,7 +119,8 @@ And it doesn't look good to me.
 
 **Bazel**
 
-Well, I don't know a lot about this build system. I guess it's a normal choice
+Well, I don't know a lot about this build system but I read some documentation and
+tried some examples. I guess it's a normal choice
 for big projects or for projects done internally in companies but is
 definitely too big for small projects. And it has some other problems:
 https://medium.com/windmill-engineering/bazel-is-the-worst-build-system-except-for-all-the-others-b369396a9e26

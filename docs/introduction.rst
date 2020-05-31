@@ -13,6 +13,9 @@ but remain flexible.
 
 Some reasons to create this project can be found :ref:`here<why>`.
 
+It uses declarative configuration files with ability to use the real 
+programming language (python).
+
 Main features
 -------------
     - Easy to use and flexible build config as python (.py) or as yaml file.
