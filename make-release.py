@@ -68,8 +68,11 @@ def _runInShell(cmd):
         sys.exit(ex.returncode)
     return output.decode(sys.stdout.encoding)
 
-def _runPyScript(args):
-    return _runInShell('%s %s' % (PY_EXE, args))
+def _runPyScript(args, tryPy3 = False):
+    python = findProg('python3') if tryPy3 else PY_EXE
+    if not python:
+        python = PY_EXE
+    return _runInShell('%s %s' % (python, args))
 
 def _runGitCmd(args):
     return _runInShell('git %s' % args)
@@ -102,8 +105,9 @@ def _bumpVersion(ver):
     _runGitCmd("add %s" % verFilePath)
     _runGitCmd("commit -m 'bump version'")
     _runGitCmd("tag -a v%s -m 'version %s'" % (ver, ver))
-    _runGitCmd("push")
-    _runGitCmd("push --tags")
+    #_runGitCmd("push")
+    #_runGitCmd("push --tags")
+    _runGitCmd("push --follow-tags")
 
 def _writeNewDevVersion(baseVer):
     parsed = version.parseVersion(baseVer)
@@ -175,6 +179,14 @@ def main():
         print("Publishing distribution ..")
         _runPyScript('setup.py publish')
         print("Distribution was published.")
+
+    answer = _getAnswerYesNo('Publish release to github?')
+    if answer:
+        scriptPath = os.path.join('scripts', 'publish-github-release.py')
+        args = '%s %s' % (scriptPath, newVer)
+        print("Publishing release to github ..")
+        _runPyScript(args, tryPy3 = True)
+        print("Release was published on github.")
 
     print("Writing new dev version to file %r .." % version.VERSION_FILE_PATH)
     nextVer = _writeNewDevVersion(newVer)

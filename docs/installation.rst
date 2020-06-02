@@ -108,4 +108,8 @@ You can copy ``zenmake.pyz`` to the root of your project and distribute this
 file with your project. It can be used on any supported platform and doesn't
 require any additional access and changes in your system.
 
+.. note::
+    Since ZenMake 0.10.0 you can download ready to use ``zenmake.pyz`` from
+    GitHub `releases <github_releases_>`_.
+
 .. _virtualenv: https://pypi.python.org/pypi/virtualenv/
