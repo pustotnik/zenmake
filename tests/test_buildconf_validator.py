@@ -386,8 +386,7 @@ class TestSuite(object):
         setattr(buildconf, 'project', {})
 
         self._checkParamsAsStr(buildconf, buildconf.project, ['name'])
-        validVals = ['1.0', '4.5.6']
-        self._checkParamsAsStr(buildconf, buildconf.project, ['version'], validVals)
+        self._checkParamsAsStr(buildconf, buildconf.project, ['version'])
 
     def testValidateParamBuildtypes(self):
 

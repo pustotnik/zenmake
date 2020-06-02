@@ -226,7 +226,7 @@ confscheme = {
         'type' : 'dict',
         'vars' : {
             'name' : { 'type': 'str' },
-            'version' : { 'type': 'str', 'allowed' : _checkVerNum },
+            'version' : { 'type': 'str' },
         },
     },
     'conditions' : {

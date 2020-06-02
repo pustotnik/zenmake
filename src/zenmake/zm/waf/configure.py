@@ -664,7 +664,7 @@ class ConfigurationContext(WafConfContext):
         buildtype = bconf.selectedBuildType
         btypeDir = bconf.selectedBuildTypeDir
         tasks = bconf.tasks
-        prjver = bconf.projectVersion
+        defaultLibVersion = bconf.defaultLibVersion
 
         emptyEnv = ConfigSet()
         toolchainEnvs = self.getToolchainEnvs()
@@ -704,8 +704,8 @@ class ConfigurationContext(WafConfContext):
             # creates the new object and it is not really needed here
             self.setDirectEnv(taskVariant, taskEnv)
 
-            if prjver and 'ver-num' not in taskParams:
-                taskParams['ver-num'] = prjver
+            if defaultLibVersion and 'ver-num' not in taskParams:
+                taskParams['ver-num'] = defaultLibVersion
 
             self._setupTaskTarget(taskParams, taskEnv, btypeDir)
 

@@ -242,10 +242,10 @@ def getBuildTasks(confManager):
     tasks = {}
     for bconf in confManager.configs:
         tasks.update(bconf.tasks)
-        prjver = bconf.projectVersion
+        defaultLibVersion = bconf.defaultLibVersion
         for taskParams in tasks.values():
-            if prjver and 'ver-num' not in taskParams:
-                taskParams['ver-num'] = prjver
+            if defaultLibVersion and 'ver-num' not in taskParams:
+                taskParams['ver-num'] = defaultLibVersion
     return tasks
 
 def obtainBuildTargets(testSuit, cmdLine, withTests = False):

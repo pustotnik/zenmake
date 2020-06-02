@@ -588,7 +588,8 @@ def printZenMakeHeader(bconfManager):
 
     bconf = bconfManager.root
     log.info("* Project name: '%s'" % bconf.projectName)
-    log.info("* Project version: %s" % (bconf.projectVersion or 'undefined'))
+    if bconf.projectVersion:
+        log.info("* Project version: %s" % bconf.projectVersion)
     log.info("* Build type: '%s'" % bconf.selectedBuildType)
 
 def isBuildConfFake(conf):

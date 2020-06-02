@@ -1,7 +1,7 @@
 
 buildroot = '_build'
 
-project = { 'version' : '0.3.1' }
+project = { 'version' : '0.3.1-dev' }
 
 features = {
     'db-format' : 'msgpack',

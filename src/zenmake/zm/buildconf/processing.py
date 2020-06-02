@@ -7,6 +7,7 @@
 """
 
 import os
+import re
 from collections import defaultdict
 from copy import deepcopy
 
@@ -34,6 +35,7 @@ toList        = utils.toList
 toListSimple  = utils.toListSimple
 
 TOOLCHAIN_PATH_ENVVARS = frozenset(ToolchainVars.allSysVarsToSetToolchain())
+_RE_LIB_VER = re.compile(r"^\d+(?:\.\d+)*")
 
 _TASKPARAMS_TOLIST_MAP = {}
 
@@ -606,6 +608,23 @@ class Config(object):
     def projectVersion(self):
         """ Get project version """
         return self._conf.project['version']
+
+    @property
+    def defaultLibVersion(self):
+        """ Get default lib version """
+
+        version = self._meta.get('default-lib-version')
+        if version is not None:
+            return version
+
+        version = _RE_LIB_VER.findall(self.projectVersion)
+        if version:
+            version = '.'.join(version[0].split('.')[:3])
+        else:
+            version = ''
+
+        self._meta['default-lib-version'] = version
+        return version
 
     @property
     def options(self):
