@@ -28,6 +28,7 @@ else:
     _CMDFILE_EXTS = EXE_FILE_EXTS
 
 _RE_WITH_TGT = re.compile(r'\$\{*TGT')
+_RE_WITH_TARGET = re.compile(r'\$\{*TARGET')
 
 def _processCmdLine(conf, bconf, cwd, shell, cmdArgs):
     """ Get and process 'cmd' at 'configure' stage """
@@ -61,7 +62,8 @@ def _processCmdLine(conf, bconf, cwd, shell, cmdArgs):
     }
 
     partsCount = len(cmdSplitted)
-    cmdExt = os.path.splitext(cmdSplitted[0])[1]
+    launcher = cmdSplitted[0]
+    cmdExt = os.path.splitext(launcher)[1]
     if partsCount == 1 and cmdExt:
         # try to detect interpreter for some cases
         for ext, launcher in ( ('.py', 'python'), ('.pl', 'perl'),):
@@ -71,12 +73,11 @@ def _processCmdLine(conf, bconf, cwd, shell, cmdArgs):
             if result:
                 launcher = result[0]
                 cmdline = '%s %s' % (launcher, cmdline)
-    elif partsCount > 1 and not shell:
+    elif partsCount > 1 and not shell and not _RE_WITH_TARGET.search(launcher):
         # Waf raises exception in verbose mode with 'shell' == False if it
         # cannot find full path to executable and on windows cmdline
         # like 'python file.py' doesn't work.
         # So here is trying to find full path for such cases.
-        launcher = cmdSplitted[0]
         result = conf.find_program(launcher, **fkw)
         if result:
             launcher = result[0]
