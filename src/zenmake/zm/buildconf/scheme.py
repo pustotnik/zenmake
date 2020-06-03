@@ -213,6 +213,7 @@ confscheme = {
                 'allowed' : set(('py', 'pickle', 'msgpack', )),
             },
             'provide-dep-targets' : { 'type': 'bool' },
+            'build-work-dir-name' : { 'type': 'str' },
         },
     },
     'options' : {

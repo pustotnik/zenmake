@@ -189,6 +189,13 @@ features
 
                 It's ``False`` by default.
 
+    :build-work-dir-name: Set name of work directory which is used mostly for
+            object files during compilation. This directory seperates
+            resulting target files from other files in a buildtype directory to
+            avoid file/directory conflicts. Usually you don't need to set this
+            parameter until some target name has conflict with default value of
+            this parameter. The default value is ``@bld``.
+
 options
 """"""""
     A `dict <buildconf-dict-def_>`_ array with default values for command

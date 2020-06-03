@@ -9,7 +9,8 @@ options = {
 }
 
 features = {
-    'monitor-files' : 'buildconf_tools.py'
+    'monitor-files' : 'buildconf_tools.py',
+    'build-work-dir-name' : 'wrk',
 }
 
 tasks = {
@@ -47,11 +48,11 @@ tasks = {
         'features' : 'program',
         'source'   :  dict( include = 'prog/**/*.cpp' ),
         'use'      : 'shlibmain',
+        'target'   : '@bld', # to check 'build-work-dir-name'
     },
 }
 
 buildtypes = {
-    # -fPIC is necessary to compile static lib
     'debug-gcc' : {
         'toolchain' : 'g++',
         'cxxflags' : '-O0 -g',

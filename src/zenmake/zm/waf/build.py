@@ -22,10 +22,19 @@ joinpath = os.path.join
 
 BuildContext = WafBuildContext
 
-BuildContext.buildWorkDirName = DEFAULT_BUILDWORKNAME
-
 # WafBuildContext is used for many other waf commands as the base class
 # and so to insert new methods into this class the decorator @asmethod is used.
+
+@asmethod(WafBuildContext, '__init__', wrap = True, callOrigFirst = True)
+def _ctxInit(self, **kwargs):
+    # pylint: disable = unused-argument
+
+    self.buildWorkDirName = DEFAULT_BUILDWORKNAME
+    if self.bconfManager:
+        bconfFeatures = self.bconfManager.root.features
+        buildWorkDirName = bconfFeatures.get('build-work-dir-name')
+        if buildWorkDirName is not None:
+            self.buildWorkDirName = buildWorkDirName
 
 @asmethod(WafBuildContext, 'load_envs', wrap = True, callOrigFirst = True)
 def _loadEnvs(self):
