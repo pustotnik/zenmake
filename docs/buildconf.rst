@@ -154,27 +154,27 @@ features
                 "FIPS compliant" build of Python is used it's always sha1 anyway.
 
     :db-format: Set format for internal ZenMake db/cache files.
-                Use one of possible values: 'py', 'pickle', 'msgpack'.
+                Use one of possible values: ``py``, ``pickle``, ``msgpack``.
 
-                The value 'py' means text file with python syntax. It's not fastest
+                The value ``py`` means text file with python syntax. It's not fastest
                 format but it's human readable one.
 
-                The value 'pickle' means python pickle binary format. It has
+                The value ``pickle`` means python pickle binary format. It has
                 good performance and python always supports this format.
 
-                The value 'msgpack' means msgpack binary
-                format by using python module 'msgpack'. Using of this format can
+                The value ``msgpack`` means msgpack binary
+                format by using python module ``msgpack``. Using of this format can
                 decrease ZenMake overhead in building of some big projects because
                 it has best performance among all supported formats.
                 It can be set only for python 3.x because the extension module
                 in msgpack was dropped for python 2.x and using of pure python
                 implementation has no sense. If it is set for python 2.x or
-                if package 'msgpack' doesn't exist in the current system then
-                it will be replaced by value 'pickle'.
-                Note: ZenMake doesn't try to install package 'msgpack'.
+                if package ``msgpack`` doesn't exist in the current system then
+                it will be replaced by value ``pickle``.
+                Note: ZenMake doesn't try to install package ``msgpack``.
                 This package must be installed in some other way.
 
-                The default value is 'pickle'.
+                The default value is ``pickle``.
 
     :provide-dep-targets: Provide target files of
                 :ref:`external dependencies<dependencies-external>`
@@ -189,12 +189,14 @@ features
 
                 It's ``False`` by default.
 
-    :build-work-dir-name: Set name of work directory which is used mostly for
+    :build-work-dir-name: Set a name of work directory which is used mostly for
             object files during compilation. This directory seperates
             resulting target files from other files in a buildtype directory to
             avoid file/directory conflicts. Usually you don't need to set this
             parameter until some target name has conflict with default value of
-            this parameter. The default value is ``@bld``.
+            this parameter.
+
+            The default value is ``@bld``.
 
 options
 """"""""
