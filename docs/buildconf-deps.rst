@@ -201,6 +201,10 @@ rules
 
             Any other rule: { 'always' : False }
 
+        .. note::
+            You can use command line option ``-E``/``--force-edeps`` to run
+            rules for external dependencies without checking triggers.
+
     :zm-commands:
         A list with names of ZenMake commands in which selected rule will be run.
         By default each rule can be run in the ZenMake command with the same name only.

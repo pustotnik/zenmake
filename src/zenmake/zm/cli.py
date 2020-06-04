@@ -194,15 +194,23 @@ config.options = [
         help = 'progress bar',
     ),
     Option(
-        names = ['--destdir'],
-        commands = ['zipapp', 'install', 'uninstall'],
-        help = 'destination directory',
-    ),
-    Option(
         names = ['-o', '--buildroot'],
         commands = ['configure', 'build', 'test', 'clean',
                     'distclean', 'install', 'uninstall'],
         help = "build directory for the project",
+    ),
+    Option(
+        names = ['-E', '--force-edeps'],
+        dest = 'forceExternalDeps',
+        action = "store_true",
+        commands = ['configure', 'build', 'test', 'clean',
+                    'install', 'uninstall'],
+        help = "force rules for with external dependencies",
+    ),
+    Option(
+        names = ['--destdir'],
+        commands = ['zipapp', 'install', 'uninstall'],
+        help = 'destination directory',
     ),
     Option(
         names = ['--prefix'],

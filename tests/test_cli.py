@@ -114,6 +114,7 @@ class TestSuite(object):
             'libdir' : None,
             'prefix' : cli.DEFAULT_PREFIX,
             'buildroot' : None,
+            'forceExternalDeps' : False,
         }
 
         CMDNAME = 'build'
@@ -221,6 +222,7 @@ class TestSuite(object):
             'withTests': 'yes',
             'runTests': 'all',
             'buildroot' : None,
+            'forceExternalDeps' : False,
         }
 
         CMDNAME = 'test'
@@ -324,6 +326,7 @@ class TestSuite(object):
             'libdir' : None,
             'prefix' : cli.DEFAULT_PREFIX,
             'buildroot' : None,
+            'forceExternalDeps' : False,
         }
 
         CMDNAME = 'configure'
@@ -376,6 +379,7 @@ class TestSuite(object):
             'color': 'auto',
             'verbose': 0,
             'buildroot' : None,
+            'forceExternalDeps' : False,
         }
 
         CMDNAME = 'clean'
@@ -505,6 +509,7 @@ class TestSuite(object):
             'libdir' : None,
             'prefix' : cli.DEFAULT_PREFIX,
             'buildroot' : None,
+            'forceExternalDeps' : False,
         }
 
         if cmd == 'uninstall':

@@ -105,9 +105,6 @@ Additionally, in some cases, the parameter
 Also it's recommended to use always the same version of ZenMake for all such projects.
 Otherwise there are some compatible problems can be occured.
 
-Some examples can be found in the directory 'external-deps'
-in the repository `here <repo_demo_projects_>`_.
-
 .. _dependencies-external-non-zenmake:
 
 Non-ZenMake projects
@@ -174,6 +171,12 @@ Example in Python format:
                 },
             },
         }
+
+Common notes
+"""""""""""""""""""""
+
+You can use command line option ``-E``/``--force-edeps`` to run rules for
+external dependencies without checking triggers.
 
 Some examples can be found in the directory 'external-deps'
 in the repository `here <repo_demo_projects_>`_.

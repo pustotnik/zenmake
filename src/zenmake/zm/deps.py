@@ -14,7 +14,7 @@ from collections import defaultdict
 
 from zm.constants import DEPNAME_DELIMITER, SYSTEM_LIB_PATHS, PYTHON_EXE, PLATFORM
 from zm.pyutils import viewvalues, viewitems, maptype
-from zm import error, log, db
+from zm import error, log, db, cli
 from zm.utils import toListSimple, runCmd, uniqueListWithOrder, uniqueDictListWithOrder
 from zm.pathutils import PathsParam, getNodesFromPathsDict, pathsDictParamsToList
 from zm.buildconf import loader as buildconfLoader
@@ -185,7 +185,7 @@ def _detectZenMakeProjectRules(depConf, buildtype):
         return
 
     colorOutput = 'yes' if log.colorsEnabled() else 'no'
-    cmdArgs = '-b %s --color %s' % (buildtype,  colorOutput)
+    cmdArgs = '--buildtype %s --color %s' % (buildtype,  colorOutput)
 
     def needToConfigure(**kwargs):
         # pylint: disable = unused-argument
@@ -640,9 +640,13 @@ def _runRule(ctx, rule):
 
     cmd = rule['cmd']
     env = dict(os.environ)
-    if depType == 'zenmake' and _local.get('configure-cmd-was-called', False):
-        # optimization: avoid needless work to autodetect running of 'configure'
-        env.update( { 'ZENMAKE_AUTOCONFIG' : 'false', } )
+    if depType == 'zenmake':
+        if _local.get('configure-cmd-was-called', False):
+            # optimization: avoid needless work to autodetect running of 'configure'
+            env.update( { 'ZENMAKE_AUTOCONFIG' : 'false', } )
+        forceRules = cli.selected.args.get('forceExternalDeps')
+        if forceRules:
+            cmd += ' --force-edeps'
 
     env.update(rule['env'])
     cwd = joinpath(rootdir, rule['cwd'])
@@ -747,9 +751,11 @@ def produceExternalDeps(ctx):
     if rules is None:
         return
 
+    forceRules = cli.selected.args.get('forceExternalDeps')
+
     printLogo = True
     for rule in rules:
-        doRun = _checkTriggers(ctx, rule)
+        doRun = True if forceRules else _checkTriggers(ctx, rule)
         if not doRun:
             continue
         if printLogo:
