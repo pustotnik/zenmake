@@ -225,6 +225,16 @@ def _detectZenMakeProjectRules(depConf, buildtype):
             'trigger' : { 'always' : False },
             'zm-commands' : ['clean'],
         }),
+        'install' : dict(baseRule, **{
+            'cmd' : '%s %s %s' % (ZM_RUN, 'install', cmdArgs),
+            'trigger' : { 'always' : False },
+            'zm-commands' : ['install'],
+        }),
+        'uninstall' : dict(baseRule, **{
+            'cmd' : '%s %s %s' % (ZM_RUN, 'uninstall', cmdArgs),
+            'trigger' : { 'always' : False },
+            'zm-commands' : ['uninstall'],
+        }),
     }
 
     depConf['rules'] = rules
