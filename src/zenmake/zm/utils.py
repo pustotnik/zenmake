@@ -259,6 +259,22 @@ def uniqueDictListWithOrder(lst):
 
     return result
 
+def envValToBool(rawVal):
+    """
+    Return env val as native bool value.
+    Returns False if not recognized.
+    """
+
+    result = False
+    if rawVal:
+        try:
+            # value from os.environ is a string but it may be a digit
+            result = bool(int(rawVal))
+        except ValueError:
+            result = rawVal in ('true', 'True', 'yes')
+
+    return result
+
 def cmdHasShellSymbols(cmdline):
     """
     Return True if string 'cmdline' contains some specific shell symbols

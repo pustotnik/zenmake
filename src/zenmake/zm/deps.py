@@ -184,8 +184,7 @@ def _detectZenMakeProjectRules(depConf, buildtype):
         # do nothing if custom rules exist
         return
 
-    colorOutput = 'yes' if log.colorsEnabled() else 'no'
-    cmdArgs = '--buildtype %s --color %s' % (buildtype,  colorOutput)
+    cmdArgs = '--buildtype %s' % buildtype
 
     def needToConfigure(**kwargs):
         # pylint: disable = unused-argument
@@ -651,9 +650,12 @@ def _runRule(ctx, rule):
     cmd = rule['cmd']
     env = dict(os.environ)
     if depType == 'zenmake':
+        if 'ZENMAKE_ON_TTY' not in env:
+            onTTY = sys.stderr.isatty() or sys.stdout.isatty()
+            env['ZENMAKE_ON_TTY'] = '1' if onTTY else '0'
         if _local.get('configure-cmd-was-called', False):
             # optimization: avoid needless work to autodetect running of 'configure'
-            env.update( { 'ZENMAKE_AUTOCONFIG' : 'false', } )
+            env['ZENMAKE_AUTOCONFIG'] = 'false'
         forceRules = cli.selected.args.get('forceExternalDeps')
         if forceRules:
             cmd += ' --force-edeps'

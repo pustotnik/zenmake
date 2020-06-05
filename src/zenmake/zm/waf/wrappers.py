@@ -11,6 +11,7 @@ import subprocess
 
 from waflib import Context, Configure, Utils
 from zm.constants import PYTHON_EXE
+from zm.utils import envValToBool
 from zm.pypkg import PkgPath
 from zm.waf import assist, launcher
 
@@ -89,11 +90,7 @@ def wrapBldCtxAutoConf(method):
         # Execute the configuration automatically
         autoconfig = os.environ.get('ZENMAKE_AUTOCONFIG', '')
         if autoconfig:
-            try:
-                # value from os.environ is a string but it may be a digit
-                autoconfig = bool(int(autoconfig))
-            except ValueError:
-                autoconfig = autoconfig not in ('false', 'False', 'no')
+            autoconfig = envValToBool(autoconfig)
         else:
             autoconfig = bconf.features['autoconfig']
 
