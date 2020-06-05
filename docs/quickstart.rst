@@ -102,7 +102,8 @@ ZenMake does the build:
 .. code-block:: console
 
     $ zenmake
-    Configuring the project
+    * Project name: 'testproject'
+    * Build type: 'debug'
     Setting top to                           : /tmp/testproject
     Setting out to                           : /tmp/testproject/build
     Checking for 'g++'                       : /usr/bin/g++
@@ -119,7 +120,7 @@ the same as ``zenmake help``.
 Get the list of all commands with a short description using
 ``zenmake help`` or ``zenmake --help``. To get help on selected command you
 can use ``zenmake help <selected command>`` or
-``zenmake <selected comman> --help``
+``zenmake <selected command> --help``
 
 For example to build ``release`` of the project above such a command can
 be used:
@@ -127,6 +128,8 @@ be used:
 .. code-block:: console
 
     $ zenmake build -b release
+    * Project name: 'testproject'
+    * Build type: 'release'
     Setting top to                           : /tmp/testproject
     Setting out to                           : /tmp/testproject/build
     Checking for program 'g++, c++'          : /usr/bin/g++

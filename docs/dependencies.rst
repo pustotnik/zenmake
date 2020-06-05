@@ -105,6 +105,14 @@ Additionally, in some cases, the parameter
 Also it's recommended to use always the same version of ZenMake for all such projects.
 Otherwise there are some compatible problems can be occured.
 
+.. note::
+    Command line options ``--force-edeps`` and ``--buildtype``
+    for current project will affect rules for its external dependencies
+    while all other command line options will be ignored.
+    You can use :ref:`environment variables<envvars>`
+    to have effect on all external dependencies. And, of course, you can set up
+    each buildconf in the dependencies to have desirable behavior.
+
 .. _dependencies-external-non-zenmake:
 
 Non-ZenMake projects
