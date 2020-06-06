@@ -34,6 +34,7 @@ These configuration tests in ``dict`` format:
 
         Parameter ``defines`` can be used to set additional C/C++ defines
         to use in compiling of the test.
+        These defines will not be set for your code, only for the test.
 
     ``act`` = ``check-libs``
         *Parameters*: ``names`` = [], ``fromtask`` = True, ``defines`` = [],
@@ -50,6 +51,7 @@ These configuration tests in ``dict`` format:
 
         Parameter ``defines`` can be used to set additional C/C++ defines
         to use in compiling of the test.
+        These defines will not be set for your code, only for the test.
 
     ``act`` = ``check-code``
         *Parameters*: ``text`` = '', ``file`` = '', ``label`` = '',
@@ -67,11 +69,12 @@ These configuration tests in ``dict`` format:
         If parameter ``execute`` is True it means that the resulting binary
         will be executed.
 
-        Parameter ``defname`` is a name of C/C++/Fortran define to set
-        when the test is over.
+        Parameter ``defname`` is a name of C/C++/D/Fortran define to set
+        for your code when the test is over.
 
-        Parameter ``defines`` can be used to set additional C/C++/Fortran defines
+        Parameter ``defines`` can be used to set additional C/C++/D/Fortran defines
         to use in compiling of the test.
+        These defines will not be set for your code, only for the test.
 
     ``act`` = ``check-programs``
         *Parameters*: ``names``, ``paths`` = [],  ``var`` = '', ``mandatory`` = True.
@@ -94,7 +97,8 @@ These configuration tests in ``dict`` format:
         ``mandatory``.
 
     ``act`` = ``write-config-header``
-        *Parameters*: ``file`` = '', ``guard`` = '',  ``mandatory`` = True.
+        *Parameters*: ``file`` = '', ``guard`` = '',  ``remove-defines`` = True,
+        ``mandatory`` = True.
 
         *Supported languages*: C, C++.
 
@@ -103,6 +107,9 @@ These configuration tests in ``dict`` format:
         The configuration header is used to limit the size of the
         command-line. By default file name is ``<task name>_config.h``.
         Parameter ``guard`` can be used to change C/C++ header guard.
+        Parameter ``remove-defines`` means removing the defines after they are
+        added into configuration header file and it is True by default.
+
         In your C/C++ code you can just include this file like that:
 
         .. code-block:: c++

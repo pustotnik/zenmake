@@ -75,6 +75,7 @@ _actToVars = {
     'write-config-header' : {
         'file' : { 'type': 'str' },
         'guard': { 'type': 'str' },
+        'remove-defines' : { 'type': 'bool' },
     },
 }
 

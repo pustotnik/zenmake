@@ -37,10 +37,10 @@ tasks:
         checks:
           - { act: check-headers, names: cstdio iostream }
           - { act: check-code, text: *fragment1, label: fragment1 }
-          - { act: check-code, text: *fragment2, label: fragment2, execute: True }
+          - { act: check-code, text: *fragment2, label: fragment2, execute: true }
           - { act: check-code, file: 'cfgtests/cfgtest3.cpp',
               label: fragment3, defname: MYDEFINE, defines: 'VAR1=1 VAR2=2' }
-      - { act: write-config-header }
+      - { act: write-config-header, remove-defines: false }
     use: util
 
 buildtypes:

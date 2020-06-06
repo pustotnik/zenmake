@@ -629,6 +629,9 @@ def writeConfigHeader(checkArgs, params):
         guardname = utils.normalizeForDefine(projectName + '_' + fileName)
     checkArgs['guard'] = guardname
 
+    # remove the defines after they are added
+    checkArgs['remove'] = checkArgs.pop('remove-defines', True)
+
     # write the configuration header from the build directory
     checkArgs['top'] = True
 
