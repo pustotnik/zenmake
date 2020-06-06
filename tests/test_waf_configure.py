@@ -249,9 +249,10 @@ def testRunConfTestsWriteHeader(mocker, cfgctx):
     tasks['some task']['$task.variant'] = buildtype
     tasks['some task']['$tlang'] = 'c'
     tasks['some task'].conftests = [
-        dict(act = 'write-config-header',),
-        dict(act = 'write-config-header', file = 'file1'),
-        dict(act = 'write-config-header', file = 'file2', guard = 'myguard'),
+        { 'act' : 'write-config-header', },
+        { 'act' : 'write-config-header', 'file' : 'file1' },
+        { 'act' : 'write-config-header', 'file' : 'file2', 'guard' : 'myguard' },
+        { 'act' : 'write-config-header', 'file' : 'file1', 'remove-defines' : False },
     ]
 
     ctx.write_config_header = mocker.MagicMock()
@@ -259,11 +260,13 @@ def testRunConfTestsWriteHeader(mocker, cfgctx):
 
     calls = [
         mocker.call(joinpath(buildtype, 'some_task_config.h'), top = True,
-                    guard = '_buildtype_some_task_config_h'.upper()),
+                    guard = '_buildtype_some_task_config_h'.upper(), remove = True),
         mocker.call(joinpath(buildtype, 'file1'), top = True,
-                    guard = '_buildtype_file1'.upper()),
+                    guard = '_buildtype_file1'.upper(), remove = True),
         mocker.call(joinpath(buildtype, 'file2'), top = True,
-                    guard = 'myguard'),
+                    guard = 'myguard', remove = True),
+        mocker.call(joinpath(buildtype, 'file1'), top = True,
+                    guard = '_buildtype_file1'.upper(), remove = False),
     ]
 
     assert ctx.write_config_header.mock_calls == calls
@@ -274,11 +277,13 @@ def testRunConfTestsWriteHeader(mocker, cfgctx):
 
     calls = [
         mocker.call(joinpath(buildtype, 'some_task_config.h'), top = True,
-                    guard = 'test_prj_buildtype_some_task_config_h'.upper()),
+                    guard = 'test_prj_buildtype_some_task_config_h'.upper(), remove = True),
         mocker.call(joinpath(buildtype, 'file1'), top = True,
-                    guard = 'test_prj_buildtype_file1'.upper()),
+                    guard = 'test_prj_buildtype_file1'.upper(), remove = True),
         mocker.call(joinpath(buildtype, 'file2'), top = True,
-                    guard = 'myguard'),
+                    guard = 'myguard', remove = True),
+        mocker.call(joinpath(buildtype, 'file1'), top = True,
+                    guard = 'test_prj_buildtype_file1'.upper(), remove = False),
     ]
 
     assert ctx.write_config_header.mock_calls == calls
