@@ -52,6 +52,7 @@ _actToVars = {
     },
     'check-headers' : {
         'names' :   { 'type': ('str', 'list-of-strs') },
+        'defname' : { 'type': 'str' },
         'defines' : { 'type': ('str', 'list-of-strs') },
     },
     'check-libs' : {

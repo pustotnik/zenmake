@@ -16,6 +16,12 @@ int main()
         err
     #endif
 
+    #ifdef HAVE_IOSTREAM
+        printf("HAVE_IOSTREAM\n");
+    #else
+        err
+    #endif
+
     foo();
     return 0;
 }

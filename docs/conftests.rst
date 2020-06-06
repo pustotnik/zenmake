@@ -26,11 +26,19 @@ but not between runnings of ZenMake.
 These configuration tests in ``dict`` format:
 
     ``act`` = ``check-headers``
-        *Parameters*: ``names``, ``defines`` = [],  ``mandatory`` = True.
+        *Parameters*: ``names``, ``defname`` = '', ``defines`` = [],
+        ``mandatory`` = True.
 
         *Supported languages*: C, C++.
 
         Check existence of C/C++ headers from list in the ``names``.
+
+        Parameter ``defname`` is a name of a define to set
+        for your code when the test is over. By default the name for each header
+        is generated in the form 'HAVE_<HEADER NAME>=1'. For example, if you set
+        'cstdio' in the ``names`` then the define 'HAVE_CSTDIO=1' will be generated.
+        If you set 'stdio.h' in the ``names`` then the define 'HAVE_STDIO_H=1'
+        will be generated.
 
         Parameter ``defines`` can be used to set additional C/C++ defines
         to use in compiling of the test.
@@ -47,7 +55,7 @@ These configuration tests in ``dict`` format:
         If ``fromtask`` is set to False then libraries from task
         parameter ``libs`` will not be used.
         If ``autodefine`` is set to True it generates
-        C/C++ define name like ``HAVE_LIB_SOMELIB``.
+        C/C++ define name like ``HAVE_LIB_LIBNAME=1``.
 
         Parameter ``defines`` can be used to set additional C/C++ defines
         to use in compiling of the test.
@@ -163,7 +171,7 @@ Example in python format:
             check,
             # Check libs from param 'libs'
             #dict(act = 'check-libs'),
-            dict(act = 'check-headers', names = 'cstdio', mandatory = True),
+            { 'act' : 'check-headers', 'names' : 'cstdio', 'mandatory' : True },
             dict(act = 'check-headers', names = 'cstddef stdint.h', mandatory = False),
             # Each lib will have define 'HAVE_LIB_<LIBNAME>' if autodefine = True
             dict(act = 'check-libs', names = 'pthread', autodefine = True,

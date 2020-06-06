@@ -27,7 +27,7 @@ tasks:
       - act: parallel
         checks:
           - { act: check-headers, names: stdio.h }
-          - { act: check-headers, names: stdlib.h }
+          - { act: check-headers, names: stdlib.h, defname: WE_HAVE_STDLIB }
       - { act: check-code, text: *fragment1 }
   testprg:
     features : cxxprogram
