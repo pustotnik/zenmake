@@ -117,7 +117,7 @@ def testsSetDirectEnv(cfgctx):
     assert ctx.variant == name
     assert ctx.all_envs[name] == env
 
-def testRunConfTestsCheckPrograms(mocker, cfgctx):
+def testRunConfigActionsCheckPrograms(mocker, cfgctx):
 
     mocker.patch('zm.log.info')
     mocker.patch('zm.log.warn')
@@ -126,13 +126,13 @@ def testRunConfTestsCheckPrograms(mocker, cfgctx):
     buildtype = 'buildtype'
     tasks = AutoDict()
     tasks.task.features = ['c', 'cshlib']
-    tasks.task.conftests = [
-        dict(act = 'check-programs', names = 'python2', mandatory = False),
-        dict(act = 'check-programs', names = 'python2 python3', paths = '1 2')
+    tasks.task['config-actions'] = [
+        dict(do = 'check-programs', names = 'python2', mandatory = False),
+        dict(do = 'check-programs', names = 'python2 python3', paths = '1 2')
     ]
 
     ctx.find_program = mocker.MagicMock()
-    ctx.runConfTests(buildtype, tasks)
+    ctx.runConfigActions(buildtype, tasks)
 
     calls = [
         mocker.call('python2', mandatory = False, path_list = mocker.ANY),
@@ -142,7 +142,7 @@ def testRunConfTestsCheckPrograms(mocker, cfgctx):
 
     assert ctx.find_program.mock_calls == calls
 
-def testRunConfTestsCheckSysLibs(mocker, cfgctx):
+def testRunConfigActionsCheckSysLibs(mocker, cfgctx):
 
     mocker.patch('zm.log.info')
     mocker.patch('zm.log.warn')
@@ -154,12 +154,12 @@ def testRunConfTestsCheckSysLibs(mocker, cfgctx):
     tasks.task['libs'] = 'lib1 lib2'
     tasks.task['$task.variant'] = buildtype
     tasks.task['$tlang'] = 'cxx'
-    tasks.task.conftests = [
-        dict(act = 'check-libs', fromtask = True, mandatory = False),
+    tasks.task['config-actions'] = [
+        dict(do = 'check-libs', fromtask = True, mandatory = False),
     ]
 
     ctx.check = mocker.MagicMock()
-    ctx.runConfTests(buildtype, tasks)
+    ctx.runConfigActions(buildtype, tasks)
 
     ignoreArgs = ['msg', '$conf-test-hash', 'type', 'compile_filename',
                   'code', 'compile_mode']
@@ -172,7 +172,7 @@ def testRunConfTestsCheckSysLibs(mocker, cfgctx):
 
     assert ctx.check.mock_calls == calls
 
-def testRunConfTestsCheckHeaders(mocker, cfgctx):
+def testRunConfigActionsCheckHeaders(mocker, cfgctx):
 
     mocker.patch('zm.log.info')
     mocker.patch('zm.log.warn')
@@ -183,12 +183,12 @@ def testRunConfTestsCheckHeaders(mocker, cfgctx):
     tasks.task.features = ['c', 'cshlib']
     tasks.task['$task.variant'] = buildtype
     tasks.task['$tlang'] = 'c'
-    tasks.task.conftests = [
-        dict(act = 'check-headers', names = 'header1 header2', mandatory = False),
+    tasks.task['config-actions'] = [
+        dict(do = 'check-headers', names = 'header1 header2', mandatory = False),
     ]
 
     ctx.check = mocker.MagicMock()
-    ctx.runConfTests(buildtype, tasks)
+    ctx.runConfigActions(buildtype, tasks)
 
     ignoreArgs = ['msg', '$conf-test-hash', 'type', 'compile_filename',
                   'code', 'compile_mode']
@@ -203,7 +203,7 @@ def testRunConfTestsCheckHeaders(mocker, cfgctx):
 
     assert ctx.check.mock_calls == calls
 
-def testRunConfTestsCheckLibs(mocker, cfgctx):
+def testRunConfigActionsCheckLibs(mocker, cfgctx):
 
     mocker.patch('zm.log.info')
     mocker.patch('zm.log.warn')
@@ -214,13 +214,13 @@ def testRunConfTestsCheckLibs(mocker, cfgctx):
     tasks.task.features = ['c', 'cshlib']
     tasks.task['$task.variant'] = buildtype
     tasks.task['$tlang'] = 'c'
-    tasks.task.conftests = [
-        dict(act = 'check-libs', names = 'lib1 lib2', mandatory = False),
-        dict(act = 'check-libs', names = 'lib3', autodefine = True),
+    tasks.task['config-actions'] = [
+        dict(do = 'check-libs', names = 'lib1 lib2', mandatory = False),
+        dict(do = 'check-libs', names = 'lib3', autodefine = True),
     ]
 
     ctx.check = mocker.MagicMock()
-    ctx.runConfTests(buildtype, tasks)
+    ctx.runConfigActions(buildtype, tasks)
 
     ignoreArgs = ['msg', '$conf-test-hash', 'type', 'compile_filename',
                   'code', 'compile_mode']
@@ -237,7 +237,7 @@ def testRunConfTestsCheckLibs(mocker, cfgctx):
 
     assert ctx.check.mock_calls == calls
 
-def testRunConfTestsWriteHeader(mocker, cfgctx):
+def testRunConfigActionsWriteHeader(mocker, cfgctx):
 
     mocker.patch('zm.log.info')
     mocker.patch('zm.log.warn')
@@ -248,15 +248,15 @@ def testRunConfTestsWriteHeader(mocker, cfgctx):
     tasks['some task'].features = ['c', 'cshlib']
     tasks['some task']['$task.variant'] = buildtype
     tasks['some task']['$tlang'] = 'c'
-    tasks['some task'].conftests = [
-        { 'act' : 'write-config-header', },
-        { 'act' : 'write-config-header', 'file' : 'file1' },
-        { 'act' : 'write-config-header', 'file' : 'file2', 'guard' : 'myguard' },
-        { 'act' : 'write-config-header', 'file' : 'file1', 'remove-defines' : False },
+    tasks['some task']['config-actions'] = [
+        { 'do' : 'write-config-header', },
+        { 'do' : 'write-config-header', 'file' : 'file1' },
+        { 'do' : 'write-config-header', 'file' : 'file2', 'guard' : 'myguard' },
+        { 'do' : 'write-config-header', 'file' : 'file1', 'remove-defines' : False },
     ]
 
     ctx.write_config_header = mocker.MagicMock()
-    ctx.runConfTests(buildtype, tasks)
+    ctx.runConfigActions(buildtype, tasks)
 
     calls = [
         mocker.call(joinpath(buildtype, 'some_task_config.h'), top = True,
@@ -273,7 +273,7 @@ def testRunConfTestsWriteHeader(mocker, cfgctx):
 
     ctx.fakebconf.projectName = 'test prj'
     ctx.write_config_header.reset_mock()
-    ctx.runConfTests(buildtype, tasks)
+    ctx.runConfigActions(buildtype, tasks)
 
     calls = [
         mocker.call(joinpath(buildtype, 'some_task_config.h'), top = True,
@@ -288,7 +288,7 @@ def testRunConfTestsWriteHeader(mocker, cfgctx):
 
     assert ctx.write_config_header.mock_calls == calls
 
-def testRunConfTestsUnknown(mocker, cfgctx):
+def testRunConfigActionsUnknown(mocker, cfgctx):
 
     mocker.patch('zm.log.info')
     mocker.patch('zm.log.warn')
@@ -297,12 +297,12 @@ def testRunConfTestsUnknown(mocker, cfgctx):
     buildtype = 'buildtype'
     tasks = AutoDict()
     tasks.task.features = ['c', 'cshlib']
-    tasks.task.conftests = [
-        dict(act = 'random act',),
+    tasks.task['config-actions'] = [
+        dict(do = 'random act',),
     ]
 
     with pytest.raises(WafError):
-        ctx.runConfTests(buildtype, tasks)
+        ctx.runConfigActions(buildtype, tasks)
 
 def _checkToolchainNames(ctx, buildconf, buildtype, expected):
     bconf = BuildConfig(asRealConf(buildconf))

@@ -586,7 +586,7 @@ run
                 'env'   : { 'JUST_ENV_VAR' : 'qwerty', },
                 'shell' : False,
             },
-            'conftests'  : [ dict(act = 'check-programs', names = 'python'), ]
+            'config-actions'  : [ dict(do = 'check-programs', names = 'python'), ]
         },
 
         'shlib-test' : {
@@ -603,17 +603,18 @@ run
 
         'foo.luac' : {
             'source' : 'foo.lua',
-            'conftests' : [ dict(act = 'check-programs', names = 'luac'), ],
+            'config-actions' : [ dict(do = 'check-programs', names = 'luac'), ],
             'run': '${LUAC} -s -o ${TGT} ${SRC}',
         },
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
-conftests
+config-actions
 """""""""""""""""""""
-    A list of configuration tests. Details are :ref:`here<conftests>`.
-    These tests are called on **configure** step (command **configure**).
+    A list of configuration actions (configuration checks and others).
+    Details are :ref:`here<config-actions>`.
+    These actions are called on **configure** step (command **configure**).
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.

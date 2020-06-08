@@ -63,7 +63,7 @@ _PREPARE_TASKPARAMS_HOOKS = (('source', _applyStartDirToSrcParam),) \
 def _genTaskParamsToListMap(result):
 
     for name, scheme in viewitems(taskscheme):
-        if name in ('conftests', 'name') or name.endswith('.select'):
+        if name in ('config-actions', 'name') or name.endswith('.select'):
             continue
         types = scheme['type']
         if 'str' in types and 'list-of-strs' in types:
@@ -74,9 +74,9 @@ def _genTaskParamsToListMap(result):
 
     # Value 'None' means: don't make a list
     result.update({
-        'name'      : None,
-        'features'  : toListSimple,
-        'conftests' : None,
+        'name' : None,
+        'features' : toListSimple,
+        'config-actions' : None,
     })
     return result
 

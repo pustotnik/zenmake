@@ -9,8 +9,8 @@ tasks:
     features : shlib
     source   :  { include: '**/*.c' }
     export-includes : true
-    conftests :
-      - { act: check-headers, names: stdio.h }
+    config-actions :
+      - { do: check-headers, names: stdio.h }
 
 matrix:
   - for : { buildtype : [debug-gcc, release-gcc] }

@@ -16,7 +16,7 @@ import pytest
 from zm.error import *
 from zm.constants import KNOWN_PLATFORMS
 from zm.pyutils import stringtype, viewitems
-from zm.buildconf.scheme import KNOWN_CONFTEST_ACTS
+from zm.buildconf.scheme import KNOWN_CONF_ACTIONS
 from zm.buildconf.validator import Validator
 import tests.common as cmn
 
@@ -319,31 +319,31 @@ class TestSuite(object):
         }
         self._checkParamsAs(buildconf, confnode, ['source'], validTypesAndVals)
 
-        confnode['conftests'] = cmn.randomint()
+        confnode['config-actions'] = cmn.randomint()
         with pytest.raises(ZenMakeConfTypeError):
             validator.validate(buildconf)
-        confnode['conftests'] = cmn.randomstr()
+        confnode['config-actions'] = cmn.randomstr()
         with pytest.raises(ZenMakeConfTypeError):
             validator.validate(buildconf)
-        confnode['conftests'] = tuple()
+        confnode['config-actions'] = tuple()
         validator.validate(buildconf)
-        confnode['conftests'] = []
+        confnode['config-actions'] = []
         validator.validate(buildconf)
 
-        confnode['conftests'] = [ { 'act' : 'check-headers', } ]
+        confnode['config-actions'] = [ { 'do' : 'check-headers', } ]
         validator.validate(buildconf)
-        self._checkParamsAsStr(buildconf, confnode['conftests'][0],
-                               ['act'], list(KNOWN_CONFTEST_ACTS))
-        self._checkParamsAsStrOrListOfStrs(buildconf, confnode['conftests'][0],
+        self._checkParamsAsStr(buildconf, confnode['config-actions'][0],
+                               ['do'], list(KNOWN_CONF_ACTIONS))
+        self._checkParamsAsStrOrListOfStrs(buildconf, confnode['config-actions'][0],
                                ['names'])
-        self._validateBoolValues(buildconf, confnode['conftests'][0], 'mandatory')
+        self._validateBoolValues(buildconf, confnode['config-actions'][0], 'mandatory')
 
-        confnode['conftests'] = [ { 'act' : 'check-libs', } ]
+        confnode['config-actions'] = [ { 'do' : 'check-libs', } ]
         validator.validate(buildconf)
-        self._checkParamsAsStr(buildconf, confnode['conftests'][0],
-                               ['act'], list(KNOWN_CONFTEST_ACTS))
-        self._validateBoolValues(buildconf, confnode['conftests'][0], 'autodefine')
-        self._validateBoolValues(buildconf, confnode['conftests'][0], 'fromtask')
+        self._checkParamsAsStr(buildconf, confnode['config-actions'][0],
+                               ['do'], list(KNOWN_CONF_ACTIONS))
+        self._validateBoolValues(buildconf, confnode['config-actions'][0], 'autodefine')
+        self._validateBoolValues(buildconf, confnode['config-actions'][0], 'fromtask')
 
         confnode['run'] = {}
         validTypesAndVals = { 'str' : None, 'func' : None, }

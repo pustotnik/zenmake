@@ -5,7 +5,7 @@ tasks = {
     'program' : {
         'features' : 'cprogram',
         'source'   : 'test.c util.c',
-        'conftests' : [ dict(act = 'check-programs', names = 'strip'), ],
+        'config-actions' : [ { 'do' : 'check-programs', 'names' : 'strip'} ],
         'run': '${STRIP} ${TARGET}',
     },
 }

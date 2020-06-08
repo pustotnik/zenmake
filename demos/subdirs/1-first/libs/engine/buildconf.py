@@ -5,8 +5,8 @@ tasks = {
         'source'   : 'src/extra.cpp',
         'includes' : 'src',
         'use'      : 'corelib',
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'iostream'),
+        'config-actions'  : [
+            dict(do = 'check-headers', names = 'iostream'),
         ],
     },
     'engine' : {
@@ -15,8 +15,8 @@ tasks = {
         'includes' : 'src',
         'use'      : 'extra',
         'export-includes' : True,
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'iostream'),
+        'config-actions'  : [
+            dict(do = 'check-headers', names = 'iostream'),
         ],
     },
 }

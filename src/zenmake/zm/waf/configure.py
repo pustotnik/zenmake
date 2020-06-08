@@ -27,8 +27,7 @@ from zm import utils, log, toolchains, error, db, version, cli, deps
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
 from zm.features import ToolchainVars
-from zm.waf import assist, context
-from zm.conftests import handleConfTests
+from zm.waf import assist, context, config_actions as configActions
 
 joinpath = os.path.join
 normpath = os.path.normpath
@@ -574,9 +573,9 @@ class ConfigurationContext(WafConfContext):
                 self.fatal(msg)
             self.monitFiles.append(path)
 
-    def runConfTests(self, buildtype, tasks):
+    def runConfigActions(self, buildtype, tasks):
         """
-        Run supported configuration tests/checks
+        Run supported configuration actions: checks/others
         """
 
         try:
@@ -585,20 +584,20 @@ class ConfigurationContext(WafConfContext):
             self._printLogo = printLogo = True
 
         for taskName, taskParams in viewitems(tasks):
-            confTests = taskParams.get('conftests', [])
-            if not confTests:
+            actions = taskParams.get('config-actions', [])
+            if not actions:
                 continue
             if printLogo:
-                log.printStep('Running configuration tests')
+                log.printStep('Running configuration actions')
                 printLogo = False
-            log.info('.. Checks for the %r:' % taskName)
+            #log.info('.. Actions for the %r:' % taskName)
             params = {
                 'cfgCtx' : self,
                 'buildtype' : buildtype,
                 'taskName' : taskName,
                 'taskParams' : taskParams,
             }
-            handleConfTests(confTests, params)
+            configActions.runActions(actions, params)
 
         self._printLogo = printLogo
         self.setenv('')

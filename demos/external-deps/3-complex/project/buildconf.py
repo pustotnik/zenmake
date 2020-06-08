@@ -23,8 +23,8 @@ tasks = {
         'includes' : 'libs',
         'use'      : 'engine zmdep-b:service',
         'rpath'    : '.',
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'iostream'),
+        'config-actions' : [
+            dict(do = 'check-headers', names = 'iostream'),
         ],
     },
 }

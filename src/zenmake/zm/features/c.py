@@ -8,7 +8,8 @@
 
 from waflib.Tools.c_config import SNIP_EMPTY_PROGRAM as EMPTY_PROGRAM
 from waflib.Tools.compiler_c import c_compiler as compilers
-from zm import toolchains, conftests
+from zm import toolchains
+from zm.waf import config_actions as configActions
 
 toolchains.regToolchains('c', compilers)
 
@@ -26,11 +27,11 @@ def _checkWrapper(func):
 
     return execute
 
-_confTestFuncs = {
-    'check-headers'       : _checkWrapper(conftests.checkHeaders),
-    'check-libs'          : _checkWrapper(conftests.checkLibs),
-    'check-code'          : _checkWrapper(conftests.checkCode),
-    'write-config-header' : conftests.writeConfigHeader,
+_confActionFuncs = {
+    'check-headers'       : _checkWrapper(configActions.checkHeaders),
+    'check-libs'          : _checkWrapper(configActions.checkLibs),
+    'check-code'          : _checkWrapper(configActions.checkCode),
+    'write-config-header' : configActions.writeConfigHeader,
 }
 
-conftests.regConfTestFuncs('c', _confTestFuncs)
+configActions.regActionFuncs('c', _confActionFuncs)

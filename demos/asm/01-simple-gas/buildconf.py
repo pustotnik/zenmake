@@ -14,8 +14,8 @@ tasks = {
         'defines'   : 'foo=12',
         'asflags'   : '-Os',
         'toolchain' : 'gcc gas',
-        'conftests' : [
-            #{ 'act' : 'check-by-pyfunc', 'func' : check, 'mandatory': False  },
+        'config-actions' : [
+            #{ 'do' : 'call-pyfunc', 'func' : check, 'mandatory': False  },
             check,
         ],
     },

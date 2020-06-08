@@ -32,13 +32,11 @@ tasks = {
         'source'   : 'src/calculator.f90 src/main.f90',
         'includes' : 'src/inc',
         'use'      : 'staticlib sharedlib',
-        'conftests'  : [
-            dict( act = 'parallel',
-                checks = [
-                    dict(act = 'check-code', text = fragment1, label = 'fragment1'),
-                    dict(act = 'check-code', text = fragment2, label = 'fragment2', execute = True)
-                ],
-            ),
+        'config-actions'  : [
+            dict( do = 'parallel', actions = [
+                dict(do = 'check-code', text = fragment1, label = 'fragment1'),
+                dict(do = 'check-code', text = fragment2, label = 'fragment2', execute = True)
+            ]),
         ],
     },
 }

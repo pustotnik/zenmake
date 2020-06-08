@@ -4,8 +4,8 @@ tasks = {
         'features' : 'cxxshlib',
         'source'   :  dict( include = 'shlib/**/*.cpp' ),
         'includes' : '.',
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'cstdio iostream'),
+        'config-actions'  : [
+            { 'do' : 'check-headers', 'names' : 'cstdio iostream' },
         ],
     },
     'prog' : {

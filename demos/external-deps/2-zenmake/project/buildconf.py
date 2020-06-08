@@ -16,8 +16,8 @@ tasks = {
         'features' : 'cxxshlib',
         'source'   :  { 'include' : 'shlib/**/*.cpp' },
         'use' : 'zmdep:calclib zmdep:printlib',
-        'conftests'  : [
-            { 'act' : 'check-headers', 'names' : 'cstdio iostream' },
+        'config-actions'  : [
+            { 'do' : 'check-headers', 'names' : 'cstdio iostream' },
         ],
     },
     'program' : {

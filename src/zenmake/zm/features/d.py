@@ -6,7 +6,8 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-from zm import toolchains, conftests
+from zm import toolchains
+from zm.waf import config_actions as configActions
 
 toolchains.regToolchains('d', { 'default': ('ldc2', 'gdc', 'dmd'), })
 
@@ -23,8 +24,8 @@ def _checkWrapper(func):
 
     return execute
 
-_confTestFuncs = {
-    'check-code' : _checkWrapper(conftests.checkCode),
+_confActionFuncs = {
+    'check-code' : _checkWrapper(configActions.checkCode),
 }
 
-conftests.regConfTestFuncs('d', _confTestFuncs)
+configActions.regActionFuncs('d', _confActionFuncs)

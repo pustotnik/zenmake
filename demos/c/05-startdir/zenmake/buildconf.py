@@ -8,16 +8,16 @@ tasks = {
         'source'   :  dict( include = 'src/shlib/**/*.c' ),
         'includes' : 'includes',
         'export-includes': True,
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'stdio.h'),
+        'config-actions'  : [
+            dict(do = 'check-headers', names = 'stdio.h'),
         ],
     },
     'test' : {
         'features' : 'cprogram',
         'source'   :  dict( include = 'src/prog/**/*.c' ),
         'use'      : 'util',
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'stdio.h'),
+        'config-actions'  : [
+            dict(do = 'check-headers', names = 'stdio.h'),
         ],
     },
 }

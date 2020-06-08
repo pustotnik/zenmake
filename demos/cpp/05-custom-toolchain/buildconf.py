@@ -3,15 +3,15 @@ tasks = {
     'shlib' : {
         'features' : 'cxxshlib',
         'source'   :  dict( include = 'shlib/**/*.cpp' ),
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'cstdio'),
+        'config-actions'  : [
+            dict(do = 'check-headers', names = 'cstdio'),
         ],
     },
     'stlib' : {
         'features' : 'cxxstlib',
         'source'   :  dict( include = 'stlib/**/*.cpp' ),
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'cstdio'),
+        'config-actions'  : [
+            dict(do = 'check-headers', names = 'cstdio'),
         ],
     },
     'shlibmain' : {

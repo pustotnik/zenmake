@@ -20,16 +20,16 @@ tasks = {
         'source'   :  dict( include = 'shlib/**/*.cpp' ),
         'includes' : '.',
         'run'      : "echo 'This is runcmd in task \"shlib\"'",
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'iostream'),
+        'config-actions'  : [
+            dict(do = 'check-headers', names = 'iostream'),
         ],
     },
     'stlib' : {
         'features' : 'cxxstlib',
         'source'   :  dict( include = 'stlib/**/*.cpp' ),
         'includes' : '.',
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'cstdio'),
+        'config-actions'  : [
+            dict(do = 'check-headers', names = 'cstdio'),
         ],
     },
     'shlibmain' : {
@@ -66,7 +66,7 @@ tasks = {
             'shell' : False,
         },
         'use'       : 'shlibmain',
-        'conftests' : [ dict(act = 'check-programs', names = 'python'), ]
+        'config-actions' : [ dict(do = 'check-programs', names = 'python'), ]
     },
     'altscript' : {
         'run' : { 'cmd' : '"alt script.py"', 'cwd' : '.' },
@@ -88,7 +88,7 @@ tasks = {
             'shell' : False,
         },
         'use' : 'complex',
-        'conftests' : [ dict(act = 'check-programs', names = 'python'), ]
+        'config-actions' : [ dict(do = 'check-programs', names = 'python'), ]
     },
     'testcmn' : {
         'features' : 'cxxshlib test',
@@ -108,7 +108,7 @@ tasks = {
             'timeout' : 10, # in seconds, Python 3 only
             'shell'   : False,
         },
-        'conftests' : [ dict(act = 'check-headers', names = 'vector'), ]
+        'config-actions' : [ dict(do = 'check-headers', names = 'vector'), ]
     },
     'shlibmain-test' : {
         'features' : 'cxxprogram test',

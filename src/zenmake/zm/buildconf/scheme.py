@@ -27,22 +27,22 @@ def _checkVerNum(value, fullkey):
 def _genSameSchemeDict(keys, scheme):
     return { k:scheme for k in keys }
 
-def _genConfTestsScheme(confnode, fullkey):
+def _genConfActionsScheme(confnode, fullkey):
 
     # pylint: disable = unused-argument
 
-    # conf tests are in a list where each item has own scheme according 'act'
+    # conf actions are in a list where each item has own scheme according 'do'
     scheme = {
         'type': 'list',
         'vars-type' : ('dict', 'func'),
         'dict-allow-unknown-keys' : False,
-        'dict-vars' : _genConfTestsDictVarsScheme
+        'dict-vars' : _genConfActionsDictVarsScheme
     }
 
     return scheme
 
-_actToVars = {
-    'check-by-pyfunc' : {
+_actionToVars = {
+    'call-pyfunc' : {
         'func': { 'type': 'func' },
     },
     'check-programs' : {
@@ -71,7 +71,7 @@ _actToVars = {
     },
     'parallel' : {
         'tryall' : { 'type': 'bool' },
-        'checks' : _genConfTestsScheme,
+        'actions' : _genConfActionsScheme,
     },
     'write-config-header' : {
         'file' : { 'type': 'str' },
@@ -80,30 +80,30 @@ _actToVars = {
     },
 }
 
-def _genConfTestsDictVarsScheme(confnode, fullkey):
+def _genConfActionsDictVarsScheme(confnode, fullkey):
 
-    # common params for any conf test
+    # common params for any conf action
     schemeDictVars = {
-        'act' :       {
+        'do' :       {
             'type': 'str',
-            'allowed' : set(_actToVars.keys()),
+            'allowed' : set(_actionToVars.keys()),
         },
         'mandatory' : { 'type': 'bool' },
     }
 
     keyParts = fullkey.split('.')
-    if keyParts[-2] == 'checks':
-        # add specific params for parallel conf tests
+    if keyParts[-2] == 'actions':
+        # add specific params for parallel conf actions
         schemeDictVars.update({
             'id' :     { 'type': 'str' },
             'before' : { 'type': 'str' },
             'after' :  { 'type': 'str' },
         })
 
-    act = confnode.get('act', '')
-    if isinstance(act, stringtype):
-        # add params specific for this act
-        schemeDictVars.update(_actToVars.get(act, {}))
+    action = confnode.get('do', '')
+    if isinstance(action, stringtype):
+        # add params specific for this action
+        schemeDictVars.update(_actionToVars.get(action, {}))
     return schemeDictVars
 
 _PATHS_SCHEME = {
@@ -137,7 +137,7 @@ taskscheme = {
     'export-includes' : { 'type': ('bool', 'str', 'list-of-strs') },
     'export-defines' :  { 'type': ('bool', 'str', 'list-of-strs') },
     'install-path' :    { 'type': ('bool', 'str') },
-    'conftests' : _genConfTestsScheme,
+    'config-actions' :  _genConfActionsScheme,
     'normalize-target-name' : { 'type': 'bool' },
     'objfile-index' : { 'type': 'int' },
 }
@@ -365,4 +365,4 @@ KNOWN_TASK_PARAM_NAMES = frozenset(taskscheme.keys())
 KNOWN_CONF_PARAM_NAMES = frozenset(confscheme.keys())
 KNOWN_CONDITION_PARAM_NAMES = \
     frozenset(confscheme['conditions']['vars'][ANYAMOUNTSTRS_KEY]['dict-vars'].keys())
-KNOWN_CONFTEST_ACTS = frozenset(_actToVars.keys())
+KNOWN_CONF_ACTIONS = frozenset(_actionToVars.keys())

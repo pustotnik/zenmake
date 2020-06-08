@@ -16,11 +16,11 @@ tasks = {
         'source'   : 'src/extra.cpp',
         'includes' : 'src',
         'use'      : 'corelib',
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'cstdio iostream'),
+        'config-actions'  : [
+            dict(do = 'check-headers', names = 'cstdio iostream'),
             check,
-            dict(act = 'check-headers', names = 'iostream'), # for test only
-            dict(act = 'write-config-header'),
+            dict(do = 'check-headers', names = 'iostream'), # for test only
+            dict(do = 'write-config-header'),
         ],
     },
     'engine' : {
@@ -29,26 +29,25 @@ tasks = {
         'includes' : 'src',
         'use'      : 'extra',
         'export-includes' : True,
-        'conftests'  : [
-            dict( act = 'check-headers', names = 'stdio.h iostream' ),
-            dict( act = 'parallel',
-              checks = [
-                    dict(act = 'check-headers', names = 'cstdio iostream', id = 'first'),
-                    dict(act = 'check-headers', names = 'stdlib.h', after = 'first'),
-                    dict(act = 'check-headers', names = 'stdlibasd.h', mandatory = False),
+        'config-actions'  : [
+            dict( do = 'check-headers', names = 'stdio.h iostream' ),
+            dict( do = 'parallel', actions = [
+                    dict(do = 'check-headers', names = 'cstdio iostream', id = 'first'),
+                    dict(do = 'check-headers', names = 'stdlib.h', after = 'first'),
+                    dict(do = 'check-headers', names = 'stdlibasd.h', mandatory = False),
                     # for test only
-                    dict(act = 'check-headers', names = 'iostream'),
-                    dict(act = 'check-headers', names = 'iostream'),
-                    dict(act = 'check-headers', names = 'iostream'),
+                    dict(do = 'check-headers', names = 'iostream'),
+                    dict(do = 'check-headers', names = 'iostream'),
+                    dict(do = 'check-headers', names = 'iostream'),
                     check,
-                    dict(act = 'check-by-pyfunc', func = check2, mandatory = False),
+                    dict(do = 'call-pyfunc', func = check2, mandatory = False),
               ],
               #tryall = True,
               tryall = False,
               #mandatory = False,
             ),
-            dict( act = 'check-headers', names = 'string vector' ),
-            dict( act = 'write-config-header'),
+            dict( do = 'check-headers', names = 'string vector' ),
+            dict( do = 'write-config-header'),
         ],
     },
     'extra-test' : {

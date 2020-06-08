@@ -83,8 +83,8 @@ tasks = {
             'debug'   : 'foo-lib-d:static-lib',
             'release' : 'foo-lib-r:static-lib',
         },
-        'conftests'  : [
-            { 'act' : 'check-headers', 'names' : 'cstdio iostream' },
+        'config-actions'  : [
+            { 'do' : 'check-headers', 'names' : 'cstdio iostream' },
         ],
     },
     'program' : {

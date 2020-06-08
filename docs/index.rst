@@ -25,7 +25,7 @@ ZenMake documentation
    commands
    envvars
    langs
-   conftests
+   config-actions
    dependencies
    tests
    perftips

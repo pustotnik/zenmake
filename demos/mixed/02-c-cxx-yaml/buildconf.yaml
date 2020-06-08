@@ -23,24 +23,24 @@ tasks:
   util:
     features : cshlib
     source   : { include: 'shlib/**/*.c' }
-    conftests :
-      - act: parallel
-        checks:
-          - { act: check-headers, names: stdio.h }
-          - { act: check-headers, names: stdlib.h, defname: WE_HAVE_STDLIB }
-      - { act: check-code, text: *fragment1 }
+    config-actions :
+      - do: parallel
+        actions:
+          - { do: check-headers, names: stdio.h }
+          - { do: check-headers, names: stdlib.h, defname: WE_HAVE_STDLIB }
+      - { do: check-code, text: *fragment1 }
   testprg:
     features : cxxprogram
     source   : { include: 'prog/**/*.cpp' }
-    conftests :
-      - act: parallel
-        checks:
-          - { act: check-headers, names: cstdio iostream }
-          - { act: check-code, text: *fragment1, label: fragment1 }
-          - { act: check-code, text: *fragment2, label: fragment2, execute: true }
-          - { act: check-code, file: 'cfgtests/cfgtest3.cpp',
+    config-actions :
+      - do: parallel
+        actions:
+          - { do: check-headers, names: cstdio iostream }
+          - { do: check-code, text: *fragment1, label: fragment1 }
+          - { do: check-code, text: *fragment2, label: fragment2, execute: true }
+          - { do: check-code, file: 'cfgtests/cfgtest3.cpp',
               label: fragment3, defname: MYDEFINE, defines: 'VAR1=1 VAR2=2' }
-      - { act: write-config-header, remove-defines: false }
+      - { do: write-config-header, remove-defines: false }
     use: util
 
 buildtypes:

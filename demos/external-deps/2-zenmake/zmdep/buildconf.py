@@ -8,16 +8,16 @@ tasks = {
     'printlib' : {
         'features' : 'cstlib',
         'source'   :  dict( include = 'printlib/**/*.c' ),
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'stdio.h'),
+        'config-actions' : [
+            dict(do = 'check-headers', names = 'stdio.h'),
         ],
     },
     'service' : {
         'features' : 'cprogram',
         'source'   :  dict( include = 'service/**/*.c' ),
         'use'      : 'calclib printlib',
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'stdio.h'),
+        'config-actions' : [
+            dict(do = 'check-headers', names = 'stdio.h'),
         ],
     },
 }

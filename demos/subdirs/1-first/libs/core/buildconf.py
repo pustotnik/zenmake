@@ -11,8 +11,8 @@ tasks = {
         'source'   :  dict( include = '**/*.c' ),
         'includes' : 'src',
         'export-includes' : True,
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'stdio.h'),
+        'config-actions'  : [
+            dict(do = 'check-headers', names = 'stdio.h'),
             check,
         ],
     },

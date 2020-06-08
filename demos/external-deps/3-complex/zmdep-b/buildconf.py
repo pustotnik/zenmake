@@ -22,8 +22,8 @@ tasks = {
         'features' : 'cprogram',
         'source'   :  dict( include = 'service/**/*.c' ),
         'use'      : 'calc print',
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'stdio.h'),
+        'config-actions' : [
+            dict(do = 'check-headers', names = 'stdio.h'),
         ],
     },
 }

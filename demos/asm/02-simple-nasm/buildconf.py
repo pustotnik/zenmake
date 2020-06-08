@@ -14,9 +14,9 @@ tasks = {
         'asflags'     : '-f elf64',
         'aslinkflags' : '-s',
         'toolchain'   : 'nasm',
-        'conftests'   : [
+        'config-actions'   : [
             check,
-            dict(act = 'check-programs', names = 'ld', var = 'ASLINK'),
+            { 'do' : 'check-programs', 'names' : 'ld', 'var' : 'ASLINK' },
         ],
     },
 }

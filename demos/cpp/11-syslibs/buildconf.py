@@ -20,9 +20,9 @@ tasks = {
             'windows' : r'C:\local\boost_1_67_0\lib64-msvc-14.1',
         },
         'libs' : 'boost_timer',
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'cmath iostream'),
-            dict(act = 'check-libs'),
+        'config-actions'  : [
+            dict(do = 'check-headers', names = 'cmath iostream'),
+            dict(do = 'check-libs'),
         ],
     },
     'program' : {

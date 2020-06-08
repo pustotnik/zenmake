@@ -4,8 +4,8 @@ tasks = {
         'features' : 'cshlib',
         'source'   :  dict( include = 'shlib/**/*.c' ),
         'includes' : '.',
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'stdio.h'),
+        'config-actions'  : [
+            { 'do' : 'check-headers', 'names' : 'stdio.h' },
         ],
         'ver-num' : '0.1.2',
     },
@@ -14,8 +14,8 @@ tasks = {
         'source'   :  dict( include = 'prog/**/*.c' ),
         'includes' : '.',
         'use'      : 'util',
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'stdio.h'),
+        'config-actions'  : [
+            { 'do' : 'check-headers', 'names' : 'stdio.h' },
         ],
     },
 }

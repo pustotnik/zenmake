@@ -13,6 +13,6 @@ tasks = {
             'env'   : { 'JUST_ENV_VAR' : 'qwerty', },
             'shell' : False,
         },
-        'conftests' : [ dict(act = 'check-programs', names = 'python'), ]
+        'config-actions' : [ dict(do = 'check-programs', names = 'python'), ]
     },
 }

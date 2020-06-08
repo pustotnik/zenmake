@@ -10,7 +10,8 @@
 from waflib.Tools import fc
 # pylint: enable = unused-import
 from waflib.Tools.compiler_fc import fc_compiler as compilers
-from zm import toolchains, conftests
+from zm import toolchains
+from zm.waf import config_actions as configActions
 
 # Fortran compiler g95 is not longer maintained since 2013.
 _compilersTable = { p:[x for x in compilers[p] if x != 'g95'] for p in compilers }
@@ -29,8 +30,8 @@ def _checkWrapper(func):
 
     return execute
 
-_confTestFuncs = {
-    'check-code' : _checkWrapper(conftests.checkCode),
+_confActionFuncs = {
+    'check-code' : _checkWrapper(configActions.checkCode),
 }
 
-conftests.regConfTestFuncs('fc', _confTestFuncs)
+configActions.regActionFuncs('fc', _confActionFuncs)

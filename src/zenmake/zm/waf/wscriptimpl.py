@@ -82,14 +82,14 @@ def _configure(conf, bconf):
         # configure all possible task params
         conf.configureTaskParams(bconf, taskParams)
 
-    # run conf checkers
-    conf.runConfTests(buildtype, tasks)
+    # run conf actions
+    conf.runConfigActions(buildtype, tasks)
 
     # save envs
     for taskParams in viewvalues(tasks):
 
         # It's not needed anymore.
-        taskParams.pop('conftests', None)
+        taskParams.pop('config-actions', None)
 
         # switch env
         conf.variant = taskParams['$task.variant']
@@ -195,7 +195,7 @@ def build(bld):
 
         if 'includes' in taskParams:
             # Add the build directory path.
-            # It's needed to use config header with 'conftests'.
+            # It's needed to use config header with 'config-actions'.
             taskParams['includes'].append(btypeDir)
 
         if 'source' in taskParams:

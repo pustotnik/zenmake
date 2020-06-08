@@ -64,8 +64,8 @@ PARAM_TEST_VALUES = {
 
 def _setup():
     paramNames = [x[:x.rfind('.')] for x in KNOWN_TASK_PARAM_NAMES if x.endswith('.select')]
-    # param 'conftests' is removed at the end of 'configure'
-    paramNames.remove('conftests')
+    # param 'config-actions' is removed at the end of 'configure'
+    paramNames.remove('config-actions')
     for name in paramNames:
         if name not in PARAM_TEST_VALUES:
             PARAM_TEST_VALUES[name] = ['val1', 'val1 val2', ['val3', 'val4']]

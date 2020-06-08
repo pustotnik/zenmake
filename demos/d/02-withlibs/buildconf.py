@@ -33,13 +33,13 @@ tasks = {
         'source'   : 'src/main.d',
         'includes' : 'src',
         'use'      : 'staticlib dll',
-        'conftests'  : [
-            dict( act = 'parallel',
-                checks = [
-                    dict(act = 'check-code', text = fragment1, label = 'fragment1'),
-                    dict(act = 'check-code', text = fragment2, label = 'fragment2', execute = True)
+        'config-actions'  : [
+            {
+                'do' : 'parallel', 'actions' : [
+                    { 'do' : 'check-code', 'text' : fragment1, 'label' : 'fragment1' },
+                    { 'do' : 'check-code', 'text' : fragment2, 'label' : 'fragment2', 'execute' : True }
                 ],
-            ),
+            },
         ],
     },
 }

@@ -7,16 +7,16 @@ tasks = {
         'source'   :  dict( include = '"my shlib/**/*.c"' ),
         'includes' : '"my includes"',
         'export-includes' : True,
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'stdio.h'),
+        'config-actions'  : [
+            { 'do' : 'check-headers', 'names' : 'stdio.h' },
         ],
     },
     'my test' : {
         'features' : 'cprogram',
         'source'   :  dict( include = '"my prog/**/*.c"' ),
         'use'      : "'my util'",
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'stdio.h'),
+        'config-actions'  : [
+            { 'do' : 'check-headers', 'names' : 'stdio.h' },
         ],
     },
     #######
@@ -25,16 +25,16 @@ tasks = {
         'source'   : '"my shlib/my util.c" "my shlib/my util2.c"',
         'includes' : '"my includes"',
         'export-includes' : True,
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'stdio.h'),
+        'config-actions'  : [
+            { 'do' : 'check-headers', 'names' : 'stdio.h' },
         ],
     },
     'my test alt' : {
         'features' : 'cprogram',
         'source'   : '"my prog/my test.c"',
         'use'      : "'my util alt'",
-        'conftests'  : [
-            dict(act = 'check-headers', names = 'stdio.h'),
+        'config-actions'  : [
+            { 'do' : 'check-headers', 'names' : 'stdio.h' },
         ],
     },
     ########

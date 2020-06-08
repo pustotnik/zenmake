@@ -4,8 +4,8 @@ tasks :
     features : cprogram
     source   : test.c util.c
     includes : '.'
-    conftests:
-      - { act: check-headers, names: stdio.h }
+    config-actions:
+      - { do: check-headers, names: stdio.h }
 
 buildtypes:
   debug :

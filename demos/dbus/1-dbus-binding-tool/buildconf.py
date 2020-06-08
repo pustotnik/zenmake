@@ -2,7 +2,7 @@
 # Based on demos/dbus from Waf
 tasks = {
     'test' : {
-        'conftests' : [ dict(act = 'check-programs', names = 'dbus-binding-tool', var = 'DBUS_BINDING_TOOL'), ],
+        'config-actions' : [ dict(do = 'check-programs', names = 'dbus-binding-tool', var = 'DBUS_BINDING_TOOL'), ],
         'target' : 'test.h',
         'source' : 'test.xml',
         'run': {

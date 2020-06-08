@@ -47,7 +47,7 @@ CONFTEST_HASH_IGNORED_FUNC_ARGS = frozenset(
     ('mandatory', 'msg', 'okmsg', 'errmsg', 'id', 'before', 'after')
 )
 
-def _makeRunBuildBldCtx(ctx, checkArgs, topdir, bdir):
+def _makeRunBuildBldCtx(ctx, args, topdir, bdir):
 
     bld = createContext('build', top_dir = topdir, out_dir = bdir)
 
@@ -60,23 +60,15 @@ def _makeRunBuildBldCtx(ctx, checkArgs, topdir, bdir):
 
     bld.logger = ctx.logger
     bld.all_envs.update(ctx.all_envs)
-    bld.env = checkArgs['env']
+    bld.env = args['env']
 
     # for function 'build_fun' only
-    bld.kw = checkArgs
+    bld.kw = args
     bld.conf = ctx # it's used for bld.conf.to_log
 
     return bld
 
-@conf
-def run_build(self, *k, **checkArgs):
-    """
-    Create a temporary build context to execute a build.
-    It's alternative version of the waflib.Configure.run_build and it can be
-    used only in ZenMake.
-    """
-
-    # pylint: disable = invalid-name,unused-argument
+def _runCheckBuild(self, **checkArgs):
 
     cfgCtx = self if isinstance(self, WafConfContext) else self.cfgCtx
 
@@ -84,7 +76,7 @@ def run_build(self, *k, **checkArgs):
     assert not hasattr(self, 'multicheck_task')
 
     checkHash = checkArgs['$conf-test-hash']
-    checkCache = cfgCtx.getConfCache()['conf-checks'][checkHash]
+    checkCache = cfgCtx.getConfCache()['config-actions'][checkHash]
 
     retval = checkCache['retval']
     if retval is not None:
@@ -139,6 +131,17 @@ def run_build(self, *k, **checkArgs):
         checkCache['retval'] = ret
 
     return ret
+
+@conf
+def run_build(self, *k, **kwargs):
+    """
+    It's alternative version of the waflib.Configure.run_build and it can be
+    used only in ZenMake.
+    """
+
+    # pylint: disable = invalid-name,unused-argument
+
+    return _runCheckBuild(self, **kwargs)
 
 class _CfgCheckTask(Task.Task):
     """
@@ -218,7 +221,7 @@ class _CfgCheckTask(Task.Task):
         with self.generator.bld.cmnLock:
             self.conf.start_msg(args['msg'])
             if self.hasrun == Task.NOT_RUN:
-                self.conf.end_msg('test cancelled', 'YELLOW')
+                self.conf.end_msg('cancelled', 'YELLOW')
             elif self.hasrun != Task.SUCCESS:
                 self.conf.end_msg(args.get('errmsg', 'no'), 'YELLOW')
             else:
@@ -233,7 +236,7 @@ class _RunnerBldCtx(object):
 
     def __init__(self, tasks):
 
-        # Keep running all tasks until all tasks not processed
+        # Keep running all tasks while all tasks will not be not processed
         # and self.producer.stop == False
         self.keep = True
 
@@ -264,7 +267,7 @@ def _applyParallelTasksDeps(tasks, bconfpath):
         for key in utils.toList(tasks):
             otherTask = idToTask.get(key, None)
             if not otherTask:
-                msg = 'No test named %r' % key
+                msg = 'No config action named %r' % key
                 raise error.ZenMakeConfError(msg, confpath = bconfpath)
             if before:
                 otherTask.run_after.add(task)
@@ -283,15 +286,15 @@ def _applyParallelTasksDeps(tasks, bconfpath):
         args.pop('before', None)
         args.pop('after', None)
 
-def _checkInParallelImpl(cfgCtx, checkArgsList, **kwargs):
+def _runActionsInParallelImpl(cfgCtx, actionArgsList, **kwargs):
     """
-    Runs configuration tests in parallel.
+    Runs configuration actions in parallel.
     Results are printed sequentially at the end.
     """
 
     from waflib import Runner
 
-    cfgCtx.start_msg('Checking in parallel %d tests' % len(checkArgsList))
+    cfgCtx.start_msg('Paralleling %d actions' % len(actionArgsList))
 
     # Force a copy so that threads append to the same list at least
     # no order is guaranteed, but the values should not disappear at least
@@ -304,7 +307,7 @@ def _checkInParallelImpl(cfgCtx, checkArgsList, **kwargs):
 
     tryall = kwargs.get('tryall', False)
 
-    for i, args in enumerate(checkArgsList):
+    for i, args in enumerate(actionArgsList):
         args['$parallel-id'] = i
 
         checkTask = _CfgCheckTask(env = None)
@@ -337,7 +340,7 @@ def _checkInParallelImpl(cfgCtx, checkArgsList, **kwargs):
         scheduler.start()
     except waferror.WafError as ex:
         if ex.msg.startswith('Task dependency cycle'):
-            msg = "Infinite recursion was detected in parallel tests."
+            msg = "Infinite recursion was detected in parallel config actions."
             msg += " Check all parameters 'before' and 'after'."
             raise error.ZenMakeConfError(msg, confpath = bconfpath)
         # it's a different error
@@ -347,7 +350,7 @@ def _checkInParallelImpl(cfgCtx, checkArgsList, **kwargs):
     for tsk in tasks:
         tsk.logger.memhandler.flush()
 
-    cfgCtx.start_msg('-> processing test results')
+    cfgCtx.start_msg('-> processing results')
 
     for tsk in scheduler.error:
         if not getattr(tsk, 'err_msg', None):
@@ -361,7 +364,7 @@ def _checkInParallelImpl(cfgCtx, checkArgsList, **kwargs):
     failureCount = len([x for x in tasks if x.hasrun not in okStates])
 
     if failureCount:
-        cfgCtx.end_msg('%s test(s) failed' % failureCount, color = 'YELLOW')
+        cfgCtx.end_msg('%s failed' % failureCount, color = 'YELLOW')
     else:
         cfgCtx.end_msg('all ok')
 
@@ -370,43 +373,43 @@ def _checkInParallelImpl(cfgCtx, checkArgsList, **kwargs):
         log.freeLogger(tsk.logger)
 
         if tsk.hasrun not in okStates and tsk.call['args'].get('mandatory', True):
-            cfgCtx.fatal('One of the tests has failed, read config.log for more information')
+            cfgCtx.fatal('One of the actions has failed, read config.log for more information')
 
-def _loadConfCheckCache(cache):
+def _handleLoadedActionsCache(cache):
     """
-    Load cache data for conf checks.
+    Handle loaded cache data for config actions.
     """
 
-    if 'conf-checks' not in cache:
-        cache['conf-checks'] = {}
-    checks = cache['conf-checks']
+    if 'config-actions' not in cache:
+        cache['config-actions'] = {}
+    actions = cache['config-actions']
 
     # reset all but not 'id'
-    for v in viewvalues(checks):
+    for v in viewvalues(actions):
         if isinstance(v, maptype):
             _new = { 'id' : v['id']}
             v.clear()
             v.update(_new)
 
-    return checks
+    return actions
 
-def _getConfCheckCache(cfgCtx, checkHash):
+def _getConfActionCache(cfgCtx, actionHash):
     """
-    Get conf check cache by hash
+    Get conf action cache by hash
     """
 
     cache = cfgCtx.getConfCache()
-    if 'conf-checks' not in cache:
-        _loadConfCheckCache(cache)
-    checks = cache['conf-checks']
+    if 'config-actions' not in cache:
+        _handleLoadedActionsCache(cache)
+    actions = cache['config-actions']
 
-    if checkHash not in checks:
-        lastId = checks.get('last-id', 0)
-        checks['last-id'] = currentId = lastId + 1
-        checks[checkHash] = {}
-        checks[checkHash]['id'] = currentId
+    if actionHash not in actions:
+        lastId = actions.get('last-id', 0)
+        actions['last-id'] = currentId = lastId + 1
+        actions[actionHash] = {}
+        actions[actionHash]['id'] = currentId
 
-    return checks[checkHash]
+    return actions[actionHash]
 
 def _calcConfCheckHexHash(checkArgs, params):
 
@@ -436,9 +439,9 @@ def _calcConfCheckHexHash(checkArgs, params):
     return utils.hexOfStr(utils.hashObj(buff))
 
 @conf
-def runCheckByPyFunc(self, **kwargs):
+def runPyFuncAsAction(self, **kwargs):
     """
-    Run configuration test by python function
+    Run python function as an action
     """
 
     # pylint: disable = broad-except
@@ -464,7 +467,7 @@ def runCheckByPyFunc(self, **kwargs):
 
     self.end_msg(result = 'no', color = 'YELLOW')
 
-    msg = "\nChecking by function %r failed: " % func.__name__
+    msg = "\nConfig function %r failed: " % func.__name__
 
     if withException:
         excInfo = sys.exc_info()
@@ -486,33 +489,31 @@ def runCheckByPyFunc(self, **kwargs):
 
     self.fatal('The configuration failed')
 
-def checkByPyFunc(checkArgs, params):
-    """ Check by python function """
-
-    # pylint: disable = deprecated-method, broad-except
+def callPyFunc(actionArgs, params):
+    """ Make or prepare python function as an action """
 
     cfgCtx    = params['cfgCtx']
     buildtype = params['buildtype']
     taskName  = params['taskName']
 
-    checkArgs = checkArgs.copy()
+    actionArgs = actionArgs.copy()
 
-    func = checkArgs['func']
+    func = actionArgs['func']
     argsSpec = inspectArgSpec(func)
     noFuncArgs = not any(argsSpec[0:3])
     args = { 'task' : taskName, 'buildtype' : buildtype }
 
-    checkArgs['args'] = None if noFuncArgs else args
-    checkArgs['msg'] = 'Checking by function %r' % func.__name__
+    actionArgs['args'] = None if noFuncArgs else args
+    actionArgs['msg'] = 'Function %r' % func.__name__
 
-    parallelChecks = params.get('parallel-checks', None)
+    parallelActions = params.get('parallel-actions', None)
 
-    if parallelChecks is not None:
-        # checkArgs is shared so it can be changed later
-        checkArgs['$func-name'] = 'runCheckByPyFunc'
-        parallelChecks.append(checkArgs)
+    if parallelActions is not None:
+        # actionArgs is shared so it can be changed later
+        actionArgs['$func-name'] = 'runPyFuncAsAction'
+        parallelActions.append(actionArgs)
     else:
-        cfgCtx.runCheckByPyFunc(**checkArgs)
+        cfgCtx.runPyFuncAsAction(**actionArgs)
 
 def checkPrograms(checkArgs, params):
     """ Check programs """
@@ -576,8 +577,8 @@ def checkCode(checkArgs, params):
     file = checkArgs.pop('file', None)
 
     if all((not text, not file)):
-        msg = "Neither 'text' nor 'file' set in a conf test"
-        msg += " with act = 'check-code' for task %r" % taskName
+        msg = "Neither 'text' nor 'file' set in a config action"
+        msg += " 'check-code' for task %r" % taskName
         cfgCtx.fatal(msg)
 
     if text:
@@ -590,8 +591,8 @@ def checkCode(checkArgs, params):
         file = getNativePath(file)
         path = joinpath(startdir, file)
         if not os.path.isfile(path):
-            msg = "Error in declaration of a conf test "
-            msg += "with act = 'check-code' for task %r:" % taskName
+            msg = "Error in declaration of a config action "
+            msg += "'check-code' for task %r:" % taskName
             msg += "\nFile %r doesn't exist" % file
             if not os.path.abspath(file):
                 msg += " in the directory %r" % startdir
@@ -606,7 +607,7 @@ def checkCode(checkArgs, params):
         checkWithBuild(checkArgs, params)
 
 def writeConfigHeader(checkArgs, params):
-    """ write config header """
+    """ Write config header """
 
     buildtype  = params['buildtype']
     cfgCtx     = params['cfgCtx']
@@ -653,7 +654,7 @@ def checkWithBuild(checkArgs, params):
     checkArgs = checkArgs.copy()
 
     hexHash = _calcConfCheckHexHash(checkArgs, params)
-    checkCache = _getConfCheckCache(cfgCtx, hexHash)
+    checkCache = _getConfActionCache(cfgCtx, hexHash)
     if 'retval' not in checkCache:
         # to use it without lock in threads we need to insert this key
         checkCache['retval'] = None
@@ -688,18 +689,18 @@ def checkWithBuild(checkArgs, params):
     if includes:
         checkArgs['includes'] = includes
 
-    parallelChecks = params.get('parallel-checks', None)
+    parallelActions = params.get('parallel-actions', None)
 
-    if parallelChecks is not None:
+    if parallelActions is not None:
         # checkArgs is shared so it can be changed later
         checkArgs['$func-name'] = 'check'
-        parallelChecks.append(checkArgs)
+        parallelActions.append(checkArgs)
     else:
         cfgCtx.check(**checkArgs)
 
-def checkInParallel(checkArgs, params):
+def runActionsInParallel(actionArgs, params):
     """
-    Run checks in parallel
+    Run actions in parallel
     """
 
     cfgCtx     = params['cfgCtx']
@@ -708,101 +709,96 @@ def checkInParallel(checkArgs, params):
 
     cfgCtx.setenv(taskParams['$task.variant'])
 
-    subchecks = checkArgs.pop('checks', [])
-    if not subchecks:
-        msg = "No checks for act 'parallel' in conftests for task %r" % taskName
+    subactions = actionArgs.pop('actions', [])
+    if not subactions:
+        msg = "No actions for 'parallel' in config-actions for task %r" % taskName
         log.warn(msg)
         return
 
-    supportedActs = (
-        'check-headers', 'check-libs', 'check-by-pyfunc', 'check-code',
+    supportedActions = (
+        'call-pyfunc', 'check-headers', 'check-libs', 'check-code',
     )
 
-    parallelCheckArgsList = []
-    params['parallel-checks'] = parallelCheckArgsList
+    parallelActionArgsList = []
+    params['parallel-actions'] = parallelActionArgsList
 
-    for check in subchecks:
+    for action in subactions:
         errMsg = None
-        if isinstance(check, maptype):
-            act = check.get('act')
-            if not act:
-                errMsg = "Parameter 'act' not found in parallel test '%r'" % check
-            elif act not in supportedActs:
-                errMsg = "act %r can not be used inside the act 'parallel'" % act
-                errMsg += " for conftests in task %r!" % taskName
-        elif callable(check):
+        if isinstance(action, maptype):
+            actionName = action.get('do')
+            if not actionName:
+                errMsg = "Parameter 'do' not found in parallel action '%r'" % action
+            elif actionName not in supportedActions:
+                errMsg = "action %r can not be used inside the 'parallel'" % actionName
+                errMsg += ", task: %r!" % taskName
+        elif callable(action):
             pass
         else:
-            errMsg = "Test '%r' is not supported." % check
+            errMsg = "Action '%r' is not supported." % action
 
         if errMsg:
             cfgCtx.fatal(errMsg)
 
-    _handleConfChecks(subchecks, params)
-    params.pop('parallel-checks', None)
+    _handleActions(subactions, params)
+    params.pop('parallel-actions', None)
 
-    if not parallelCheckArgsList:
+    if not parallelActionArgsList:
         return
 
-    for args in parallelCheckArgsList:
+    for args in parallelActionArgsList:
         args['msg'] = "  %s" % args['msg']
 
-    params = {
-        'msg' : 'Checking in parallel',
-    }
-    params.update(checkArgs)
+    _runActionsInParallelImpl(cfgCtx, parallelActionArgsList, **actionArgs)
 
-    _checkInParallelImpl(cfgCtx, parallelCheckArgsList, **params)
-
-_commonConfTestsFuncs = {
-    'check-by-pyfunc' : checkByPyFunc,
-    'check-programs'  : checkPrograms,
-    'parallel'        : checkInParallel,
+_cmnActionsFuncs = {
+    'call-pyfunc'    : callPyFunc,
+    'check-programs' : checkPrograms,
+    'parallel'       : runActionsInParallel,
 }
 
-_confTestsTable = { x:_commonConfTestsFuncs.copy() for x in ToolchainVars.allLangs()}
+_actionsTable = { x:_cmnActionsFuncs.copy() for x in ToolchainVars.allLangs() }
 
-def _handleConfChecks(checks, params):
+def _handleActions(actions, params):
 
-    for checkArgs in checks:
-        if callable(checkArgs):
-            checkArgs = {
-                'act' : 'check-by-pyfunc',
-                'func' : checkArgs,
+    for actionArgs in actions:
+        if callable(actionArgs):
+            actionArgs = {
+                'do' : 'call-pyfunc',
+                'func' : actionArgs,
             }
         else:
-            # checkArgs is changed in conf test func below
-            checkArgs = checkArgs.copy()
+            # actionArgs is changed in conf action func below
+            actionArgs = actionArgs.copy()
 
         ctx = params['cfgCtx']
         taskName = params['taskName']
 
-        act = checkArgs.pop('act', None)
-        if act is None:
-            msg = "No act in the configuration test %r for task %r!" \
-                    % (checkArgs, taskName)
+        action = actionArgs.pop('do', None)
+        if action is None:
+            msg = "No 'do' in the configuration action %r for task %r!" \
+                    % (actionArgs, taskName)
             ctx.fatal(msg)
 
         targetLang = params['taskParams'].get('$tlang')
-        table = _confTestsTable.get(targetLang, _commonConfTestsFuncs)
-        func = table.get(act)
+        table = _actionsTable.get(targetLang, _cmnActionsFuncs)
+        func = table.get(action)
         if not func:
-            msg = "Unsupported act %r in the configuration test %r for task %r!" \
-                    % (act, checkArgs, taskName)
+            msg = "Unsupported action %r in the configuration action %r for task %r!" \
+                    % (action, actionArgs, taskName)
             ctx.fatal(msg)
 
-        func(checkArgs, params)
+        func(actionArgs, params)
 
-def regConfTestFuncs(lang, funcs):
+def regActionFuncs(lang, funcs):
     """
-    Register functions for configuration tests
-    """
-
-    _confTestsTable[lang].update(funcs)
-
-def handleConfTests(checks, params):
-    """
-    Handle configuration tests
+    Register functions for configuration actions
     """
 
-    _handleConfChecks(checks, params)
+    _actionsTable[lang].update(funcs)
+
+def runActions(actions, params):
+    """
+    Run configuration actions
+    """
+
+    _handleActions(actions, params)
