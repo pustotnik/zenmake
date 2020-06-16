@@ -182,7 +182,7 @@ def _isCmdStandalone(tgen):
     """ Detect is current runcmd standalone """
     features = getattr(tgen, 'features', [])
     otherFeatures = set(features) - set(('runcmd', ))
-    return not otherFeatures and not hasattr(tgen, 'rule')
+    return not otherFeatures and getattr(tgen, 'rule', None) is None
 
 def _createRunCmdTask(tgen, ruleArgs):
     """ Create new rule task for runcmd """
@@ -285,7 +285,7 @@ def applyRunCmd(tgen):
     if isStandalone:
         for k, v in viewitems(ruleArgs):
             setattr(tgen, k, v)
-        if hasattr(tgen, 'target'):
+        if getattr(tgen, 'target', None) is not None:
             if cmdType == 'func' or not _RE_WITH_TGT.search(cmd):
                 delattr(tgen, 'target')
         tgen.process_rule()

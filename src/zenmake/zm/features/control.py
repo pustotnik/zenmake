@@ -288,13 +288,14 @@ def _initHooks():
         return execute
 
     for cmd in ('options', 'init', 'configure', 'build', 'shutdown'):
-        if not hasattr(wscript, cmd):
+        cmdFunc = getattr(wscript, cmd, None)
+        if cmdFunc is None:
             continue
         _hooks[cmd] = WhenCall(
             pre  = HooksInfo( funcs = [], sorted = set() ),
             post = HooksInfo( funcs = [], sorted = set() )
         )
-        setattr(wscript, cmd, wrap(getattr(wscript, cmd), cmd))
+        setattr(wscript, cmd, wrap(cmdFunc, cmd))
 
     _cache['hooks-are-ready'] = True
 
