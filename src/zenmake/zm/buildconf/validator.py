@@ -6,13 +6,11 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-from copy import deepcopy
-
 from zm.error import ZenMakeConfError, ZenMakeConfTypeError, ZenMakeConfValueError
 from zm.pyutils import maptype, stringtype, viewitems, viewvalues
 from zm.utils import toList
 from zm.autodict import AutoDict as _AutoDict
-from zm.buildconf.schemeutils import AnyAmountStrsKey
+from zm.buildconf.schemeutils import AnyAmountStrsKey, ANYAMOUNTSTRS_KEY
 from zm.buildconf.scheme import confscheme
 
 class ZenMakeConfSubTypeError(ZenMakeConfTypeError):
@@ -39,8 +37,8 @@ class Validator(object):
 
     @staticmethod
     def _getHandler(typeName):
-        if isinstance(typeName, (list, tuple)):
-            typeName = 'complex'
+        if not isinstance(typeName, stringtype):
+            typeName = 'complex' if len(typeName) > 1 else typeName[0]
         return getattr(Validator, Validator._typeHandlerNames[typeName])
 
     @staticmethod
@@ -225,65 +223,39 @@ class Validator(object):
             raise ZenMakeConfSubTypeError(ex = ex)
 
     @staticmethod
-    def _handleVarsInDictWithKeysByList(confnode, schemeAttrs, fullkey):
-        vartype = schemeAttrs['type']
-        handler = Validator._getHandler(vartype)
-
-        allowedKeys = schemeAttrs['keys-list']
-        unknownKeys = set(confnode.keys()) - set(allowedKeys)
-        if unknownKeys:
-            unknownKeys = list(unknownKeys)
-            if len(unknownKeys) == 1:
-                msg = "Key %r isn't allowed in %r." % (unknownKeys[0], fullkey)
-            else:
-                msg = "Keys %r aren't allowed in %r." % (unknownKeys, fullkey)
-            raise ZenMakeConfValueError(msg)
-
-        for key in allowedKeys:
-            _confnode = confnode.get(key, None)
-            if _confnode is None:
-                continue
-            _fullkey = '.'.join((fullkey, key))
-            handler(_confnode, schemeAttrs, _fullkey)
-
-    @staticmethod
-    def _handleVarsInDictWithKeysAnyStr(confnode, schemeAttrs, fullkey):
-        vartype = schemeAttrs['type']
-        handler = Validator._getHandler(vartype)
-
-        for key, _confnode in viewitems(confnode):
-            Validator._checkStrKey(key, fullkey)
-            _fullkey = '.'.join((fullkey, key))
-            handler(_confnode, schemeAttrs, _fullkey)
-
-    @staticmethod
     def _handleVarsInDict(confnode, schemeAttrs, fullkey):
         if not isinstance(confnode, maptype):
             msg = "Param %r should be dict or another map type." % fullkey
             raise ZenMakeConfTypeError(msg)
 
-        vartype = schemeAttrs['vars-type']
-        #_schemeAttrs = dict(schemeAttrs)
-        _schemeAttrs = schemeAttrs
-        _schemeAttrs['type'] = vartype
+        vartype = schemeAttrs.pop('vars-type')
+        oldtype = schemeAttrs['type']
+        if isinstance(oldtype, stringtype):
+            schemeAttrs['type'] = 'dict'
+        else:
+            schemeAttrs['type'] = [ 'dict' if x == 'vars-in-dict' else x for x in oldtype ]
 
-        if vartype == 'dict':
-            for paramName in ('allow-unknown-keys', ):
-                param = schemeAttrs.get('vars-%s' % paramName, None)
-                if param is not None:
-                    _schemeAttrs[paramName] = param
+        dictAllowUnknownKeys = schemeAttrs.pop('vars-allow-unknown-keys', False)
+        subvars = schemeAttrs.pop('vars')
+        subscheme = {
+            'type' : vartype,
+            'vars' : subvars,
+            'allow-unknown-keys' : dictAllowUnknownKeys,
+        }
 
-        keysKind = schemeAttrs['keys-kind']
-        args = (confnode, _schemeAttrs, fullkey)
-        try:
-            if keysKind == 'bylist':
-                Validator._handleVarsInDictWithKeysByList(*args)
-            elif keysKind == 'anystr':
-                Validator._handleVarsInDictWithKeysAnyStr(*args)
-            else:
-                raise NotImplementedError # pragma: no cover
-        except ZenMakeConfTypeError as ex:
-            raise ZenMakeConfSubTypeError(ex = ex)
+        keysKind = schemeAttrs.pop('keys-kind')
+        if keysKind == 'anystr':
+            for key, _confnode in viewitems(confnode):
+                Validator._checkStrKey(key, fullkey)
+            schemeAttrs['dict-vars'] = { ANYAMOUNTSTRS_KEY : subscheme }
+        elif keysKind == 'bylist':
+            allowedKeys = schemeAttrs.pop('keys-list')
+            schemeAttrs['dict-vars'] = { k:subscheme for k in allowedKeys }
+        else:
+            raise NotImplementedError # pragma: no cover
+
+        handler = Validator._getHandler(schemeAttrs['type'])
+        handler(confnode, schemeAttrs, fullkey)
 
     @staticmethod
     def _genFullKey(keyprefix, key):
@@ -326,7 +298,7 @@ class Validator(object):
 
         for key, value in viewitems(conf):
             if disallowedKeys and key in disallowedKeys:
-                msg = "The key %r is not allowed in the param %r." % (key, keyprefix)
+                msg = "The key '%s' is not allowed in the param %r." % (str(key), keyprefix)
                 raise ZenMakeConfError(msg)
             if key in _handledKeys:
                 continue
@@ -334,8 +306,12 @@ class Validator(object):
                 fullKey = Validator._genFullKey(keyprefix, key)
                 handler(value, schemeAttrs, fullKey)
             elif not allowUnknownKeys:
-                msg = "Unknown key %r is in the param %r." % (key, keyprefix)
+                msg = "Unknown key '%s' is in the param %r." % (str(key), keyprefix)
                 msg += " Unknown keys aren't allowed here."
+                if _anyAmountStrsKey is not None:
+                    msg += " Only string keys are valid."
+                    raise ZenMakeConfTypeError(msg)
+
                 msg += "\nValid values: %r" % sorted(scheme.keys())
                 raise ZenMakeConfError(msg)
 
@@ -347,7 +323,8 @@ class Validator(object):
         #TODO: refactor this code
 
         _conf = _AutoDict(vars(conf))
-        _scheme = deepcopy(confscheme)
+        #_scheme = deepcopy(confscheme)
+        _scheme = confscheme
 
         btypesVars = _scheme['buildtypes']['vars']
 

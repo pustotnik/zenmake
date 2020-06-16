@@ -471,13 +471,13 @@ class TestSuite(object):
         setattr(buildconf, 'platforms', {
             KNOWN_PLATFORMS[0] + cmn.randomstr() : {}
         })
-        with pytest.raises(ZenMakeConfValueError):
+        with pytest.raises(ZenMakeConfError):
             validator.validate(buildconf)
         setattr(buildconf, 'platforms', {
             KNOWN_PLATFORMS[0] + cmn.randomstr() : {},
             KNOWN_PLATFORMS[1] + cmn.randomstr() : {},
         })
-        with pytest.raises(ZenMakeConfValueError):
+        with pytest.raises(ZenMakeConfError):
             validator.validate(buildconf)
         setattr(buildconf, 'platforms', {})
         for _platform in KNOWN_PLATFORMS:
