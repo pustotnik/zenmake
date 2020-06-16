@@ -43,6 +43,9 @@ def _findLibFileNode(pathNode, pattern, baseName, static, destOS):
 
 @asmethod(WafTask.Task, 'sig_explicit_deps', wrap = True, callOrigFirst = True)
 def _signatureExplicitDeps(self):
+    """
+    Wrapper to add support for 'monitlibs'/'monitstlibs'
+    """
 
     cname = self.__class__.__name__
     if not cname.endswith(APPLY_MONITLIBS_TASKTYPES):

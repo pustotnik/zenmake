@@ -16,6 +16,7 @@ if not Logs.log:
     Logs.init_log() # pragma: no cover
 
 colors = Logs.colors
+colorSettings = Logs.colors_lst
 
 debug  = Logs.debug
 error  = Logs.error
@@ -55,11 +56,11 @@ def enableColorsByCli(colorArg):
     if setting == 2:
         os.environ['TERM'] = 'vt100'
 
-    Logs.colors_lst['USE'] = setting
+    colorSettings['USE'] = setting
 
 def colorsEnabled():
     """ Return True if color output is enabled """
-    return bool(Logs.colors_lst['USE'])
+    return bool(colorSettings['USE'])
 
 def verbose():
     """ Get value of Logs.verbose """

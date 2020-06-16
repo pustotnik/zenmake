@@ -14,7 +14,7 @@ from waflib import Context as WafContextModule
 from waflib.Context import Context as WafContext
 from zm import ZENMAKE_DIR, WAF_DIR
 from zm.autodict import AutoDict as _AutoDict
-from zm import error
+from zm import error, log
 from zm.utils import toList, asmethod
 from zm.waf.assist import loadZenMakeMetaFile
 from zm.waf import wscriptimpl
@@ -28,6 +28,12 @@ DEFAULT_TOOLDIRS = [
     joinpath(ZENMAKE_DIR, 'waf', 'waflib', 'Tools'),
     joinpath(ZENMAKE_DIR, 'waf', 'waflib', 'extras'),
 ]
+
+DEFAULT_STDOUT_MSG_LEN = 40
+MAX_STDOUT_MSG_LEN = 100
+STDOUT_MSG_LEN_STEP = 5
+
+_MSG_LOG_SEPARATOR = MAX_STDOUT_MSG_LEN * '-'
 
 # Context is the base class for all other context classes and it is not auto
 # registering class. So it cannot be just declared for extending/changing.
@@ -127,6 +133,75 @@ def _getStartDirNode(self, startdir):
     node = self.root.make_node(path)
     cache[path] = node
     return node
+
+@asmethod(WafContext, 'startMsg')
+def _startMsg(self, *args, **kwargs):
+
+    if kwargs.get('quiet'):
+        return
+
+    msg = kwargs.get('msg') or args[0]
+
+    try:
+        if self.in_msg:
+            self.in_msg += 1
+            return
+    except AttributeError:
+        self.in_msg = 0
+    self.in_msg += 1
+
+    try:
+        lineWidth = self.lineWidth
+    except AttributeError:
+        lineWidth = DEFAULT_STDOUT_MSG_LEN
+
+    msgLen = len(msg)
+    if msgLen > lineWidth:
+        div, mod = divmod(msgLen, STDOUT_MSG_LEN_STEP)
+        lineWidth = STDOUT_MSG_LEN_STEP * div + (STDOUT_MSG_LEN_STEP if mod > 0 else 0)
+    self.lineWidth = lineWidth = min(lineWidth, MAX_STDOUT_MSG_LEN)
+
+    self.to_log(_MSG_LOG_SEPARATOR)
+    self.to_log(msg)
+
+    if msgLen > lineWidth:
+        msg = '%s%s' % (msg[0 : lineWidth - 3], '...')
+    log.pprint('NORMAL', '%s :' % msg.ljust(lineWidth), sep = '')
+
+WafContext.start_msg = _startMsg
+
+@asmethod(WafContext, 'endMsg')
+def _endMsg(self, *args, **kwargs):
+
+    if kwargs.get('quiet'):
+        return
+
+    self.in_msg -= 1
+    if self.in_msg:
+        return
+
+    result = kwargs.get('result') or args[0]
+
+    defaultColor = 'GREEN'
+    if result is True:
+        msg = 'ok'
+    elif not result:
+        msg = 'not found'
+        defaultColor = 'YELLOW'
+    else:
+        msg = str(result)
+
+    self.to_log(msg)
+    color = kwargs.get('color')
+    if color is None:
+        if len(args) > 1 and args[1] in log.colorSettings:
+            color = args[1]
+        else:
+            color = defaultColor
+
+    log.pprint(color, msg)
+
+WafContext.end_msg = _endMsg
 
 def loadTool(tool, tooldirs = None, withSysPath = True):
     """

@@ -187,7 +187,7 @@ class _CfgCheckTask(Task.Task):
         bld.buildWorkDirName = bld.variant = ''
         bld.env = cfgCtx.env
         bld.init_dirs()
-        bld.in_msg = 1 # suppress top-level start_msg
+        bld.in_msg = 1 # suppress top-level startMsg
         bld.logger = self.logger
         bld.cfgCtx = cfgCtx
 
@@ -219,13 +219,13 @@ class _CfgCheckTask(Task.Task):
             return
 
         with self.generator.bld.cmnLock:
-            self.conf.start_msg(args['msg'])
+            self.conf.startMsg(args['msg'])
             if self.hasrun == Task.NOT_RUN:
-                self.conf.end_msg('cancelled', 'YELLOW')
+                self.conf.endMsg('cancelled', color = 'YELLOW')
             elif self.hasrun != Task.SUCCESS:
-                self.conf.end_msg(args.get('errmsg', 'no'), 'YELLOW')
+                self.conf.endMsg(args.get('errmsg', 'no'), color = 'YELLOW')
             else:
-                self.conf.end_msg(args.get('okmsg', 'yes'), 'GREEN')
+                self.conf.endMsg(args.get('okmsg', 'yes'), color = 'GREEN')
 
 class _RunnerBldCtx(object):
     """
@@ -294,7 +294,7 @@ def _runActionsInParallelImpl(cfgCtx, actionArgsList, **kwargs):
 
     from waflib import Runner
 
-    cfgCtx.start_msg('Paralleling %d actions' % len(actionArgsList))
+    cfgCtx.startMsg('Paralleling %d actions' % len(actionArgsList))
 
     # Force a copy so that threads append to the same list at least
     # no order is guaranteed, but the values should not disappear at least
@@ -335,7 +335,7 @@ def _runActionsInParallelImpl(cfgCtx, actionArgsList, **kwargs):
     runnerCtx.producer = scheduler = Runner.Parallel(runnerCtx, Options.options.jobs)
     scheduler.biter = getTasksGenerator()
 
-    cfgCtx.end_msg('started')
+    cfgCtx.endMsg('started')
     try:
         scheduler.start()
     except waferror.WafError as ex:
@@ -350,13 +350,13 @@ def _runActionsInParallelImpl(cfgCtx, actionArgsList, **kwargs):
     for tsk in tasks:
         tsk.logger.memhandler.flush()
 
-    cfgCtx.start_msg('-> processing results')
+    cfgCtx.startMsg('-> processing results')
 
     for tsk in scheduler.error:
         if not getattr(tsk, 'err_msg', None):
             continue
         cfgCtx.to_log(tsk.err_msg)
-        cfgCtx.end_msg('fail', color = 'RED')
+        cfgCtx.endMsg('fail', color = 'RED')
         msg = 'There is an error in the Waf, read config.log for more information'
         raise waferror.WafError(msg)
 
@@ -364,9 +364,9 @@ def _runActionsInParallelImpl(cfgCtx, actionArgsList, **kwargs):
     failureCount = len([x for x in tasks if x.hasrun not in okStates])
 
     if failureCount:
-        cfgCtx.end_msg('%s failed' % failureCount, color = 'YELLOW')
+        cfgCtx.endMsg('%s failed' % failureCount, color = 'YELLOW')
     else:
-        cfgCtx.end_msg('all ok')
+        cfgCtx.endMsg('all ok')
 
     for tsk in tasks:
         # in rare case we get "No handlers could be found for logger"
@@ -449,7 +449,7 @@ def runPyFuncAsAction(self, **kwargs):
     func = kwargs['func']
     args = kwargs['args']
 
-    self.start_msg(kwargs['msg'])
+    self.startMsg(kwargs['msg'])
 
     withException = False
     try:
@@ -462,10 +462,10 @@ def runPyFuncAsAction(self, **kwargs):
         withException = True
 
     if result:
-        self.end_msg('yes')
+        self.endMsg('yes')
         return
 
-    self.end_msg(result = 'no', color = 'YELLOW')
+    self.endMsg('no', color = 'YELLOW')
 
     msg = "\nConfig function %r failed: " % func.__name__
 

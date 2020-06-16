@@ -226,7 +226,7 @@ class ConfigurationContext(WafConfContext):
         lang = lang.replace('++', 'xx')
         displayedLang = lang.replace('xx', '++').upper()
 
-        self.msg('Autodetecting toolchain ...', '%s language' % displayedLang)
+        self.msg('Autodetecting toolchain', '%s language' % displayedLang)
 
         cfgVar = ToolchainVars.cfgVarToSetToolchain(lang)
 
@@ -379,10 +379,10 @@ class ConfigurationContext(WafConfContext):
         toolEnv = None
         try:
             try:
-                self.start_msg(startMsg)
+                self.startMsg(startMsg)
                 toolInfo = self._loadTool(tool, **kwargs)
             except waferror.ConfigurationError as ex:
-                self.end_msg(False)
+                self.endMsg(False)
                 if 'CXX=g++48' in ex.msg:
                     msg = 'Could not find gcc/g++ (only Clang)'
                     raise waferror.ConfigurationError(msg)
@@ -395,7 +395,7 @@ class ConfigurationContext(WafConfContext):
                     if toolEnv[var]:
                         endMsg = toolEnv.get_flat(var)
                         break
-                self.end_msg(endMsg)
+                self.endMsg(endMsg)
         finally:
             if quiet:
                 self.in_msg -= 1
