@@ -12,6 +12,7 @@
 
 import os
 import sys
+import re
 import shutil
 import traceback
 import inspect
@@ -24,11 +25,14 @@ from waflib import Errors as waferror
 from waflib.Tools.c_config import DEFKEYS
 from zm.constants import CONFTEST_DIR_PREFIX
 from zm.pyutils import maptype, stringtype, viewitems, viewvalues
+from zm.autodict import AutoDict as _AutoDict
 from zm import utils, log, error
 from zm.pathutils import getNativePath
 from zm.features import ToolchainVars
 
 joinpath = os.path.join
+
+_RE_PKGCONFIG_PKGS = re.compile(r"(\S+)(\s*(?:[<>]|=|[<>]\s*=)\s*[^\s<>=]+)?")
 
 try:
     inspectArgSpec = inspect.getfullargspec
@@ -46,6 +50,43 @@ for _var in ToolchainVars.allCfgVarsToSetToolchain():
 CONFTEST_HASH_IGNORED_FUNC_ARGS = frozenset(
     ('mandatory', 'msg', 'okmsg', 'errmsg', 'id', 'before', 'after')
 )
+
+def cfgmandatory(func):
+    """
+    Handle a parameter named 'mandatory' to disable the configuration errors
+    """
+
+    def decorator(*args, **kwargs):
+        mandatory = kwargs.pop('mandatory', True)
+        try:
+            return func(*args, **kwargs)
+        except waferror.ConfigurationError:
+            if mandatory:
+                raise
+
+    return decorator
+
+def _findProgram(cfgCtx, filename, **kwargs):
+
+    envName = cfgCtx.variant
+    # set root env for cache
+    cfgCtx.variant = ''
+
+    if 'path_list' not in kwargs:
+        kwargs['path_list'] = utils.toList(kwargs.pop('paths', []))
+
+    # Method find_program caches result in the cfgCtx.env and
+    # therefore it's not needed to cache it here.
+
+    result = None
+    try:
+        result = cfgCtx.find_program(filename, **kwargs)
+    finally:
+        cfgCtx.variant = envName
+
+    if result:
+        result = ' '.join(result)
+    return result
 
 def _makeRunBuildBldCtx(ctx, args, topdir, bdir):
 
@@ -73,7 +114,7 @@ def _runCheckBuild(self, **checkArgs):
     cfgCtx = self if isinstance(self, WafConfContext) else self.cfgCtx
 
     # this function can not be called from conf.multicheck
-    assert not hasattr(self, 'multicheck_task')
+    assert getattr(self, 'multicheck_task', None) is None
 
     checkHash = checkArgs['$conf-test-hash']
     checkCache = cfgCtx.getConfCache()['config-actions'][checkHash]
@@ -286,11 +327,14 @@ def _applyParallelTasksDeps(tasks, bconfpath):
         args.pop('before', None)
         args.pop('after', None)
 
-def _runActionsInParallelImpl(cfgCtx, actionArgsList, **kwargs):
+def _runActionsInParallelImpl(params, actionArgsList, **kwargs):
     """
     Runs configuration actions in parallel.
     Results are printed sequentially at the end.
     """
+
+    cfgCtx = params['cfgCtx']
+    bconf  = params['bconf']
 
     from waflib import Runner
 
@@ -322,7 +366,6 @@ def _runActionsInParallelImpl(cfgCtx, actionArgsList, **kwargs):
 
         tasks.append(checkTask)
 
-    bconf = cfgCtx.getbconf()
     bconfpath = bconf.path
 
     _applyParallelTasksDeps(tasks, bconfpath)
@@ -520,15 +563,11 @@ def checkPrograms(checkArgs, params):
 
     cfgCtx = params['cfgCtx']
 
-    cfgCtx.setenv('')
-
     names = utils.toList(checkArgs.pop('names', []))
     checkArgs['path_list'] = utils.toList(checkArgs.pop('paths', []))
 
     for name in names:
-        # Method find_program caches result in the cfgCtx.env and
-        # therefore it's not needed to cache it here.
-        cfgCtx.find_program(name, **checkArgs)
+        _findProgram(cfgCtx, name, **checkArgs)
 
 def checkLibs(checkArgs, params):
     """ Check shared libraries """
@@ -606,6 +645,271 @@ def checkCode(checkArgs, params):
         checkArgs['fragment'] = text
         checkWithBuild(checkArgs, params)
 
+def _parsePkgConfigPackages(packages, confpath):
+
+    result = []
+
+    packageGroups = _RE_PKGCONFIG_PKGS.findall(packages)
+    # remove all whitespaces
+    packageGroups = [ ( x[0], ''.join(x[1].split()) ) for x in packageGroups]
+
+    def raiseInvalidPackages(packages, confpath):
+        msg = "The value %r is invalid for the parameter 'packages'" % packages
+        msg += " in config action 'pkgconfig'"
+        raise error.ZenMakeConfError(msg, confpath = confpath)
+
+    pkgInfo = _AutoDict()
+    pkgSeen = set()
+    for name, verline in packageGroups:
+        if any(x in name for x in ('<', '>', '=')):
+            raiseInvalidPackages(packages, confpath)
+
+        pkgItem = pkgInfo[name]
+        pkgItem.name = name
+
+        pkgItem.setdefault('uselib', name)
+        pkgItem.setdefault('cmdline', [])
+        cmdarg = name
+
+        if verline:
+            if len(verline) < 2 or not any(verline[0] == x for x in ('<', '>', '=')):
+                raiseInvalidPackages(packages, confpath)
+            index = 1
+            if verline[1] == '=':
+                index = 2
+            cmdarg += " %s %s" % (verline[0:index], verline[index:])
+
+            _verline = verline.replace('<', 'l').replace('>', 'g').replace('=', 'e')
+            pkgItem.uselib += '_%s' % _verline
+
+        pkgItem.cmdline.append(cmdarg)
+
+        if name not in pkgSeen:
+            result.append(pkgItem)
+            pkgSeen.add(name)
+
+    for item in result:
+        item.uselib = utils.normalizeForDefine(item.uselib)
+
+    return result
+
+@cfgmandatory
+def _runToolConfig(cfgCtx, **kwargs):
+    """
+    Run ``pkg-config`` or other ``-config`` applications and parse result
+    """
+
+    cmd = [kwargs['runpath']]
+    cmd += kwargs['cmd-args']
+
+    parseFlags = kwargs.get('parse-flags', False)
+
+    cfgCtx.startMsg(kwargs['msg'])
+    try:
+
+        cmdEnv = cfgCtx.env.env or None
+        output = cfgCtx.cmd_and_log(cmd, env = cmdEnv)
+
+        if parseFlags:
+            cfgCtx.parse_flags(output, kwargs['uselib'], cfgCtx.env, kwargs['static'])
+
+    except waferror.WafError as ex:
+        cfgCtx.endMsg(kwargs['errmsg'], color = 'YELLOW')
+        if log.verbose() > 1:
+            cfgCtx.to_log('Command failure: %s' % ex)
+        cfgCtx.fatal('The configuration failed')
+    else:
+        okmsg = kwargs.get('okmsg')
+        if okmsg is not None:
+            cfgCtx.endMsg(kwargs['okmsg'])
+
+    return output
+
+def _doPkgConfigForOne(cfgCtx, pkgInfo, actionArgs, taskParams):
+
+    pkgname = pkgInfo.name
+
+    defnames = actionArgs['defnames']
+    if defnames is not None:
+        defnames = {} if defnames is True else defnames
+        defnames = defnames.get(pkgname, {})
+
+    def setDefine(kind, value):
+        if defnames is None:
+            return
+
+        defvar = defnames.get(kind, True)
+        if defvar is True:
+            if kind == 'have':
+                defvar = cfgCtx.have_define(pkgname)
+            else:
+                assert kind == 'version'
+                defvar = '%s_VERSION' % utils.normalizeForDefine(pkgname)
+
+        if defvar:
+            cfgCtx.define(defvar, value, quote = (kind == 'version') )
+            # Is this really necessary ? Waf does it by default.
+            #if kind == 'have':
+            #    cfgCtx.env[defvar] = value
+
+    getPkgVer = actionArgs.get('pkg-version', False)
+    if getPkgVer:
+        kwargs = actionArgs.copy()
+        kwargs['msg'] = 'Getting version for %r' % pkgname
+        kwargs['cmd-args'] = ['--modversion', pkgname]
+        kwargs.pop('okmsg', None)
+        version = _runToolConfig(cfgCtx, **kwargs)
+        if version is not None:
+            version = version.strip()
+            # set *_VERSION define
+            setDefine('version', version)
+            cfgCtx.endMsg(version)
+
+        if not actionArgs['libs'] and not actionArgs['cflags']:
+            setDefine('have', 1)
+            return
+
+    # cmd line args
+    cmdArgs = ['--%s' % x for x in ('libs', 'cflags', 'static') if actionArgs[x]]
+
+    for k, v in viewitems(actionArgs.get('def-pkg-vars', {})):
+        cmdArgs.append('--define-variable=%s=%s' % (k, v))
+
+    cmdArgs += pkgInfo.cmdline
+    actionArgs['cmd-args'] = cmdArgs
+
+    actionArgs['uselib'] = pkgInfo.uselib
+    actionArgs['parse-flags'] = True
+
+    pkgline = "%r" % pkgname
+    if pkgInfo.cmdline[0] != pkgname:
+        nameLen = len(pkgname)
+        verline = ' and '.join(x[nameLen + 1: ] for x in pkgInfo.cmdline)
+        pkgline += ' (%s)' % verline
+
+    actionArgs['msg'] = 'Checking for %s' % pkgline
+
+    # run
+    output = _runToolConfig(cfgCtx, **actionArgs)
+    if output is None: # when mandatory == False
+        return
+
+    # set HAVE_* define
+    setDefine('have', 1)
+
+    # add to task
+    taskUselib = taskParams.setdefault('uselib', [])
+    taskUselib.append(pkgInfo.uselib)
+
+def doPkgConfig(actionArgs, params):
+    """
+    Do pkg-config
+    """
+
+    cfgCtx     = params['cfgCtx']
+    bconf      = params['bconf']
+    taskParams = params['taskParams']
+
+    toolname = actionArgs.setdefault('toolname', 'pkg-config')
+    toolpaths = actionArgs.get('toolpaths', [])
+
+    packages = actionArgs.get('packages')
+    if not packages:
+        msg = "The parameter 'packages' is empty in config action 'pkgconfig'"
+        raise error.ZenMakeConfError(msg, confpath = bconf.path)
+
+    mandatory = actionArgs.get('mandatory', True)
+
+    # find tool path
+    kwargs = { 'mandatory' : mandatory, 'paths' : toolpaths}
+    actionArgs['runpath'] = _findProgram(cfgCtx, toolname, **kwargs)
+
+    cfgCtx.setenv(taskParams['$task.variant'])
+
+    actionArgs.setdefault('libs', True)
+    actionArgs.setdefault('cflags', True)
+    actionArgs.setdefault('static', False)
+
+    actionArgs['okmsg'] = 'yes'
+    actionArgs['errmsg'] = 'not found'
+
+    if 'tool-atleast-version' in actionArgs:
+        ver = actionArgs['tool-atleast-version']
+        actionArgs['msg'] = 'Checking for %s version >= %r' % (toolname, ver)
+        actionArgs['cmd-args'] = ['--atleast-pkgconfig-version=%s' % ver]
+        _runToolConfig(cfgCtx, **actionArgs)
+
+    defnames = actionArgs.setdefault('defnames', True)
+    if defnames is False:
+        actionArgs['defnames'] = None
+
+    pkgItems = _parsePkgConfigPackages(packages, bconf.path)
+    for pkgInfo in pkgItems:
+        _doPkgConfigForOne(cfgCtx, pkgInfo, actionArgs, taskParams)
+
+def doToolConfig(actionArgs, params):
+    """
+    Do *-config like sdl-config, sdl2-config, mpicc, etc.
+    """
+
+    cfgCtx     = params['cfgCtx']
+    bconf      = params['bconf']
+    taskParams = params['taskParams']
+
+    toolname = actionArgs.get('toolname')
+    toolpaths = actionArgs.get('toolpaths', [])
+
+    if not toolname:
+        msg = "The parameter 'toolname' is empty in config action 'toolconfig'"
+        raise error.ZenMakeConfError(msg, confpath = bconf.path)
+
+    actionArgs['cmd-args'] = utils.toList(actionArgs.pop('args', '--cflags --libs'))
+
+    mandatory = actionArgs.get('mandatory', True)
+
+    # find tool path
+    kwargs = { 'mandatory' : mandatory, 'paths' : toolpaths}
+    actionArgs['runpath'] = _findProgram(cfgCtx, toolname, **kwargs)
+
+    uselib = toolname
+    if toolname.endswith('-config'):
+        uselib = toolname[:len(toolname)-len('-config')]
+    uselib = utils.normalizeForDefine(uselib)
+
+    actionArgs['uselib'] = uselib
+
+    parseAs = actionArgs.pop('parse-as', 'flags-libs')
+    actionArgs['parse-flags'] = (parseAs == 'flags-libs')
+    actionArgs.setdefault('static', False)
+
+    actionArgs.setdefault('msg', 'Checking for %s' % uselib)
+    actionArgs['okmsg'] = 'yes'
+    actionArgs['errmsg'] = 'not found'
+
+    # run
+    cfgCtx.setenv(taskParams['$task.variant'])
+    output = _runToolConfig(cfgCtx, **actionArgs)
+    if output is None: # when mandatory == False
+        return
+
+    defvar = actionArgs.get('defname')
+    if not defvar and parseAs == 'flags-libs':
+        defvar = 'HAVE_%s' % uselib
+
+    if defvar:
+        defval = 1
+        quoteDefVal = False
+        if parseAs == 'entire':
+            defval = output.strip()
+            quoteDefVal = True
+
+        cfgCtx.define(defvar, defval, quote = quoteDefVal )
+
+    if parseAs == 'flags-libs':
+        # add to task
+        taskUselib = taskParams.setdefault('uselib', [])
+        taskUselib.append(uselib)
+
 def writeConfigHeader(checkArgs, params):
     """ Write config header """
 
@@ -613,8 +917,6 @@ def writeConfigHeader(checkArgs, params):
     cfgCtx     = params['cfgCtx']
     taskName   = params['taskName']
     taskParams = params['taskParams']
-
-    cfgCtx.setenv(taskParams['$task.variant'])
 
     def defaultFileName():
         return utils.normalizeForFileName(taskName).lower()
@@ -636,6 +938,7 @@ def writeConfigHeader(checkArgs, params):
     # write the configuration header from the build directory
     checkArgs['top'] = True
 
+    cfgCtx.setenv(taskParams['$task.variant'])
     cfgCtx.write_config_header(fileName, **checkArgs)
 
 def checkWithBuild(checkArgs, params):
@@ -748,7 +1051,7 @@ def runActionsInParallel(actionArgs, params):
     for args in parallelActionArgsList:
         args['msg'] = "  %s" % args['msg']
 
-    _runActionsInParallelImpl(cfgCtx, parallelActionArgsList, **actionArgs)
+    _runActionsInParallelImpl(params, parallelActionArgsList, **actionArgs)
 
 _cmnActionsFuncs = {
     'call-pyfunc'    : callPyFunc,
@@ -783,8 +1086,8 @@ def _handleActions(actions, params):
         table = _actionsTable.get(targetLang, _cmnActionsFuncs)
         func = table.get(action)
         if not func:
-            msg = "Unsupported action %r in the configuration action %r for task %r!" \
-                    % (action, actionArgs, taskName)
+            msg = "Unsupported action %r in the configuration actions for task %r!" \
+                    % (action, taskName)
             ctx.fatal(msg)
 
         func(actionArgs, params)

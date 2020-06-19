@@ -80,14 +80,14 @@ These configuration actions in ``dict`` format:
         will be executed.
 
         Parameter ``defname`` is a name of C/C++/D/Fortran define to set
-        for your code when the test is over.
+        for your code when the test is over. There is no such a name by default.
 
         Parameter ``defines`` can be used to set additional C/C++/D/Fortran defines
         to use in compiling of the test.
         These defines will not be set for your code, only for the test.
 
     ``do`` = ``check-programs``
-        *Parameters*: ``names``, ``paths`` = [],  ``var`` = '', ``mandatory`` = True.
+        *Parameters*: ``names``, ``paths``,  ``var`` = '', ``mandatory`` = True.
 
         *Supported languages*: all languages supported by ZenMake.
 
@@ -105,6 +105,140 @@ These configuration actions in ``dict`` format:
         Call a python function. It'a another way to use python
         function as an action. In this way you can use parameter
         ``mandatory``.
+
+    ``do`` = ``pkgconfig``
+        *Parameters*: ``toolname`` = 'pkg-config', ``toolpaths``,
+        ``packages``, ``cflags`` = True, ``libs`` = True, ``static`` = False,
+        ``defnames`` = True, ``def-pkg-vars``, ``tool-atleast-version``,
+        ``pkg-version`` = False, ``mandatory`` = True.
+
+        *Supported languages*: C, C++.
+
+        Execute ``pkg-config`` or compatible tool (for example ``pkgconf``) and
+        use results. Parameter ``toolname`` can be used to set name of tool and
+        it's 'pkg-config' by default. Parameter ``toolpaths`` can be used to set
+        paths to find the tool, but usually you don't need to use it.
+
+        Parameter ``packages`` is required parameter to set one or more names of
+        packages in database of pkg-config. Each such a package name can be used
+        with '>', '<', '=', '<=' or '>=' to check version of a package.
+
+        Parameters ``cflags`` (default: True), ``libs`` = (default: True),
+        ``static`` (default: False) are used to set corresponding command line
+        parameters ``--cflags``, ``--libs``, ``--static`` for 'pkg-config' to
+        get compiler/linker options. If ``cflags`` or ``libs`` is True then
+        obtained compiler/linker options are used by ZenMake in a build task.
+        Parameter ``static`` means forcing of static libraries and
+        it is ignored if ``cflags`` and ``libs`` are False.
+
+        Parameter ``defnames`` is used to set C/C++ defines. It can be True/False
+        or ``dict``. If it's True then default names for defines will be used.
+        If it's False then no defines will be used. If it's ``dict`` then keys
+        must be names of used packages and values must be dicts with keys ``have``
+        and ``version`` and values as names for defines. By default it's True.
+        Each package can have 'HAVE_PKGNAME' and 'PKGNAME_VERSION' define
+        where PKGNAME is a package name in upper case. And it's default patterns.
+        But you can set custom defines. Name of 'PKGNAME_VERSION' is used only
+        if ``pkg-version`` is True.
+
+        Parameter ``pkg-version`` can be used to get define with version of
+        a package. It can be True of False. If it's True then define will be set.
+        If it's False then define will not be set. It's False by default.
+        This parameter will not set define if ``defnames`` is False.
+
+        Parameter ``def-pkg-vars`` can be used to set custom values of variables
+        for 'pkg-config'. It must be ``dict`` where keys and values are names and
+        values of these variables. ZenMake uses command line option ``--define-variable``
+        for this parameter. It's empty by default.
+
+        Parameter ``tool-atleast-version`` can be used to check minimum version
+        of selected tool (pkg-config).
+
+        Examples in Python format:
+
+        .. code-block:: python
+
+            # ZenMake will check package 'gtk+-3.0' and set define 'HAVE_GTK_3_0=1'
+            'config-actions'  : [
+                { 'do' : 'pkgconfig', 'packages' : 'gtk+-3.0' },
+            ]
+
+            # ZenMake will check packages 'gtk+-3.0' and 'pango' and
+            # will check 'gtk+-3.0' version > 1 and <= 100.
+            # Before checking of packages ZenMake will check that 'pkg-config' version
+            # is greater than 0.1.
+            # Also it will set defines 'WE_HAVE_GTK3=1', 'HAVE_PANGO=1',
+            # GTK3_VER="gtk3-ver" and LIBPANGO_VER="pango-ver" where 'gtk3-ver'
+            # and 'pango-ver' are values of current versions of
+            # 'gtk+-3.0' and 'pango'.
+            'config-actions'  : [
+                {
+                    'do' : 'pkgconfig',
+                    'packages' : 'gtk+-3.0 > 1 pango gtk+-3.0 <= 100 ',
+                    'tool-atleast-version' : '0.1',
+                    'pkg-version' : True,
+                    'defnames' : {
+                        'gtk+-3.0' : { 'have' : 'WE_HAVE_GTK3', 'version': 'GTK3_VER' },
+                        'pango' : { 'version': 'LIBPANGO_VER' },
+                    },
+                },
+            ],
+
+    ``do`` = ``toolconfig``
+        *Parameters*: ``toolname`` = 'pkg-config', ``toolpaths``,
+        ``args`` = '\\-\\-cflags \\-\\-libs', ``static`` = False,
+        ``parse-as`` = 'flags-libs', ``defname``, ``msg``,
+        ``mandatory`` = True.
+
+        *Supported languages*: C, C++.
+
+        Execute any ``*-config`` tool. It can be pkg-config, sdl-config,
+        sdl2-config, mpicc, etc.
+
+        Parameter ``toolname`` must be used to set name of such a tool.
+        Parameter ``toolpaths`` can be used to set
+        paths to find the tool, but usually you don't need to use it.
+
+        Parameter ``args`` can be used to set command line arguments. By default
+        it is '\\-\\-cflags \\-\\-libs'.
+
+        Parameter ``static`` means forcing of static libraries and
+        it is ignored if ``parse-as`` is not set to 'flags-libs'.
+
+        Parameter ``parse-as`` describes how to parse output. If it is 'none'
+        then output will not be parsed. If it is 'flags-libs' then ZenMake will
+        try to parse the output for compiler/linker options. And if it is 'entire'
+        then output will not be parsed but value of output will be set to define
+        name from parameter ``defname``.
+        By default ``parse-as`` is set to 'flags-libs'.
+
+        Parameter ``defname`` can be used to set C/C++ define. If ``parse-as``
+        is set to 'flags-libs' then ZenMake will try to set define name by using
+        value of ``toolname`` discarding '-config' part if it exists. For example
+        if ``toolname`` is 'sdl2-config' then 'HAVE_SDL2=1' will be used.
+        For other values of ``parse-as`` there is no default value for ``defname``
+        but you can set some custom define name.
+
+        Parameter ``msg`` can be used to set custom message for this action.
+
+        Examples in Python format:
+
+        .. code-block:: python
+
+            'config-actions'  : [
+                # ZenMake will get compiler/linker options for SDL2 and set define 'HAVE_SDL2=1'
+                { 'do' : 'toolconfig', 'toolname' : 'sdl2-config' },
+                # ZenMake will get SDL2 version and set it in the define 'SDL2_VERSION'
+                {
+                    'do' : 'toolconfig',
+                    'toolname' : 'sdl2-config',
+                    'msg' : 'Getting SDL2 version',
+                    'args' : '--version',
+                    'parse-as' : 'entire',
+                    'defname' : 'SDL2_VERSION',
+                },
+            ]
+
 
     ``do`` = ``write-config-header``
         *Parameters*: ``file`` = '', ``guard`` = '',  ``remove-defines`` = True,

@@ -29,10 +29,12 @@ FORINSTALL_PRJDIRS = [
 ]
 
 BY_REGEXPS = tuple('byregexps') # for ability to have non string dict key
-RE_ALL_D   = '^d/'
-RE_ALL_LUA = '^lua/'
-RE_ALL_FC  = '^fortran/'
+RE_ALL_D     = '^d/'
+RE_ALL_LUA   = '^lua/'
+RE_ALL_FC    = '^fortran/'
 RE_ALL_DBUS  = '^dbus/'
+RE_ALL_GTK3  = '^gtk3/'
+RE_ALL_SDL2  = '^sdl2/'
 RE_EXT_DEPS  = '^external-deps/'
 
 TEST_CONDITIONS = {
@@ -46,6 +48,8 @@ TEST_CONDITIONS = {
         dict(regexp = RE_ALL_LUA, condition = dict( os = ['linux'], )),
         dict(regexp = RE_ALL_FC, condition = dict( os = ['linux'], )),
         dict(regexp = RE_ALL_DBUS, condition = dict( os = ['linux'], )),
+        dict(regexp = RE_ALL_GTK3, condition = dict( os = ['linux'], )),
+        dict(regexp = RE_ALL_SDL2, condition = dict( os = ['linux'], )),
         dict(regexp = RE_EXT_DEPS + '1-makefile',
             condition = dict( os = ['linux', 'darwin'], )),
     ],

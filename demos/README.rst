@@ -30,6 +30,8 @@ Linux:
     - lua (5.1)
     - dbus-glib (libdbus-glib-1-dev)
     - gfortran
+    - gtk3 (libgtk-3-dev)
+    - sdl2 (libsdl2-dev)
 
 macOS:
     - python

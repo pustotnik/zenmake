@@ -90,8 +90,8 @@ def cfgctx(monkeypatch, mocker, tmpdir):
 
     cfgCtx.loadTool = mocker.MagicMock(side_effect = loadTool)
 
-    cfgCtx.start_msg = mocker.MagicMock()
-    cfgCtx.end_msg = mocker.MagicMock()
+    cfgCtx.start_msg = cfgCtx.startMsg = mocker.MagicMock()
+    cfgCtx.end_msg = cfgCtx.endMsg = mocker.MagicMock()
     cfgCtx.to_log = mocker.MagicMock()
 
     cfgCtx.top_dir = rundir
@@ -131,8 +131,8 @@ def testRunConfigActionsCheckPrograms(mocker, cfgctx):
         dict(do = 'check-programs', names = 'python2 python3', paths = '1 2')
     ]
 
-    ctx.find_program = mocker.MagicMock()
-    ctx.runConfigActions(buildtype, tasks)
+    ctx.find_program = mocker.MagicMock(return_value = 'path')
+    ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
 
     calls = [
         mocker.call('python2', mandatory = False, path_list = mocker.ANY),
@@ -159,7 +159,7 @@ def testRunConfigActionsCheckSysLibs(mocker, cfgctx):
     ]
 
     ctx.check = mocker.MagicMock()
-    ctx.runConfigActions(buildtype, tasks)
+    ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
 
     ignoreArgs = ['msg', '$conf-test-hash', 'type', 'compile_filename',
                   'code', 'compile_mode']
@@ -188,7 +188,7 @@ def testRunConfigActionsCheckHeaders(mocker, cfgctx):
     ]
 
     ctx.check = mocker.MagicMock()
-    ctx.runConfigActions(buildtype, tasks)
+    ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
 
     ignoreArgs = ['msg', '$conf-test-hash', 'type', 'compile_filename',
                   'code', 'compile_mode']
@@ -220,7 +220,7 @@ def testRunConfigActionsCheckLibs(mocker, cfgctx):
     ]
 
     ctx.check = mocker.MagicMock()
-    ctx.runConfigActions(buildtype, tasks)
+    ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
 
     ignoreArgs = ['msg', '$conf-test-hash', 'type', 'compile_filename',
                   'code', 'compile_mode']
@@ -256,7 +256,7 @@ def testRunConfigActionsWriteHeader(mocker, cfgctx):
     ]
 
     ctx.write_config_header = mocker.MagicMock()
-    ctx.runConfigActions(buildtype, tasks)
+    ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
 
     calls = [
         mocker.call(joinpath(buildtype, 'some_task_config.h'), top = True,
@@ -273,7 +273,7 @@ def testRunConfigActionsWriteHeader(mocker, cfgctx):
 
     ctx.fakebconf.projectName = 'test prj'
     ctx.write_config_header.reset_mock()
-    ctx.runConfigActions(buildtype, tasks)
+    ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
 
     calls = [
         mocker.call(joinpath(buildtype, 'some_task_config.h'), top = True,
@@ -302,7 +302,7 @@ def testRunConfigActionsUnknown(mocker, cfgctx):
     ]
 
     with pytest.raises(WafError):
-        ctx.runConfigActions(buildtype, tasks)
+        ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
 
 def _checkToolchainNames(ctx, buildconf, buildtype, expected):
     bconf = BuildConfig(asRealConf(buildconf))

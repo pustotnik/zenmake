@@ -114,8 +114,8 @@ def cfgctx(monkeypatch, mocker, tmpdir):
         cfgCtx.recurse([rundir])
     cfgCtx.execute = execute
 
-    cfgCtx.start_msg = mocker.MagicMock()
-    cfgCtx.end_msg = mocker.MagicMock()
+    cfgCtx.start_msg = cfgCtx.startMsg = mocker.MagicMock()
+    cfgCtx.end_msg = cfgCtx.endMsg = mocker.MagicMock()
     cfgCtx.to_log = mocker.MagicMock()
 
     cfgCtx.top_dir = rundir

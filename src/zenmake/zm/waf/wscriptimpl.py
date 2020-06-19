@@ -83,7 +83,7 @@ def _configure(conf, bconf):
         conf.configureTaskParams(bconf, taskParams)
 
     # run conf actions
-    conf.runConfigActions(buildtype, tasks)
+    conf.runConfigActions(bconf, buildtype)
 
     # save envs
     for taskParams in viewvalues(tasks):

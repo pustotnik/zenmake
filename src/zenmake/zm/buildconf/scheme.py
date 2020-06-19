@@ -69,14 +69,49 @@ _actionToVars = {
         'defines' : { 'type': ('str', 'list-of-strs') },
         'execute' : { 'type': 'bool' },
     },
-    'parallel' : {
-        'tryall' : { 'type': 'bool' },
-        'actions' : _genConfActionsScheme,
+    'pkgconfig' : {
+        'toolname' : { 'type': 'str' },
+        'toolpaths' : { 'type': ('str', 'list-of-strs') },
+        'packages' : { 'type': 'str' },
+        'cflags' : { 'type': 'bool' },
+        'libs' : { 'type': 'bool' },
+        'static' : { 'type': 'bool' },
+        'defnames' : {
+            'type' : ('bool', 'vars-in-dict'),
+            'keys-kind' : 'anystr',
+            'vars-type' : 'dict',
+            'vars' : {
+                'have' : { 'type': ('bool', 'str') },
+                'version' : { 'type': ('bool', 'str') },
+            },
+        },
+        'def-pkg-vars' : {
+            'type': 'dict',
+            'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
+        },
+        'tool-atleast-version' : { 'type': 'str' },
+        'pkg-version' : { 'type': 'bool' },
+    },
+    'toolconfig' : {
+        'msg' : { 'type': 'str' },
+        'toolname' : { 'type': 'str' },
+        'toolpaths' : { 'type': ('str', 'list-of-strs') },
+        'args' : { 'type': ('str', 'list-of-strs') },
+        'parse-as' : {
+            'type': 'str',
+            'allowed': ('none', 'entire', 'flags-libs'),
+        },
+        'static' : { 'type': 'bool' },
+        'defname' : { 'type': 'str' },
     },
     'write-config-header' : {
         'file' : { 'type': 'str' },
         'guard': { 'type': 'str' },
         'remove-defines' : { 'type': 'bool' },
+    },
+    'parallel' : {
+        'tryall' : { 'type': 'bool' },
+        'actions' : _genConfActionsScheme,
     },
 }
 

@@ -84,7 +84,7 @@ class ConfigurationContext(WafConfContext):
             taskParams.pop('export-defines', None)
             return
 
-        if isinstance(exportDefines, bool) and exportDefines:
+        if exportDefines is True:
             exportDefines = taskParams.get('defines', [])
 
         taskParams['export-defines'] = toList(exportDefines)
@@ -573,7 +573,7 @@ class ConfigurationContext(WafConfContext):
                 self.fatal(msg)
             self.monitFiles.append(path)
 
-    def runConfigActions(self, buildtype, tasks):
+    def runConfigActions(self, bconf, buildtype):
         """
         Run supported configuration actions: checks/others
         """
@@ -582,6 +582,8 @@ class ConfigurationContext(WafConfContext):
             printLogo = self._printLogo
         except AttributeError:
             self._printLogo = printLogo = True
+
+        tasks = bconf.tasks
 
         for taskName, taskParams in viewitems(tasks):
             actions = taskParams.get('config-actions', [])
@@ -593,6 +595,7 @@ class ConfigurationContext(WafConfContext):
             #log.info('.. Actions for the %r:' % taskName)
             params = {
                 'cfgCtx' : self,
+                'bconf' : bconf,
                 'buildtype' : buildtype,
                 'taskName' : taskName,
                 'taskParams' : taskParams,

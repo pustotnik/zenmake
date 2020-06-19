@@ -34,6 +34,8 @@ addons:
     - lua5.1
     - libdbus-glib-1-dev
     - gfortran
+    - libgtk-3-dev
+    - libsdl2-dev
   # homebrew addon is unstable
   # https://travis-ci.community/t/macos-build-fails-because-of-homebrew-bundle-unknown-command/7296
   # https://github.com/travis-ci/packer-templates-mac/pull/13
