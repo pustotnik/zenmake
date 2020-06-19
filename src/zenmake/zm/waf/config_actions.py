@@ -17,7 +17,7 @@ import shutil
 import traceback
 import inspect
 
-from waflib import Task, Options
+from waflib import Task, Options, Runner
 from waflib.Utils import SIG_NIL
 from waflib.Context import create_context as createContext
 from waflib.Configure import ConfigurationContext as WafConfContext, conf
@@ -88,6 +88,19 @@ def _findProgram(cfgCtx, filename, **kwargs):
         result = ' '.join(result)
     return result
 
+class _LockWrapper(object):
+    def __init__(self, lock):
+        self.lock = lock
+
+    def __enter__(self):
+        if self.lock is not None:
+            return self.lock.__enter__()
+        return None
+
+    def __exit__(self, _type, value, _traceback):
+        if self.lock is not None:
+            self.lock.__exit__(_type, value, _traceback)
+
 def _makeRunBuildBldCtx(ctx, args, topdir, bdir):
 
     bld = createContext('build', top_dir = topdir, out_dir = bdir)
@@ -110,8 +123,15 @@ def _makeRunBuildBldCtx(ctx, args, topdir, bdir):
     return bld
 
 def _runCheckBuild(self, **checkArgs):
+    """
+    It's alternative implementation for the waflib.Configure.run_build.
+    This method must be thread safe.
+    """
 
     cfgCtx = self if isinstance(self, WafConfContext) else self.cfgCtx
+
+    # WARN:
+    # Any method from cfgCtx that is used here must be thread safe
 
     # this function can not be called from conf.multicheck
     assert getattr(self, 'multicheck_task', None) is None
@@ -149,10 +169,10 @@ def _runCheckBuild(self, **checkArgs):
     if not os.path.exists(bdir):
         os.makedirs(bdir)
 
-    self.test_bld = bld = _makeRunBuildBldCtx(self, checkArgs, topdir, bdir)
+    bld = _makeRunBuildBldCtx(self, checkArgs, topdir, bdir)
 
     checkArgs['build_fun'](bld)
-    ret = -1
+    retval = -1
 
     try:
         try:
@@ -162,27 +182,54 @@ def _runCheckBuild(self, **checkArgs):
             tsk = bld.producer.error[0]
             errDetails = "\n[CODE]\n%s" % bld.kw['code']
             errDetails += "\n[LAST COMMAND]\n%s" % tsk.last_cmd
-            ret = 'Conf test failed: %s' % errDetails
+            retval = 'Conf test failed: %s' % errDetails
 
-            self.fatal(ret)
+            self.fatal(retval)
         else:
-            ret = getattr(bld, 'retval', 0)
+            retval = getattr(bld, 'retval', 0)
     finally:
         shutil.rmtree(topdir)
-        checkCache['retval'] = ret
+        checkCache['retval'] = retval
 
-    return ret
+    return retval
 
 @conf
-def run_build(self, *k, **kwargs):
+def check(self, *args, **kwargs):
     """
-    It's alternative version of the waflib.Configure.run_build and it can be
-    used only in ZenMake.
+    It's alternative version of the waflib.Tools.c_config.check and it can be
+    used only in ZenMake. Original 'check' from waf doesn't have good thread
+    safity and sometimes it leads to problems with defines. So here is stable
+    solution with mutex locks. This solution doesn't have noticeable
+    performance penalty because only 'validate_c' and 'post_check' are locked.
     """
 
-    # pylint: disable = invalid-name,unused-argument
+    locker = _LockWrapper(kwargs.pop('lock', None))
 
-    return _runCheckBuild(self, **kwargs)
+    with locker:
+        self.validate_c(kwargs)
+
+    self.startMsg(kwargs['msg'], **kwargs)
+    result = None
+    try:
+        # _runCheckBuild is thread safe
+        result = _runCheckBuild(self, **kwargs)
+    except waferror.ConfigurationError:
+        self.endMsg(kwargs['errmsg'], 'YELLOW', **kwargs)
+        if log.verbose() > 1:
+            raise
+        self.fatal('The configuration failed')
+    else:
+        kwargs['success'] = result
+
+    with locker:
+        result = self.post_check(*args, **kwargs)
+
+    if not result:
+        self.endMsg(kwargs['errmsg'], 'YELLOW', **kwargs)
+        self.fatal('The configuration failed %r' % result)
+    else:
+        self.endMsg(kwargs['okmsg'], **kwargs)
+    return result
 
 class _CfgCheckTask(Task.Task):
     """
@@ -234,6 +281,8 @@ class _CfgCheckTask(Task.Task):
 
         args = self.call['args']
         func = getattr(bld, self.call['name'])
+
+        args['lock'] = self.generator.bld.cmnLock
 
         mandatory = args.get('mandatory', True)
         args['mandatory'] = True
@@ -336,12 +385,9 @@ def _runActionsInParallelImpl(params, actionArgsList, **kwargs):
     cfgCtx = params['cfgCtx']
     bconf  = params['bconf']
 
-    from waflib import Runner
-
     cfgCtx.startMsg('Paralleling %d actions' % len(actionArgsList))
 
     # Force a copy so that threads append to the same list at least
-    # no order is guaranteed, but the values should not disappear at least
     for var in ('DEFINES', DEFKEYS):
         cfgCtx.env.append_value(var, [])
     cfgCtx.env.DEFINE_COMMENTS = cfgCtx.env.DEFINE_COMMENTS or {}
@@ -588,7 +634,7 @@ def checkLibs(checkArgs, params):
         _checkArgs['lib'] = lib
         if autodefine and 'define_name' not in _checkArgs:
             _checkArgs['define_name'] = 'HAVE_LIB_' + lib.upper()
-        checkWithBuild(_checkArgs, params)
+        _checkWithBuild(_checkArgs, params)
 
 def checkHeaders(checkArgs, params):
     """ Check headers """
@@ -597,7 +643,7 @@ def checkHeaders(checkArgs, params):
     for header in headers:
         checkArgs['msg'] = 'Checking for header %s' % header
         checkArgs['header_name'] = header
-        checkWithBuild(checkArgs, params)
+        _checkWithBuild(checkArgs, params)
 
 def checkCode(checkArgs, params):
     """ Check code snippet """
@@ -622,7 +668,7 @@ def checkCode(checkArgs, params):
 
     if text:
         checkArgs['fragment'] = text
-        checkWithBuild(checkArgs, params)
+        _checkWithBuild(checkArgs, params)
 
     if file:
         bconf = cfgCtx.getbconf()
@@ -643,7 +689,67 @@ def checkCode(checkArgs, params):
             text = file.read()
 
         checkArgs['fragment'] = text
-        checkWithBuild(checkArgs, params)
+        _checkWithBuild(checkArgs, params)
+
+def _checkWithBuild(checkArgs, params):
+    """
+    Check it with building of some code.
+    It's general function for many checks.
+    """
+
+    cfgCtx = params['cfgCtx']
+    taskParams = params['taskParams']
+
+    cfgCtx.setenv(taskParams['$task.variant'])
+
+    # _checkWithBuild is used in loops so it's needed to save checkArgs
+    # without changes
+    checkArgs = checkArgs.copy()
+
+    hexHash = _calcConfCheckHexHash(checkArgs, params)
+    checkCache = _getConfActionCache(cfgCtx, hexHash)
+    if 'retval' not in checkCache:
+        # to use it without lock in threads we need to insert this key
+        checkCache['retval'] = None
+    checkArgs['$conf-test-hash'] = hexHash
+
+    #TODO: add as option
+    # if it is False then write-config-header doesn't write defines
+    #checkArgs['global_define'] = False
+
+    defname = checkArgs.pop('defname', None)
+    if defname:
+        checkArgs['define_name'] = defname
+
+    codeType = checkArgs.pop('code-type', None)
+    if codeType:
+        checkArgs['compiler'] = checkArgs['compile_mode'] = codeType
+        checkArgs['type'] = '%sprogram' % codeType
+
+    compileFilename = checkArgs.pop('compile-filename', None)
+    if compileFilename:
+        checkArgs['compile_filename'] = compileFilename
+
+    defines = checkArgs.pop('defines', None)
+    if defines:
+        checkArgs['defines'] = utils.toList(defines)
+
+    libpath = taskParams.get('libpath', None)
+    if libpath:
+        checkArgs['libpath'] = libpath
+
+    includes = taskParams.get('includes', None)
+    if includes:
+        checkArgs['includes'] = includes
+
+    parallelActions = params.get('parallel-actions', None)
+
+    if parallelActions is not None:
+        # checkArgs is shared so it can be changed later
+        checkArgs['$func-name'] = 'check'
+        parallelActions.append(checkArgs)
+    else:
+        cfgCtx.check(**checkArgs)
 
 def _parsePkgConfigPackages(packages, confpath):
 
@@ -940,66 +1046,6 @@ def writeConfigHeader(checkArgs, params):
 
     cfgCtx.setenv(taskParams['$task.variant'])
     cfgCtx.write_config_header(fileName, **checkArgs)
-
-def checkWithBuild(checkArgs, params):
-    """
-    Check it with building of some code.
-    It's general function for many checks.
-    """
-
-    cfgCtx = params['cfgCtx']
-    taskParams = params['taskParams']
-
-    cfgCtx.setenv(taskParams['$task.variant'])
-
-    # checkWithBuild is used in loops so it's needed to save checkArgs
-    # without changes
-    checkArgs = checkArgs.copy()
-
-    hexHash = _calcConfCheckHexHash(checkArgs, params)
-    checkCache = _getConfActionCache(cfgCtx, hexHash)
-    if 'retval' not in checkCache:
-        # to use it without lock in threads we need to insert this key
-        checkCache['retval'] = None
-    checkArgs['$conf-test-hash'] = hexHash
-
-    #TODO: add as option
-    # if it is False then write-config-header doesn't write defines
-    #checkArgs['global_define'] = False
-
-    defname = checkArgs.pop('defname', None)
-    if defname:
-        checkArgs['define_name'] = defname
-
-    codeType = checkArgs.pop('code-type', None)
-    if codeType:
-        checkArgs['compiler'] = checkArgs['compile_mode'] = codeType
-        checkArgs['type'] = '%sprogram' % codeType
-
-    compileFilename = checkArgs.pop('compile-filename', None)
-    if compileFilename:
-        checkArgs['compile_filename'] = compileFilename
-
-    defines = checkArgs.pop('defines', None)
-    if defines:
-        checkArgs['defines'] = utils.toList(defines)
-
-    libpath = taskParams.get('libpath', None)
-    if libpath:
-        checkArgs['libpath'] = libpath
-
-    includes = taskParams.get('includes', None)
-    if includes:
-        checkArgs['includes'] = includes
-
-    parallelActions = params.get('parallel-actions', None)
-
-    if parallelActions is not None:
-        # checkArgs is shared so it can be changed later
-        checkArgs['$func-name'] = 'check'
-        parallelActions.append(checkArgs)
-    else:
-        cfgCtx.check(**checkArgs)
 
 def runActionsInParallel(actionArgs, params):
     """
