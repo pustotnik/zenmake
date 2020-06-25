@@ -283,24 +283,31 @@ def testHandleTaskSourceParam(tmpdir, mocker):
         path = str(cwd),
         confPaths = AutoDict(buildroot = "build"),
     )
-    def getbconf():
+    def getbconf(pathNode):
         return bconf
     ctx.getbconf = mocker.MagicMock(side_effect = getbconf)
 
+    def getStartDirNode(path):
+        return None
+    ctx.getStartDirNode = mocker.MagicMock(side_effect = getStartDirNode)
+
+    taskParams = { '$startdir' : '.' }
+
     # empty
-    srcParams = {}
-    src = assist.handleTaskSourceParam(ctx, srcParams)
+    taskParams['source'] = {}
+    src = assist.handleTaskSourceParam(ctx, taskParams)
     assert src == []
 
     # find with wildcard
 
     srcParams = dict( startdir = 'src', )
+    taskParams['source'] = srcParams
     realStartDir = abspath(joinpath(bconf.rootdir, srcParams['startdir']))
 
     # case 1
     srcParams['include'] = ['some/**/*.cpp']
     for _ in range(2): # to check with cache
-        rv = assist.handleTaskSourceParam(ctx, srcParams)
+        rv = assist.handleTaskSourceParam(ctx, taskParams)
         assert sorted([x.abspath() for x in rv]) == sorted([
             joinpath(realStartDir, 'some', '2', 'main.cpp'),
             joinpath(realStartDir, 'some', '2', 'test.cpp'),
@@ -311,7 +318,7 @@ def testHandleTaskSourceParam(tmpdir, mocker):
     srcParams['include'] = ['**/*.cpp']
     srcParams['exclude'] = ['**/*test*']
     for _ in range(2): # to check with cache
-        rv = assist.handleTaskSourceParam(ctx, srcParams)
+        rv = assist.handleTaskSourceParam(ctx, taskParams)
         assert sorted([x.abspath() for x in rv]) == sorted([
             joinpath(realStartDir, 'some', '2', 'main.cpp'),
             joinpath(realStartDir, 'some', '1', 'Test.cpp'),
@@ -322,7 +329,7 @@ def testHandleTaskSourceParam(tmpdir, mocker):
     srcParams['exclude'] = ['**/*test*']
     srcParams['ignorecase'] = True
     for _ in range(2): # to check with cache
-        rv = assist.handleTaskSourceParam(ctx, srcParams)
+        rv = assist.handleTaskSourceParam(ctx, taskParams)
         assert sorted([x.abspath() for x in rv]) == sorted([
             joinpath(realStartDir, 'some', '2', 'main.c'),
             joinpath(realStartDir, 'some', '2', 'main.cpp'),
@@ -333,7 +340,7 @@ def testHandleTaskSourceParam(tmpdir, mocker):
     # case 4
     srcParams['paths'] = ['some/2/main.c']
     for _ in range(2): # to check with cache
-        rv = assist.handleTaskSourceParam(ctx, srcParams)
+        rv = assist.handleTaskSourceParam(ctx, taskParams)
         assert sorted([x.abspath() for x in rv]) == sorted([
             joinpath(realStartDir, 'some', '2', 'main.c'),
         ])
@@ -341,7 +348,7 @@ def testHandleTaskSourceParam(tmpdir, mocker):
     # case 5
     srcParams['paths'] = ['some/2/main.c', 'some/2/test.c']
     for _ in range(2): # to check with cache
-        rv = assist.handleTaskSourceParam(ctx, srcParams)
+        rv = assist.handleTaskSourceParam(ctx, taskParams)
         assert sorted([x.abspath() for x in rv]) == sorted([
             joinpath(realStartDir, 'some', '2', 'main.c'),
             joinpath(realStartDir, 'some', '2', 'test.c'),
@@ -350,7 +357,7 @@ def testHandleTaskSourceParam(tmpdir, mocker):
     # case 6
     srcParams['paths'] = ['some/2/main.c', 'some/1/Test.cpp']
     for _ in range(2): # to check with cache
-        rv = assist.handleTaskSourceParam(ctx, srcParams)
+        rv = assist.handleTaskSourceParam(ctx, taskParams)
         assert sorted([x.abspath() for x in rv]) == sorted([
             joinpath(realStartDir, 'some', '2', 'main.c'),
             joinpath(realStartDir, 'some', '1', 'Test.cpp'),
@@ -367,6 +374,7 @@ def testDistclean(tmpdir, monkeypatch):
     fakeConfPaths.buildroot = str(buildroot.realpath())
     fakeConfPaths.realbuildroot = fakeConfPaths.buildroot
     fakeConfPaths.startdir = str(startdir.realpath())
+    fakeConfPaths.rootdir = fakeConfPaths.startdir
 
     assert os.path.isdir(fakeConfPaths.buildroot)
     assert os.path.isdir(fakeConfPaths.startdir)

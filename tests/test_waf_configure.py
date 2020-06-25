@@ -72,7 +72,7 @@ def cfgctx(monkeypatch, mocker, tmpdir):
 
     type(cfgCtx).env = mocker.PropertyMock(side_effect = envProp)
 
-    def getbconf():
+    def getbconf(pathNode):
         return cfgCtx.fakebconf
     cfgCtx.getbconf = mocker.MagicMock(side_effect = getbconf)
 
@@ -130,6 +130,7 @@ def testRunConfigActionsCheckPrograms(mocker, cfgctx):
         dict(do = 'check-programs', names = 'python2', mandatory = False),
         dict(do = 'check-programs', names = 'python2 python3', paths = '1 2')
     ]
+    tasks.task['$task.variant'] = 'test'
 
     ctx.find_program = mocker.MagicMock(return_value = 'path')
     ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
@@ -254,9 +255,10 @@ def testRunConfigActionsWriteHeader(mocker, cfgctx):
         { 'do' : 'write-config-header', 'file' : 'file2', 'guard' : 'myguard' },
         { 'do' : 'write-config-header', 'file' : 'file1', 'remove-defines' : False },
     ]
+    ctx.fakebconf.tasks = tasks
 
     ctx.write_config_header = mocker.MagicMock()
-    ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
+    ctx.runConfigActions(ctx.fakebconf, buildtype)
 
     calls = [
         mocker.call(joinpath(buildtype, 'some_task_config.h'), top = True,
@@ -273,7 +275,7 @@ def testRunConfigActionsWriteHeader(mocker, cfgctx):
 
     ctx.fakebconf.projectName = 'test prj'
     ctx.write_config_header.reset_mock()
-    ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
+    ctx.runConfigActions(ctx.fakebconf, buildtype)
 
     calls = [
         mocker.call(joinpath(buildtype, 'some_task_config.h'), top = True,
@@ -300,6 +302,7 @@ def testRunConfigActionsUnknown(mocker, cfgctx):
     tasks.task['config-actions'] = [
         dict(do = 'random act',),
     ]
+    tasks.task['$task.variant'] = 'test'
 
     with pytest.raises(WafError):
         ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)

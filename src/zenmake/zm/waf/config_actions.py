@@ -671,8 +671,7 @@ def checkCode(checkArgs, params):
         _checkWithBuild(checkArgs, params)
 
     if file:
-        bconf = cfgCtx.getbconf()
-        startdir = bconf.confPaths.startdir
+        startdir = params['bconf'].confPaths.startdir
         file = getNativePath(file)
         path = joinpath(startdir, file)
         if not os.path.isfile(path):

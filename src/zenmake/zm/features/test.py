@@ -9,8 +9,8 @@
 """
 
 import os
-
 from collections import deque
+
 from waflib.TaskGen import feature, after
 from waflib import Build, Task
 from waflib.Build import BuildContext
@@ -372,22 +372,23 @@ class TestContext(BuildContext):
 
         runTestsOnChanges = _shared.runTestsOnChanges
 
-        # pylint: disable = no-member
-        bconfPaths = self.getbconf().confPaths
-
         taskItems = _shared.taskItems
         ordered = sorted(taskItems.values())
 
         changedTasks = set(_shared.changedTasks)
 
         for taskItem in ordered:
-            if not taskItem.params['$istest']:
+            taskParams = taskItem.params
+            if not taskParams['$istest']:
                 continue
-            if not _isSuitableForRunCmd(taskItem.params):
+            if not _isSuitableForRunCmd(taskParams):
                 continue
             if runTestsOnChanges and taskItem.name not in changedTasks:
                 continue
 
+            # pylint: disable = no-member
+            wspath = self.getStartDirNode(taskParams['$startdir'])
+            bconfPaths = self.getbconf(wspath).confPaths
             self._makeTask(taskItem, bconfPaths)
 
         taskItems.clear()

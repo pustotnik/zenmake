@@ -343,7 +343,8 @@ def detectTaskFeatures(ctx, taskParams):
 
     features = toListSimple(taskParams.get('features', []))
     if aliesInFeatures(features):
-        features = handleTaskFeatureAlieses(ctx, features, taskParams.get('source'))
+        taskParams['features'] = features
+        features = handleTaskFeatureAlieses(ctx, taskParams)
 
     detected = [ TASK_TARGET_FEATURES_TO_LANG.get(x, '') for x in features ]
     features = detected + features
@@ -358,11 +359,14 @@ def detectTaskFeatures(ctx, taskParams):
 
     return features
 
-def handleTaskFeatureAlieses(ctx, features, source):
+def handleTaskFeatureAlieses(ctx, taskParams):
     """
     Detect features for alieses 'stlib', 'shlib', 'program' and 'objects'
     """
 
+    features = taskParams['features']
+
+    source = taskParams.get('source')
     if source is None:
         return features
 
@@ -380,7 +384,7 @@ def handleTaskFeatureAlieses(ctx, features, source):
                 msg += " must have some file extension at the end."
                 raise ZenMakeConfError(msg)
 
-    source = handleTaskSourceParam(ctx, source)
+    source = handleTaskSourceParam(ctx, taskParams)
     return resolveAliesesInFeatures(source, features)
 
 def validateTaskFeatures(taskParams):
@@ -471,11 +475,12 @@ def handleTaskIncludesParam(taskParams, startdir):
 
     taskParams['export-includes'] = exportIncludes
 
-def handleTaskSourceParam(ctx, src):
+def handleTaskSourceParam(ctx, taskParams):
     """
     Get valid 'source' for build task
     """
 
+    src = taskParams.get('source')
     if not src:
         return []
 
@@ -488,7 +493,8 @@ def handleTaskSourceParam(ctx, src):
         if cached is not None:
             return [ctx.root.make_node(x) for x in cached]
 
-    bconf = ctx.getbconf()
+    wspath = ctx.getStartDirNode(taskParams['$startdir'])
+    bconf = ctx.getbconf(wspath)
 
     try:
         buildrootNode = ctx.brootNode
@@ -543,10 +549,10 @@ def fullclean(bconfPaths, verbose = 1):
 
     realbuildroot = bconfPaths.realbuildroot
     buildroot     = bconfPaths.buildroot
-    startdir      = bconfPaths.startdir
+    rootdir       = bconfPaths.rootdir
 
-    assert not startdir.startswith(buildroot)
-    assert not startdir.startswith(realbuildroot)
+    assert not rootdir.startswith(buildroot)
+    assert not rootdir.startswith(realbuildroot)
 
     paths = [realbuildroot, buildroot]
     for path in list(paths):
@@ -563,7 +569,7 @@ def fullclean(bconfPaths, verbose = 1):
             os.remove(path)
 
     from waflib import Options
-    lockfile = os.path.join(startdir, Options.lockfile)
+    lockfile = os.path.join(rootdir, Options.lockfile)
     if os.path.isfile(lockfile):
         loginfo("Removing lockfile '%s'" % lockfile)
         os.remove(lockfile)

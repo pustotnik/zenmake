@@ -54,8 +54,8 @@ def _getZmMetaConf(self):
     return data
 
 @asmethod(WafContext, 'getbconf')
-def _getBuildConf(self):
-    return self.bconfManager.config(self.path.abspath())
+def _getBuildConf(self, pathNode):
+    return self.bconfManager.config(pathNode.abspath())
 
 @asmethod(WafContext, 'zmcache')
 def _getLocalCache(self):

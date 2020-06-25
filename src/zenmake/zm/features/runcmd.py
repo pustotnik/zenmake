@@ -229,10 +229,7 @@ def _createRuleWithFunc(bconf, funcName):
 
     return runFunc
 
-@feature('runcmd')
-@after('process_rule', 'apply_link')
-def applyRunCmd(tgen):
-    """ Apply feature 'runcmd' """
+def _makeCmdRuleArgs(tgen):
 
     ctx = tgen.bld
 
@@ -241,29 +238,25 @@ def applyRunCmd(tgen):
 
     cmdArgs = zmTaskParams.get('run', {})
     if not cmdArgs:
-        return
-
-    isStandalone = _isCmdStandalone(tgen)
-
-    cmd = cmdArgs.pop('cmd', None)
-    cmdType = cmdArgs.pop('$type', '')
-    realTarget = zmTaskParams['$real.target']
-
-    env = ctx.env.derive()
-    env.env = (env.env or os.environ).copy()
-    env.env.update(cmdArgs.pop('env', {}))
-
-    # add new var to use in 'rule'
-    env['TARGET'] = realTarget
+        return None
 
     ruleArgs = cmdArgs.copy()
+
+    env = tgen.env.derive()
+    env.env = (env.env or os.environ).copy()
+    env.env.update(ruleArgs.pop('env', {}))
+
+    # add new var to use in 'rule'
+    env['TARGET'] = zmTaskParams['$real.target']
+
     ruleArgs.update({
         'env'   : env,
         'color' : getattr(tgen, 'color', 'BLUE'),
         'cls_keyword' : lambda _: 'Running',
         'cls_str' : lambda _: 'command for task %r' % tgen.name,
     })
-    repeat = ruleArgs.pop('repeat', 1)
+
+    cmd = ruleArgs.pop('cmd', None)
 
     deepInputs = zmTaskParams.get('deep_inputs', False) or \
                             getattr(tgen, 'deep_inputs', False)
@@ -271,18 +264,36 @@ def applyRunCmd(tgen):
         ruleArgs['deep_inputs'] = True
 
     if not cmd and zmTaskParams['$runnable']:
-        cmd = realTarget
+        cmd = env['TARGET']
 
     if not cmd:
         msg = 'Task %r has not runnable command: %r.' % (tgen.name, cmd)
         raise error.ZenMakeError(msg)
 
+    cmdType = ruleArgs.get('$type', '')
     if cmdType == 'func':
-        ruleArgs['rule'] = _createRuleWithFunc(ctx.getbconf(), cmd)
+        bconf = ctx.getbconf(tgen.path)
+        ruleArgs['rule'] = _createRuleWithFunc(bconf, cmd)
     else:
         ruleArgs['rule'] = cmd
 
-    if isStandalone:
+    ruleArgs['cmd'] = cmd
+    return ruleArgs
+
+@feature('runcmd')
+@after('process_rule', 'apply_link')
+def applyRunCmd(tgen):
+    """ Apply feature 'runcmd' """
+
+    ruleArgs = _makeCmdRuleArgs(tgen)
+    if not ruleArgs:
+        return
+
+    cmd = ruleArgs.pop('cmd')
+    cmdType = ruleArgs.pop('$type', '')
+    repeat = ruleArgs.pop('repeat', 1)
+
+    if _isCmdStandalone(tgen):
         for k, v in viewitems(ruleArgs):
             setattr(tgen, k, v)
         if getattr(tgen, 'target', None) is not None:

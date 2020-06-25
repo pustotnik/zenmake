@@ -62,8 +62,7 @@ def init(ctx):
 
     # Next code only for command with 'buildtype' param
 
-    bconf = ctx.getbconf()
-    assert id(ctx.bconfManager.root) == id(bconf)
+    bconf = ctx.bconfManager.root
     buildtype = bconf.selectedBuildType
 
     setattr(BuildContext, 'variant', buildtype)
@@ -138,16 +137,13 @@ def build(bld):
     """
 
     buildtype = bld.validateVariant()
-
-    bconf = bld.bconfManager.root
-    assert id(bconf) == id(bld.getbconf())
-    bconfPaths = bconf.confPaths
+    rootbconf = bld.bconfManager.root
 
     isInstall = bld.cmd in ('install', 'uninstall')
     if isInstall:
         assist.applyInstallPaths(bld.env, cli.selected)
     elif bld.cmd == 'clean':
-        _setupClean(bld, bconfPaths)
+        _setupClean(bld, rootbconf.confPaths)
         # no need to make build tasks
         return
 
@@ -163,7 +159,7 @@ def build(bld):
     # out == bld.bldnode.abspath()
 
     bldPathNode = bld.path
-    btypeDir = bconf.selectedBuildTypeDir
+    btypeDir = rootbconf.selectedBuildTypeDir
 
     # tasks from bconf cannot be used here
     tasks = bld.zmtasks
@@ -199,7 +195,7 @@ def build(bld):
             taskParams['includes'].append(btypeDir)
 
         if 'source' in taskParams:
-            source = assist.handleTaskSourceParam(bld, taskParams['source'])
+            source = assist.handleTaskSourceParam(bld, taskParams)
             if not source:
                 msg = "No source files found for task %r." % taskName
                 msg += " Nothing to build. Check config(s) and/or file(s)."
@@ -228,7 +224,7 @@ def build(bld):
     bld.path = bldPathNode
 
     # It's neccesary to return to original variant otherwise WAF won't find
-    # correct path at the end of the building step.
+    # correct path at the end of the building step (see BuildContext.variant_dir).
     bld.variant = buildtype
 
 def test(_):
@@ -245,7 +241,7 @@ def distclean(ctx):
     Implementation of wscript.distclean
     """
 
-    bconfPaths = ctx.getbconf().confPaths
+    bconfPaths = ctx.bconfManager.root.confPaths
     assist.distclean(bconfPaths)
 
 def shutdown(_):
