@@ -17,7 +17,7 @@ from zm.autodict import AutoDict as _AutoDict
 from zm.pypkg import PkgPath
 from zm.utils import loadPyModule, toList
 from zm.pathutils import getNativePath
-from zm.error import ZenMakeError
+from zm.error import ZenMakeError, ZenMakeConfError
 
 # private cache
 _cache = _AutoDict()
@@ -177,45 +177,48 @@ def _gatherFileExtensions(src):
             path = path.name
 
         dotIndex = path.rfind('.')
-        if dotIndex > 0: # if dotIndex == 0 it can mean something like '.ext'
+        if dotIndex > 0: # if dotIndex == 0 it can mean something like '.bashrc'
             ret.add(path[dotIndex:])
     return ret
 
-def resolveAliesesInFeatures(source, features):
+def resolveAliesesInFeatures(source, features, taskName = None):
     """
     Detect features from alieses in features
     """
 
-    lfeatures = []
-
-    alies = None
-    for feature in features:
-        if feature in TASK_FEATURE_ALIESES:
-            alies = feature
-            break
-    else:
-        # no alies
+    alies = [ x for x in features if x in TASK_FEATURE_ALIESES]
+    if not alies:
         return features
+
+    alies = alies[0]
 
     # remove all alieses from features
     features = [ x for x in features if x not in TASK_FEATURE_ALIESES]
 
+    lfeatures = []
     extensions = _gatherFileExtensions(source)
     for ext in tuple(extensions):
         feature = FILE_EXTENSIONS_TO_LANG.get(ext)
         if feature:
             lfeatures.append(feature)
 
+    if not lfeatures:
+        msg = "Unable to determine how to resolve alies %r" % alies
+        if taskName:
+            msg += " in task %r" % taskName
+        msg += ": there are no supported file extensions or files at all."
+        raise ZenMakeConfError(msg)
+
+    targetFeature = None
     if alies in TASK_TARGET_KINDS:
         _map = TASK_LANG_FEATURES_TO_ALIESES
         targetLangs = [ x for x in lfeatures if alies in _map.get(x, [])]
 
         if not targetLangs and not features:
             msg = 'Unable to determine how to resolve alies %r with features %r' % (alies, features)
-            raise ZenMakeError(msg)
+            raise ZenMakeConfError(msg)
 
         # Only one target feature can be used for one build task
-        targetFeature = None
         for lang in TASK_LANG_FEATURES_PRIORITY:
             if lang in targetLangs:
                 targetFeature = lang + alies
@@ -225,7 +228,8 @@ def resolveAliesesInFeatures(source, features):
                 targetFeature = targetLangs[0] + alies
 
     features.extend(lfeatures)
-    features.append(targetFeature)
+    if targetFeature:
+        features.append(targetFeature)
     return features
 
 #######################################################################

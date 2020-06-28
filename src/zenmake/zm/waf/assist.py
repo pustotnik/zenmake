@@ -330,10 +330,13 @@ def convertTaskParamNamesForWaf(taskParams):
         if val is not None:
             taskParams[wafKey] = val
 
-def aliesInFeatures(features):
+def getAliesFromFeatures(features):
     """ Return True if any alies exists in features """
 
-    return bool(TASK_FEATURE_ALIESES.intersection(features))
+    alies = [ x for x in features if x in TASK_FEATURE_ALIESES]
+    if not alies:
+        return None
+    return alies[0]
 
 def detectTaskFeatures(ctx, taskParams):
     """
@@ -341,10 +344,8 @@ def detectTaskFeatures(ctx, taskParams):
     Param 'ctx' is used only if an alies exists in features.
     """
 
-    features = toListSimple(taskParams.get('features', []))
-    if aliesInFeatures(features):
-        taskParams['features'] = features
-        features = handleTaskFeatureAlieses(ctx, taskParams)
+    taskParams['features'] = toListSimple(taskParams.get('features', []))
+    features = handleTaskFeatureAlieses(ctx, taskParams)
 
     detected = [ TASK_TARGET_FEATURES_TO_LANG.get(x, '') for x in features ]
     features = detected + features
@@ -365,12 +366,14 @@ def handleTaskFeatureAlieses(ctx, taskParams):
     """
 
     features = taskParams['features']
-
-    source = taskParams.get('source')
-    if source is None:
+    alies = getAliesFromFeatures(features)
+    if not alies:
         return features
 
-    assert source
+    source = taskParams.get('source')
+    if not source:
+        msg = "Feature alies %r can not be used without parameter 'source'" % alies
+        raise ZenMakeConfError(msg)
 
     if source.get('paths') is None:
         patterns = toList(source.get('include', []))
@@ -385,7 +388,7 @@ def handleTaskFeatureAlieses(ctx, taskParams):
                 raise ZenMakeConfError(msg)
 
     source = handleTaskSourceParam(ctx, taskParams)
-    return resolveAliesesInFeatures(source, features)
+    return resolveAliesesInFeatures(source, features, taskParams['name'])
 
 def validateTaskFeatures(taskParams):
     """
