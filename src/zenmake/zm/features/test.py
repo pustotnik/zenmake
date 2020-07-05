@@ -37,9 +37,6 @@ _shared = _AutoDict(
     # names of test tasks
     testTaskNames = None,
 
-    #task items to use in 'test' stage
-    taskItems = {},
-
     # queue with names of changed tasks
     changedTasks = deque(),
 
@@ -50,43 +47,6 @@ _shared = _AutoDict(
     testsBuilt = False,
     buildHandled = False,
 )
-
-class TaskItem(object):
-    """
-    Task info to use in 'test' command.
-    """
-
-    __slots__ = ('name', 'params', 'deps')
-
-    def __init__(self, name, params):
-        self.name = name
-        self.params = params
-        self.deps = []
-
-    def weight(self):
-        """ Get 'weight' of item. It can be used for sorting. """
-
-        if not self.deps:
-            return 1
-
-        for dep in self.deps:
-            if id(dep) == id(self):
-                raise error.ZenMakeError('Dependency cycle found in buildconfig!')
-
-        return 1 + max([dep.weight() for dep in self.deps])
-
-    def __eq__(self, other):
-        return (self.weight() == other.weight()) and (self.name == other.name)
-    def __ne__(self, other):
-        return not self == other
-    def __lt__(self, other):
-        return self.weight() < other.weight()
-    def __le__(self, other):
-        return self.weight() <= other.weight()
-    def __gt__(self, other):
-        return self.weight() > other.weight()
-    def __ge__(self, other):
-        return self.weight() >= other.weight()
 
 def _wrapNeedToConfigure(_needToConfigure):
 
@@ -248,7 +208,9 @@ def postBuild(bld):
         return
 
     assert _shared.testsBuilt
-    processTasksForRun(bld.zmtasks)
+
+    for params in viewvalues(bld.zmtasks):
+        params['$istest'] = 'test' in params['features']
 
     #Gather some info from BuildContext at the end of the 'build' call.
     #It's just for optimisation.
@@ -259,27 +221,6 @@ def postBuild(bld):
     ctxCache['saved.attrs'] = {}
     for attr in Build.SAVED_ATTRS:
         ctxCache['saved.attrs'][attr] = getattr(bld, attr, {})
-
-def processTasksForRun(tasks):
-    """
-    Order all tasks and collect params for test tasks
-    """
-
-    taskItems = _shared.taskItems
-    taskItems.clear()
-
-    # Make items
-    for name, params in viewitems(tasks):
-        params['$istest'] = 'test' in params['features']
-        taskItems[name] = TaskItem(name, params)
-
-    # Make deps
-    for name, meta in viewitems(taskItems):
-        deps = meta.params.get('use', [])
-        for dep in deps:
-            other = taskItems.get(dep)
-            if other:
-                meta.deps.append(other)
 
 @feature('*')
 @after('process_rule')
@@ -347,10 +288,9 @@ class TestContext(BuildContext):
         # clear cache to allow gc to free some memory
         ctxCache.clear()
 
-    def _makeTask(self, taskItem, bconfPaths):
+    def _makeTask(self, taskParams, bconfPaths):
         ctx = self
-        params = taskItem.params
-        target = params.get('target', None)
+        target = taskParams.get('target')
         if not target:
             return
 
@@ -359,10 +299,10 @@ class TestContext(BuildContext):
             'features' : ['runcmd'],
             'name'     : os.path.relpath(target, bconfPaths.startdir),
             'color'    : 'PINK',
-            'run'      : params.get('run', {}),
+            'run'      : taskParams.get('run', {}),
         }
 
-        kwargs['zm-task-params'] = params
+        kwargs['zm-task-params'] = taskParams
         ctx(**kwargs)
 
     def _makeTasks(self):
@@ -371,27 +311,22 @@ class TestContext(BuildContext):
         # worry about thread safing of methods
 
         runTestsOnChanges = _shared.runTestsOnChanges
-
-        taskItems = _shared.taskItems
-        ordered = sorted(taskItems.values())
+        ordered = assist.orderTasksByLocalDeps(self.zmtasks)
 
         changedTasks = set(_shared.changedTasks)
 
-        for taskItem in ordered:
-            taskParams = taskItem.params
+        for taskParams in ordered:
             if not taskParams['$istest']:
                 continue
             if not _isSuitableForRunCmd(taskParams):
                 continue
-            if runTestsOnChanges and taskItem.name not in changedTasks:
+            if runTestsOnChanges and taskParams['name'] not in changedTasks:
                 continue
 
             # pylint: disable = no-member
             wspath = self.getStartDirNode(taskParams['$startdir'])
             bconfPaths = self.getbconf(wspath).confPaths
-            self._makeTask(taskItem, bconfPaths)
-
-        taskItems.clear()
+            self._makeTask(taskParams, bconfPaths)
 
     def _executeTest(self, task):
 

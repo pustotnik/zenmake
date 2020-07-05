@@ -110,6 +110,7 @@ def cfgctx(monkeypatch, mocker, tmpdir):
     type(cfgCtx).env = mocker.PropertyMock(side_effect = envProp)
 
     def execute():
+        cfgCtx.mergeTasks()
         cfgCtx.preconfigure()
         cfgCtx.recurse([rundir])
     cfgCtx.execute = execute

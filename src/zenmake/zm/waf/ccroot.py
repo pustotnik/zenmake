@@ -19,6 +19,8 @@ from zm.waf.assist import makeTargetRealName
 # waflib.Tools.ccroot must be always imported
 assert 'waflib.Tools.ccroot' in sys.modules
 
+USELIB_VARS = wafccroot.USELIB_VARS
+
 @asmethod(wafccroot.link_task, 'add_target')
 def _addTargetToLinkTask(self, target):
 

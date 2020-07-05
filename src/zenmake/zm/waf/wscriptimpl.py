@@ -22,7 +22,7 @@ __all__ = [
 import os
 
 from waflib.Build import BuildContext
-from zm.pyutils import viewitems, viewvalues
+from zm.pyutils import viewitems
 from zm.constants import WAF_CACHE_DIRNAME, WAF_CFG_FILES_ENV_KEY
 from zm.constants import WAF_CONFIG_LOG, CONFTEST_DIR_PREFIX
 from zm import cli, error, log
@@ -69,48 +69,46 @@ def init(ctx):
 
     assist.printZenMakeHeader(ctx.bconfManager)
 
-def _configure(conf, bconf):
-
-    # set context path
-    conf.path = conf.getPathNode(bconf.confdir)
-
-    buildtype = bconf.selectedBuildType
-    tasks = bconf.tasks
-
-    for taskParams in viewvalues(tasks):
-        # configure all possible task params
-        conf.configureTaskParams(bconf, taskParams)
-
-    # run conf actions
-    conf.runConfigActions(bconf, buildtype)
-
-    # save envs
-    for taskParams in viewvalues(tasks):
-
-        # It's not needed anymore.
-        taskParams.pop('config-actions', None)
-
-        # switch env
-        conf.variant = taskParams['$task.variant']
-
-        # set task env variables
-        # NOTICE: if set these env vars (-O2, -shared, etc) before
-        # running of conf tests then the vars will affect builds in the conf tests.
-        assist.setTaskEnvVars(conf.env, taskParams, bconf.customToolchains)
-
-    # switch current env to the root env
-    conf.setenv('')
-
-    conf.addExtraMonitFiles(bconf)
-
 def configure(conf):
     """
     Implementation of wscript.configure
     """
 
     configs = conf.bconfManager.configs
+    tasksList = conf.allOrderedTasks
+
+    for taskParams in tasksList:
+        # handle such task params as includes, libpath, ...
+        conf.configureTaskParams(taskParams['$bconf'], taskParams)
+
+    # run conf actions
+    conf.runConfigActions()
+
+    # save envs
+    for taskParams in tasksList:
+
+        bconf = taskParams['$bconf']
+
+        # It's not needed anymore.
+        taskParams.pop('config-actions', None)
+
+        # switch env
+        conf.variant = taskParams['$task.variant']
+        taskEnv = conf.env
+
+        # it must be made after conf actions
+        assist.fixToolchainEnvVars(taskEnv, taskParams)
+
+        # set task env variables
+        # NOTICE: if these env vars (-O2, -shared, etc) are set before
+        # running of conf tests then the vars will affect builds in the conf tests.
+        assist.setTaskEnvVars(taskEnv, taskParams, bconf.customToolchains)
+
+    # switch current env to the root env
+    conf.setenv('')
+
     for bconf in configs:
-        _configure(conf, bconf)
+        conf.addExtraMonitFiles(bconf)
 
 def _setupClean(bld, bconfPaths):
 

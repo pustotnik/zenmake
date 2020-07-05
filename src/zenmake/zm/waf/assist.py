@@ -10,11 +10,9 @@
 
 import os
 import re
-from copy import deepcopy
 
-from waflib.ConfigSet import ConfigSet
 from zm.constants import TASK_FEATURE_ALIESES, PLATFORM
-from zm.pyutils import viewitems, stringtype, _unicode, _encode
+from zm.pyutils import viewitems, listvalues, stringtype, _unicode, _encode
 from zm.autodict import AutoDict as _AutoDict
 from zm.pathutils import getNodesFromPathsDict
 from zm.error import ZenMakeError, ZenMakeConfError
@@ -156,46 +154,42 @@ def makeTargetRealName(target, targetKind, pattern, env, verNum):
 
     return target
 
-def copyEnv(env):
+def orderTasksByLocalDeps(tasks):
     """
-    Make shallow copy of ConfigSet object
-    """
-
-    newenv = ConfigSet()
-    # deepcopy only current table whithout parents
-    newenv.table = deepcopy(env.table)
-    parent = getattr(env, 'parent', None)
-    if parent:
-        newenv.parent = parent
-    return newenv
-
-def deepcopyEnv(env):
-    """
-    Make deep copy of ConfigSet object
-
-    Function deepcopy doesn't work with ConfigSet and ConfigSet.detach
-    doesn't make deepcopy for already detached objects
-    (WAF version is 2.0.15).
+    Make list of tasks ordered by local deps
     """
 
-    newenv = ConfigSet()
-    # keys() returns all keys from current env and all parents
-    for k in env.keys():
-        newenv[k] = deepcopy(env[k])
-    return newenv
+    def calcWeight(allTasks, taskParams):
 
-def delFromEnv(env, key):
-    """
-    Delete value from ConfigSet env.
-    Operator 'del' doesn't work as expected with ConfigSet, see ConfigSet.__delitem__
-    """
+        weight = taskParams.get('$weight')
+        if weight is not None:
+            return weight
 
-    try:
-        while True:
-            env.table.pop(key, None)
-            env = env.parent
-    except AttributeError:
-        pass
+        weight = 1
+        depWeights = [0]
+        for dep in taskParams.get('use', []):
+            depTaskParams = allTasks.get(dep)
+            if not depTaskParams:
+                continue
+            if id(depTaskParams) == id(taskParams):
+                raise ZenMakeError('Dependency cycle was found in buildconf tasks!')
+
+            depWeights.append(calcWeight(allTasks, depTaskParams))
+
+        weight += max(depWeights)
+        taskParams['$weight'] = weight
+        return weight
+
+    tasksList = listvalues(tasks)
+    for taskParams in tasksList:
+        calcWeight(tasks, taskParams)
+
+    # From python docs:
+    # `key and reverse touch each element only once`.
+    # `the key function is called exactly once for each input record.`
+    # So $weight can be poped.
+    tasksList.sort(key = lambda x: x.pop('$weight'))
+    return tasksList
 
 def initBuildType(bconfManager, cliBuildType):
     """
@@ -287,6 +281,21 @@ def setTaskEnvVars(env, taskParams, toolchainSettings):
         val = utils.uniqueListWithOrder(reversed(val))
         val.reverse()
         env[var] = val
+
+def fixToolchainEnvVars(env, taskParams):
+    """
+    Fix some env vars for some toolchains like env.LIBPATH
+    """
+
+    # fix (st)libpath
+    for paramName, envVar in (('libpath', 'LIBPATH'), ('stlibpath', 'STLIBPATH')):
+        envLibPath = env[envVar]
+        if envLibPath:
+            # Some waf tools (see msvc, ifort) set up env.LIBPATH but it's wrong
+            # behavior. Actually it's better to move them in 'uselib_feature'
+            # env var but I was lazy.
+            taskParams[paramName] = taskParams.get(paramName, []) + envLibPath
+            del env[envVar]
 
 def getValidPreDefinedToolchainNames():
     """
@@ -413,7 +422,7 @@ def validateTaskFeatures(taskParams):
 
     return features
 
-def handleTaskLibPathParams(taskParams, taskEnv):
+def handleTaskLibPathParams(taskParams):
     """
     Make valid 'libpath','stlibpath' for a build task
     """
@@ -425,15 +434,6 @@ def handleTaskLibPathParams(taskParams, taskEnv):
             # Waf doesn't change 'libpath' relative to current ctx.path as for 'includes'.
             # So we use absolute paths here.
             paths = param.abspaths()
-
-        envVar = paramName.upper()
-        envLibPath = taskEnv[envVar]
-        if envLibPath:
-            # Some waf tools (see msvc, ifort) set up env.LIBPATH but it's wrong
-            # Actually it's better to move them in 'uselib_feature' env var
-            # but I was lazy.
-            paths.extend(envLibPath)
-            del taskEnv[envVar]
 
         if paths:
             taskParams[paramName] = utils.uniqueListWithOrder(paths)

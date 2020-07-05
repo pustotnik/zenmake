@@ -11,6 +11,7 @@ import sys
 import signal
 import re
 import shlex
+from copy import deepcopy
 from hashlib import sha1
 from importlib import import_module as importModule
 from types import ModuleType
@@ -21,6 +22,7 @@ except ImportError:
     raise ImportError('Python must have threading support')
 
 from waflib import Utils as wafutils
+from waflib.ConfigSet import ConfigSet
 from zm.pyutils import stringtype, _unicode, _encode, PY3
 from zm.error import ZenMakeError, ZenMakeProcessTimeoutExpired
 
@@ -280,6 +282,36 @@ def cmdHasShellSymbols(cmdline):
     Return True if string 'cmdline' contains some specific shell symbols
     """
     return any(s in cmdline for s in ('<', '>', '&&', '||'))
+
+def copyEnv(env):
+    """
+    Make shallow copy of ConfigSet object
+    """
+
+    newenv = ConfigSet()
+    # copy only current table whithout parents
+    newenv.table = env.table.copy()
+    parent = getattr(env, 'parent', None)
+    if parent is not None:
+        newenv.parent = parent
+    return newenv
+
+def deepcopyEnv(env, filterKeys = None):
+    """
+    Make deep copy of ConfigSet object
+
+    Function deepcopy doesn't work with ConfigSet and ConfigSet.detach
+    doesn't make deepcopy for already detached objects.
+    """
+
+    # keys() returns all keys from current env and all parents
+    keys = env.keys()
+    if filterKeys is not None:
+        keys = [ x for x in keys if filterKeys(x) ]
+
+    newenv = ConfigSet()
+    newenv.table = { k:deepcopy(env[k]) for k in keys }
+    return newenv
 
 def configSetToDict(configSet):
     """

@@ -2,7 +2,7 @@
 # This is an example of a project which uses boost libraries with g++/clang++ on
 # POSIX platform(Linux/MacOS) and msvc on MS Windows.
 
-# There is special case for a boost libraries on Windows.
+# There is special case for boost libraries on Windows.
 # This setup for boost libraries installed on Windows as C:\local\boost_1_67_0
 # For example, command 'choco install boost-msvc-14.1' produces such an installation.
 # OS Windows needs to know path to dir with boost dlls to run program linked

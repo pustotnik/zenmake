@@ -97,44 +97,6 @@ def testMakeTaskVariantName():
     name = assist.makeTaskVariantName(buildtype, taskName)
     assert name == '%s.%s' % (buildtype, 'bbb_..ccc')
 
-def testCopyEnv():
-    rootenv = ConfigSet()
-    rootenv.test1 = 'test1'
-    childenv = rootenv.derive()
-    childenv.test2 = 'test2'
-    newenv = assist.copyEnv(childenv)
-    assert childenv.test1 == 'test1'
-    assert childenv.test2 == 'test2'
-    assert newenv.test1 == 'test1'
-    assert newenv.test2 == 'test2'
-    rootenv.test1 = 'abc'
-    assert childenv.test1 == 'abc'
-    assert childenv.test2 == 'test2'
-    assert newenv.test1 == 'abc'
-    assert newenv.test2 == 'test2'
-    childenv.test2 = 'dfg'
-    assert childenv.test2 == 'dfg'
-    assert newenv.test2 == 'test2'
-
-def testDeepCopyEnv():
-    rootenv = ConfigSet()
-    rootenv.test1 = 'test1'
-    childenv = rootenv.derive()
-    childenv.test2 = 'test2'
-    newenv = assist.deepcopyEnv(childenv)
-    assert childenv.test1 == 'test1'
-    assert childenv.test2 == 'test2'
-    assert newenv.test1 == 'test1'
-    assert newenv.test2 == 'test2'
-    rootenv.test1 = 'abc'
-    assert childenv.test1 == 'abc'
-    assert childenv.test2 == 'test2'
-    assert newenv.test1 == 'test1'
-    assert newenv.test2 == 'test2'
-    childenv.test2 = 'dfg'
-    assert childenv.test2 == 'dfg'
-    assert newenv.test2 == 'test2'
-
 def testSetTaskEnvVars():
     cfgEnvVars = ToolchainVars.allCfgFlagVars()
 

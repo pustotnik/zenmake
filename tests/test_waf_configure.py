@@ -123,8 +123,8 @@ def testRunConfigActionsCheckPrograms(mocker, cfgctx):
     mocker.patch('zm.log.warn')
 
     ctx = cfgctx
-    buildtype = 'buildtype'
     tasks = AutoDict()
+    tasks.task.name = 'task'
     tasks.task.features = ['c', 'cshlib']
     tasks.task['config-actions'] = [
         dict(do = 'check-programs', names = 'python2', mandatory = False),
@@ -132,13 +132,18 @@ def testRunConfigActionsCheckPrograms(mocker, cfgctx):
     ]
     tasks.task['$task.variant'] = 'test'
 
+    ctx.bconfManager = AutoDict(configs = [AutoDict(tasks = tasks)])
+    ctx.mergeTasks()
+
     ctx.find_program = mocker.MagicMock(return_value = 'path')
-    ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
+    ctx.runConfigActions()
+
+    ignoreArgs = { k: mocker.ANY for k in ['var'] }
 
     calls = [
-        mocker.call('python2', mandatory = False, path_list = mocker.ANY),
-        mocker.call('python2', path_list = ['1', '2']),
-        mocker.call('python3', path_list = ['1', '2']),
+        mocker.call(['python2'], mandatory = False, path_list = mocker.ANY, **ignoreArgs),
+        mocker.call(['python2'], path_list = ['1', '2'], **ignoreArgs),
+        mocker.call(['python3'], path_list = ['1', '2'], **ignoreArgs),
     ]
 
     assert ctx.find_program.mock_calls == calls
@@ -151,6 +156,7 @@ def testRunConfigActionsCheckSysLibs(mocker, cfgctx):
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
+    tasks.task.name = 'task'
     tasks.task.features = ['cxx', 'cxxshlib']
     tasks.task['libs'] = 'lib1 lib2'
     tasks.task['$task.variant'] = buildtype
@@ -159,11 +165,14 @@ def testRunConfigActionsCheckSysLibs(mocker, cfgctx):
         dict(do = 'check-libs', fromtask = True, mandatory = False),
     ]
 
+    ctx.bconfManager = AutoDict(configs = [AutoDict(tasks = tasks)])
+    ctx.mergeTasks()
+
     ctx.check = mocker.MagicMock()
-    ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
+    ctx.runConfigActions()
 
     ignoreArgs = ['msg', '$conf-test-hash', 'type', 'compile_filename',
-                  'code', 'compile_mode']
+                  'code', 'compile_mode', 'add_have_to_env', 'saved-result-args']
     ignoreArgs = { k: mocker.ANY for k in ignoreArgs }
 
     calls = [
@@ -181,6 +190,7 @@ def testRunConfigActionsCheckHeaders(mocker, cfgctx):
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
+    tasks.task.name = 'task'
     tasks.task.features = ['c', 'cshlib']
     tasks.task['$task.variant'] = buildtype
     tasks.task['$tlang'] = 'c'
@@ -188,11 +198,14 @@ def testRunConfigActionsCheckHeaders(mocker, cfgctx):
         dict(do = 'check-headers', names = 'header1 header2', mandatory = False),
     ]
 
+    ctx.bconfManager = AutoDict(configs = [AutoDict(tasks = tasks)])
+    ctx.mergeTasks()
+
     ctx.check = mocker.MagicMock()
-    ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
+    ctx.runConfigActions()
 
     ignoreArgs = ['msg', '$conf-test-hash', 'type', 'compile_filename',
-                  'code', 'compile_mode']
+                  'code', 'compile_mode', 'add_have_to_env', 'saved-result-args']
     ignoreArgs = { k: mocker.ANY for k in ignoreArgs }
 
     calls = [
@@ -212,6 +225,7 @@ def testRunConfigActionsCheckLibs(mocker, cfgctx):
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
+    tasks.task.name = 'task'
     tasks.task.features = ['c', 'cshlib']
     tasks.task['$task.variant'] = buildtype
     tasks.task['$tlang'] = 'c'
@@ -220,11 +234,14 @@ def testRunConfigActionsCheckLibs(mocker, cfgctx):
         dict(do = 'check-libs', names = 'lib3', autodefine = True),
     ]
 
+    ctx.bconfManager = AutoDict(configs = [AutoDict(tasks = tasks)])
+    ctx.mergeTasks()
+
     ctx.check = mocker.MagicMock()
-    ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
+    ctx.runConfigActions()
 
     ignoreArgs = ['msg', '$conf-test-hash', 'type', 'compile_filename',
-                  'code', 'compile_mode']
+                  'code', 'compile_mode', 'add_have_to_env', 'saved-result-args']
     ignoreArgs = { k: mocker.ANY for k in ignoreArgs }
 
     calls = [
@@ -246,6 +263,7 @@ def testRunConfigActionsWriteHeader(mocker, cfgctx):
     ctx = cfgctx
     buildtype = 'buildtype'
     tasks = AutoDict()
+    tasks['some task'].name = 'some task'
     tasks['some task'].features = ['c', 'cshlib']
     tasks['some task']['$task.variant'] = buildtype
     tasks['some task']['$tlang'] = 'c'
@@ -256,9 +274,14 @@ def testRunConfigActionsWriteHeader(mocker, cfgctx):
         { 'do' : 'write-config-header', 'file' : 'file1', 'remove-defines' : False },
     ]
     ctx.fakebconf.tasks = tasks
+    ctx.fakebconf.selectedBuildType = buildtype
+
+    ctx.bconfManager = AutoDict(configs = [ctx.fakebconf])
+    ctx.bconfManager.root = ctx.fakebconf
+    ctx.mergeTasks()
 
     ctx.write_config_header = mocker.MagicMock()
-    ctx.runConfigActions(ctx.fakebconf, buildtype)
+    ctx.runConfigActions()
 
     calls = [
         mocker.call(joinpath(buildtype, 'some_task_config.h'), top = True,
@@ -275,7 +298,7 @@ def testRunConfigActionsWriteHeader(mocker, cfgctx):
 
     ctx.fakebconf.projectName = 'test prj'
     ctx.write_config_header.reset_mock()
-    ctx.runConfigActions(ctx.fakebconf, buildtype)
+    ctx.runConfigActions()
 
     calls = [
         mocker.call(joinpath(buildtype, 'some_task_config.h'), top = True,
@@ -296,16 +319,19 @@ def testRunConfigActionsUnknown(mocker, cfgctx):
     mocker.patch('zm.log.warn')
 
     ctx = cfgctx
-    buildtype = 'buildtype'
     tasks = AutoDict()
+    tasks.task.name = 'task'
     tasks.task.features = ['c', 'cshlib']
     tasks.task['config-actions'] = [
         dict(do = 'random act',),
     ]
     tasks.task['$task.variant'] = 'test'
 
+    ctx.bconfManager = AutoDict(configs = [AutoDict(tasks = tasks)])
+    ctx.mergeTasks()
+
     with pytest.raises(WafError):
-        ctx.runConfigActions(AutoDict(tasks = tasks), buildtype)
+        ctx.runConfigActions()
 
 def _checkToolchainNames(ctx, buildconf, buildtype, expected):
     bconf = BuildConfig(asRealConf(buildconf))

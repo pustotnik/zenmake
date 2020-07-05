@@ -173,6 +173,7 @@ taskscheme = {
     'export-defines' :  { 'type': ('bool', 'str', 'list-of-strs') },
     'install-path' :    { 'type': ('bool', 'str') },
     'config-actions' :  _genConfActionsScheme,
+    'export-config-actions' : { 'type': 'bool' },
     'normalize-target-name' : { 'type': 'bool' },
     'objfile-index' : { 'type': 'int' },
 }

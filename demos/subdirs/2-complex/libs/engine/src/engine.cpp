@@ -10,6 +10,16 @@
     no define HAVE_IOSTREAM
 #endif
 
+#ifndef HAVE_STRING
+    // compiler error
+    no define HAVE_STRING
+#endif
+
+#ifndef HAVE_VECTOR
+    // compiler error
+    no define HAVE_VECTOR
+#endif
+
 int calcSomething()
 {
 

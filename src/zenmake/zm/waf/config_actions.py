@@ -16,23 +16,27 @@ import re
 import shutil
 import traceback
 import inspect
+from collections import deque
 
 from waflib import Task, Options, Runner
-from waflib.Utils import SIG_NIL
+from waflib.Utils import SIG_NIL, O755
 from waflib.Context import create_context as createContext
 from waflib.Configure import ConfigurationContext as WafConfContext, conf
+from waflib.Configure import find_program as wafFindProgram
 from waflib import Errors as waferror
-from waflib.Tools.c_config import DEFKEYS
+from waflib.Tools.c_config import DEFKEYS, SNIP_EMPTY_PROGRAM, build_fun as defaultCfgBuildFunc
 from zm.constants import CONFTEST_DIR_PREFIX
 from zm.pyutils import maptype, stringtype, viewitems, viewvalues
 from zm.autodict import AutoDict as _AutoDict
 from zm import utils, log, error
 from zm.pathutils import getNativePath
 from zm.features import ToolchainVars
+from zm.waf import ccroot
 
 joinpath = os.path.join
 
 _RE_PKGCONFIG_PKGS = re.compile(r"(\S+)(\s*(?:[<>]|=|[<>]\s*=)\s*[^\s<>=]+)?")
+_RE_FINDPROG_VAR = re.compile(r"[-.]")
 
 try:
     inspectArgSpec = inspect.getfullargspec
@@ -51,6 +55,8 @@ CONFTEST_HASH_IGNORED_FUNC_ARGS = frozenset(
     ('mandatory', 'msg', 'okmsg', 'errmsg', 'id', 'before', 'after')
 )
 
+_cache = {}
+
 def cfgmandatory(func):
     """
     Handle a parameter named 'mandatory' to disable the configuration errors
@@ -66,40 +72,58 @@ def cfgmandatory(func):
 
     return decorator
 
-def _findProgram(cfgCtx, filename, **kwargs):
+@conf
+def find_program(self, filename, **kwargs):
+    """
+    It's replacement for waflib.Configure.find_program to provide some
+    additional abiliies.
+    """
+    # pylint: disable = invalid-name
 
-    envName = cfgCtx.variant
-    # set root env for cache
-    cfgCtx.variant = ''
+    filename = utils.toListSimple(filename)
 
-    if 'path_list' not in kwargs:
-        kwargs['path_list'] = utils.toList(kwargs.pop('paths', []))
+    # simple caching
+    useCache = all(x not in kwargs for x in ('environ', 'exts', 'value'))
+    if useCache:
+        cache = _cache.setdefault('find-program', {})
+        pathList = kwargs.get('path_list')
+        pathList = tuple(pathList) if pathList else None
+        filenameKey = (tuple(filename), kwargs.get('interpreter'), pathList)
+        result = cache.get(filenameKey)
+        if result is not None:
+            kwargs['value'] = result
 
-    # Method find_program caches result in the cfgCtx.env and
-    # therefore it's not needed to cache it here.
+    result = wafFindProgram(self, filename, **kwargs)
 
-    result = None
-    try:
-        result = cfgCtx.find_program(filename, **kwargs)
-    finally:
-        cfgCtx.variant = envName
+    if useCache:
+        cache[filenameKey] = result
+    return result
+
+def _applyFindProgramResults(cfgCtx, args):
+    cfgCtx.env[args['var']] = args['$result']
+
+def _findProgram(params, filename, checkArgs):
+
+    cfgCtx = params['cfgCtx']
+    taskParams = params['taskParams']
+
+    checkArgs = checkArgs.copy()
+    if 'path_list' not in checkArgs:
+        checkArgs['path_list'] = utils.toList(checkArgs.pop('paths', []))
+
+    filename = utils.toListSimple(filename)
+    if not checkArgs.get('var'):
+        checkArgs['var'] = _RE_FINDPROG_VAR.sub('_', filename[0].upper())
+
+    result = cfgCtx.find_program(filename, **checkArgs)
 
     if result:
         result = ' '.join(result)
+        storedActions = taskParams['$stored-actions']
+        checkArgs['$result'] = cfgCtx.env[checkArgs['var']]
+        storedActions.append({'type' : 'find-program', 'data' : checkArgs })
+
     return result
-
-class _LockWrapper(object):
-    def __init__(self, lock):
-        self.lock = lock
-
-    def __enter__(self):
-        if self.lock is not None:
-            return self.lock.__enter__()
-        return None
-
-    def __exit__(self, _type, value, _traceback):
-        if self.lock is not None:
-            self.lock.__exit__(_type, value, _traceback)
 
 def _makeRunBuildBldCtx(ctx, args, topdir, bdir):
 
@@ -113,16 +137,16 @@ def _makeRunBuildBldCtx(ctx, args, topdir, bdir):
     bld.targets = '*'
 
     bld.logger = ctx.logger
-    bld.all_envs.update(ctx.all_envs)
+    # for TaskGen __init__
     bld.env = args['env']
 
     # for function 'build_fun' only
-    bld.kw = args
+    bld.kw = { k:v for k,v in viewitems(args) if k[0] != '$' }
     bld.conf = ctx # it's used for bld.conf.to_log
 
     return bld
 
-def _runCheckBuild(self, **checkArgs):
+def _runCheckBuild(self, checkArgs):
     """
     It's alternative implementation for the waflib.Configure.run_build.
     This method must be thread safe.
@@ -171,6 +195,8 @@ def _runCheckBuild(self, **checkArgs):
 
     bld = _makeRunBuildBldCtx(self, checkArgs, topdir, bdir)
 
+    # Run function 'build_fun' (see waflib.Tools.c_config.build_fun)
+    # It creates task generator for conf test.
     checkArgs['build_fun'](bld)
     retval = -1
 
@@ -193,26 +219,165 @@ def _runCheckBuild(self, **checkArgs):
 
     return retval
 
+def _preCheck(cfgCtx, args):
+    """
+    It's replacement for waflib.Tools.c_config.validate_c to provide good
+    thead safety. This method is mostly compatible with validate_c.
+    """
+    # pylint: disable = too-many-branches, too-many-statements
+
+    args.setdefault('build_fun', defaultCfgBuildFunc)
+
+    # for defaultCfgBuildFunc
+    args.setdefault('env', cfgCtx.env.derive())
+
+    # read only
+    env = cfgCtx.env
+
+    if 'compiler' not in args and 'features' not in args:
+        if env.CXX_NAME and Task.classes.get('cxx'):
+            if not env.CXX:
+                cfgCtx.fatal('a c++ compiler is required')
+            args['compiler'] = 'cxx'
+        else:
+            if not env.CC:
+                cfgCtx.fatal('a c compiler is required')
+            args['compiler'] = 'c'
+
+    features = utils.toListSimple(args.get('features', []))
+
+    if 'compile_mode' not in args:
+        if 'cxx' in features or args.get('compiler') == 'cxx':
+            args['compile_mode'] = 'cxx'
+        else:
+            args['compile_mode'] = 'c'
+
+    compileMode = args['compile_mode']
+
+    args.setdefault('type', 'cprogram')
+
+    if not features:
+        features = [compileMode]
+        if not 'header_name' in args or args.get('link_header_test', True):
+            features.append(args['type'])
+
+    args['features'] = features
+
+    if 'compile_filename' not in args:
+        args['compile_filename'] = 'test.c' + ((compileMode == 'cxx') and 'pp' or '')
+
+    if 'header_name' in args:
+        args.setdefault('msg', 'Checking for header %s' % args['header_name'])
+
+        headers = utils.toListSimple(args['header_name'])
+        assert len(headers) > 0, 'list of headers in header_name is empty'
+
+        args['code'] = ''.join(['#include <%s>\n' % x for x in headers])
+        args['code'] += SNIP_EMPTY_PROGRAM
+        args.setdefault('uselib_store', headers[0].upper())
+        if 'define_name' not in args:
+            args['define_name'] = cfgCtx.have_define(headers[0])
+
+    lib = args.get('lib')
+    if lib is not None:
+        args.setdefault('msg', 'Checking for library %s' % lib)
+        args.setdefault('uselib_store', lib.upper())
+
+    stlib = args.get('stlib')
+    if stlib is not None:
+        args.setdefault('msg', 'Checking for static library %s' % stlib)
+        args.setdefault('uselib_store', stlib.upper())
+
+    fragment = args.get('fragment')
+    if fragment is not None:
+        args['code'] = fragment
+        args.setdefault('msg', 'Checking for code snippet')
+        args.setdefault('errmsg', 'no')
+
+    flags = (('cxxflags','compiler'), ('cflags','compiler'), ('linkflags','linker'))
+    for flagsname, flagstype in flags:
+        if flagsname in args:
+            args.setdefault('msg', 'Checking for %s flags %s' % (flagstype, args[flagsname]))
+            args.setdefault('errmsg', 'no')
+
+    args.setdefault('execute', False)
+    if args['execute']:
+        args['features'].append('test_exec')
+        args['chmod'] = O755
+
+    args.setdefault('errmsg', 'not found')
+    args.setdefault('okmsg', 'yes')
+    args.setdefault('code', SNIP_EMPTY_PROGRAM)
+    args.setdefault('success', None)
+
+    # we don't undefine 'define_name' how it does c_config.validate_c
+    assert 'msg' in args
+
+def _getCheckSuccess(args):
+
+    if args['execute']:
+        success = 0
+        defineReturn = args.get('define_ret')
+        if args['success'] is not None:
+            success = args['success'] if defineReturn else (args['success'] == 0)
+    else:
+        success = (args['success'] == 0)
+
+    return success
+
+def _applyCheckResults(cfgCtx, args):
+
+    success = args['success']
+    execute = args['execute']
+    defineReturn = args.get('define_ret')
+
+    defineName = args.get('define_name')
+    if defineName:
+        # ZenMake doesn't support adding to DEFINES_* env var here
+        assert args.get('global_define', 1)
+
+        comment = args.get('comment', '')
+        if execute and defineReturn and isinstance(success, stringtype):
+            cfgCtx.define(defineName, success, quote = args.get('quote', 1),
+                          comment = comment)
+        else:
+            cfgCtx.define_cond(defineName, success, comment = comment)
+
+        # define conf.env.HAVE_X to 1 - only for compatibility with Waf
+        if args.get('add_have_to_env', 1):
+            uselibVar  = args.get('uselib_store')
+            if uselibVar:
+                cfgCtx.env[cfgCtx.have_define(uselibVar)] = 1
+            else:
+                val = success if execute and defineReturn else int(success)
+                cfgCtx.env[defineName] = val
+
+    if success and 'uselib_store' in args:
+        _vars = set()
+        for feature in args['features']:
+            _vars |= ccroot.USELIB_VARS.get(feature, set())
+
+        uselibVar  = args['uselib_store']
+        for var in _vars:
+            val = args.get(var.lower())
+            if val is not None:
+                cfgCtx.env.append_value(var + '_' + uselibVar, val)
+
 @conf
-def check(self, *args, **kwargs):
+def check(self, *_, **kwargs):
     """
-    It's alternative version of the waflib.Tools.c_config.check and it can be
-    used only in ZenMake. Original 'check' from waf doesn't have good thread
-    safity and sometimes it leads to problems with defines. So here is stable
-    solution with mutex locks. This solution doesn't have noticeable
-    performance penalty because only 'validate_c' and 'post_check' are locked.
+    It's alternative version of the waflib.Tools.c_config.check.
+    Original 'check' from waf doesn't provide good thread
+    safity and sometimes it leads to problems with defines.
     """
 
-    locker = _LockWrapper(kwargs.pop('lock', None))
-
-    with locker:
-        self.validate_c(kwargs)
+    _preCheck(self, kwargs)
 
     self.startMsg(kwargs['msg'], **kwargs)
     result = None
     try:
-        # _runCheckBuild is thread safe
-        result = _runCheckBuild(self, **kwargs)
+        # _runCheckBuild is supposedly thread safe
+        result = _runCheckBuild(self, kwargs)
     except waferror.ConfigurationError:
         self.endMsg(kwargs['errmsg'], 'YELLOW', **kwargs)
         if log.verbose() > 1:
@@ -221,311 +386,20 @@ def check(self, *args, **kwargs):
     else:
         kwargs['success'] = result
 
-    with locker:
-        result = self.post_check(*args, **kwargs)
+    kwargs['success'] = result = _getCheckSuccess(kwargs)
+    savedArgs = kwargs.get('saved-result-args')
+    if savedArgs is not None:
+        savedArgs.append({'type' : 'check', 'data' : kwargs })
+
+    if kwargs.get('apply-results', True):
+        _applyCheckResults(self, kwargs)
 
     if not result:
-        self.endMsg(kwargs['errmsg'], 'YELLOW', **kwargs)
+        self.endMsg(kwargs['errmsg'], 'YELLOW')
         self.fatal('The configuration failed %r' % result)
     else:
-        self.endMsg(kwargs['okmsg'], **kwargs)
+        self.endMsg(kwargs['okmsg'])
     return result
-
-class _CfgCheckTask(Task.Task):
-    """
-    A task that executes build configuration tests (calls conf.check).
-    It's used to run conf checks in parallel.
-    """
-
-    def __init__(self, *args, **kwargs):
-        Task.Task.__init__(self, *args, **kwargs)
-
-        self.stopRunnerOnError = True
-        self.conf = None
-        self.bld = None
-        self.logger = None
-        self.call = None
-
-    def display(self):
-        return ''
-
-    def runnable_status(self):
-        for task in self.run_after:
-            if not task.hasrun:
-                return Task.ASK_LATER
-        return Task.RUN_ME
-
-    def uid(self):
-        return SIG_NIL
-
-    def signature(self):
-        return SIG_NIL
-
-    def run(self):
-        """ Run task """
-
-        # pylint: disable = broad-except
-
-        cfgCtx = self.conf
-        topdir = cfgCtx.srcnode.abspath()
-        bdir = cfgCtx.bldnode.abspath()
-        bld = createContext('build', top_dir = topdir, out_dir = bdir)
-
-        # avoid unnecessary directories
-        bld.buildWorkDirName = bld.variant = ''
-        bld.env = cfgCtx.env
-        bld.init_dirs()
-        bld.in_msg = 1 # suppress top-level startMsg
-        bld.logger = self.logger
-        bld.cfgCtx = cfgCtx
-
-        args = self.call['args']
-        func = getattr(bld, self.call['name'])
-
-        args['lock'] = self.generator.bld.cmnLock
-
-        mandatory = args.get('mandatory', True)
-        args['mandatory'] = True
-        retval = 0
-        try:
-            func(**args)
-        except Exception:
-            retval = 1
-        finally:
-            args['mandatory'] = mandatory
-
-        if retval != 0 and mandatory and self.stopRunnerOnError:
-            # say 'stop' to runner
-            self.bld.producer.stop = True
-
-        return retval
-
-    def process(self):
-
-        Task.Task.process(self)
-
-        args = self.call['args']
-        if 'msg' not in args:
-            return
-
-        with self.generator.bld.cmnLock:
-            self.conf.startMsg(args['msg'])
-            if self.hasrun == Task.NOT_RUN:
-                self.conf.endMsg('cancelled', color = 'YELLOW')
-            elif self.hasrun != Task.SUCCESS:
-                self.conf.endMsg(args.get('errmsg', 'no'), color = 'YELLOW')
-            else:
-                self.conf.endMsg(args.get('okmsg', 'yes'), color = 'GREEN')
-
-class _RunnerBldCtx(object):
-    """
-    A class that is used as BuildContext to execute conf tests in parallel
-    """
-
-    # pylint: disable = invalid-name, missing-docstring
-
-    def __init__(self, tasks):
-
-        # Keep running all tasks while all tasks will not be not processed
-        # and self.producer.stop == False
-        self.keep = True
-
-        self.task_sigs = {}
-        self.imp_sigs = {}
-        self.progress_bar = 0
-        self.producer = None
-        self.cmnLock = utils.threading.Lock()
-        self._tasks = tasks
-
-    def total(self):
-        return len(self._tasks)
-
-    def to_log(self, *k, **kw):
-        # pylint: disable = unused-argument
-        return
-
-def _applyParallelTasksDeps(tasks, bconfpath):
-
-    idToTask = {}
-    for tsk in tasks:
-        args = tsk.call['args']
-        if 'id' in args:
-            idToTask[args['id']] = tsk
-
-    def applyDeps(idToTask, task, before):
-        tasks = task.call['args'].get('before' if before else 'after', [])
-        for key in utils.toList(tasks):
-            otherTask = idToTask.get(key, None)
-            if not otherTask:
-                msg = 'No config action named %r' % key
-                raise error.ZenMakeConfError(msg, confpath = bconfpath)
-            if before:
-                otherTask.run_after.add(task)
-            else:
-                task.run_after.add(otherTask)
-
-    # second pass to set dependencies with after/before
-    for tsk in tasks:
-        applyDeps(idToTask, tsk, before = True)
-        applyDeps(idToTask, tsk, before = False)
-
-    # remove 'before' and 'after' from args to avoid matching with the same
-    # parameters for Waf Task.Task
-    for tsk in tasks:
-        args = tsk.call['args']
-        args.pop('before', None)
-        args.pop('after', None)
-
-def _runActionsInParallelImpl(params, actionArgsList, **kwargs):
-    """
-    Runs configuration actions in parallel.
-    Results are printed sequentially at the end.
-    """
-
-    cfgCtx = params['cfgCtx']
-    bconf  = params['bconf']
-
-    cfgCtx.startMsg('Paralleling %d actions' % len(actionArgsList))
-
-    # Force a copy so that threads append to the same list at least
-    for var in ('DEFINES', DEFKEYS):
-        cfgCtx.env.append_value(var, [])
-    cfgCtx.env.DEFINE_COMMENTS = cfgCtx.env.DEFINE_COMMENTS or {}
-
-    tasks = []
-    runnerCtx = _RunnerBldCtx(tasks)
-
-    tryall = kwargs.get('tryall', False)
-
-    for i, args in enumerate(actionArgsList):
-        args['$parallel-id'] = i
-
-        checkTask = _CfgCheckTask(env = None)
-        checkTask.stopRunnerOnError = not tryall
-        checkTask.conf = cfgCtx
-        checkTask.bld = runnerCtx # to use in task.log_display(task.generator.bld)
-
-        # bind a logger that will keep the info in memory
-        checkTask.logger = log.makeMemLogger(str(id(checkTask)), cfgCtx.logger)
-
-        checkTask.call = { 'name' : args.pop('$func-name'), 'args' : args }
-
-        tasks.append(checkTask)
-
-    bconfpath = bconf.path
-
-    _applyParallelTasksDeps(tasks, bconfpath)
-
-    def getTasksGenerator():
-        yield tasks
-        while 1:
-            yield []
-
-    runnerCtx.producer = scheduler = Runner.Parallel(runnerCtx, Options.options.jobs)
-    scheduler.biter = getTasksGenerator()
-
-    cfgCtx.endMsg('started')
-    try:
-        scheduler.start()
-    except waferror.WafError as ex:
-        if ex.msg.startswith('Task dependency cycle'):
-            msg = "Infinite recursion was detected in parallel config actions."
-            msg += " Check all parameters 'before' and 'after'."
-            raise error.ZenMakeConfError(msg, confpath = bconfpath)
-        # it's a different error
-        raise
-
-    # flush the logs in order into the config.log
-    for tsk in tasks:
-        tsk.logger.memhandler.flush()
-
-    cfgCtx.startMsg('-> processing results')
-
-    for tsk in scheduler.error:
-        if not getattr(tsk, 'err_msg', None):
-            continue
-        cfgCtx.to_log(tsk.err_msg)
-        cfgCtx.endMsg('fail', color = 'RED')
-        msg = 'There is an error in the Waf, read config.log for more information'
-        raise waferror.WafError(msg)
-
-    okStates = (Task.SUCCESS, Task.NOT_RUN)
-    failureCount = len([x for x in tasks if x.hasrun not in okStates])
-
-    if failureCount:
-        cfgCtx.endMsg('%s failed' % failureCount, color = 'YELLOW')
-    else:
-        cfgCtx.endMsg('all ok')
-
-    for tsk in tasks:
-        # in rare case we get "No handlers could be found for logger"
-        log.freeLogger(tsk.logger)
-
-        if tsk.hasrun not in okStates and tsk.call['args'].get('mandatory', True):
-            cfgCtx.fatal('One of the actions has failed, read config.log for more information')
-
-def _handleLoadedActionsCache(cache):
-    """
-    Handle loaded cache data for config actions.
-    """
-
-    if 'config-actions' not in cache:
-        cache['config-actions'] = {}
-    actions = cache['config-actions']
-
-    # reset all but not 'id'
-    for v in viewvalues(actions):
-        if isinstance(v, maptype):
-            _new = { 'id' : v['id']}
-            v.clear()
-            v.update(_new)
-
-    return actions
-
-def _getConfActionCache(cfgCtx, actionHash):
-    """
-    Get conf action cache by hash
-    """
-
-    cache = cfgCtx.getConfCache()
-    if 'config-actions' not in cache:
-        _handleLoadedActionsCache(cache)
-    actions = cache['config-actions']
-
-    if actionHash not in actions:
-        lastId = actions.get('last-id', 0)
-        actions['last-id'] = currentId = lastId + 1
-        actions[actionHash] = {}
-        actions[actionHash]['id'] = currentId
-
-    return actions[actionHash]
-
-def _calcConfCheckHexHash(checkArgs, params):
-
-    cfgCtx = params['cfgCtx']
-    taskParams = params['taskParams']
-
-    hashVals = {}
-    for k, v in viewitems(checkArgs):
-        if k in CONFTEST_HASH_IGNORED_FUNC_ARGS or k[0] == '$':
-            continue
-        hashVals[k] = v
-    # just in case
-    hashVals['toolchain'] = utils.toList(taskParams.get('toolchain', []))
-
-    buff = [ '%s: %s' % (k, str(hashVals[k])) for k in sorted(hashVals.keys()) ]
-
-    env = cfgCtx.env
-    envStr = ''
-    for k in sorted(env.keys()):
-        if k not in CONFTEST_HASH_USED_ENV_KEYS:
-            # these keys are not significant for hash but can make cache misses
-            continue
-        val = env[k]
-        envStr += '%r %r ' % (k, val)
-    buff.append('%s: %s' % ('env', envStr))
-
-    return utils.hexOfStr(utils.hashObj(buff))
 
 @conf
 def runPyFuncAsAction(self, **kwargs):
@@ -590,7 +464,7 @@ def callPyFunc(actionArgs, params):
     func = actionArgs['func']
     argsSpec = inspectArgSpec(func)
     noFuncArgs = not any(argsSpec[0:3])
-    args = { 'task' : taskName, 'buildtype' : buildtype }
+    args = { 'taskname' : taskName, 'buildtype' : buildtype }
 
     actionArgs['args'] = None if noFuncArgs else args
     actionArgs['msg'] = 'Function %r' % func.__name__
@@ -607,13 +481,133 @@ def callPyFunc(actionArgs, params):
 def checkPrograms(checkArgs, params):
     """ Check programs """
 
-    cfgCtx = params['cfgCtx']
-
     names = utils.toList(checkArgs.pop('names', []))
     checkArgs['path_list'] = utils.toList(checkArgs.pop('paths', []))
 
     for name in names:
-        _findProgram(cfgCtx, name, **checkArgs)
+        _findProgram(params, name, checkArgs)
+
+def _handleLoadedActionsCache(cache):
+    """
+    Handle loaded cache data for config actions.
+    """
+
+    if 'config-actions' not in cache:
+        cache['config-actions'] = {}
+    actions = cache['config-actions']
+
+    # reset all but not 'id'
+    for v in viewvalues(actions):
+        if isinstance(v, maptype):
+            _new = { 'id' : v['id']}
+            v.clear()
+            v.update(_new)
+
+    return actions
+
+def _getConfActionCache(cfgCtx, actionHash):
+    """
+    Get conf action cache by hash
+    """
+
+    cache = cfgCtx.getConfCache()
+    if 'config-actions' not in cache:
+        _handleLoadedActionsCache(cache)
+    actions = cache['config-actions']
+
+    if actionHash not in actions:
+        lastId = actions.get('last-id', 0)
+        actions['last-id'] = currentId = lastId + 1
+        actions[actionHash] = {}
+        actions[actionHash]['id'] = currentId
+
+    return actions[actionHash]
+
+def _calcConfCheckHexHash(checkArgs, params):
+
+    cfgCtx = params['cfgCtx']
+    taskParams = params['taskParams']
+
+    hashVals = {}
+    for k, v in viewitems(checkArgs):
+        if k in CONFTEST_HASH_IGNORED_FUNC_ARGS or k[0] == '$':
+            continue
+        hashVals[k] = v
+    # just in case
+    hashVals['toolchain'] = utils.toList(taskParams.get('toolchain', []))
+
+    buff = [ '%s: %s' % (k, str(hashVals[k])) for k in sorted(hashVals.keys()) ]
+
+    env = cfgCtx.env
+    envStr = ''
+    for k in sorted(env.keys()):
+        if k not in CONFTEST_HASH_USED_ENV_KEYS:
+            # these keys are not significant for hash but can make cache misses
+            continue
+        val = env[k]
+        envStr += '%r %r ' % (k, val)
+    buff.append('%s: %s' % ('env', envStr))
+
+    return utils.hexOfStr(utils.hashObj(buff))
+
+def _checkWithBuild(checkArgs, params):
+    """
+    Check it with building of some code.
+    It's general function for many checks.
+    """
+
+    cfgCtx = params['cfgCtx']
+    taskParams = params['taskParams']
+
+    # _checkWithBuild is used in loops so it's needed to save checkArgs
+    # without changes
+    checkArgs = checkArgs.copy()
+
+    hexHash = _calcConfCheckHexHash(checkArgs, params)
+    checkCache = _getConfActionCache(cfgCtx, hexHash)
+    if 'retval' not in checkCache:
+        # to use it without lock in threads we need to insert this key
+        checkCache['retval'] = None
+    checkArgs['$conf-test-hash'] = hexHash
+
+    defname = checkArgs.pop('defname', None)
+    if defname:
+        checkArgs['define_name'] = defname
+
+    codeType = checkArgs.pop('code-type', None)
+    if codeType:
+        checkArgs['compiler'] = checkArgs['compile_mode'] = codeType
+        checkArgs['type'] = '%sprogram' % codeType
+
+    compileFilename = checkArgs.pop('compile-filename', None)
+    if compileFilename:
+        checkArgs['compile_filename'] = compileFilename
+
+    defines = checkArgs.pop('defines', None)
+    if defines:
+        checkArgs['defines'] = utils.toList(defines)
+
+    libpath = taskParams.get('libpath', None)
+    if libpath:
+        checkArgs['libpath'] = libpath
+
+    includes = taskParams.get('includes', None)
+    if includes:
+        checkArgs['includes'] = includes
+
+    # don't add defname into env in the form self.env.defname
+    # ZenMake doesn't need it
+    checkArgs['add_have_to_env'] = 0
+
+    parallelActions = params.get('parallel-actions', None)
+
+    if parallelActions is not None:
+        # checkArgs is shared so it can be changed later
+        checkArgs['$func-name'] = 'check'
+        parallelActions.append(checkArgs)
+    else:
+        checkArgs['saved-result-args'] = taskParams['$stored-actions']
+        cfgCtx.check(**checkArgs)
 
 def checkLibs(checkArgs, params):
     """ Check shared libraries """
@@ -690,66 +684,6 @@ def checkCode(checkArgs, params):
         checkArgs['fragment'] = text
         _checkWithBuild(checkArgs, params)
 
-def _checkWithBuild(checkArgs, params):
-    """
-    Check it with building of some code.
-    It's general function for many checks.
-    """
-
-    cfgCtx = params['cfgCtx']
-    taskParams = params['taskParams']
-
-    cfgCtx.setenv(taskParams['$task.variant'])
-
-    # _checkWithBuild is used in loops so it's needed to save checkArgs
-    # without changes
-    checkArgs = checkArgs.copy()
-
-    hexHash = _calcConfCheckHexHash(checkArgs, params)
-    checkCache = _getConfActionCache(cfgCtx, hexHash)
-    if 'retval' not in checkCache:
-        # to use it without lock in threads we need to insert this key
-        checkCache['retval'] = None
-    checkArgs['$conf-test-hash'] = hexHash
-
-    #TODO: add as option
-    # if it is False then write-config-header doesn't write defines
-    #checkArgs['global_define'] = False
-
-    defname = checkArgs.pop('defname', None)
-    if defname:
-        checkArgs['define_name'] = defname
-
-    codeType = checkArgs.pop('code-type', None)
-    if codeType:
-        checkArgs['compiler'] = checkArgs['compile_mode'] = codeType
-        checkArgs['type'] = '%sprogram' % codeType
-
-    compileFilename = checkArgs.pop('compile-filename', None)
-    if compileFilename:
-        checkArgs['compile_filename'] = compileFilename
-
-    defines = checkArgs.pop('defines', None)
-    if defines:
-        checkArgs['defines'] = utils.toList(defines)
-
-    libpath = taskParams.get('libpath', None)
-    if libpath:
-        checkArgs['libpath'] = libpath
-
-    includes = taskParams.get('includes', None)
-    if includes:
-        checkArgs['includes'] = includes
-
-    parallelActions = params.get('parallel-actions', None)
-
-    if parallelActions is not None:
-        # checkArgs is shared so it can be changed later
-        checkArgs['$func-name'] = 'check'
-        parallelActions.append(checkArgs)
-    else:
-        cfgCtx.check(**checkArgs)
-
 def _parsePkgConfigPackages(packages, confpath):
 
     result = []
@@ -798,8 +732,36 @@ def _parsePkgConfigPackages(packages, confpath):
 
     return result
 
+def _applyToolConfigResults(cfgCtx, args):
+
+    taskParams = args['$task-params']
+
+    parseFlags = args.get('parse-flags', False)
+    if parseFlags:
+        output = args['output']
+        uselib = args['uselib']
+        cfgCtx.parse_flags(output, uselib, cfgCtx.env, args['static'])
+
+        # add to task
+        taskUselib = taskParams.setdefault('uselib', [])
+        taskUselib.append(uselib)
+
+    defvar = args.get('defname')
+    if defvar:
+        defval = args.get('defval', 1)
+        defquote = args.get('defquote', True)
+        cfgCtx.define(defvar, defval, quote = defquote)
+
+    storeArgs = args.get('store-args', False)
+    if storeArgs:
+        args = args.copy()
+        args.pop('$task-params')
+        args.pop('store-args')
+        storedActions = taskParams['$stored-actions']
+        storedActions.append({'type' : 'tool-config', 'data' : args })
+
 @cfgmandatory
-def _runToolConfig(cfgCtx, **kwargs):
+def _runToolConfig(cfgCtx, taskParams, **kwargs):
     """
     Run ``pkg-config`` or other ``-config`` applications and parse result
     """
@@ -807,16 +769,16 @@ def _runToolConfig(cfgCtx, **kwargs):
     cmd = [kwargs['runpath']]
     cmd += kwargs['cmd-args']
 
-    parseFlags = kwargs.get('parse-flags', False)
-
     cfgCtx.startMsg(kwargs['msg'])
     try:
 
         cmdEnv = cfgCtx.env.env or None
         output = cfgCtx.cmd_and_log(cmd, env = cmdEnv)
 
-        if parseFlags:
-            cfgCtx.parse_flags(output, kwargs['uselib'], cfgCtx.env, kwargs['static'])
+        kwargs.update({
+            '$task-params' : taskParams, 'output' : output, 'store-args' : True,
+        })
+        _applyToolConfigResults(cfgCtx, kwargs)
 
     except waferror.WafError as ex:
         cfgCtx.endMsg(kwargs['errmsg'], color = 'YELLOW')
@@ -852,10 +814,12 @@ def _doPkgConfigForOne(cfgCtx, pkgInfo, actionArgs, taskParams):
                 defvar = '%s_VERSION' % utils.normalizeForDefine(pkgname)
 
         if defvar:
-            cfgCtx.define(defvar, value, quote = (kind == 'version') )
-            # Is this really necessary ? Waf does it by default.
-            #if kind == 'have':
-            #    cfgCtx.env[defvar] = value
+            kwargs = {
+                '$task-params' : taskParams, 'store-args' : True,
+                'defname' : defvar, 'defval' : value,
+                'defquote' : (kind == 'version'),
+            }
+            _applyToolConfigResults(cfgCtx, kwargs)
 
     getPkgVer = actionArgs.get('pkg-version', False)
     if getPkgVer:
@@ -863,7 +827,7 @@ def _doPkgConfigForOne(cfgCtx, pkgInfo, actionArgs, taskParams):
         kwargs['msg'] = 'Getting version for %r' % pkgname
         kwargs['cmd-args'] = ['--modversion', pkgname]
         kwargs.pop('okmsg', None)
-        version = _runToolConfig(cfgCtx, **kwargs)
+        version = _runToolConfig(cfgCtx, taskParams, **kwargs)
         if version is not None:
             version = version.strip()
             # set *_VERSION define
@@ -895,16 +859,12 @@ def _doPkgConfigForOne(cfgCtx, pkgInfo, actionArgs, taskParams):
     actionArgs['msg'] = 'Checking for %s' % pkgline
 
     # run
-    output = _runToolConfig(cfgCtx, **actionArgs)
+    output = _runToolConfig(cfgCtx, taskParams, **actionArgs)
     if output is None: # when mandatory == False
         return
 
     # set HAVE_* define
     setDefine('have', 1)
-
-    # add to task
-    taskUselib = taskParams.setdefault('uselib', [])
-    taskUselib.append(pkgInfo.uselib)
 
 def doPkgConfig(actionArgs, params):
     """
@@ -927,9 +887,7 @@ def doPkgConfig(actionArgs, params):
 
     # find tool path
     kwargs = { 'mandatory' : mandatory, 'paths' : toolpaths}
-    actionArgs['runpath'] = _findProgram(cfgCtx, toolname, **kwargs)
-
-    cfgCtx.setenv(taskParams['$task.variant'])
+    actionArgs['runpath'] = _findProgram(params, toolname, kwargs)
 
     actionArgs.setdefault('libs', True)
     actionArgs.setdefault('cflags', True)
@@ -942,7 +900,7 @@ def doPkgConfig(actionArgs, params):
         ver = actionArgs['tool-atleast-version']
         actionArgs['msg'] = 'Checking for %s version >= %r' % (toolname, ver)
         actionArgs['cmd-args'] = ['--atleast-pkgconfig-version=%s' % ver]
-        _runToolConfig(cfgCtx, **actionArgs)
+        _runToolConfig(cfgCtx, taskParams, **actionArgs)
 
     defnames = actionArgs.setdefault('defnames', True)
     if defnames is False:
@@ -974,7 +932,7 @@ def doToolConfig(actionArgs, params):
 
     # find tool path
     kwargs = { 'mandatory' : mandatory, 'paths' : toolpaths}
-    actionArgs['runpath'] = _findProgram(cfgCtx, toolname, **kwargs)
+    actionArgs['runpath'] = _findProgram(params, toolname, kwargs)
 
     uselib = toolname
     if toolname.endswith('-config'):
@@ -992,8 +950,7 @@ def doToolConfig(actionArgs, params):
     actionArgs['errmsg'] = 'not found'
 
     # run
-    cfgCtx.setenv(taskParams['$task.variant'])
-    output = _runToolConfig(cfgCtx, **actionArgs)
+    output = _runToolConfig(cfgCtx, taskParams, **actionArgs)
     if output is None: # when mandatory == False
         return
 
@@ -1008,12 +965,18 @@ def doToolConfig(actionArgs, params):
             defval = output.strip()
             quoteDefVal = True
 
-        cfgCtx.define(defvar, defval, quote = quoteDefVal )
+        kwargs = {
+            '$task-params' : taskParams, 'store-args' : True,
+            'defname' : defvar, 'defval' : defval, 'defquote' : quoteDefVal,
+        }
+        _applyToolConfigResults(cfgCtx, kwargs)
 
-    if parseAs == 'flags-libs':
-        # add to task
-        taskUselib = taskParams.setdefault('uselib', [])
-        taskUselib.append(uselib)
+def _applyWriteConfigHeaderResults(cfgCtx, args):
+
+    if args['remove']:
+        for key in cfgCtx.env[DEFKEYS]:
+            cfgCtx.undefine(key)
+        cfgCtx.env[DEFKEYS] = []
 
 def writeConfigHeader(checkArgs, params):
     """ Write config header """
@@ -1033,7 +996,7 @@ def writeConfigHeader(checkArgs, params):
 
     guardname = checkArgs.pop('guard', None)
     if not guardname:
-        projectName = cfgCtx.getbconf().projectName or ''
+        projectName = params['bconf'].projectName or ''
         guardname = utils.normalizeForDefine(projectName + '_' + fileName)
     checkArgs['guard'] = guardname
 
@@ -1043,8 +1006,265 @@ def writeConfigHeader(checkArgs, params):
     # write the configuration header from the build directory
     checkArgs['top'] = True
 
-    cfgCtx.setenv(taskParams['$task.variant'])
     cfgCtx.write_config_header(fileName, **checkArgs)
+
+    storedActions = taskParams['$stored-actions']
+    storedActions.append({'type' : 'write-conf-header', 'data' : checkArgs })
+
+class _CfgCheckTask(Task.Task):
+    """
+    A task that executes build configuration tests (calls conf.check).
+    It's used to run conf checks in parallel.
+    """
+
+    def __init__(self, *args, **kwargs):
+        Task.Task.__init__(self, *args, **kwargs)
+
+        self.stopRunnerOnError = True
+        self.conf = None
+        self.bld = None
+        self.logger = None
+        self.call = None
+
+    def display(self):
+        return ''
+
+    def runnable_status(self):
+        for task in self.run_after:
+            if not task.hasrun:
+                return Task.ASK_LATER
+        return Task.RUN_ME
+
+    def uid(self):
+        return SIG_NIL
+
+    def signature(self):
+        return SIG_NIL
+
+    def run(self):
+        """ Run task """
+
+        # pylint: disable = broad-except
+
+        cfgCtx = self.conf
+        topdir = cfgCtx.srcnode.abspath()
+        bdir = cfgCtx.bldnode.abspath()
+        bld = createContext('build', top_dir = topdir, out_dir = bdir)
+
+        # avoid unnecessary directories
+        bld.buildWorkDirName = bld.variant = ''
+        # make deep copy of env to avoid any problems with threads
+        bld.env = utils.deepcopyEnv(cfgCtx.env, lambda k: k[0] != '$')
+        bld.init_dirs()
+        bld.in_msg = 1 # suppress top-level startMsg
+        bld.logger = self.logger
+        bld.cfgCtx = cfgCtx
+
+        args = self.call['args']
+        func = getattr(bld, self.call['name'])
+
+        args['saved-result-args'] = self.generator.bld.savedResultArgs
+        args['apply-results'] = False
+
+        mandatory = args.get('mandatory', True)
+        args['mandatory'] = True
+        retval = 0
+        try:
+            func(**args)
+        except waferror.WafError:
+            retval = 1
+        except Exception:
+            retval = 1
+            errmsg = traceback.format_exc()
+            cfgCtx.to_log(errmsg)
+            if log.verbose() > 1:
+                log.error(errmsg)
+        finally:
+            args['mandatory'] = mandatory
+
+        if retval != 0 and mandatory and self.stopRunnerOnError:
+            # say 'stop' to runner
+            self.bld.producer.stop = True
+
+        return retval
+
+    def process(self):
+
+        Task.Task.process(self)
+
+        args = self.call['args']
+        if 'msg' not in args:
+            return
+
+        with self.generator.bld.cmnLock:
+            self.conf.startMsg(args['msg'])
+            if self.hasrun == Task.NOT_RUN:
+                self.conf.endMsg('cancelled', color = 'YELLOW')
+            elif self.hasrun != Task.SUCCESS:
+                self.conf.endMsg(args.get('errmsg', 'no'), color = 'YELLOW')
+            else:
+                self.conf.endMsg(args.get('okmsg', 'yes'), color = 'GREEN')
+
+class _RunnerBldCtx(object):
+    """
+    A class that is used as BuildContext to execute conf tests in parallel
+    """
+
+    # pylint: disable = invalid-name, missing-docstring
+
+    def __init__(self, tasks):
+
+        # Keep running all tasks while all tasks will not be not processed
+        # and self.producer.stop == False
+        self.keep = True
+
+        self.task_sigs = {}
+        self.imp_sigs = {}
+        self.progress_bar = 0
+        self.producer = None
+        self.cmnLock = utils.threading.Lock()
+        # deque has fast atomic append() and popleft() operations that
+        # do not require locking
+        self.savedResultArgs = deque()
+        self.tasks = tasks
+
+    def total(self):
+        return len(self.tasks)
+
+    def to_log(self, *k, **kw):
+        # pylint: disable = unused-argument
+        return
+
+def _applyParallelActionsDeps(tasks, bconfpath):
+
+    idToTask = {}
+    for tsk in tasks:
+        args = tsk.call['args']
+        if 'id' in args:
+            idToTask[args['id']] = tsk
+
+    def applyDeps(idToTask, task, before):
+        tasks = task.call['args'].get('before' if before else 'after', [])
+        for key in utils.toList(tasks):
+            otherTask = idToTask.get(key, None)
+            if not otherTask:
+                msg = 'No config action named %r' % key
+                raise error.ZenMakeConfError(msg, confpath = bconfpath)
+            if before:
+                otherTask.run_after.add(task)
+            else:
+                task.run_after.add(otherTask)
+
+    # second pass to set dependencies with after/before
+    for tsk in tasks:
+        applyDeps(idToTask, tsk, before = True)
+        applyDeps(idToTask, tsk, before = False)
+
+    # remove 'before' and 'after' from args to avoid matching with the same
+    # parameters for Waf Task.Task
+    for tsk in tasks:
+        args = tsk.call['args']
+        args.pop('before', None)
+        args.pop('after', None)
+
+def _processParallelActionsResults(params, runnerCtx, scheduler):
+
+    cfgCtx = params['cfgCtx']
+    cfgCtx.startMsg('-> processing results')
+
+    # apply results out of threads
+    storedActions = params['taskParams']['$stored-actions']
+    for resultArgs in runnerCtx.savedResultArgs:
+        atype = resultArgs['type']
+        if atype == 'check':
+            _applyCheckResults(cfgCtx, resultArgs['data'])
+        else:
+            raise NotImplementedError
+        storedActions.append(resultArgs)
+
+    for tsk in scheduler.error:
+        if not getattr(tsk, 'err_msg', None):
+            continue
+        cfgCtx.to_log(tsk.err_msg)
+        cfgCtx.endMsg('fail', color = 'RED')
+        msg = 'There is an error in the Waf, read config.log for more information'
+        raise waferror.WafError(msg)
+
+    tasks = runnerCtx.tasks
+    okStates = (Task.SUCCESS, Task.NOT_RUN)
+    failureCount = len([x for x in tasks if x.hasrun not in okStates])
+
+    if failureCount:
+        cfgCtx.endMsg('%s failed' % failureCount, color = 'YELLOW')
+    else:
+        cfgCtx.endMsg('all ok')
+
+    for tsk in tasks:
+        # in rare case we get "No handlers could be found for logger"
+        log.freeLogger(tsk.logger)
+
+        if tsk.hasrun not in okStates and tsk.call['args'].get('mandatory', True):
+            cfgCtx.fatal('One of the actions has failed, read config.log for more information')
+
+def _runActionsInParallelImpl(params, actionArgsList, **kwargs):
+    """
+    Runs configuration actions in parallel.
+    Results are printed sequentially at the end.
+    """
+
+    cfgCtx = params['cfgCtx']
+    bconf  = params['bconf']
+
+    cfgCtx.startMsg('Paralleling %d actions' % len(actionArgsList))
+
+    tasks = []
+    runnerCtx = _RunnerBldCtx(tasks)
+
+    tryall = kwargs.get('tryall', False)
+
+    for i, args in enumerate(actionArgsList):
+        args['$parallel-id'] = i
+
+        checkTask = _CfgCheckTask(env = None)
+        checkTask.stopRunnerOnError = not tryall
+        checkTask.conf = cfgCtx
+        checkTask.bld = runnerCtx # to use in task.log_display(task.generator.bld)
+
+        # bind a logger that will keep the info in memory
+        checkTask.logger = log.makeMemLogger(str(id(checkTask)), cfgCtx.logger)
+
+        checkTask.call = { 'name' : args.pop('$func-name'), 'args' : args }
+
+        tasks.append(checkTask)
+
+    bconfpath = bconf.path
+
+    _applyParallelActionsDeps(tasks, bconfpath)
+
+    def getTasksGenerator():
+        yield tasks
+        while 1:
+            yield []
+
+    runnerCtx.producer = scheduler = Runner.Parallel(runnerCtx, Options.options.jobs)
+    scheduler.biter = getTasksGenerator()
+
+    cfgCtx.endMsg('started')
+    try:
+        scheduler.start()
+    except waferror.WafError as ex:
+        if ex.msg.startswith('Task dependency cycle'):
+            msg = "Infinite recursion was detected in parallel config actions."
+            msg += " Check all parameters 'before' and 'after'."
+            raise error.ZenMakeConfError(msg, confpath = bconfpath)
+        # it's a different error
+        raise
+
+    # flush the logs in order into the config.log
+    for tsk in tasks:
+        tsk.logger.memhandler.flush()
+
+    _processParallelActionsResults(params, runnerCtx, scheduler)
 
 def runActionsInParallel(actionArgs, params):
     """
@@ -1053,9 +1273,6 @@ def runActionsInParallel(actionArgs, params):
 
     cfgCtx     = params['cfgCtx']
     taskName   = params['taskName']
-    taskParams = params['taskParams']
-
-    cfgCtx.setenv(taskParams['$task.variant'])
 
     subactions = actionArgs.pop('actions', [])
     if not subactions:
@@ -1106,6 +1323,13 @@ _cmnActionsFuncs = {
 
 _actionsTable = { x:_cmnActionsFuncs.copy() for x in ToolchainVars.allLangs() }
 
+def regActionFuncs(lang, funcs):
+    """
+    Register functions for configuration actions
+    """
+
+    _actionsTable[lang].update(funcs)
+
 def _handleActions(actions, params):
 
     for actionArgs in actions:
@@ -1137,16 +1361,81 @@ def _handleActions(actions, params):
 
         func(actionArgs, params)
 
-def regActionFuncs(lang, funcs):
-    """
-    Register functions for configuration actions
-    """
+_exportedActionsFuncs = {
+    'check'             : _applyCheckResults,
+    'find-program'      : _applyFindProgramResults,
+    'tool-config'       : _applyToolConfigResults,
+    'write-conf-header' : _applyWriteConfigHeaderResults,
+}
 
-    _actionsTable[lang].update(funcs)
+def _importConfigActions(cfgCtx, taskParams):
 
-def runActions(actions, params):
+    allTasks = cfgCtx.allTasks
+    localDeps = taskParams.get('use', [])
+    assert isinstance(localDeps, list)
+
+    for name in localDeps:
+        depTaskParams = allTasks.get(name)
+        if not depTaskParams or not depTaskParams.get('export-config-actions', False):
+            continue
+
+        storedActions = depTaskParams['$stored-actions']
+        for actionData in storedActions:
+            func = _exportedActionsFuncs.get(actionData['type'])
+            assert func is not None
+            data = actionData['data']
+            data['$task-params'] = taskParams
+            func(cfgCtx, data)
+
+def runActions(cfgCtx):
     """
     Run configuration actions
     """
 
-    _handleActions(actions, params)
+    rootbconf = cfgCtx.bconfManager.root
+    buildtype = rootbconf.selectedBuildType
+    printLogo = True
+
+    tasksList = cfgCtx.allOrderedTasks
+
+    for taskParams in tasksList:
+
+        cfgCtx.setenv(taskParams['$task.variant'])
+
+        # set context path, not sure it's really necessary
+        #cfgCtx.path = cfgCtx.getPathNode(bconf.confdir)
+
+        taskParams['$stored-actions'] = deque()
+        _importConfigActions(cfgCtx, taskParams)
+
+        actions = taskParams.get('config-actions', [])
+        if not actions:
+            continue
+
+        taskName = taskParams['name']
+
+        if printLogo:
+            log.printStep('Running configuration actions')
+            printLogo = False
+        #log.info('.. Actions for the %r:' % taskName)
+
+        bconf = taskParams['$bconf']
+
+        params = {
+            'cfgCtx' : cfgCtx,
+            'bconf' : bconf,
+            'buildtype' : buildtype,
+            'taskName' : taskName,
+            'taskParams' : taskParams,
+        }
+
+        _handleActions(actions, params)
+
+    for taskParams in tasksList:
+        taskParams.pop('$stored-actions')
+
+    # switch to the root env
+    cfgCtx.variant = ''
+
+    # mark cache memory as ready to free
+    _cache.clear()

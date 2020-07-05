@@ -61,6 +61,7 @@ class ConfigurationContext(WafConfContext):
         self._toolchainEnvs = {}
         self._confCache = None
         self.allTasks = None
+        self.allOrderedTasks = None
         self.monitFiles = []
         self.zmMetaConfAttrs = {}
 
@@ -133,14 +134,6 @@ class ConfigurationContext(WafConfContext):
                 indexes['last-idx'] = idx = lastIdx + 1
                 indexes[key] = idx
         return idx
-
-    def _mergeTasks(self):
-
-        tasks = {}
-        for bconf in self.bconfManager.configs:
-            tasks.update(bconf.tasks)
-
-        self.allTasks = tasks
 
     def _checkTaskLocalDeps(self):
 
@@ -352,6 +345,10 @@ class ConfigurationContext(WafConfContext):
 
     # override
     def store(self):
+        for taskParams in self.allOrderedTasks:
+            # don't store $bconf
+            taskParams.pop('$bconf')
+
         self.saveCaches()
         super(ConfigurationContext, self).store()
 
@@ -546,7 +543,7 @@ class ConfigurationContext(WafConfContext):
                     [detectedToolNames.get(t, t) for t in taskParams['toolchain']]
 
         # switch to old env due to calls of 'loadToolchain'
-        self.setenv(oldEnvName)
+        self.variant = oldEnvName
 
         return toolchainsEnvs
 
@@ -573,50 +570,45 @@ class ConfigurationContext(WafConfContext):
                 self.fatal(msg)
             self.monitFiles.append(path)
 
-    def runConfigActions(self, bconf, buildtype):
+    def mergeTasks(self):
+        """
+        Merge all tasks from all buildconf files.
+        It makes self.allTasks as a dict and self.allOrderedTasks as a list of
+        tasks ordered by local deps.
+        """
+
+        tasks = {}
+        for bconf in self.bconfManager.configs:
+            newtasks = bconf.tasks
+            for taskParams in viewvalues(newtasks):
+                taskParams['$bconf'] = bconf
+                sameNameTask = tasks.get(taskParams['name'])
+                if sameNameTask is not None:
+                    msg = "There are two tasks with the same name %r" % taskParams['name']
+                    msg += " in buildconf files:"
+                    msg += "\n  %s" % sameNameTask['$bconf'].path
+                    msg += "\n  %s" % bconf.path
+                    raise error.ZenMakeConfError(msg)
+
+            tasks.update(newtasks)
+
+        self.allTasks = tasks
+        self.allOrderedTasks = assist.orderTasksByLocalDeps(tasks)
+
+    def runConfigActions(self):
         """
         Run supported configuration actions: checks/others
         """
-
-        try:
-            printLogo = self._printLogo
-        except AttributeError:
-            self._printLogo = printLogo = True
-
-        tasks = bconf.tasks
-
-        for taskName, taskParams in viewitems(tasks):
-            actions = taskParams.get('config-actions', [])
-            if not actions:
-                continue
-            if printLogo:
-                log.printStep('Running configuration actions')
-                printLogo = False
-            #log.info('.. Actions for the %r:' % taskName)
-            params = {
-                'cfgCtx' : self,
-                'bconf' : bconf,
-                'buildtype' : buildtype,
-                'taskName' : taskName,
-                'taskParams' : taskParams,
-            }
-            configActions.runActions(actions, params)
-
-        self._printLogo = printLogo
-        self.setenv('')
+        configActions.runActions(self)
 
     def configureTaskParams(self, bconf, taskParams):
         """
-        Handle every known task param that can be handled at configure stage.
-        It is better for common performance because command 'configure' is used
-        rarely than command 'build'.
+        Handle some known task params that can be handled at configure stage.
         """
 
-        startdir = bconf.startdir
-        taskEnv = self.all_envs[taskParams['$task.variant']]
+        assist.handleTaskIncludesParam(taskParams, bconf.startdir)
+        assist.handleTaskLibPathParams(taskParams)
 
-        assist.handleTaskIncludesParam(taskParams, startdir)
-        assist.handleTaskLibPathParams(taskParams, taskEnv)
         self._handleTaskExportDefinesParam(taskParams)
         self._handleMonitLibs(taskParams)
 
@@ -680,6 +672,8 @@ class ConfigurationContext(WafConfContext):
             # store it
             taskParams['$task.variant'] = taskVariant
 
+            assert taskVariant not in self.all_envs
+
             # set up env with toolchain for task
             _toolchains = taskParams['toolchain']
             if _toolchains:
@@ -687,7 +681,7 @@ class ConfigurationContext(WafConfContext):
                 if len(_toolchains) > 1:
                     # make copy of env to avoid using 'update' on original
                     # toolchain env
-                    baseEnv = assist.copyEnv(baseEnv)
+                    baseEnv = utils.copyEnv(baseEnv)
                 for toolname in _toolchains[1:]:
                     baseEnv.update(toolchainEnvs[toolname])
             else:
@@ -700,7 +694,9 @@ class ConfigurationContext(WafConfContext):
                     baseEnv = emptyEnv
 
             # Create env for task
-            taskEnv = assist.deepcopyEnv(baseEnv)
+            # Do deepcopy instead of baseEnv.derive() because an access to
+            # isolated env will be faster
+            taskEnv = utils.deepcopyEnv(baseEnv)
 
             # conf.setenv with unknown name or non-empty env makes deriving or
             # creates the new object and it is not really needed here
@@ -798,9 +794,9 @@ class ConfigurationContext(WafConfContext):
             if self.srcnode.is_child_of(self.path):
                 log.warn('Are you certain that you do not want to set top="." ?')
 
+        self.mergeTasks()
         self.loadCaches()
         self.preconfigure()
-        self._mergeTasks()
 
         # prepare dep rules to run
         deps.preconfigureExternalDeps(self)

@@ -4,7 +4,7 @@ def check():
     return True
 
 def check2(**kwargs):
-    task = kwargs['task']
+    task = kwargs['taskname']
     buildtype = kwargs['buildtype']
     # some checking
     #return True
@@ -46,9 +46,10 @@ tasks = {
               tryall = False,
               #mandatory = False,
             ),
-            dict( do = 'check-headers', names = 'string vector' ),
             dict( do = 'write-config-header'),
+            dict( do = 'check-headers', names = 'string vector' ),
         ],
+        'export-config-actions' : True,
     },
     'extra-test' : {
         'features' : 'cxxprogram test',

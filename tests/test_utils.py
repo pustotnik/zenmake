@@ -12,6 +12,7 @@
 import os
 import sys
 import pytest
+from waflib.ConfigSet import ConfigSet
 from zm import utils, error
 from zm.constants import PLATFORM
 from zm.pypkg import PkgPath
@@ -165,3 +166,41 @@ def testLoadPyModule(mocker, monkeypatch):
 
 
     assert oldSysPath == sys.path
+
+def testCopyEnv():
+    rootenv = ConfigSet()
+    rootenv.test1 = 'test1'
+    childenv = rootenv.derive()
+    childenv.test2 = 'test2'
+    newenv = utils.copyEnv(childenv)
+    assert childenv.test1 == 'test1'
+    assert childenv.test2 == 'test2'
+    assert newenv.test1 == 'test1'
+    assert newenv.test2 == 'test2'
+    rootenv.test1 = 'abc'
+    assert childenv.test1 == 'abc'
+    assert childenv.test2 == 'test2'
+    assert newenv.test1 == 'abc'
+    assert newenv.test2 == 'test2'
+    childenv.test2 = 'dfg'
+    assert childenv.test2 == 'dfg'
+    assert newenv.test2 == 'test2'
+
+def testDeepCopyEnv():
+    rootenv = ConfigSet()
+    rootenv.test1 = 'test1'
+    childenv = rootenv.derive()
+    childenv.test2 = 'test2'
+    newenv = utils.deepcopyEnv(childenv)
+    assert childenv.test1 == 'test1'
+    assert childenv.test2 == 'test2'
+    assert newenv.test1 == 'test1'
+    assert newenv.test2 == 'test2'
+    rootenv.test1 = 'abc'
+    assert childenv.test1 == 'abc'
+    assert childenv.test2 == 'test2'
+    assert newenv.test1 == 'test1'
+    assert newenv.test2 == 'test2'
+    childenv.test2 = 'dfg'
+    assert childenv.test2 == 'dfg'
+    assert newenv.test2 == 'test2'

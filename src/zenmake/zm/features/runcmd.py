@@ -91,19 +91,12 @@ def _processCmdLine(conf, bconf, cwd, shell, cmdArgs):
 def postConf(conf):
     """ Prepare task params after wscript.configure """
 
-    for bconf in conf.bconfManager.configs:
-        _postConf(conf, bconf)
+    rootbconf = conf.bconfManager.root
+    btypeDir  = rootbconf.selectedBuildTypeDir
+    rootdir   = rootbconf.rootdir
 
-def _postConf(ctx, bconf):
-
-    # set context path
-    ctx.path = ctx.getPathNode(bconf.confdir)
-
-    btypeDir   = bconf.selectedBuildTypeDir
-    rootdir    = bconf.rootdir
-    tasks      = bconf.tasks
-
-    for taskName, taskParams in viewitems(tasks):
+    for taskParams in conf.allOrderedTasks:
+        bconf = taskParams['$bconf']
         features = taskParams['features']
         cmdArgs = taskParams.get('run', None)
 
@@ -119,7 +112,7 @@ def _postConf(ctx, bconf):
             cmdArgs = { 'cmd' : cmdArgs }
 
         cmdTaskArgs = {
-            'name'   : taskName,
+            'name'   : taskParams['name'],
             'timeout': cmdArgs.get('timeout', None),
             'env'    : cmdArgs.get('env', {}),
             'repeat' : cmdArgs.get('repeat', 1),
@@ -133,6 +126,9 @@ def _postConf(ctx, bconf):
             cwd = btypeDir
         cmdTaskArgs['cwd'] = cwd
 
+        # mostly for _processCmdLine
+        conf.variant = taskParams['$task.variant']
+
         cmdTaskArgs['$type'] = ''
         cmd = cmdArgs.get('cmd', None)
         if cmd and callable(cmd):
@@ -143,11 +139,14 @@ def _postConf(ctx, bconf):
         else:
             # By default 'shell' is True to rid of some problems with Waf and Windows
             shell = cmdArgs.get('shell', True)
-            cmd, shell = _processCmdLine(ctx, bconf, cwd, shell, cmdArgs)
+            cmd, shell = _processCmdLine(conf, bconf, cwd, shell, cmdArgs)
             cmdTaskArgs['shell'] = shell
             cmdTaskArgs['cmd'] = cmd
 
         taskParams['run'] = cmdTaskArgs
+
+    # switch current env to the root env
+    conf.variant = ''
 
 def _fixRunCmdDepsOrder(tgen):
     """ Fix order of running """
