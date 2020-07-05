@@ -16,7 +16,7 @@ a function and others parameters are parameters for the function.
 Another possible value of the item is a python function that must return
 True/False on Success/Failure. If this function raise some exception then it
 means the function returns False. Arguments for such a function can be
-absent or: ``task``, ``buildtype``. It's better to use `**kwargs` in this
+absent or: ``taskname``, ``buildtype``. It's better to use `**kwargs` in this
 function to have universal way to work with any input arguments.
 
 These actions can be run sequentially or in parallel (see ``do`` = ``parallel``).
@@ -46,6 +46,10 @@ These configuration actions in ``dict`` format:
         to use in compiling of the test.
         These defines will not be set for your code, only for the test.
 
+        Task parameters :ref:`toolchain<buildconf-taskparams-toolchain>`,
+        :ref:`includes<buildconf-taskparams-includes>`
+        and :ref:`libpath<buildconf-taskparams-libpath>` affect this type of action.
+
     ``do`` = ``check-libs``
         *Parameters*: ``names`` = [], ``fromtask`` = True, ``defines`` = [],
         ``autodefine`` = False, ``mandatory`` = True.
@@ -54,14 +58,18 @@ These configuration actions in ``dict`` format:
 
         Check existence of the shared libraries from task
         parameter ``libs`` or/and from list in the ``names``.
-        If ``fromtask`` is set to False then libraries from task
-        parameter ``libs`` will not be used.
+        If ``fromtask`` is set to False then names of libraries from task
+        parameter ``libs`` will not be used to check.
         If ``autodefine`` is set to True it generates
         C/C++ define name like ``HAVE_LIB_LIBNAME=1``.
 
         Parameter ``defines`` can be used to set additional C/C++ defines
         to use in compiling of the test.
         These defines will not be set for your code, only for the test.
+
+        Task parameters :ref:`toolchain<buildconf-taskparams-toolchain>`,
+        :ref:`includes<buildconf-taskparams-includes>`
+        and :ref:`libpath<buildconf-taskparams-libpath>` affect this type of action.
 
     ``do`` = ``check-code``
         *Parameters*: ``text`` = '', ``file`` = '', ``label`` = '',
@@ -86,6 +94,10 @@ These configuration actions in ``dict`` format:
         to use in compiling of the test.
         These defines will not be set for your code, only for the test.
 
+        Task parameters :ref:`toolchain<buildconf-taskparams-toolchain>`,
+        :ref:`includes<buildconf-taskparams-includes>`
+        and :ref:`libpath<buildconf-taskparams-libpath>` affect this type of action.
+
     ``do`` = ``check-programs``
         *Parameters*: ``names``, ``paths``,  ``var`` = '', ``mandatory`` = True.
 
@@ -94,8 +106,20 @@ These configuration actions in ``dict`` format:
         Check existence of programs from list in the ``names``.
         Parameter ``paths`` can be used to set paths to find
         these programs, but usually you don't need to use it.
-        Parameter ``var`` can be used to set 'define' name.
+        Parameter ``var`` can be used to set enviroment variable name.
         By default it's a first name from the ``names`` in upper case.
+        If this name is found in enviroment then ZenMake will use it instead of
+        trying to find selected program. Also this name can be used in parameter
+        :ref:`run <buildconf-taskparams-run>` like this:
+
+        .. code-block:: python
+
+            'foo.luac' : {
+                'source' : 'foo.lua',
+                'config-actions' : [ dict(do = 'check-programs', names = 'luac'), ],
+                # var 'LUAC' was set in 'check-programs'
+                'run': '${LUAC} -s -o ${TGT} ${SRC}',
+            },
 
     ``do`` = ``call-pyfunc``
         *Parameters*: ``func``, ``mandatory`` = True.
@@ -270,7 +294,7 @@ These configuration actions in ``dict`` format:
         Run configuration actions from the parameter ``actions``
         in parallel. Not all types of actions are supported.
         Allowed actions are ``check-headers``, ``check-libs``,
-        ``call-pyfunc``, ``check-code``.
+        ``check-code`` and ``call-pyfunc``.
 
         If you use ``call-pyfunc`` in ``actions`` you should understand that
         python function must be thread safe. If you don't use any shared data
@@ -287,6 +311,12 @@ These configuration actions in ``dict`` format:
 Any configuration action has parameter ``mandatory`` which is True by default.
 It also has effect for any action inside ``actions``
 for parallel actions and for the whole bundle of parallel actions as well.
+
+All results (defines and some other values) of configuration actions in one build
+task can be exported to all build tasks which depend on the current task.
+Use :ref:`export-config-actions<buildconf-taskparams-export-config-actions>`
+for this ability. It allows you to avoid writing the same config actions in tasks
+and reduce configuration actions time run.
 
 Example in python format:
 

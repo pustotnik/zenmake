@@ -14,7 +14,7 @@ And it's core buildconf element.
 
 features
 """""""""""""""""""""
-    It describes type of the build task. Can be one value or list
+    It describes type of a build task. Can be one value or list
     of values. Supported values:
 
     :c:
@@ -203,6 +203,8 @@ source
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
+.. _buildconf-taskparams-includes:
+
 includes
 """""""""""""""""""""
     Include paths are used by the C/C++/D/Fortran compilers for finding headers/files.
@@ -217,8 +219,8 @@ includes
 
 export-includes
 """""""""""""""""""""
-    If it's True then it exports value of ``includes`` for all buld tasks
-    depending on the current task. Also it can be one or more paths
+    If it's True then it exports value of ``includes`` for all build tasks
+    which depend on the current task. Also it can be one or more paths
     for explicit exporting. By default it's False.
 
     If paths contain spaces and all these paths are listed
@@ -226,6 +228,8 @@ export-includes
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
+
+.. _buildconf-taskparams-toolchain:
 
 toolchain
 """""""""""""""""""""
@@ -347,8 +351,8 @@ defines
 
 export-defines
 """""""""""""""""""""
-    If it's True then it exports value of ``defines`` for all buld tasks
-    depending on the current task. Also it can be one or more defines
+    If it's True then it exports value of ``defines`` for all build tasks
+    which depend on the current task. Also it can be one or more defines
     for explicit exporting. By default it's False.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
@@ -410,7 +414,7 @@ libs
 
     If you use this parameter to specify non-system shared libraries for some
     task you may need to specify the same libraries for all other tasks which
-    depends on the current task. For example, you set library 'mylib'
+    depend on the current task. For example, you set library 'mylib'
     to the task A but the task B has parameter ``use`` with 'A',
     then it's recommended to add 'mylib' to the parameter ``libs`` of the
     task B. Otherwise you can get link error ``... undefined reference to ...``
@@ -610,11 +614,25 @@ run
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
+.. _buildconf-taskparams-config-actions:
+
 config-actions
 """""""""""""""""""""
     A list of configuration actions (configuration checks and others).
     Details are :ref:`here<config-actions>`.
     These actions are called on **configure** step (command **configure**).
+
+    It's possible to use :ref:`selectable parameters<buildconf-select>`
+    to set this parameter.
+
+.. _buildconf-taskparams-export-config-actions:
+
+export-config-actions
+"""""""""""""""""""""
+    If it's True then it exports all results of
+    :ref:`config-actions<buildconf-taskparams-config-actions>` for all
+    build tasks which depend on the current task.
+    By default it's False.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.

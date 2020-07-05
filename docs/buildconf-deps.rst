@@ -85,7 +85,7 @@ targets
 export-includes
 """""""""""""""""""""
     A list of paths with 'includes' for C/C++/D/Fortran compilers to export from
-    the dependency project for all buld tasks depending on the current dependency.
+    the dependency project for all build tasks which depend on the current dependency.
     Paths should be relative to the :ref:`startdir<buildconf-startdir>` or
     absolute but last variant is not recommended.
 
