@@ -115,6 +115,7 @@ class TestSuite(object):
             'prefix' : cli.DEFAULT_PREFIX,
             'buildroot' : None,
             'forceExternalDeps' : False,
+            'cacheCfgActionResults' : False,
         }
 
         CMDNAME = 'build'
@@ -223,6 +224,7 @@ class TestSuite(object):
             'runTests': 'all',
             'buildroot' : None,
             'forceExternalDeps' : False,
+            'cacheCfgActionResults' : False,
         }
 
         CMDNAME = 'test'
@@ -327,6 +329,7 @@ class TestSuite(object):
             'prefix' : cli.DEFAULT_PREFIX,
             'buildroot' : None,
             'forceExternalDeps' : False,
+            'cacheCfgActionResults' : False,
         }
 
         CMDNAME = 'configure'
@@ -510,6 +513,7 @@ class TestSuite(object):
             'prefix' : cli.DEFAULT_PREFIX,
             'buildroot' : None,
             'forceExternalDeps' : False,
+            'cacheCfgActionResults' : False,
         }
 
         if cmd == 'uninstall':

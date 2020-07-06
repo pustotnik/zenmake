@@ -14,6 +14,7 @@ from collections import namedtuple, defaultdict
 from auxiliary.argparse import argparse
 from zm.constants import APPNAME, CAP_APPNAME, PLATFORM
 from zm.pyutils import maptype, viewitems
+from zm.utils import envValToBool
 from zm import log
 from zm.error import ZenMakeLogicError
 from zm.autodict import AutoDict as _AutoDict
@@ -205,7 +206,14 @@ config.options = [
         action = "store_true",
         commands = ['configure', 'build', 'test', 'clean',
                     'install', 'uninstall'],
-        help = "force rules for with external dependencies",
+        help = "force rules for external dependencies",
+    ),
+    Option(
+        names = ['-H', '--cache-cfg-actions'],
+        dest = 'cacheCfgActionResults',
+        action = "store_true",
+        commands = ['configure', 'build', 'test', 'install', 'uninstall'],
+        help = "cache results of config actions",
     ),
     Option(
         names = ['--destdir'],
@@ -271,16 +279,18 @@ def _getReadyOptDefaults():
 
     # These params should be obtained only before parsing but
     # not when current python has loaded.
+    _getenv = os.environ.get
     config.optdefaults.update({
-        'color': os.environ.get('NOCOLOR', '') and 'no' or 'auto',
+        'color': _getenv('NOCOLOR', '') and 'no' or 'auto',
         'destdir' : {
-            'any': os.environ.get('DESTDIR', ''),
-            'zipapp' : os.environ.get('DESTDIR', '.'),
+            'any': _getenv('DESTDIR', ''),
+            'zipapp' : _getenv('DESTDIR', '.'),
         },
-        'buildroot' : os.environ.get('BUILDROOT', None),
-        'prefix' : os.environ.get('PREFIX', '') or DEFAULT_PREFIX,
-        'bindir' : os.environ.get('BINDIR', None),
-        'libdir' : os.environ.get('LIBDIR', None),
+        'buildroot' : _getenv('BUILDROOT', None),
+        'prefix' : _getenv('PREFIX', '') or DEFAULT_PREFIX,
+        'bindir' : _getenv('BINDIR', None),
+        'libdir' : _getenv('LIBDIR', None),
+        'cache-cfg-actions' : envValToBool(_getenv('ZM_CACHE_CFGACTIONS')),
     })
 
     return config.optdefaults

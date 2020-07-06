@@ -147,3 +147,13 @@ LIBDIR
     command line. It ignores value of ``PREFIX`` if set. Example::
 
         LIBDIR=/usr/local/lib64 zenmake install
+
+ZM_CACHE_CFGACTIONS
+    When set to a 'True', 'true', 'yes' or non-zero number, ZenMake tries
+    to use cache for some :ref:`config actions<config-actions>`.
+    Has no effect when ``--cache-cfg-actions`` is provided on the command line.
+    It can speed up next runs of some config actions but also it can ignore
+    changes in toolchains, system paths, etc. It's safe to use if no changes
+    in the used system. Example::
+
+        ZM_CACHE_CFGACTIONS=1 zenmake configure

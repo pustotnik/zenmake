@@ -28,7 +28,7 @@ from waflib.Tools.c_config import DEFKEYS, SNIP_EMPTY_PROGRAM, build_fun as defa
 from zm.constants import CONFTEST_DIR_PREFIX
 from zm.pyutils import maptype, stringtype, viewitems, viewvalues
 from zm.autodict import AutoDict as _AutoDict
-from zm import utils, log, error
+from zm import utils, log, error, cli
 from zm.pathutils import getNativePath
 from zm.features import ToolchainVars
 from zm.waf import ccroot
@@ -501,16 +501,19 @@ def _handleLoadedActionsCache(cache):
     Handle loaded cache data for config actions.
     """
 
+    cacheCfgActionResults = cli.selected.args.get('cacheCfgActionResults')
+
     if 'config-actions' not in cache:
         cache['config-actions'] = {}
     actions = cache['config-actions']
 
-    # reset all but not 'id'
-    for v in viewvalues(actions):
-        if isinstance(v, maptype):
-            _new = { 'id' : v['id']}
-            v.clear()
-            v.update(_new)
+    if not cacheCfgActionResults:
+        # reset all but not 'id'
+        for v in viewvalues(actions):
+            if isinstance(v, maptype):
+                _new = { 'id' : v['id']}
+                v.clear()
+                v.update(_new)
 
     return actions
 
@@ -520,8 +523,6 @@ def _getConfActionCache(cfgCtx, actionHash):
     """
 
     cache = cfgCtx.getConfCache()
-    if 'config-actions' not in cache:
-        _handleLoadedActionsCache(cache)
     actions = cache['config-actions']
 
     if actionHash not in actions:
@@ -1414,6 +1415,8 @@ def runActions(cfgCtx):
     """
     Run configuration actions
     """
+
+    _handleLoadedActionsCache(cfgCtx.getConfCache())
 
     rootbconf = cfgCtx.bconfManager.root
     buildtype = rootbconf.selectedBuildType
