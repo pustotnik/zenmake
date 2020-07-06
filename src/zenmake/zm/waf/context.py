@@ -191,6 +191,10 @@ def _endMsg(self, *args, **kwargs):
     else:
         msg = str(result)
 
+    postfix = kwargs.get('endmsg-postfix')
+    if postfix is not None:
+        msg += postfix
+
     self.to_log(msg)
     color = kwargs.get('color')
     if color is None:

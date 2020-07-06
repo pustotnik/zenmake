@@ -92,6 +92,7 @@ def find_program(self, filename, **kwargs):
         result = cache.get(filenameKey)
         if result is not None:
             kwargs['value'] = result
+            kwargs['endmsg-postfix'] = ' (cached)'
 
     result = wafFindProgram(self, filename, **kwargs)
 
@@ -102,7 +103,12 @@ def find_program(self, filename, **kwargs):
 def _applyFindProgramResults(cfgCtx, args):
     cfgCtx.env[args['var']] = args['$result']
 
+def _getDefaultFindProgramVar(filename):
+    return _RE_FINDPROG_VAR.sub('_', filename.upper())
+
 def _findProgram(params, filename, checkArgs):
+
+    assert isinstance(filename, stringtype)
 
     cfgCtx = params['cfgCtx']
     taskParams = params['taskParams']
@@ -111,11 +117,11 @@ def _findProgram(params, filename, checkArgs):
     if 'path_list' not in checkArgs:
         checkArgs['path_list'] = utils.toList(checkArgs.pop('paths', []))
 
-    filename = utils.toListSimple(filename)
     if not checkArgs.get('var'):
-        checkArgs['var'] = _RE_FINDPROG_VAR.sub('_', filename[0].upper())
+        checkArgs['var'] = _getDefaultFindProgramVar(filename)
 
-    result = cfgCtx.find_program(filename, **checkArgs)
+    # We expect a filename as a string with one name here
+    result = cfgCtx.find_program([filename], **checkArgs)
 
     if result:
         result = ' '.join(result)
@@ -165,6 +171,9 @@ def _runCheckBuild(self, checkArgs):
 
     retval = checkCache['retval']
     if retval is not None:
+        retArgs = checkArgs.get('ret-args', checkArgs)
+        retArgs['endmsg-postfix'] = ' (cached)'
+
         if isinstance(retval, stringtype) and retval.startswith('Conf test failed'):
             self.fatal(retval)
         return retval
@@ -395,10 +404,10 @@ def check(self, *_, **kwargs):
         _applyCheckResults(self, kwargs)
 
     if not result:
-        self.endMsg(kwargs['errmsg'], 'YELLOW')
+        self.endMsg(kwargs['errmsg'], 'YELLOW', **kwargs)
         self.fatal('The configuration failed %r' % result)
     else:
-        self.endMsg(kwargs['okmsg'])
+        self.endMsg(kwargs['okmsg'], **kwargs)
     return result
 
 @conf
@@ -866,6 +875,23 @@ def _doPkgConfigForOne(cfgCtx, pkgInfo, actionArgs, taskParams):
     # set HAVE_* define
     setDefine('have', 1)
 
+def _getToolConfigPath(actionArgs, params):
+
+    cfgCtx = params['cfgCtx']
+    toolname = actionArgs['toolname']
+
+    toolEnvVar = _getDefaultFindProgramVar(toolname)
+    toolPath = cfgCtx.env[toolEnvVar]
+    if not toolPath:
+        toolpaths = actionArgs.get('toolpaths', [])
+        mandatory = actionArgs.get('mandatory', True)
+        kwargs = { 'mandatory' : mandatory, 'paths' : toolpaths, 'var' : toolEnvVar }
+        toolPath = _findProgram(params, toolname, kwargs)
+    else:
+        toolPath = toolPath[0]
+
+    return toolPath
+
 def doPkgConfig(actionArgs, params):
     """
     Do pkg-config
@@ -876,18 +902,14 @@ def doPkgConfig(actionArgs, params):
     taskParams = params['taskParams']
 
     toolname = actionArgs.setdefault('toolname', 'pkg-config')
-    toolpaths = actionArgs.get('toolpaths', [])
 
     packages = actionArgs.get('packages')
     if not packages:
         msg = "The parameter 'packages' is empty in config action 'pkgconfig'"
         raise error.ZenMakeConfError(msg, confpath = bconf.path)
 
-    mandatory = actionArgs.get('mandatory', True)
-
-    # find tool path
-    kwargs = { 'mandatory' : mandatory, 'paths' : toolpaths}
-    actionArgs['runpath'] = _findProgram(params, toolname, kwargs)
+    # get/find tool path
+    actionArgs['runpath'] = _getToolConfigPath(actionArgs, params)
 
     actionArgs.setdefault('libs', True)
     actionArgs.setdefault('cflags', True)
@@ -920,7 +942,6 @@ def doToolConfig(actionArgs, params):
     taskParams = params['taskParams']
 
     toolname = actionArgs.get('toolname')
-    toolpaths = actionArgs.get('toolpaths', [])
 
     if not toolname:
         msg = "The parameter 'toolname' is empty in config action 'toolconfig'"
@@ -928,11 +949,8 @@ def doToolConfig(actionArgs, params):
 
     actionArgs['cmd-args'] = utils.toList(actionArgs.pop('args', '--cflags --libs'))
 
-    mandatory = actionArgs.get('mandatory', True)
-
-    # find tool path
-    kwargs = { 'mandatory' : mandatory, 'paths' : toolpaths}
-    actionArgs['runpath'] = _findProgram(params, toolname, kwargs)
+    # get/find tool path
+    actionArgs['runpath'] = _getToolConfigPath(actionArgs, params)
 
     uselib = toolname
     if toolname.endswith('-config'):
@@ -1025,6 +1043,7 @@ class _CfgCheckTask(Task.Task):
         self.bld = None
         self.logger = None
         self.call = None
+        self._retArgs = {}
 
     def display(self):
         return ''
@@ -1065,6 +1084,7 @@ class _CfgCheckTask(Task.Task):
 
         args['saved-result-args'] = self.generator.bld.savedResultArgs
         args['apply-results'] = False
+        args['ret-args'] = self._retArgs
 
         mandatory = args.get('mandatory', True)
         args['mandatory'] = True
@@ -1096,14 +1116,17 @@ class _CfgCheckTask(Task.Task):
         if 'msg' not in args:
             return
 
+        endMsgArgs = self._retArgs
+        errmsg = args.get('errmsg', 'no')
+        okmsg = args.get('okmsg', 'yes')
         with self.generator.bld.cmnLock:
             self.conf.startMsg(args['msg'])
             if self.hasrun == Task.NOT_RUN:
-                self.conf.endMsg('cancelled', color = 'YELLOW')
+                self.conf.endMsg('cancelled', color = 'YELLOW', **endMsgArgs)
             elif self.hasrun != Task.SUCCESS:
-                self.conf.endMsg(args.get('errmsg', 'no'), color = 'YELLOW')
+                self.conf.endMsg(errmsg, color = 'YELLOW', **endMsgArgs)
             else:
-                self.conf.endMsg(args.get('okmsg', 'yes'), color = 'GREEN')
+                self.conf.endMsg(okmsg, color = 'GREEN', **endMsgArgs)
 
 class _RunnerBldCtx(object):
     """
