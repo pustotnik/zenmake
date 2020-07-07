@@ -809,6 +809,11 @@ class ConfigurationContext(WafConfContext):
         # finally run rest configuration including conf tests
         WafContext.Context.execute(self)
 
+        if self.zmdepconfs:
+            # insert into 'libs'/'stlibs' after conf actions to avoid problems
+            # with some cont tests (check-libs)
+            deps.applyExternalDepLibsToTasks(self.allOrderedTasks)
+
         # store necessary info
         self.store()
 

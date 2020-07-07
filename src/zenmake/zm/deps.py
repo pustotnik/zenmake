@@ -330,20 +330,24 @@ def _addLibPathToTask(taskParams, paramName, newPath):
         libpath.insertFrom(0, newPath)
     taskParams[paramName] = libpath
 
-def _updateParentTaskLibs(ctx, taskParams, libAttr, libPathAttr):
+def _updateTaskLibs(ctx, taskParams, libAttr, libPathAttr):
 
     libsParamName, libName = libAttr
     libPathParamName, libPath = libPathAttr
+    depLibsParamName = '$external-deps-%s' % libsParamName
 
     allTasks = ctx.allTasks
-    parent = taskParams.get('$parent')
-    while parent:
-        taskParams = allTasks[parent]
-        libs = taskParams.setdefault(libsParamName, [])
-        libs.insert(0, libName)
+    while True:
+        deplibs = taskParams.setdefault(depLibsParamName, [])
+        deplibs.append(libName)
+
         if libPath:
             _addLibPathToTask(taskParams, libPathParamName, libPath)
+
         parent = taskParams.get('$parent')
+        if not parent:
+            break
+        taskParams = allTasks[parent]
 
 def _setupTaskDepTarget(ctx, depConf, targetConf, taskParams):
 
@@ -360,18 +364,12 @@ def _setupTaskDepTarget(ctx, depConf, targetConf, taskParams):
         return
 
     libName = targetConf['name']
-    libs = taskParams.get(libsParamName, [])
-    libs.append(libName)
-    taskParams[libsParamName] = libs
-
     depRootDir = depConf['rootdir']
     targetPath = targetConf.get('dir', depRootDir)
-    if targetPath is not None:
-        _addLibPathToTask(taskParams, libpathParamName, targetPath)
 
     lib = (libsParamName, libName)
     libPath = (libpathParamName, targetPath)
-    _updateParentTaskLibs(ctx, taskParams, lib, libPath)
+    _updateTaskLibs(ctx, taskParams, lib, libPath)
 
     monitParamName = 'monit%s' % libsParamName
     taskParams[monitParamName] = taskParams.get(monitParamName, []) + [libName]
@@ -525,6 +523,21 @@ def finishExternalDepsConfig(cfgCtx):
     depTargets = uniqueDictListWithOrder(depTargets)
 
     zmdepconfs['$all-dep-targets'] = depTargets
+
+def applyExternalDepLibsToTasks(tasks):
+    """
+    Insert libs/stlibs into params 'libs'/'stlibs' in build tasks
+    """
+
+    for taskParams in tasks:
+        for param in ('libs', 'stlibs'):
+            depLibs = taskParams.pop('$external-deps-%s' % param, None)
+            if not depLibs:
+                continue
+            libs = taskParams.setdefault(param, [])
+            # A library which calls an external function defined in another library
+            # should appear before the library containing the function.
+            libs[0:0] = depLibs
 
 ######################################################################
 ############# PRODUCE EXTERNAL DEPENDENCIES
