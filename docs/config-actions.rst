@@ -117,7 +117,7 @@ These configuration actions in ``dict`` format:
             'foo.luac' : {
                 'source' : 'foo.lua',
                 'config-actions' : [ dict(do = 'check-programs', names = 'luac'), ],
-                # var 'LUAC' was set in 'check-programs'
+                # var 'LUAC' will be set in 'check-programs' if 'luac' is found.
                 'run': '${LUAC} -s -o ${TGT} ${SRC}',
             },
 
@@ -312,7 +312,8 @@ Any configuration action has parameter ``mandatory`` which is True by default.
 It also has effect for any action inside ``actions``
 for parallel actions and for the whole bundle of parallel actions as well.
 
-All results (defines and some other values) of configuration actions in one build
+All results (defines and some other values) of configuration actions
+(excluding ``call-pyfunc``) in one build
 task can be exported to all build tasks which depend on the current task.
 Use :ref:`export-config-actions<buildconf-taskparams-export-config-actions>`
 for this ability. It allows you to avoid writing the same config actions in tasks
