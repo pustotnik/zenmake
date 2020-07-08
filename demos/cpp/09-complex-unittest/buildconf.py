@@ -17,7 +17,7 @@ def somefunc(args):
 tasks = {
     'shlib' : {
         'features' : 'cxxshlib',
-        'source'   :  dict( include = 'shlib/**/*.cpp' ),
+        'source'   : 'shlib/**/*.cpp',
         'includes' : '.',
         'run'      : "echo 'This is runcmd in task \"shlib\"'",
         'config-actions'  : [
@@ -26,7 +26,7 @@ tasks = {
     },
     'stlib' : {
         'features' : 'cxxstlib',
-        'source'   :  dict( include = 'stlib/**/*.cpp' ),
+        'source'   : 'stlib/**/*.cpp',
         'includes' : '.',
         'config-actions'  : [
             dict(do = 'check-headers', names = 'cstdio'),
@@ -34,13 +34,13 @@ tasks = {
     },
     'shlibmain' : {
         'features' : 'cxxshlib',
-        'source'   :  dict( include = 'shlibmain/**/*.cpp' ),
+        'source'   : 'shlibmain/**/*.cpp',
         'includes' : '.',
         'use'      : 'shlib stlib',
     },
     'complex' : {
         'features' : 'cxxprogram runcmd',
-        'source'   :  dict( include = 'prog/**/*.cpp' ),
+        'source'   : 'prog/**/*.cpp',
         'includes' : '.',
         'use'      : 'shlibmain',
         'run'      : "echo 'This is runcmd in task \"complex\"'",

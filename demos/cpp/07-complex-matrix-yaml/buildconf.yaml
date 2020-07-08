@@ -23,22 +23,22 @@ matrix:
   set: { features: cxxshlib }
 
 - for: { task: shlib }
-  set: { source: { include: 'shlib/**/*.cpp' } }
+  set: { source: 'shlib/**/*.cpp' }
 
 - for: { task: stlib }
   set:
     features : cxxstlib
-    source   : { include: 'stlib/**/*.cpp' }
+    source   : 'stlib/**/*.cpp'
 
 - for: { task: shlibmain }
   set:
-    source : { include: 'shlibmain/**/*.cpp' }
+    source : 'shlibmain/**/*.cpp'
     use    : shlib stlib
 
 - for: { task: test }
   set:
     features : cxxprogram
-    source   : { include: 'prog/**/*.cpp' }
+    source   : 'prog/**/*.cpp'
     use      : shlibmain
 
 - for: { buildtype : [debug-gcc, release-gcc], platform : linux }

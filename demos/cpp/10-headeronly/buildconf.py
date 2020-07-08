@@ -6,7 +6,7 @@ tasks = {
     },
     'program' : {
         'features' : 'cxxprogram',
-        'source'   :  dict( include = 'prog/**/*.cpp' ),
+        'source'   : 'prog/**/*.cpp',
         'use'      : 'util',
     },
 }

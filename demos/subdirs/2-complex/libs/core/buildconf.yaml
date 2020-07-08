@@ -7,7 +7,7 @@ project:
 tasks:
   corelib :
     features : shlib
-    source   :  { include: '**/*.c' }
+    source   : '**/*.c'
     export-includes : true
     config-actions :
       - { do: check-headers, names: stdio.h }

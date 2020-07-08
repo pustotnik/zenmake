@@ -157,6 +157,10 @@ source
             By default it's '.', that is, it's equal to
             :ref:`startdir<buildconf-startdir>`.
 
+    There is simplified form of patterns using: if string value contains
+    '*' or '?' it will be converted into ``dict`` form to use patterns.
+    See examples below.
+
     Any path or pattern should be relative to the :ref:`startdir<buildconf-startdir>`.
     But for pattern (in dict) can be used custom ``startdir`` parameter.
 
@@ -178,12 +182,20 @@ source
         'source' :  dict( include = '**/*.cpp' )
         # or
         'source' :  { 'include': '**/*.cpp' }
+        # or
+        'source' :  '**/*.cpp'
 
         # get all *.c and *.cpp files in the 'startdir' recursively
         'source' :  { 'include': ['**/*.c', '**/*.cpp'] }
+        # or
+        'source' :  ['**/*.c', '**/*.cpp']
 
         # get all *.cpp files in the 'startdir'/mylib recursively
         'source' :  dict( include = 'mylib/**/*.cpp' )
+
+        # get all *.cpp files in the 'startdir'/src recursively
+        # but don't include files according pattern 'src/extra*
+        'source' :  dict( include = 'src/**/*.cpp', exclude = 'src/extra*' ),
 
     Examples in YAML format:
 

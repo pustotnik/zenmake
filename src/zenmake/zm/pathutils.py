@@ -303,7 +303,12 @@ def makePathsDict(param, startdir):
             startdir = _normpath(_joinpath(startdir, _startdir))
         param['startdir'] = startdir
     else:
-        param = { 'startdir' : startdir, 'paths' : param }
+        val = param if isinstance(param, stringtype) else ' '.join(param)
+        if any(x in val for x in ('*', '?')):
+            # use as pattern
+            param = { 'startdir' : startdir, 'include' : param }
+        else:
+            param = { 'startdir' : startdir, 'paths' : param }
 
     return param
 

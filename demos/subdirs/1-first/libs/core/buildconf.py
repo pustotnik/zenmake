@@ -8,7 +8,7 @@ project = { 'version' : '0.4.0' }
 tasks = {
     'corelib' : {
         'features' : 'shlib',
-        'source'   :  dict( include = '**/*.c' ),
+        'source'   : '**/*.c',
         'includes' : 'src',
         'export-includes' : True,
         'config-actions'  : [

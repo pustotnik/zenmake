@@ -13,7 +13,7 @@ tasks = {
     },
     'my test' : {
         'features' : 'cprogram',
-        'source'   :  dict( include = '"my prog/**/*.c"' ),
+        'source'   : '"my prog/**/*.c"',
         'use'      : "'my util'",
         'config-actions'  : [
             { 'do' : 'check-headers', 'names' : 'stdio.h' },

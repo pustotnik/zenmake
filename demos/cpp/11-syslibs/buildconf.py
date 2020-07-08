@@ -12,7 +12,7 @@
 tasks = {
     'util' : {
         'features' : 'cxxshlib',
-        'source'   :  dict( include = 'shlib/**/*.cpp' ),
+        'source'   : 'shlib/**/*.cpp',
         'includes.select' : {
             'windows' : 'C:\\local\\boost_1_67_0',
         },
@@ -27,7 +27,7 @@ tasks = {
     },
     'program' : {
         'features' : 'cxxprogram',
-        'source'   :  dict( include = 'prog/**/*.cpp' ),
+        'source'   : 'prog/**/*.cpp',
         'use'      : 'util',
     },
 }

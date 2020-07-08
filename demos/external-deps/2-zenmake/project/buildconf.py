@@ -14,7 +14,7 @@ dependencies = {
 tasks = {
     'myutil' : {
         'features' : 'cxxshlib',
-        'source'   :  { 'include' : 'shlib/**/*.cpp' },
+        'source'   : 'shlib/**/*.cpp',
         'use' : 'zmdep:calclib zmdep:printlib',
         'config-actions'  : [
             { 'do' : 'check-headers', 'names' : 'cstdio iostream' },
@@ -22,7 +22,7 @@ tasks = {
     },
     'program' : {
         'features' : 'cxxprogram',
-        'source'   :  { 'include' : 'prog/**/*.cpp' },
+        'source'   : 'prog/**/*.cpp',
         'use' : 'myutil',
         #'rpath' : '.', # to have ability to run from the build directory
     },

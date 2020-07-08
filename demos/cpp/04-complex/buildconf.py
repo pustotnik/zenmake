@@ -16,7 +16,7 @@ features = {
 tasks = {
     'shlib' : {
         'features' : 'shlib',
-        'source'   :  dict( include = 'shlib/**/*.cpp' ),
+        'source'   : 'shlib/**/*.cpp',
         'includes' : 'include',
         'defines'  : ['ABC=1', 'DOIT'],
         'export-includes' : True,
@@ -36,17 +36,17 @@ tasks = {
     },
     'stlib' : {
         'features' : 'stlib',
-        'source'   :  dict( include = 'stlib/**/*.cpp' ),
+        'source'   : 'stlib/**/*.cpp',
     },
     'shlibmain' : {
         'features' : 'shlib',
-        'source'   :  dict( include = 'shlibmain/**/*.cpp' ),
+        'source'   : 'shlibmain/**/*.cpp',
         'use'      : 'shlib stlib',
         'install-path' : '${PREFIX}/lbr',
     },
     'main' : {
         'features' : 'program',
-        'source'   :  dict( include = 'prog/**/*.cpp' ),
+        'source'   : 'prog/**/*.cpp',
         'use'      : 'shlibmain',
         'target'   : '@bld', # to check 'build-work-dir-name'
     },

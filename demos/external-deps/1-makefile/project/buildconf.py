@@ -78,7 +78,7 @@ dependencies = {
 tasks = {
     'util' : {
         'features' : 'cxxshlib',
-        'source'   :  { 'include' : 'shlib/**/*.cpp' },
+        'source'   : 'shlib/**/*.cpp',
         'use.select' : {
             'debug'   : 'foo-lib-d:static-lib',
             'release' : 'foo-lib-r:static-lib',
@@ -89,7 +89,7 @@ tasks = {
     },
     'program' : {
         'features' : 'cxxprogram',
-        'source'   :  { 'include' : 'prog/**/*.cpp' },
+        'source'   : 'prog/**/*.cpp',
         'use.select' : {
             'debug'   : 'util foo-lib-d:shared-lib',
             'release' : 'util foo-lib-r:shared-lib',

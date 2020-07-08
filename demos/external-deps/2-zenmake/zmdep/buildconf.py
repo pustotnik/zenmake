@@ -2,19 +2,19 @@
 tasks = {
     'calclib' : {
         'features' : 'cshlib',
-        'source'   :  dict( include = 'calclib/**/*.c' ),
+        'source'   : 'calclib/**/*.c',
         'ver-num'  : '1.2.4',
     },
     'printlib' : {
         'features' : 'cstlib',
-        'source'   :  dict( include = 'printlib/**/*.c' ),
+        'source'   : 'printlib/**/*.c',
         'config-actions' : [
             dict(do = 'check-headers', names = 'stdio.h'),
         ],
     },
     'service' : {
         'features' : 'cprogram',
-        'source'   :  dict( include = 'service/**/*.c' ),
+        'source'   : 'service/**/*.c',
         'use'      : 'calclib printlib',
         'config-actions' : [
             dict(do = 'check-headers', names = 'stdio.h'),

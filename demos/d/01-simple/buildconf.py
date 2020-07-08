@@ -3,7 +3,7 @@ tasks = {
     'test' : {
         #'features' : 'dprogram',
         'features' : 'program',
-        'source'   :  dict( include = '**/*.d' ),
+        'source'   : '**/*.d',
     },
 }
 

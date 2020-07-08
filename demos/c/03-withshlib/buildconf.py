@@ -2,7 +2,7 @@
 tasks = {
     'util' : {
         'features' : 'cshlib',
-        'source'   :  dict( include = 'shlib/**/*.c' ),
+        'source'   : 'shlib/**/*.c',
         'includes' : '.',
         'config-actions'  : [
             { 'do' : 'check-headers', 'names' : 'stdio.h' },
@@ -11,7 +11,7 @@ tasks = {
     },
     'test' : {
         'features' : 'cprogram',
-        'source'   :  dict( include = 'prog/**/*.c' ),
+        'source'   : 'prog/**/*.c',
         'includes' : '.',
         'use'      : 'util',
         'config-actions'  : [

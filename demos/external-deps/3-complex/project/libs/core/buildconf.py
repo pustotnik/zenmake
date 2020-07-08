@@ -10,7 +10,7 @@ dependencies = {
 tasks = {
     'core' : {
         'features' : 'cxxshlib',
-        'source'   :  dict( include = '**/*.cpp' ),
+        'source'   : '**/*.cpp',
         'ver-num'  : '0.2.0',
         'use' : 'zmdep-a:calclib zmdep-a:printlib',
     },

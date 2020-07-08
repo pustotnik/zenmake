@@ -2,26 +2,26 @@
 tasks = {
     'shlib' : {
         'features' : 'cxxshlib',
-        'source'   :  dict( include = 'shlib/**/*.cpp' ),
+        'source'   : 'shlib/**/*.cpp',
         'config-actions'  : [
             dict(do = 'check-headers', names = 'cstdio'),
         ],
     },
     'stlib' : {
         'features' : 'cxxstlib',
-        'source'   :  dict( include = 'stlib/**/*.cpp' ),
+        'source'   : 'stlib/**/*.cpp',
         'config-actions'  : [
             dict(do = 'check-headers', names = 'cstdio'),
         ],
     },
     'shlibmain' : {
         'features' : 'cxxshlib',
-        'source'   :  dict( include = 'shlibmain/**/*.cpp' ),
+        'source'   : 'shlibmain/**/*.cpp',
         'use'      : 'shlib stlib',
     },
     'test' : {
         'features' : 'cxxprogram',
-        'source'   :  dict( include = 'prog/**/*.cpp' ),
+        'source'   : 'prog/**/*.cpp',
         'use'      : 'shlibmain',
     },
 }

@@ -15,7 +15,7 @@ subdirs = [ 'calc' ]
 tasks = {
     'print' : {
         'features' : 'cstlib',
-        'source'   :  dict( include = 'print/**/*.c' ),
+        'source'   : 'print/**/*.c',
         'use' : 'zmdep-a:printlib',
         'config-actions'  : [
             # ZenMake tests only: check there is no problem with this conf action
@@ -24,7 +24,7 @@ tasks = {
     },
     'service' : {
         'features' : 'cprogram',
-        'source'   :  dict( include = 'service/**/*.c' ),
+        'source'   : 'service/**/*.c',
         'use'      : 'calc print',
         'config-actions' : [
             dict(do = 'check-headers', names = 'stdio.h'),

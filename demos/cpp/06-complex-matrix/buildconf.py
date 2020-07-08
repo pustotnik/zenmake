@@ -31,19 +31,19 @@ matrix = [
     },
     {
         'for' : { 'task' : 'shlib', },
-        'set' : { 'source' :  { 'include' : 'shlib/**/*.cpp' }, }
+        'set' : { 'source' : 'shlib/**/*.cpp', }
     },
     {
         'for' : { 'task' : 'stlib', },
         'set' : {
             'features' : 'cxx cxxstlib',
-            'source'   :  dict( include = 'stlib/**/*.cpp' ),
+            'source'   : 'stlib/**/*.cpp',
         }
     },
     {
         'for' : { 'task' : 'shlibmain', },
         'set' : {
-            'source'   :  dict( include = 'shlibmain/**/*.cpp' ),
+            'source'   : 'shlibmain/**/*.cpp',
             'use'      : 'shlib stlib',
         }
     },
@@ -51,7 +51,7 @@ matrix = [
         'for' : { 'task' : 'test', },
         'set' : {
             'features' : 'cxx cxxprogram',
-            'source'   :  dict( include = 'prog/**/*.cpp' ),
+            'source'   : 'prog/**/*.cpp',
             'use'      : 'shlibmain',
         }
     },
