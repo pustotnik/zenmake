@@ -175,6 +175,7 @@ taskscheme = {
     'config-actions' :  _genConfActionsScheme,
     'export-config-actions' : { 'type': 'bool' },
     'normalize-target-name' : { 'type': 'bool' },
+    'enabled'       : { 'type': 'bool' },
     'objfile-index' : { 'type': 'int' },
 }
 

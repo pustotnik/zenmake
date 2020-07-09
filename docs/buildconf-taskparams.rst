@@ -667,6 +667,17 @@ normalize-target-name
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
+enabled
+"""""""""""""""""""""
+    If it's False then current task will not be used at all.
+    By default it is True.
+
+    It has sense mostly to use with
+    :ref:`selectable parameters<buildconf-select>` or with
+    :ref:`matrix<buildconf-matrix>`. With this parameter you can make a build
+    task which is used, for example, on Linux only or for specific toolchain
+    or with another condition.
+
 objfile-index
 """""""""""""""""""""
     Counter for the object file extension.

@@ -115,6 +115,11 @@ tasks = {
         'source'   : 'tests/test_shlibmain.cpp',
         'use'      : 'shlibmain testcmn',
     },
+    #### this tasks is always failed but it's disabled: check param 'enabled'
+    'always-failed' : {
+        'run': "asdfghjklzxcvb",
+        'enabled' : False,
+    },
 }
 
 buildtypes = {

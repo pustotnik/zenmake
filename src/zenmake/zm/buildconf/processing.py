@@ -276,7 +276,13 @@ class Config(object):
         # the paths relative to the 'rootdir'
         taskStartDir = relpath(startdir, rootdir)
 
+        disabled = []
+
         for taskName, taskParams in viewitems(tasks):
+
+            if not taskParams.get('enabled', True):
+                disabled.append(taskName)
+                continue
 
             # save task name in task params
             taskParams['name'] = taskName
@@ -298,6 +304,11 @@ class Config(object):
                     paramVal['startdir'] = taskStartDir
                 else:
                     paramVal['startdir'] = relpath(paramStartDir, rootdir)
+
+        tasknames = self._meta.tasknames
+        for name in disabled:
+            tasknames.remove(name)
+            tasks.pop(name)
 
     def _merge(self):
 
