@@ -358,6 +358,14 @@ defines
 """""""""""""""""""""
     One or more defines for C/C++/Assembler/Fortran.
 
+    Examples:
+
+    .. code-block:: python
+
+        'defines'  : 'MYDEFINE'
+        'defines'  : ['ABC=1', 'DOIT']
+        'defines'  : 'ABC=1 DOIT AAA="some long string"',
+
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
