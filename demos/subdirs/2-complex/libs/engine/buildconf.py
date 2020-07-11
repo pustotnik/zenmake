@@ -16,6 +16,7 @@ tasks = {
         'source'   : 'src/extra.cpp',
         'includes' : 'src',
         'use'      : 'corelib',
+        'ver-num'  : '0.3.0',
         'config-actions'  : [
             dict(do = 'check-headers', names = 'cstdio iostream'),
             check,
@@ -28,6 +29,7 @@ tasks = {
         'source'   :  dict( include = 'src/**/*.cpp', exclude = 'src/extra*' ),
         'includes' : 'src',
         'use'      : 'extra',
+        'ver-num'  : '0.3.1',
         'export-includes' : True,
         'config-actions'  : [
             dict( do = 'check-headers', names = 'stdio.h iostream' ),

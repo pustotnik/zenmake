@@ -116,7 +116,8 @@ project
     :name: The name of the project. It's name of the top-level startdir_
            directory by default.
     :version: The version of the project. It's empty by default.
-              It's used as default value for ``ver-num`` field if not empty.
+              It's used as default value for
+              :ref:`ver-num<buildconf-taskparams-ver-num>` field if not empty.
 
 .. _buildconf-features:
 

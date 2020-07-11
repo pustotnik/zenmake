@@ -530,6 +530,8 @@ rpath
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
+.. _buildconf-taskparams-ver-num:
+
 ver-num
 """""""""""""""""""""
     Enforce version numbering on shared libraries. It can be used with

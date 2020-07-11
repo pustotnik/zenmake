@@ -336,8 +336,8 @@ class Config(object):
         # startdir, subdirs - they are not merged
         mergedParams.update(('startdir', 'subdirs'))
 
-        # features, options - they are not merged and always use parent values
-        for param in ('features', 'options'):
+        # project, features, options - they are not merged and always use parent values
+        for param in ('project', 'features', 'options'):
             if parentConf is not None:
                 setattr(currentConf, param, getattr(parentConf, param))
             mergedParams.add(param)
@@ -345,8 +345,8 @@ class Config(object):
         # buildroot, realbuildroot - see _makeBuildDirParams
         mergedParams.update(('buildroot', 'realbuildroot'))
 
-        # project, conditions, 'dependencies'
-        for param in ('project', 'conditions', 'dependencies'):
+        # project, conditions, dependencies
+        for param in ('conditions', 'dependencies'):
             mergeDict(param)
             mergedParams.add(param)
 

@@ -3,14 +3,13 @@ def check(**kwargs):
     # some checking
     return True
 
-project = { 'version' : '0.4.0' }
-
 tasks = {
     'corelib' : {
         'features' : 'shlib',
         'source'   : '**/*.c',
         'includes' : 'src',
         'export-includes' : True,
+        'ver-num' : '0.4.0',
         'config-actions'  : [
             dict(do = 'check-headers', names = 'stdio.h'),
             check,
