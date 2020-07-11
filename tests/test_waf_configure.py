@@ -22,7 +22,7 @@ from waflib.Errors import WafError
 from zm.autodict import AutoDict
 from zm import toolchains, utils, log
 from zm.error import *
-from zm.waf import context, configure
+from zm.waf import context, configure, assist
 from zm.buildconf.processing import Config as BuildConfig
 from zm.waf.configure import ConfigurationContext
 from zm.features import ToolchainVars, c, cxx
@@ -109,6 +109,10 @@ def cfgctx(monkeypatch, mocker, tmpdir):
 
     return cfgCtx
 
+def prepareCfgTasks(ctx):
+    ctx.mergeTasks()
+    ctx.allOrderedTasks = assist.orderTasksByLocalDeps(ctx.allTasks)
+
 def testsSetDirectEnv(cfgctx):
     ctx = cfgctx
     name = 'something'
@@ -133,7 +137,7 @@ def testRunConfigActionsCheckPrograms(mocker, cfgctx):
     tasks.task['$task.variant'] = 'test'
 
     ctx.bconfManager = AutoDict(configs = [AutoDict(tasks = tasks)])
-    ctx.mergeTasks()
+    prepareCfgTasks(ctx)
 
     ctx.find_program = mocker.MagicMock(return_value = 'path')
     ctx.runConfigActions()
@@ -166,7 +170,7 @@ def testRunConfigActionsCheckSysLibs(mocker, cfgctx):
     ]
 
     ctx.bconfManager = AutoDict(configs = [AutoDict(tasks = tasks)])
-    ctx.mergeTasks()
+    prepareCfgTasks(ctx)
 
     ctx.check = mocker.MagicMock()
     ctx.runConfigActions()
@@ -199,7 +203,7 @@ def testRunConfigActionsCheckHeaders(mocker, cfgctx):
     ]
 
     ctx.bconfManager = AutoDict(configs = [AutoDict(tasks = tasks)])
-    ctx.mergeTasks()
+    prepareCfgTasks(ctx)
 
     ctx.check = mocker.MagicMock()
     ctx.runConfigActions()
@@ -235,7 +239,7 @@ def testRunConfigActionsCheckLibs(mocker, cfgctx):
     ]
 
     ctx.bconfManager = AutoDict(configs = [AutoDict(tasks = tasks)])
-    ctx.mergeTasks()
+    prepareCfgTasks(ctx)
 
     ctx.check = mocker.MagicMock()
     ctx.runConfigActions()
@@ -278,7 +282,7 @@ def testRunConfigActionsWriteHeader(mocker, cfgctx):
 
     ctx.bconfManager = AutoDict(configs = [ctx.fakebconf])
     ctx.bconfManager.root = ctx.fakebconf
-    ctx.mergeTasks()
+    prepareCfgTasks(ctx)
 
     ctx.write_config_header = mocker.MagicMock()
     ctx.runConfigActions()
@@ -328,7 +332,7 @@ def testRunConfigActionsUnknown(mocker, cfgctx):
     tasks.task['$task.variant'] = 'test'
 
     ctx.bconfManager = AutoDict(configs = [AutoDict(tasks = tasks)])
-    ctx.mergeTasks()
+    prepareCfgTasks(ctx)
 
     with pytest.raises(WafError):
         ctx.runConfigActions()
