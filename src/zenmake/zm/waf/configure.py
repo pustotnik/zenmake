@@ -593,7 +593,6 @@ class ConfigurationContext(WafConfContext):
             tasks.update(newtasks)
 
         self.allTasks = tasks
-        self.allOrderedTasks = assist.orderTasksByLocalDeps(tasks)
 
     def runConfigActions(self):
         """
@@ -735,6 +734,9 @@ class ConfigurationContext(WafConfContext):
 
             # Other '*.select' params must be handled after loading of toolchains
             handleTaskParamSelects(bconf)
+
+        # ordering must be after handling of 'use.select'
+        self.allOrderedTasks = assist.orderTasksByLocalDeps(self.allTasks)
 
         toolchainEnvs = self.getToolchainEnvs()
 
