@@ -6,11 +6,11 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-from waflib.Errors import WafError as _WafError
+from waflib.Errors import WafError
 
 verbose = 2
 
-class ZenMakeError(_WafError):
+class ZenMakeError(WafError):
     """Base class for all ZenMake errors"""
 
     def __init__(self, msg = '', ex = None):

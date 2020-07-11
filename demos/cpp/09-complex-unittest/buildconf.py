@@ -36,7 +36,7 @@ tasks = {
         'features' : 'cxxshlib',
         'source'   : 'shlibmain/**/*.cpp',
         'includes' : '.',
-        'use'      : 'shlib stlib',
+        'use'      : 'shlib stlib ls',
     },
     'complex' : {
         'features' : 'cxxprogram runcmd',

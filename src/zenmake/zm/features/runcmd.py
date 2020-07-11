@@ -13,7 +13,6 @@ import re
 import shlex
 
 from waflib.TaskGen import feature, after
-from waflib.Errors import WafError
 from waflib import Task
 from zm.constants import PLATFORM, EXE_FILE_EXTS
 from zm.pyutils import viewitems, maptype
@@ -152,30 +151,38 @@ def _fixRunCmdDepsOrder(tgen):
     """ Fix order of running """
 
     ctx = tgen.bld
-    runcmdTask = getattr(tgen, 'runcmdTask', None)
-    assert runcmdTask
+    runcmdTask = tgen.runcmdTask
+    standalone = True
 
     linkTask = getattr(tgen, 'link_task', None)
     if linkTask:
         runcmdTask.set_run_after(linkTask)
+        standalone = False
 
-    for dep in getattr(tgen, 'use', []):
+    zmTaskParams = getattr(tgen, 'zm-task-params', {})
+
+    if standalone:
+        runBefore = zmTaskParams['$run-task-before-tgen'] = []
+        for rdepName in zmTaskParams.get('$ruse', []):
+            runBefore.append((runcmdTask, rdepName))
+
+    for dep in zmTaskParams.get('use', []):
         try:
             other = ctx.get_tgen_by_name(dep)
-        except WafError:
+        except error.WafError:
             continue
 
         # Ensure that the other task generator has created its tasks
         other.post()
 
-        _runcmdTask = getattr(other, 'runcmdTask', None)
-        if _runcmdTask:
-            runcmdTask.set_run_after(_runcmdTask)
-            continue
+        depTask = getattr(other, 'runcmdTask', None)
+        if not depTask:
+            depTask = getattr(other, 'link_task', None)
+        if not depTask:
+            # better than nothing
+            depTask = other.tasks[0]
 
-        linkTask = getattr(other, 'link_task', None)
-        if linkTask:
-            runcmdTask.set_run_after(linkTask)
+        runcmdTask.set_run_after(depTask)
 
 def _isCmdStandalone(tgen):
     """ Detect is current runcmd standalone """
@@ -292,6 +299,7 @@ def applyRunCmd(tgen):
     cmdType = ruleArgs.pop('$type', '')
     repeat = ruleArgs.pop('repeat', 1)
 
+    cmdTask = None
     if _isCmdStandalone(tgen):
         for k, v in viewitems(ruleArgs):
             setattr(tgen, k, v)
@@ -300,10 +308,11 @@ def applyRunCmd(tgen):
                 delattr(tgen, 'target')
         tgen.process_rule()
         delattr(tgen, 'rule')
-        setattr(tgen, 'runcmdTask', tgen.tasks[0])
+        cmdTask = tgen.tasks[0]
     else:
-        task = _createRunCmdTask(tgen, ruleArgs)
-        setattr(tgen, 'runcmdTask', task)
+        cmdTask = _createRunCmdTask(tgen, ruleArgs)
+
+    setattr(tgen, 'runcmdTask', cmdTask)
 
     def wrap(method, task, repeat):
         def execute():

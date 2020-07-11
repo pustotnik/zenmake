@@ -145,6 +145,17 @@ def _executeBuild(self):
     except AttributeError:
         pass
 
+@asmethod(WafBuildContext, 'post_group', wrap = True, callOrigFirst = True)
+def _postGroup(self):
+
+    for tgen in self.groups[self.current_group]:
+        # all runtime tasks are created already
+        zmTaskParams = getattr(tgen, 'zm-task-params', {})
+        runBefore = zmTaskParams.pop('$run-task-before-tgen', [])
+        for task, tgname in runBefore:
+            other = self.get_tgen_by_name(tgname)
+            other.tasks[0].set_run_after(task)
+
 @asmethod(WafBuildContext, 'validateVariant')
 def _validateVariant(self):
     """ Check current variant and return it """

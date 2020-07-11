@@ -48,6 +48,7 @@ class TestFeatureRunCmd(object):
         assert indexes['running']['complex'] > indexes['linking']['complex']
         assert indexes['running']['echo'] > indexes['linking']['shlibmain']
         assert indexes['running']['test.py'] > indexes['linking']['shlibmain']
+        assert indexes['compiling']['shlibmain/util.cpp'] > indexes['running']['ls']
 
         # check cmd output and repeat
         checkMsgInOutput(r'This is runcmd in task "shlib"', output, 1)

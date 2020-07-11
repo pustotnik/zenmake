@@ -653,17 +653,18 @@ class ConfigurationContext(WafConfContext):
         taskParams['$real.target'] = realTarget
         taskParams['$runnable'] = targetKind == 'program'
 
-    def _preconfigureTasks(self, bconf):
+    def _preconfigureTasks(self):
 
-        buildtype = bconf.selectedBuildType
-        btypeDir = bconf.selectedBuildTypeDir
-        tasks = bconf.tasks
-        defaultLibVersion = bconf.defaultLibVersion
+        rootbconf = self.bconfManager.root
+        buildtype = rootbconf.selectedBuildType
+        btypeDir = rootbconf.selectedBuildTypeDir
+        defaultLibVersion = rootbconf.defaultLibVersion
 
         emptyEnv = ConfigSet()
         toolchainEnvs = self.getToolchainEnvs()
+        allTasks = self.allTasks
 
-        for taskParams in viewvalues(tasks):
+        for taskParams in self.allOrderedTasks:
 
             taskName = taskParams['name']
 
@@ -705,6 +706,12 @@ class ConfigurationContext(WafConfContext):
             if defaultLibVersion and 'ver-num' not in taskParams:
                 taskParams['ver-num'] = defaultLibVersion
 
+            taskParams.setdefault('$ruse', [])
+            for name in taskParams.get('use', []):
+                depTaskParams = allTasks.get(name)
+                if depTaskParams:
+                    depTaskParams['$ruse'].append(taskName)
+
             self._setupTaskTarget(taskParams, taskEnv, btypeDir)
 
     def preconfigure(self):
@@ -739,8 +746,7 @@ class ConfigurationContext(WafConfContext):
         # set/fix vars PREFIX, BINDIR, LIBDIR
         assist.applyInstallPaths(self.all_envs[''], cli.selected)
 
-        for bconf in configs:
-            self._preconfigureTasks(bconf)
+        self._preconfigureTasks()
 
         # switch current env to the root env
         self.setenv('')
