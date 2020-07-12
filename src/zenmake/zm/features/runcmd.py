@@ -29,9 +29,13 @@ else:
 _RE_WITH_TGT = re.compile(r'\$\{*TGT')
 _RE_WITH_TARGET = re.compile(r'\$\{*TARGET')
 
-def _processCmdLine(conf, bconf, cwd, shell, cmdArgs):
+def _processCmdLine(conf, taskParams, cwd, cmdArgs):
     """ Get and process 'cmd' at 'configure' stage """
 
+    # By default 'shell' is True to rid of some problems with Waf and Windows
+    shell = cmdArgs.get('shell', True)
+
+    bconf      = taskParams['$bconf']
     bconfPaths = bconf.confPaths
     btypeDir   = bconf.selectedBuildTypeDir
     startdir   = bconfPaths.startdir
@@ -44,7 +48,15 @@ def _processCmdLine(conf, bconf, cwd, shell, cmdArgs):
         shell = cmdHasShellSymbols(cmdline)
 
     posixMode = os.name == 'posix'
-    cmdSplitted = shlex.split(cmdline, posix = posixMode)
+    try:
+        cmdSplitted = shlex.split(cmdline, posix = posixMode)
+    except ValueError as ex:
+        # "No closing quotation" or "No escaped character"
+        taskName = taskParams['name']
+        msg = "Task %r: command line %r is invalid (%s)" % (taskName, cmdline, ex)
+        msg += "\nYou can try to put the python 'r' prefix in front of value of command line"
+        msg += " like this: 'run': r'your command line'"
+        raise error.ZenMakeConfError(msg, confpath = bconf.path)
 
     if not shell:
         # Waf can not work correctly with paths with whitespaces when
@@ -95,7 +107,7 @@ def postConf(conf):
     rootdir   = rootbconf.rootdir
 
     for taskParams in conf.allOrderedTasks:
-        bconf = taskParams['$bconf']
+
         features = taskParams['features']
         cmdArgs = taskParams.get('run', None)
 
@@ -119,6 +131,7 @@ def postConf(conf):
 
         cwd = cmdArgs.get('cwd', None)
         if cwd:
+            bconf = taskParams['$bconf']
             startdir = cmdArgs.get('startdir', bconf.startdir)
             cwd = PathsParam(cwd, startdir, rootdir).abspath()
         else:
@@ -136,9 +149,7 @@ def postConf(conf):
             cmdTaskArgs['shell'] = False
             cmdTaskArgs['$type'] = 'func'
         else:
-            # By default 'shell' is True to rid of some problems with Waf and Windows
-            shell = cmdArgs.get('shell', True)
-            cmd, shell = _processCmdLine(conf, bconf, cwd, shell, cmdArgs)
+            cmd, shell = _processCmdLine(conf, taskParams, cwd, cmdArgs)
             cmdTaskArgs['shell'] = shell
             cmdTaskArgs['cmd'] = cmd
 
