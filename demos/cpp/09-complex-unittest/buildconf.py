@@ -28,9 +28,7 @@ tasks = {
         'features' : 'cxxshlib',
         'source'   : 'shlib/**/*.cpp',
         'includes' : '.',
-        'run'      : r"echo This is runcmd in task \"shlib\"",
-        # another way to do the same output:
-        #'run'      : "echo 'This is runcmd in task \"shlib\"'",
+        'run'      : "echo 'This is runcmd in task \"shlib\"'",
         'config-actions'  : [
             dict(do = 'check-headers', names = 'iostream'),
         ],
@@ -54,7 +52,7 @@ tasks = {
         'source'   : 'prog/**/*.cpp',
         'includes' : '.',
         'use'      : 'shlibmain',
-        'run'      : r"echo This is runcmd in task \"complex\"",
+        'run'      : "echo 'This is runcmd in task \"complex\"'",
         'install-path' : '${PREFIX}/${EXE}',
     },
     'echo' : {
