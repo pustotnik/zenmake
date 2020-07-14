@@ -11,6 +11,15 @@ iswin32  = os.sep == '\\' or sys.platform == 'win32' or os.name == 'nt'
 
 #realbuildroot = joinpath(tmpdir, username, 'projects', 'complex-unittest', 'build')
 
+project = {
+    'name' : 'zm-complex-unittest',
+}
+
+substvars = {
+    'LS_CMD' : 'ls',
+    'EXE' : 'exe',
+}
+
 def somefunc(args):
     print("somefunc: buildtype = %r" % args['buildtype'])
 
@@ -46,6 +55,7 @@ tasks = {
         'includes' : '.',
         'use'      : 'shlibmain',
         'run'      : r"echo This is runcmd in task \"complex\"",
+        'install-path' : '${PREFIX}/${EXE}',
     },
     'echo' : {
         'run'      : {
@@ -55,8 +65,14 @@ tasks = {
         'use'      : 'shlibmain',
     },
     'ls' : {
+        'substvars.select' : {
+            'windows' : { 'LS_CMD' : 'dir /B' },
+            'darwin' : { 'LS_CMD' : 'ls' }, # it's not needed here because root 'substvars' sets the same value
+        },
         'run'      : {
-            'cmd' : iswin32 and "dir /B" or "ls",
+            'cmd' : '${LS_CMD}',
+            # a different way for the same result
+            #'cmd' : iswin32 and "dir /B" or "ls",
             'cwd' : '.',
         },
     },

@@ -81,12 +81,13 @@ def asmethod(cls, methodName = None, wrap = False, callOrigFirst = True):
 
             if callOrigFirst:
                 def execute(*args, **kwargs):
-                    origMethod(*args, **kwargs)
+                    retval = origMethod(*args, **kwargs)
                     func(*args, **kwargs)
+                    return retval
             else:
                 def execute(*args, **kwargs):
                     func(*args, **kwargs)
-                    origMethod(*args, **kwargs)
+                    return origMethod(*args, **kwargs)
 
             setattr(cls, funcName, execute)
         else:

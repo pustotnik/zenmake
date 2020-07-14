@@ -14,9 +14,16 @@ import os
 # using of the Waf such classes are created in the 'wscript' because this
 # file is loaded always after all Waf context classes.
 
-from waflib.Build import INSTALL, UNINSTALL
+from waflib import Node, Options
+from waflib.Build import INSTALL, UNINSTALL, inst as InstallTask
 from zm import error
+from zm.utils import asmethod, substVars
 from zm.waf.build import BuildContext
+
+joinpath = os.path.join
+normpath = os.path.normpath
+isabspath = os.path.isabs
+isdir = os.path.isdir
 
 ############ InstallContext
 
@@ -29,45 +36,11 @@ class InstallContext(BuildContext):
         super(InstallContext, self).__init__(**kw)
         self.is_install = INSTALL
 
-    @staticmethod
-    def _wrapInstTaskRun(method):
-
-        isdir = os.path.isdir
-
-        def execute(self):
-
-            # Make more user-friendly error report
-
-            isInstall = self.generator.bld.is_install
-            if isInstall:
-                for output in self.outputs:
-                    dirpath = output.parent.abspath()
-                    try:
-                        if isInstall == INSTALL:
-                            os.makedirs(dirpath)
-                    except OSError as ex:
-                        # It can't be checked before call of os.makedirs because
-                        # tasks work in parallel.
-                        if not isdir(dirpath): # exist_ok
-                            raise error.ZenMakeError(str(ex))
-
-                    if isdir(dirpath) and not os.access(dirpath, os.W_OK):
-                        raise error.ZenMakeError('Permission denied: ' + dirpath)
-
-            method(self)
-
-        return execute
-
     def execute(self):
-
-        from waflib.Errors import WafError
-        from waflib.Build import inst
-
-        inst.run = InstallContext._wrapInstTaskRun(inst.run)
 
         try:
             super(InstallContext, self).execute()
-        except WafError as ex:
+        except error.WafError as ex:
 
             # Cut out only error message
 
@@ -88,3 +61,50 @@ class UninstallContext(InstallContext):
     def __init__(self, **kw):
         super(UninstallContext, self).__init__(**kw)
         self.is_install = UNINSTALL
+
+############ 'inst' Task overriding
+
+@asmethod(InstallTask, 'get_install_path')
+def _instTaskGetInstallPath(self, destdir = True):
+
+    env = self.env
+    zmTaskParams = getattr(self.generator, 'zm-task-params', {})
+    substvars = zmTaskParams.get('substvars')
+    if substvars:
+        env = env.derive()
+        env.update(substvars)
+
+    if isinstance(self.install_to, Node.Node):
+        dest = self.install_to.abspath()
+    else:
+        dest = normpath(substVars(self.install_to, env))
+
+    if not isabspath(dest):
+        dest = joinpath(env.PREFIX, dest)
+
+    optdestdir = Options.options.destdir
+    if destdir and optdestdir:
+        dest = joinpath(optdestdir, os.path.splitdrive(dest)[1].lstrip(os.sep))
+
+    return dest
+
+@asmethod(InstallTask, 'run', wrap = True, callOrigFirst = False)
+def _instTaskRun(self):
+
+    # Make more user-friendly error report
+
+    isInstall = self.generator.bld.is_install
+    if isInstall:
+        for output in self.outputs:
+            dirpath = output.parent.abspath()
+            try:
+                if isInstall == INSTALL:
+                    os.makedirs(dirpath)
+            except OSError as ex:
+                # It can't be checked before call of os.makedirs because
+                # tasks work in parallel.
+                if not isdir(dirpath): # exist_ok
+                    raise error.ZenMakeError(str(ex))
+
+            if isdir(dirpath) and not os.access(dirpath, os.W_OK):
+                raise error.ZenMakeError('Permission denied: ' + dirpath)

@@ -260,11 +260,12 @@ def _makeCmdRuleArgs(tgen):
     ruleArgs = cmdArgs.copy()
 
     env = tgen.env.derive()
-    env.env = (env.env or os.environ).copy()
-    env.env.update(ruleArgs.pop('env', {}))
-
+    environ = (env.env or os.environ).copy()
+    environ.update(ruleArgs.pop('env', {}))
     # add new var to use in 'rule'
     env['TARGET'] = zmTaskParams['$real.target']
+    env.update(zmTaskParams.get('substvars', {}))
+    env.env = environ
 
     ruleArgs.update({
         'env'   : env,

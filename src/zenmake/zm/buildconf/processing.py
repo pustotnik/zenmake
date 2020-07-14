@@ -272,6 +272,8 @@ class Config(object):
         rootdir = self.rootdir
         startdir = self.startdir
 
+        rootSubstVars = getattr(self._conf, 'substvars', {})
+
         # make 'startdir' for task and specific params as
         # the paths relative to the 'rootdir'
         taskStartDir = relpath(startdir, rootdir)
@@ -304,6 +306,11 @@ class Config(object):
                     paramVal['startdir'] = taskStartDir
                 else:
                     paramVal['startdir'] = relpath(paramStartDir, rootdir)
+
+            substVars = rootSubstVars.copy()
+            substVars.update(taskParams.get('substvars', {}))
+            if substVars:
+                taskParams['substvars'] = substVars
 
         tasknames = self._meta.tasknames
         for name in disabled:
@@ -345,8 +352,8 @@ class Config(object):
         # buildroot, realbuildroot - see _makeBuildDirParams
         mergedParams.update(('buildroot', 'realbuildroot'))
 
-        # project, conditions, dependencies
-        for param in ('conditions', 'dependencies'):
+        # substvars, conditions, dependencies
+        for param in ('substvars', 'conditions', 'dependencies'):
             mergeDict(param)
             mergedParams.add(param)
 

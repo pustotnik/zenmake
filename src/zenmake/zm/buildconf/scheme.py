@@ -151,6 +151,13 @@ _PATHS_SCHEME = {
     },
 }
 
+_SUBST_VARS_SCHEME = {
+    'type': 'dict',
+    'vars' : {
+        ANYAMOUNTSTRS_KEY : { 'type': 'str' },
+    },
+}
+
 taskscheme = {
     'target' :          { 'type': 'str' },
     'features' :        { 'type': ('str', 'list-of-strs') },
@@ -171,6 +178,7 @@ taskscheme = {
     'defines' :         { 'type': ('str', 'list-of-strs') },
     'export-includes' : { 'type': ('bool', 'str', 'list-of-strs') },
     'export-defines' :  { 'type': ('bool', 'str', 'list-of-strs') },
+    'substvars' :       _SUBST_VARS_SCHEME,
     'install-path' :    { 'type': ('bool', 'str') },
     'config-actions' :  _genConfActionsScheme,
     'export-config-actions' : { 'type': 'bool' },
@@ -259,6 +267,7 @@ confscheme = {
         'type' : 'dict',
         'vars' : _genOptionsVarsScheme,
     },
+    'substvars' : _SUBST_VARS_SCHEME,
     'subdirs' : {
         'type' : 'list-of-strs',
     },

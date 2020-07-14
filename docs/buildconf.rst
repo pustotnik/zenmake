@@ -24,6 +24,7 @@ Simplified scheme of buildconf is:
     project_ = { ... }
     :ref:`buildconf-features` = { ... }
     options_ = { ... }
+    substvars_ = { ... }
     conditions_ = { ... }
     tasks_ = { name: :ref:`task parameters<buildconf-taskparams>` }
     buildtypes_ = { name: :ref:`task parameters<buildconf-taskparams>` }
@@ -107,6 +108,8 @@ realbuildroot
     Path can be absolute or relative to the startdir_.
     It is important to be able to remove the build directory safely,
     so it should never be given as ``.`` or ``..``.
+
+.. _buildconf-project:
 
 project
 """""""
@@ -224,6 +227,17 @@ options
         the command ``configure`` before this command itself then this option will
         be applied for both ``configure`` and ``build``. In other words it's
         like you run this command with this option on command line.
+
+.. _buildconf-substvars:
+
+substvars
+"""""""""""
+    A `dict <buildconf-dict-def_>`_ with substitution variables which can be
+    used, for example, in :ref:`parameter 'run'<buildconf-taskparams-run>`.
+
+    It is root dict with variables which are visible in any build task.
+
+    See details :ref:`here<buildconf-substitutions>`.
 
 .. _buildconf-conditions:
 

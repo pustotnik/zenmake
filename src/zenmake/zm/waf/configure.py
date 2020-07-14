@@ -713,6 +713,15 @@ class ConfigurationContext(WafConfContext):
 
             self._setupTaskTarget(taskParams, taskEnv, btypeDir)
 
+    def _preconfigureRootEnv(self):
+
+        rootEnv = self.all_envs['']
+
+        # set/fix vars PREFIX, BINDIR, LIBDIR
+        assist.applyInstallPaths(rootEnv, cli.selected)
+
+        rootEnv.PROJECT_NAME = self.bconfManager.root.projectName
+
     def preconfigure(self):
         """
         Pre configure. It's called by 'execute' before call of actual 'configure'.
@@ -745,8 +754,7 @@ class ConfigurationContext(WafConfContext):
         for toolchain in viewkeys(toolchainEnvs):
             self.all_envs.pop(toolchain, None)
 
-        # set/fix vars PREFIX, BINDIR, LIBDIR
-        assist.applyInstallPaths(self.all_envs[''], cli.selected)
+        self._preconfigureRootEnv()
 
         self._preconfigureTasks()
 
@@ -760,8 +768,9 @@ class ConfigurationContext(WafConfContext):
         bconfPaths = bconf.confPaths
 
         # See details here: https://gitlab.com/ita1024/waf/issues/1563
-        self.env.NO_LOCK_IN_RUN = True
-        self.env.NO_LOCK_IN_TOP = True
+        # It's not needed anymore
+        #self.env.NO_LOCK_IN_RUN = True
+        #self.env.NO_LOCK_IN_TOP = True
 
         self.init_dirs()
 

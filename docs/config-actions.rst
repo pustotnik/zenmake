@@ -106,7 +106,8 @@ These configuration actions in ``dict`` format:
         Check existence of programs from list in the ``names``.
         Parameter ``paths`` can be used to set paths to find
         these programs, but usually you don't need to use it.
-        Parameter ``var`` can be used to set enviroment variable name.
+        Parameter ``var`` can be used to set
+        :ref:`substitution<buildconf-substitutions>` variable name.
         By default it's a first name from the ``names`` in upper case.
         If this name is found in enviroment then ZenMake will use it instead of
         trying to find selected program. Also this name can be used in parameter

@@ -413,9 +413,10 @@ install-path
     String representing the installation path for the output files.
     It's used in commands ``install`` and ``uninstall``.
     To disable installation, set it to False or empty string.
-    If it's absent then general values of ``${PREFIX}``, ``${BINDIR}``
-    and ``${LIBDIR}`` will be used to detect path.
-    You can use variables ``${PREFIX}``, ``${BINDIR}``, ``${LIBDIR}`` here
+    If it's absent then general values of ``PREFIX``, ``BINDIR``
+    and ``LIBDIR`` will be used to detect path.
+    You can use any :ref:`substitution<buildconf-substitutions>` variable
+    including ``${PREFIX}``, ``${BINDIR}`` and ``${LIBDIR}`` here
     like this:
 
     .. code-block:: python
@@ -552,13 +553,20 @@ run
 
     :cmd:
         Command line to run. It can be any suitable command line.
-        For convenience special variable ``TARGET`` can be
+        For convenience special :ref:`substitution<buildconf-substitutions>`
+        variable ``TARGET`` can be
         used here. This variable contains the absolute path to resulting
         target file of the current task. There are also two additional
-        provided by Waf variables that can be used: ``SRC`` and ``TGT``.
+        provided by Waf substitution variables that can be used: ``SRC`` and ``TGT``.
         They represent the task input and output Waf nodes
         (see description of node objects
         here: https://waf.io/book/#_node_objects).
+        Actually ``SRC`` and ``TGT`` are not real variables and they cannot be
+        changed in a buildconf file.
+
+        Environment variables also can be used here but you cannot use syntax
+        with curly braces because this syntax is used for internal substitutions.
+
         For python variant of buildconf it can be python function as well.
         It this case such a function gets one argument as a python dict
         with parameters:
@@ -655,6 +663,20 @@ export-config-actions
     :ref:`config-actions<buildconf-taskparams-config-actions>` for all
     build tasks which depend on the current task.
     By default it's False.
+
+    It's possible to use :ref:`selectable parameters<buildconf-select>`
+    to set this parameter.
+
+.. _buildconf-taskparams-substvars:
+
+substvars
+"""""""""""""""""""""
+    A :ref:`dict<buildconf-dict-def>` with substitution variables which can be
+    used, for example, in :ref:`parameter 'run'<buildconf-taskparams-run>`.
+
+    Current variables are visible in current task only.
+
+    See details :ref:`here<buildconf-substitutions>`.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.

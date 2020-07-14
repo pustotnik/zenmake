@@ -87,6 +87,8 @@ class TestInstall(object):
                 if not installPath:
                     continue
 
+                env = env.derive()
+                env.update(taskParams.get('substvars', {}))
                 installPath = os.path.normpath(utils.substVars(installPath, env))
                 targetdir = installPath
 
