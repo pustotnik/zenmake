@@ -40,6 +40,7 @@ tasks = {
     ########
     'alt script' : {
         'run' : { 'cmd' : '"alt script.py"', 'cwd' : 'some scripts' },
+        'target' : '',
     },
 }
 

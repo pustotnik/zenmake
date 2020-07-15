@@ -290,17 +290,19 @@ class TestContext(BuildContext):
 
     def _makeTask(self, taskParams, bconfPaths):
         ctx = self
-        target = taskParams.get('target')
-        if not target:
-            return
 
         # make task generator suitable for add-on 'runcmd'.
         kwargs = {
             'features' : ['runcmd'],
-            'name'     : os.path.relpath(target, bconfPaths.startdir),
             'color'    : 'PINK',
             'run'      : taskParams.get('run', {}),
         }
+
+        target = taskParams.get('target')
+        if target:
+            kwargs['name'] = os.path.relpath(target, bconfPaths.startdir)
+        else:
+            kwargs['name'] = taskParams['name']
 
         kwargs['zm-task-params'] = taskParams
         ctx(**kwargs)

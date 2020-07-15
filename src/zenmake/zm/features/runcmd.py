@@ -26,7 +26,6 @@ if PLATFORM == 'windows':
 else:
     _CMDFILE_EXTS = EXE_FILE_EXTS
 
-_RE_WITH_TGT = re.compile(r'\$\{*TGT')
 _RE_WITH_TARGET = re.compile(r'\$\{*TARGET')
 
 def _processCmdLine(conf, taskParams, cwd, cmdArgs):
@@ -88,7 +87,7 @@ def _processCmdLine(conf, taskParams, cwd, cmdArgs):
         # Waf raises exception in verbose mode with 'shell' == False if it
         # cannot find full path to executable and on windows cmdline
         # like 'python file.py' doesn't work.
-        # So here is trying to find full path for such cases.
+        # So here is the attempt to find full path for such a case.
         result = conf.find_program(launcher, **fkw)
         if result:
             launcher = result[0]
@@ -239,9 +238,11 @@ def _createRuleWithFunc(bconf, funcName):
             'startdir'  : bconfPaths.startdir,
             'buildroot' : bconfPaths.buildroot,
             'buildtype' : bconf.selectedBuildType,
-            'target'    : zmTaskParams.get('$real.target', ''),
             'waftask'   : task,
         }
+        target = zmTaskParams.get('$real.target', '')
+        if target:
+            args['target'] = target
         func(args)
 
     return runFunc
@@ -288,14 +289,13 @@ def _makeCmdRuleArgs(tgen):
         msg = 'Task %r has not runnable command: %r.' % (tgen.name, cmd)
         raise error.ZenMakeError(msg)
 
-    cmdType = ruleArgs.get('$type', '')
+    cmdType = ruleArgs.pop('$type', '')
     if cmdType == 'func':
         bconf = ctx.getbconf(tgen.path)
         ruleArgs['rule'] = _createRuleWithFunc(bconf, cmd)
     else:
         ruleArgs['rule'] = cmd
 
-    ruleArgs['cmd'] = cmd
     return ruleArgs
 
 @feature('runcmd')
@@ -307,17 +307,12 @@ def applyRunCmd(tgen):
     if not ruleArgs:
         return
 
-    cmd = ruleArgs.pop('cmd')
-    cmdType = ruleArgs.pop('$type', '')
     repeat = ruleArgs.pop('repeat', 1)
 
     cmdTask = None
     if _isCmdStandalone(tgen):
         for k, v in viewitems(ruleArgs):
             setattr(tgen, k, v)
-        if getattr(tgen, 'target', None) is not None:
-            if cmdType == 'func' or not _RE_WITH_TGT.search(cmd):
-                delattr(tgen, 'target')
         tgen.process_rule()
         delattr(tgen, 'rule')
         cmdTask = tgen.tasks[0]

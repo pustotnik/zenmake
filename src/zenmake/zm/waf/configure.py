@@ -639,15 +639,18 @@ class ConfigurationContext(WafConfContext):
 
         normalizeTarget = taskParams.get('normalize-target-name', False)
         target = taskParams.get('target', taskName)
-        if normalizeTarget:
-            target = utils.normalizeForFileName(target, spaceAsDash = True)
-        targetPath = joinpath(btypeDir, target)
-        taskParams['target'] = targetPath
+        if target:
+            if normalizeTarget:
+                target = utils.normalizeForFileName(target, spaceAsDash = True)
+            targetPath = joinpath(btypeDir, target)
+            taskParams['target'] = targetPath
 
-        env = self.all_envs[taskParams['$task.variant']]
-        pattern = patterns.get(targetKind)
-        realTarget = assist.makeTargetRealName(targetPath, targetKind, pattern,
-                                               env, taskParams.get('ver-num'))
+            env = self.all_envs[taskParams['$task.variant']]
+            pattern = patterns.get(targetKind)
+            realTarget = assist.makeTargetRealName(targetPath, targetKind, pattern,
+                                                   env, taskParams.get('ver-num'))
+        else:
+            realTarget = taskParams['target'] = ''
 
         taskParams['$real.target'] = realTarget
         taskParams['$runnable'] = targetKind == 'program'

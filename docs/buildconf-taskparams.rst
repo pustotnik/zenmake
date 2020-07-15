@@ -112,6 +112,8 @@ features
 
         If you don't use these alieses you can use any patterns.
 
+.. _buildconf-taskparams-target:
+
 target
 """""""""""""""""""""
     Name of resulting file. The target will have different extension and
@@ -605,12 +607,29 @@ run
         Just amount of running of ``cmd``. It's mostly for tests.
         By default it's 1.
 
+    If current task has parameter ``run`` with empty ``features`` or with only ``runcmd``
+    in the ``features`` then it is standalone runcmd task.
+
+    If current task is not standalone runcmd task then command from parameter
+    ``run`` will be run after compilation and linking. If you want to have
+    a command that will be called before compilation and linking you can make
+    another standalone runcmd task and specify this new task in the parameter
+    ``use`` of the current task.
+
+    By default ZenMake expects that any build task produces a target file
+    (one or more) and if it doesn't find this file when the task is finished
+    it will throw an error. And it is true for standalone runcmd tasks also.
+    If you want to create standalone runcmd task which doesn't produce target
+    file you can set task parameter
+    :ref:`target<buildconf-taskparams-target>` to an empty string.
+
     Examples in python format:
 
     .. code-block:: python
 
         'echo' : {
             'run' : "echo 'say hello'",
+            'target': '',
         },
 
         'test.py' : {
@@ -620,6 +639,7 @@ run
                 'env'   : { 'JUST_ENV_VAR' : 'qwerty', },
                 'shell' : False,
             },
+            'target': '',
             'config-actions'  : [ dict(do = 'check-programs', names = 'python'), ]
         },
 

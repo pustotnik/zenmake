@@ -61,6 +61,7 @@ tasks = {
             'repeat' : 2,
         },
         'use'      : 'shlibmain',
+        'target' : '',
     },
     'ls' : {
         'substvars.select' : {
@@ -73,22 +74,26 @@ tasks = {
             #'cmd' : iswin32 and "dir /B" or "ls",
             'cwd' : '.',
         },
+        'target' : '',
     },
     'test.py' : {
         'run'      : {
-            'cmd'   : 'python tests/test.py',
+            'cmd'   : '${PYTHON} tests/test.py',
             'cwd'   : '.',
             'env'   : { 'JUST_ENV_VAR' : 'qwerty', },
             'shell' : False,
         },
         'use'       : 'shlibmain',
-        'config-actions' : [ dict(do = 'check-programs', names = 'python'), ]
+        'config-actions' : [ dict(do = 'check-programs', names = 'python'), ],
+        'target' : '',
     },
     'altscript' : {
         'run' : { 'cmd' : '"alt script.py"', 'cwd' : '.' },
+        'target' : '',
     },
     'pyfunc' : {
-        'run': somefunc
+        'run': somefunc,
+        'target' : '',
     },
     #### tasks for build/run tests
     'stlib-test' : {
@@ -100,6 +105,7 @@ tasks = {
         'features' : 'test',
         'run'      : {
             'cmd'   : 'python tests/test.py',
+            #'cmd'   : '${PYTHON} tests/test.py',
             'cwd'   : '.',
             'shell' : False,
         },
