@@ -34,11 +34,10 @@ def unfoldPath(cwd, path):
     if not path:
         return path
 
-    if not _isabs(path):
-        path = _joinpath(cwd, path)
-
     path = _expandvars(path)
     path = _expanduser(path)
+    if not _isabs(path):
+        path = _joinpath(cwd, path)
     path = _abspath(path)
     return path
 

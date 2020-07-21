@@ -15,8 +15,10 @@ import os
 from copy import deepcopy
 import pytest
 import tests.common as cmn
-from zm.constants import APPNAME, CAP_APPNAME
+from zm.constants import APPNAME, CAP_APPNAME, CWD
 from zm import cli
+
+joinpath = os.path.join
 
 class TestSuite(object):
 
@@ -46,6 +48,7 @@ class TestSuite(object):
 
     def _assertAllsForCmd(self, cmdname, checks, baseExpectedArgs):
 
+        expectedArgs = None
         for check in checks:
             expectedArgs = deepcopy(baseExpectedArgs)
             expectedArgs.update(check['expectedArgsUpdate'])
@@ -476,19 +479,19 @@ class TestSuite(object):
         checks = [
             dict(
                 args = [CMDNAME],
-                expectedArgsUpdate = {},
+                expectedArgsUpdate = { 'destdir' : CWD },
             ),
             dict(
                 args = [CMDNAME, '--destdir', 'somedir'],
-                expectedArgsUpdate = {'destdir' : 'somedir'},
+                expectedArgsUpdate = {'destdir' : joinpath(CWD, 'somedir') },
             ),
             dict(
                 args = [CMDNAME, '--verbose'],
-                expectedArgsUpdate = {'verbose': 1},
+                expectedArgsUpdate = {'verbose': 1, 'destdir' : CWD},
             ),
             dict(
                 args = [CMDNAME, '--color', 'no'],
-                expectedArgsUpdate = {'color': 'no'},
+                expectedArgsUpdate = {'color': 'no', 'destdir' : CWD},
             ),
         ]
 
@@ -531,18 +534,18 @@ class TestSuite(object):
             ),
             dict(
                 args = [CMDNAME, '--destdir', 'somedir'],
-                expectedArgsUpdate = {'destdir' : 'somedir'},
-                wafArgs = [CMDNAME, '--destdir=somedir'] + CMNOPTS,
+                expectedArgsUpdate = {'destdir' : joinpath(CWD, 'somedir') },
+                wafArgs = [CMDNAME, '--destdir=' + joinpath(CWD, 'somedir')] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--bindir', 'somedir'],
-                expectedArgsUpdate = {'bindir' : 'somedir'},
-                wafArgs = [CMDNAME, '--bindir=somedir'] + CMNOPTS,
+                expectedArgsUpdate = {'bindir' : joinpath(CWD, 'somedir') },
+                wafArgs = [CMDNAME, '--bindir=' + joinpath(CWD, 'somedir')] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--libdir', 'somedir'],
-                expectedArgsUpdate = {'libdir' : 'somedir'},
-                wafArgs = [CMDNAME, '--libdir=somedir'] + CMNOPTS,
+                expectedArgsUpdate = {'libdir' : joinpath(CWD, 'somedir') },
+                wafArgs = [CMDNAME, '--libdir=' + joinpath(CWD, 'somedir')] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--verbose'],

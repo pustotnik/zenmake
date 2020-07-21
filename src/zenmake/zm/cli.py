@@ -12,8 +12,9 @@ from collections import namedtuple, defaultdict
 
 # argparse from the https://pypi.org/project/argparse/ supports alieses
 from auxiliary.argparse import argparse
-from zm.constants import APPNAME, CAP_APPNAME, PLATFORM
+from zm.constants import APPNAME, CAP_APPNAME, PLATFORM, CWD
 from zm.pyutils import maptype, viewitems
+from zm.pathutils import unfoldPath
 from zm.utils import envValToBool
 from zm import log
 from zm.error import ZenMakeLogicError
@@ -264,7 +265,7 @@ config.options = [
     ),
 ]
 
-DEFAULT_PREFIX = '/usr/local/'
+DEFAULT_PREFIX = '/usr/local'
 if PLATFORM == 'windows':
     import tempfile
     d = tempfile.gettempdir()
@@ -473,6 +474,13 @@ class CmdLineParser(object):
             orig = self._origArgs,
         )
 
+    def _postProcess(self):
+        args = self._command.args
+        for name in ('prefix', 'bindir', 'libdir', 'destdir'):
+            path = args.get(name)
+            if path:
+                args[name] = unfoldPath(CWD, path)
+
     def _fillWafCmdLine(self):
         if self._command is None:
             raise ZenMakeLogicError("Programming error: _command is None") # pragma: no cover
@@ -547,6 +555,7 @@ class CmdLineParser(object):
             sys.exit(not self._showHelp(self._commandHelps, parsedArgs.topic))
 
         self._fillCmdInfo(parsedArgs)
+        self._postProcess()
         self._fillWafCmdLine()
         return self._command
 

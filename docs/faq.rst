@@ -18,4 +18,8 @@ reserved config variable names for unappropriated reasons.
 
 Example on Linux::
 
-    DESTDIR=/tmp/your_install_path BINDIR=/ LIBDIR=/ zenmake install
+    DESTDIR=your_install_path PREFIX=/ BINDIR=/ LIBDIR=/ zenmake install
+
+    or
+
+    PREFIX=your_install_path BINDIR=your_install_path LIBDIR=your_install_path zenmake install

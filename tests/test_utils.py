@@ -32,7 +32,7 @@ def testMkSymlink(tmpdir, monkeypatch):
             try:
                 _mksymlink(testfile, joinpath(destdir, 'a'))
             except OSError:
-                # On windows we has no implemention or no rights to make symlink
+                # On windows we have no implemention or rights to make symlink
                 return
 
     symlink = joinpath(destdir, 'symlink')
