@@ -723,7 +723,14 @@ class ConfigurationContext(WafConfContext):
         # set/fix vars PREFIX, BINDIR, LIBDIR
         assist.applyInstallPaths(rootEnv, cli.selected)
 
-        rootEnv.PROJECT_NAME = self.bconfManager.root.projectName
+        rootbconf = self.bconfManager.root
+        rootEnv.PROJECT_NAME = rootbconf.projectName
+        rootEnv.TOP_DIR = rootbconf.rootdir
+        rootEnv.BUILDROOT_DIR = rootbconf.confPaths.buildroot
+        rootEnv.BUILDTYPE_DIR = rootbconf.selectedBuildTypeDir
+
+        from waflib.Options import options
+        rootEnv.DESTDIR = options.destdir
 
     def preconfigure(self):
         """

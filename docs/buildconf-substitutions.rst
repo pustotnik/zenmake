@@ -35,7 +35,17 @@ See ``var`` in config action ``check-programs``.
 There are some variables which ZenMake sets always:
 
     :PROJECT_NAME:
-        A name of the current project. See ``name`` :ref:`here<buildconf-project>`.
+        Name of the current project. See ``name`` :ref:`here<buildconf-project>`.
+
+    :TOP_DIR:
+        Absolute path of :ref:`startdir<buildconf-startdir>` of the top-level buildconf file.
+        Usually it is root directory of the current project.
+
+    :BUILDROOT_DIR:
+        Absolute path of :ref:`buildroot<buildconf-buildroot>`.
+
+    :BUILDTYPE_DIR:
+        Absolute path of current buildtype directory.
 
     :PREFIX:
         Installation prefix.
@@ -45,6 +55,10 @@ There are some variables which ZenMake sets always:
 
     :LIBDIR:
         Installation lib directory.
+
+    :DESTDIR:
+        Installation destination directory. It's mostly for installing to a
+        temporary directory. For example this is used when building deb packages.
 
 In some cases some extra variables are provided. For example,
 variables ``SRC`` and ``TGT`` are provided

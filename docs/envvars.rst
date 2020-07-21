@@ -117,15 +117,17 @@ NOSYNC
         NOSYNC=1 zenmake build
 
 BUILDROOT
-    Build directory for the project. The path can be absolute or relative to
-    the current directory.
+    A path to the root of a project build directory.
+    The path can be absolute or relative to the current directory.
+    See also :ref:`buildroot<buildconf-buildroot>`.
     Example::
 
         BUILDROOT=bld zenmake build
 
 DESTDIR
     Default installation base directory when ``--destdir`` is not provided on
-    the command line.
+    the command line. It's mostly for installing to a temporary directory.
+    For example this is used when building deb packages.
     Example::
 
         DESTDIR=dest zenmake install
