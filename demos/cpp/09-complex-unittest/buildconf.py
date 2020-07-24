@@ -29,9 +29,18 @@ tasks = {
         'source'   : 'shlib/**/*.cpp',
         'includes' : '.',
         'run'      : "echo 'This is runcmd in task \"shlib\"'",
-        'config-actions'  : [
-            dict(do = 'check-headers', names = 'iostream'),
-        ],
+        #'config-actions'  : [
+        #    dict(do = 'check-headers', names = 'iostream'),
+        #],
+        # testing of 'config-actions.select' feature
+        'config-actions.select'  : {
+            'default' : [
+                dict(do = 'check-headers', names = 'iostream'),
+            ],
+            'linux' : [
+                dict(do = 'check-headers', names = 'iostream cstdio'),
+            ]
+        }
     },
     'stlib' : {
         'features' : 'cxxstlib',
