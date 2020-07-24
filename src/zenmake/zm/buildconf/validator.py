@@ -294,6 +294,8 @@ class Validator(object):
 
         if _anyAmountStrsKey is not None:
             schemeAttrs = scheme[_anyAmountStrsKey]
+            if callable(schemeAttrs):
+                schemeAttrs = schemeAttrs(conf, keyprefix)
             handler = Validator._getHandler(schemeAttrs['type'])
 
         for key, value in viewitems(conf):
