@@ -6,9 +6,53 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+import re
+
 from waflib import Node as WafNode
 from waflib.Utils import is_win32 as _isWindows
-from zm.utils import asmethod
+from zm.utils import asmethod, toListSimple
+from zm import error
+
+@asmethod(WafNode, 'ant_matcher')
+def _antMatcher(patterns, ignorecase):
+    """
+    Modified varsion of ant_matcher with fixed some bugs
+    """
+
+    reflags = re.I if ignorecase else 0
+    results = []
+
+    for pattern in toListSimple(patterns):
+        pattern = pattern.replace('\\', '/').replace('//', '/')
+        if pattern.endswith('/'):
+            pattern += '**'
+
+        accu = []
+        prev = None
+        for part in pattern.split('/'):
+            if '**' in part:
+                if len(part) != 2:
+                    msg = 'Invalid part %r in pattern %r' % (part, pattern)
+                    raise error.WafError(msg)
+                if prev == '**':
+                    # ignore repeated '**' parts
+                    continue
+                accu.append(part)
+            else:
+                part = part.replace('.', '[.]').replace('*', '.*')
+                part = part.replace('?', '.').replace('+', '\\+')
+                part = '^%s$' % part
+                try:
+                    exp = re.compile(part, flags = reflags)
+                except Exception as ex:
+                    msg = 'Invalid part %r in pattern %r' % (part, pattern)
+                    raise error.WafError(msg, ex)
+                else:
+                    accu.append(exp)
+            prev = part
+
+        results.append(accu)
+    return results
 
 @asmethod(WafNode.Node, 'get_bld')
 def _getBld(self):
