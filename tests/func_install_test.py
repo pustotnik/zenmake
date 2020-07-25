@@ -67,6 +67,8 @@ def getInstallFixtureParams():
 
     fixtures.append(AutoDict(id = len(fixtures) + 1, **params))
 
+    for item in fixtures:
+        item['id'] = str(item['id'])
     return fixtures
 
 INSTALL_FIXTURE_PARAMS = getInstallFixtureParams()
