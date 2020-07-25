@@ -7,6 +7,7 @@
 """
 
 from waflib import Errors as WafErrors
+from waflib.Build import inst as InstallTask
 from zm.utils import asmethod
 from zm import error
 
@@ -15,7 +16,13 @@ _TRACEBACK_BEGIN = 'Traceback'
 @asmethod(WafErrors.BuildError, 'format_error')
 def _formatBuildError(self):
 
-    msglines = ['Build failed']
+    cmd = 'build'
+    if self.tasks:
+        # all tasks are from the same build ctx
+        ctx = self.tasks[0].generator.bld
+        cmd = ctx.cmd
+
+    msglines = []
     for tsk in self.tasks:
         errmsg = tsk.format_error()
         if not errmsg:
@@ -23,7 +30,12 @@ def _formatBuildError(self):
 
         if error.verbose == 0 and errmsg.startswith(_TRACEBACK_BEGIN):
             # make report without traceback
-            taskName = getattr(tsk.generator, 'name', '')
+            taskParams = getattr(tsk.generator, 'zm-task-params', {})
+            if taskParams:
+                taskName = taskParams['name']
+            else:
+                taskName = getattr(tsk.generator, 'name', '')
+
             lines = errmsg.splitlines()[1:]
             for i, line in enumerate(lines):
                 if line[0].isspace():
@@ -42,4 +54,9 @@ def _formatBuildError(self):
 
         msglines.append(errmsg)
 
+    msgHeader = 'Build failed'
+    if all(isinstance(x, InstallTask) for x in self.tasks):
+        msgHeader = '%sation has failed' % cmd.capitalize()
+
+    msglines.insert(0, msgHeader)
     return "\n".join(msglines)
