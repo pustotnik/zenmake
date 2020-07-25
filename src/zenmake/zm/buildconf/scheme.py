@@ -158,6 +158,73 @@ _SUBST_VARS_SCHEME = {
     },
 }
 
+def _genInstallFilesScheme(confnode, fullkey):
+
+    # pylint: disable = unused-argument
+
+    scheme = {
+        'type': 'list',
+        'vars-type' : ('dict', ),
+        'dict-allow-unknown-keys' : False,
+        'dict-vars' : _genInstallFilesDictVarsScheme
+    }
+
+    return scheme
+
+_installTypeSpecVars = {
+    'copy' : {
+        'src'   : _PATHS_SCHEME,
+        'dst'   : { 'type': 'str' },
+        'chmod' : { 'type' : ('int', 'str'), },
+        'user'  : { 'type': 'str' },
+        'group' : { 'type': 'str' },
+        'follow-symlinks' : { 'type': 'bool', },
+    },
+    'copy-as' : {
+        'src'   : { 'type': 'str' },
+        'dst'   : { 'type': 'str' },
+        'chmod' : { 'type' : ('int', 'str'), },
+        'user'  : { 'type': 'str' },
+        'group' : { 'type': 'str' },
+        'follow-symlink' : { 'type': 'bool', },
+    },
+    'symlink' : {
+        'src' : { 'type': 'str' },
+        'symlink' : { 'type': 'str' },
+        'user'  : { 'type': 'str' },
+        'group' : { 'type': 'str' },
+        'relative' : { 'type': 'bool', },
+    },
+}
+
+def _genInstallFilesDictVarsScheme(confnode, fullkey):
+
+    # common params
+    schemeDictVars = {
+        'do' :       {
+            'type': 'str',
+            'allowed' : ('copy', 'copy-as', 'symlink'),
+        },
+    }
+
+    action = confnode.get('do')
+    if not action:
+        action = 'symlink' if 'symlink' in confnode else 'copy'
+    confnode['do'] = action
+
+    if 'src' not in confnode:
+        msg = "There is no 'src' in the param %r." % fullkey
+        raise ZenMakeConfValueError(msg)
+
+    dstParamName = 'symlink' if action == 'symlink' else 'dst'
+    if dstParamName not in confnode:
+        msg = "There is no %r in the param %r." % (dstParamName, fullkey)
+        raise ZenMakeConfValueError(msg)
+
+    schemeDictVars.update(_installTypeSpecVars[action])
+
+    return schemeDictVars
+
 taskscheme = {
     'target' :          { 'type': 'str' },
     'features' :        { 'type': ('str', 'list-of-strs') },
@@ -180,6 +247,7 @@ taskscheme = {
     'export-defines' :  { 'type': ('bool', 'str', 'list-of-strs') },
     'substvars' :       _SUBST_VARS_SCHEME,
     'install-path' :    { 'type': ('bool', 'str') },
+    'install-files' :   _genInstallFilesScheme,
     'config-actions' :  _genConfActionsScheme,
     'export-config-actions' : { 'type': 'bool' },
     'normalize-target-name' : { 'type': 'bool' },

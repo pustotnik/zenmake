@@ -59,6 +59,7 @@ There are some variables which ZenMake sets always:
     :DESTDIR:
         Installation destination directory. It's mostly for installing to a
         temporary directory. For example this is used when building deb packages.
+        See also ``--destdir`` command line argument for commands 'install'/'uninstall'.
 
 In some cases some extra variables are provided. For example,
 variables ``SRC`` and ``TGT`` are provided

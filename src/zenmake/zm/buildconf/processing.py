@@ -62,8 +62,9 @@ _PREPARE_TASKPARAMS_HOOKS = (('source', _applyStartDirToSrcParam),) \
 
 def _genTaskParamsToListMap(result):
 
+    skipNames = ('config-actions', 'name', 'install-files')
     for name, scheme in viewitems(taskscheme):
-        if name in ('config-actions', 'name') or name.endswith('.select'):
+        if name in skipNames or name.endswith('.select'):
             continue
         types = scheme['type']
         if 'str' in types and 'list-of-strs' in types:
@@ -77,6 +78,7 @@ def _genTaskParamsToListMap(result):
         'name' : None,
         'features' : toListSimple,
         'config-actions' : None,
+        'install-files' : None, # all convertions are in commands install/uninstall
     })
     return result
 

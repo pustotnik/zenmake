@@ -12,6 +12,7 @@
 """
 
 import os
+import posixpath
 
 import pytest
 from zm import cli, utils
@@ -26,6 +27,49 @@ FORINSTALL_PRJDIRS = [
     joinpath('cpp', '09-complex-unittest'),
     joinpath('subdirs', '2-complex'),
 ]
+
+def getInstallFixtureParams():
+
+    fixtures = []
+
+    #### 1
+    prefix = cli.DEFAULT_PREFIX
+    bindir = joinpath(prefix, 'bin')
+    libdir = joinpath(prefix, 'lib%s' % utils.libDirPostfix())
+
+    params = AutoDict(prefix = prefix, bindir = bindir, libdir = libdir)
+    params.installArgs = []
+
+    fixtures.append(AutoDict(id = len(fixtures) + 1, **params))
+
+    #### 2
+    prefix = '/usr/my'
+    bindir = posixpath.join(prefix, 'bin')
+    libdir = posixpath.join(prefix, 'lib%s' % utils.libDirPostfix())
+
+    params = AutoDict(prefix = prefix, bindir = bindir, libdir = libdir)
+    params.installArgs = ['--prefix', params.prefix]
+
+    fixtures.append(AutoDict(id = len(fixtures) + 1, **params))
+
+    #### 3
+    params = AutoDict(
+        prefix = '/usr/my',
+        bindir = '/bb',
+        libdir = '/ll',
+    )
+
+    params.installArgs = [
+        '--prefix', params.prefix,
+        '--bindir', params.bindir,
+        '--libdir', params.libdir
+    ]
+
+    fixtures.append(AutoDict(id = len(fixtures) + 1, **params))
+
+    return fixtures
+
+INSTALL_FIXTURE_PARAMS = getInstallFixtureParams()
 
 @pytest.mark.usefixtures("unsetEnviron")
 class TestInstall(object):
@@ -129,21 +173,27 @@ class TestInstall(object):
                 path = joinpath(root, name)
                 assert path in targets
 
-    def testInstallUninstall(self, allZmExe, project, tmpdir):
+    @pytest.fixture(params = INSTALL_FIXTURE_PARAMS, ids = lambda x: x['id'])
+    def installFextures(self, request, tmpdir):
 
+        fixtures = request.param.copy()
         testdir = str(tmpdir.realpath())
-        destdir = joinpath(testdir, 'inst')
+        fixtures['destdir'] = joinpath(testdir, 'inst')
+
+        return fixtures
+
+    def test(self, allZmExe, project, installFextures):
+
+        destdir = installFextures.destdir
 
         cmdLine = ['install', '--destdir', destdir]
+        cmdLine.extend(installFextures.installArgs)
         exitcode, _, _ = runZm(self, cmdLine)
         assert exitcode == 0
 
-        check = AutoDict(
-            destdir = destdir,
-            prefix = cli.DEFAULT_PREFIX,
-        )
-        check.bindir = joinpath(check.prefix, 'bin')
-        check.libdir = joinpath(check.prefix, 'lib%s' % utils.libDirPostfix())
+        check = installFextures.copy()
+        for name in ('prefix', 'bindir', 'libdir'):
+            check[name] = check[name].replace('/', os.sep)
 
         self._checkInstallResults(cmdLine, check)
 
@@ -152,43 +202,100 @@ class TestInstall(object):
         assert exitcode == 0
         assert not os.path.exists(destdir)
 
-        # custom prefix
-        prefix = '/usr/my'
-        cmdLine = ['install', '--destdir', destdir, '--prefix', prefix]
+#############################################################################
+#############################################################################
+
+FORINSTALLFILES_PRJDIRS = [
+    joinpath('mixed', '01-cshlib-cxxprogram'),
+]
+
+@pytest.mark.usefixtures("unsetEnviron")
+class TestInstallFiles(object):
+
+    @pytest.fixture(params = getZmExecutables())
+    def allZmExe(self, request):
+        self.zmExe = zmExes[request.param]
+
+    @pytest.fixture(params = FORINSTALLFILES_PRJDIRS)
+    def project(self, request, tmpdir):
+
+        def teardown():
+            printErrorOnFailed(self, request)
+
+        request.addfinalizer(teardown)
+        setupTest(self, request, tmpdir)
+
+    @pytest.fixture(params = INSTALL_FIXTURE_PARAMS, ids = lambda x: x['id'])
+    def installFextures(self, request, tmpdir):
+
+        fixtures = request.param.copy()
+        testdir = str(tmpdir.realpath())
+        fixtures['destdir'] = joinpath(testdir, 'inst')
+
+        prefix = fixtures['prefix'].replace('/', os.sep)
+        prefix2 = os.path.splitdrive(prefix)[1].lstrip(os.sep)
+        prjName = self.outputPrjDirName
+
+        if self.testDirPath == FORINSTALLFILES_PRJDIRS[0]:
+
+            dir1 = '%s/share/%s/scripts' % (prefix2, prjName)
+            dir2 = '%s/share/%s/scripts' % (prefix, prjName)
+            files = [
+                { 'path' : dir1 + '/my-script.py', 'chmod' : 0o755, },
+                { 'path' : dir1 + '/test.py', 'chmod' : 0o755, },
+                { 'path' : dir1 + '/asd/test2.py', 'chmod' : 0o755, },
+                #{ 'path' : dir1 + '/my-script.link.py', 'chmod' : 0o755, },
+                { 'path' : dir1 + '2/my-script.py', 'chmod' : 0o755, },
+                { 'path' : dir1 + '2/test.py', 'chmod' : 0o755, },
+                { 'path' : dir1 + '3/my-script.py', 'chmod' : 0o644, },
+                { 'path' : dir1 + '3/test.py', 'chmod' : 0o644, },
+                { 'path' : dir1 + '3/test2.py', 'chmod' : 0o644, },
+                { 'path' : dir1 + '/mtest.py', 'chmod' : 0o750 },
+            ]
+
+            if PLATFORM == 'linux':
+                files.extend([
+                    { 'path' : dir1 + '/mtest-link.py', 'linkto' : dir2 + '/mtest.py' },
+                ])
+
+            if PLATFORM != 'windows':
+                files.extend([
+                    { 'path' : dir1 + '/my-script.link.py', 'chmod' : 0o755, },
+                ])
+                files.extend([
+                    { 'path' : dir1 + '2/my-script.link.py', 'linkto' : './my-script.py' },
+                ])
+        else:
+            # unknown project, forgot to add ?
+            assert False
+
+        for item in files:
+            item['path'] = item['path'].replace('/', os.sep)
+
+        fixtures['files'] = files
+        return fixtures
+
+    def test(self, allZmExe, project, installFextures):
+
+        destdir = installFextures.destdir
+
+        cmdLine = ['install', '--destdir', destdir]
+        cmdLine.extend(installFextures.installArgs)
         exitcode, _, _ = runZm(self, cmdLine)
         assert exitcode == 0
 
-        check = AutoDict(
-            destdir = destdir,
-            prefix = prefix.replace('/', os.sep),
-        )
-        check.bindir = joinpath(check.prefix, 'bin')
-        check.libdir = joinpath(check.prefix, 'lib%s' % utils.libDirPostfix())
-
-        self._checkInstallResults(cmdLine, check)
-
-        cmdLine[0] = 'uninstall'
-        exitcode, _, _ = runZm(self, cmdLine)
-        assert exitcode == 0
-        assert not os.path.exists(destdir)
-
-        # custom prefix, bindir, libdir
-        prefix = '/usr/my'
-        bindir = '/bb'
-        libdir = '/ll'
-        cmdLine = ['install', '--destdir', destdir, '--prefix', prefix]
-        cmdLine.extend(['--bindir', bindir, '--libdir', libdir])
-        exitcode, _, _ = runZm(self, cmdLine)
-        assert exitcode == 0
-
-        check = AutoDict(
-            destdir = destdir,
-            prefix = prefix.replace('/', os.sep),
-            bindir = bindir.replace('/', os.sep),
-            libdir = libdir.replace('/', os.sep),
-        )
-
-        self._checkInstallResults(cmdLine, check)
+        for item in installFextures['files']:
+            filepath = joinpath(destdir, item['path'])
+            if 'linkto' in item:
+                linkto = item['linkto']
+                assert islink(filepath)
+                assert linkto == os.readlink(filepath)
+            else:
+                assert isfile(filepath)
+                if PLATFORM != 'windows':
+                    chmodExpected = oct(item.get('chmod', 0o644))[-3:]
+                    chmodReal = oct(os.stat(filepath).st_mode)[-3:]
+                    assert chmodReal == chmodExpected
 
         cmdLine[0] = 'uninstall'
         exitcode, _, _ = runZm(self, cmdLine)

@@ -20,6 +20,6 @@ Example on Linux::
 
     DESTDIR=your_install_path PREFIX=/ BINDIR=/ LIBDIR=/ zenmake install
 
-    or
+or::
 
     PREFIX=your_install_path BINDIR=your_install_path LIBDIR=your_install_path zenmake install

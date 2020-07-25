@@ -69,14 +69,17 @@ def getDestBinFormatByOS(destOS):
 
     return 'elf'
 
-def asmethod(cls, methodName = None, wrap = False, callOrigFirst = True):
+def asmethod(cls, methodName = None, wrap = False, **kwargs):
     """
     Decorator to replace/attach/wrap method to any existing class
     """
 
+    saveOrigAs = kwargs.get('saveOrigAs')
+
     def decorator(func):
         funcName = methodName if methodName else func.__name__
         if wrap:
+            callOrigFirst = kwargs.get('callOrigFirst', True)
             origMethod = getattr(cls, funcName)
 
             if callOrigFirst:
@@ -91,7 +94,12 @@ def asmethod(cls, methodName = None, wrap = False, callOrigFirst = True):
 
             setattr(cls, funcName, execute)
         else:
+            if saveOrigAs:
+                origMethod = getattr(cls, funcName)
             setattr(cls, funcName, func)
+
+        if saveOrigAs:
+            setattr(cls, saveOrigAs, origMethod)
         return func
 
     return decorator
@@ -165,6 +173,44 @@ def hashFiles(paths):
     for path in paths:
         _hashFile(_hash, path)
     return _hash.digest()
+
+if PLATFORM == 'windows':
+    def lchown(path, user = -1, group = -1):
+        """
+        Change the owner/group of a path, raises an OSError if the
+        ownership change fails.
+        Do nothing on MS Windows.
+        """
+
+        # pylint: disable = unused-argument
+        return
+else:
+
+    def lchown(path, user = -1, group = -1):
+        """
+        Change the owner/group of a path, raises an OSError if the
+        ownership change fails.
+        """
+
+        import pwd
+        import grp
+
+        result = [user, group]
+        for name, idx in (('user', 0), ('group', 1)):
+            func = pwd.getpwnam if name == 'user' else grp.getgrnam
+
+            if isinstance(result[idx], stringtype):
+                try:
+                    entry = func(result[idx])
+                except KeyError:
+                    raise OSError('chown: unknown %s %r' % (name, user))
+                if not entry: # just in case
+                    raise OSError('chown: unknown %s %r' % (name, user))
+                result[idx] = entry[2]
+
+        return os.lchown(path, result[0], result[1])
+
+wafutils.lchown = lchown
 
 def normalizeForDefine(s):
     """

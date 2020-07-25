@@ -10,7 +10,7 @@ import os
 import sys
 
 from waflib.ConfigSet import ConfigSet
-from waflib.Build import BuildContext as WafBuildContext
+from waflib.Build import BuildContext as WafBuildContext, inst as InstallTask
 from zm.constants import DEFAULT_BUILDWORKNAME
 from zm.pyutils import viewvalues
 from zm.utils import asmethod, Timer
@@ -148,6 +148,8 @@ def _executeBuild(self):
 @asmethod(WafBuildContext, 'post_group', wrap = True, callOrigFirst = True)
 def _postGroup(self):
 
+    isInstall = self.is_install
+
     for tgen in self.groups[self.current_group]:
         # all runtime tasks are created already
         zmTaskParams = getattr(tgen, 'zm-task-params', {})
@@ -155,6 +157,27 @@ def _postGroup(self):
         for task, tgname in runBefore:
             other = self.get_tgen_by_name(tgname)
             other.tasks[0].set_run_after(task)
+
+        if isInstall:
+
+            # Waf controls the order of install tasks with task inputs/outputs
+            # but ZenMake 'massive-install-files' doesn't use task inputs/ouputs
+
+            installTasks = [x for x in tgen.tasks if isinstance(x, InstallTask)]
+            for task in installTasks:
+
+                tgenName = task.zmTaskParams.get('name')
+                if not tgenName:
+                    # it should not happen in normal case
+                    continue
+
+                # install task can be in own TaskGen object
+                ownerTaskGen = self.get_tgen_by_name(tgenName)
+
+                # set install task to run after all other non-install tasks of
+                # owner TaskGen object
+                runAfter = [x for x in ownerTaskGen.tasks if not isinstance(x, InstallTask)]
+                task.run_after.update(runAfter)
 
 @asmethod(WafBuildContext, 'validateVariant')
 def _validateVariant(self):

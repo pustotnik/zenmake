@@ -159,7 +159,12 @@ source
             By default it's '.', that is, it's equal to
             :ref:`startdir<buildconf-startdir>`.
 
-    There is simplified form of patterns using: if string value contains
+    ZenMake always adds several patterns to exclude files for any ant pattern.
+    These patterns include `Default Excludes` from
+    `Ant patterns <https://ant.apache.org/manual/dirtasks.html>`_ and some additional
+    patterns like ``**/*.swp``.
+
+    There is simplified form of ant patterns using: if string value contains
     '*' or '?' it will be converted into ``dict`` form to use patterns.
     See examples below.
 
@@ -406,24 +411,6 @@ use
         'use' : 'util "my lib"'
         'use' : ['util', 'my lib']
         'use' : 'util mylib someproject:somelib'
-
-    It's possible to use :ref:`selectable parameters<buildconf-select>`
-    to set this parameter.
-
-install-path
-"""""""""""""""""""""
-    String representing the installation path for the output files.
-    It's used in commands ``install`` and ``uninstall``.
-    To disable installation, set it to False or empty string.
-    If it's absent then general values of ``PREFIX``, ``BINDIR``
-    and ``LIBDIR`` will be used to detect path.
-    You can use any :ref:`substitution<buildconf-substitutions>` variable
-    including ``${PREFIX}``, ``${BINDIR}`` and ``${LIBDIR}`` here
-    like this:
-
-    .. code-block:: python
-
-        'install-path' : '${PREFIX}/exe'
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
@@ -697,6 +684,132 @@ substvars
     Current variables are visible in current task only.
 
     See details :ref:`here<buildconf-substitutions>`.
+
+    It's possible to use :ref:`selectable parameters<buildconf-select>`
+    to set this parameter.
+
+install-path
+"""""""""""""""""""""
+    String representing the installation path for the output files.
+    It's used in commands ``install`` and ``uninstall``.
+    To disable installation, set it to False or empty string.
+    If it's absent then general values of ``PREFIX``, ``BINDIR``
+    and ``LIBDIR`` will be used to detect path.
+    You can use any :ref:`substitution<buildconf-substitutions>` variable
+    including ``${PREFIX}``, ``${BINDIR}`` and ``${LIBDIR}`` here
+    like this:
+
+    .. code-block:: python
+
+        'install-path' : '${PREFIX}/exe'
+
+    It's possible to use :ref:`selectable parameters<buildconf-select>`
+    to set this parameter.
+
+install-files
+"""""""""""""""""""""
+    A list of additional files to install.
+    Each item in this list must be a :ref:`dict<buildconf-dict-def>` with
+    following parameters:
+
+    :do:
+        It is what to do and can be ``copy``, ``copy-as`` or ``symlink``.
+        Value ``copy`` means copying specified files to a directory from ``dst``.
+        Value ``copy-as`` means copying one specified file to a path from ``dst``
+        so you use a difference file name.
+        Value ``symlink`` means creation of symlink. It's for POSIX platforms only
+        and do nothing on MS Windows.
+
+        You may not set this parameter in some cases.
+        If this parameter is absent:
+
+        - It's ``symlink`` if parameter ``symlink`` exists in current dict.
+        - It's ``copy`` in other cases.
+    :src:
+        If ``do`` is ``copy`` then rules for this parameter the same as for
+        `source <buildconf-taskparams-source_>`_ but with one addition: you can
+        specify one or more paths to directory if you don't use any ant pattern.
+        In this case all files from specified directory will be copied
+        recursively with directories hierarchy.
+
+        If ``do`` is ``copy-as``, it must one path to a file. It must be relative
+        to the :ref:`startdir<buildconf-startdir>` or an absolute path.
+
+        If ``do`` is ``symlink``, it must one path to a file. Created symbolic
+        link will point to this path. It must be relative
+        to the :ref:`startdir<buildconf-startdir>` or an absolute path.
+
+        You can use any :ref:`substitution<buildconf-substitutions>` variable
+        here.
+    :dst:
+        If ``do`` is ``copy`` then it must be path to a directory.
+        If ``do`` is ``copy-as``, it must one path to a file.
+        If ``do`` is ``symlink``, this parameter cannot be used. See parameter ``symlink``.
+
+        It must be relative to the :ref:`startdir<buildconf-startdir>` or
+        an absolute path.
+
+        You can use any :ref:`substitution<buildconf-substitutions>` variable
+        here.
+
+        Any path here will have value of ``destdir``
+        at the beginning if this ``destdir`` is set to non-empty value.
+        This ``destdir`` can be set from command line argument ``--destdir`` or from
+        environment variable ``DESTDIR`` and it is not set by default.
+
+    :symlink:
+        It is like ``dst`` for ``copy-as`` but for creating a symlink.
+        This parameter can be used only if ``do`` is ``symlink``.
+
+        It must be relative to the :ref:`startdir<buildconf-startdir>` or
+        an absolute path.
+
+        You can use any :ref:`substitution<buildconf-substitutions>` variable
+        here.
+
+    :chmod:
+        Change file mode bits. It's for POSIX platforms only
+        and do nothing on MS Windows.
+        And it can not be used for ``do`` = ``symlink``.
+
+        It must be integer or string. If it is integer it must be correct value
+        for python function os.chmod. For example: 0o755.
+
+        If it is string then value will be converted to integer as octal
+        representation of an integer.
+        For example, '755' will be converted to 493 (it's 755 in octal representation).
+
+        By default it is 0o644.
+
+    :user:
+        Change file owner. It's for POSIX platforms only
+        and do nothing on MS Windows.
+        It must be name of existing user.
+        It is not set by default and value from original file will be used.
+
+    :group:
+        Change file user's group. It's for POSIX platforms only
+        and do nothing on MS Windows.
+        It must be name of existing user's group.
+        It is not set by default and value from original file will be used.
+
+    :follow-symlinks:
+        Follow symlinks from ``src`` if ``do`` is ``copy`` or ``copy-as``.
+        If it is false, symbolic links in the paths from ``src`` are
+        represented as symbolic links in the ``dst``, but the metadata of the
+        original links is NOT copied; if true or omitted, the contents and
+        metadata of the linked files are copied to the new destination.
+
+        It's true by default.
+
+    :relative:
+        This parameter can be used only if ``do`` is ``symlink``.
+        If it is true, relative symlink will created.
+
+        It's false by default.
+
+    Some examples can be found in the directory 'mixed/01-cshlib-cxxprogram'
+    in the repository `here <repo_demo_projects_>`_.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.

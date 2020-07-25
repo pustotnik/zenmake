@@ -39,6 +39,7 @@ import tests.common as cmn
 joinpath = os.path.join
 isfile = os.path.isfile
 isdir = os.path.isdir
+islink = os.path.islink
 
 ZM_BIN = cmn.ZENMAKE_DIR # it's a dir but it contains __main__.py
 PYTHON_VER = _platform.python_version()
@@ -148,7 +149,10 @@ def setupTest(self, request, tmpdir):
             return names
         return ['build', '_build']
 
+    self.outputPrjDirName = projectDirName
+
     testPath = request if isinstance(request, stringtype) else request.param
+    self.testDirPath = testPath
     testPathParts = testPath.split(os.sep)
     currentPrjDir = os.sep.join(testPathParts[:2])
     currentPrjDir = joinpath(cmn.TEST_PROJECTS_DIR, currentPrjDir)
@@ -158,7 +162,10 @@ def setupTest(self, request, tmpdir):
         prjBuildDir = os.path.realpath(prjBuildDir)
         if os.path.isdir(prjBuildDir):
             shutil.rmtree(prjBuildDir, ignore_errors = True)
-    shutil.copytree(currentPrjDir, tmptestDir, ignore = copytreeIgnore)
+
+    copySymlinksAsIs = PLATFORM != 'windows'
+    shutil.copytree(currentPrjDir, tmptestDir, symlinks = copySymlinksAsIs,
+                    ignore = copytreeIgnore)
 
     self.cwd = joinpath(tmptestDir, os.sep.join(testPathParts[2:]))
     self.projectConf = bconfloader.load(dirpath = self.cwd)

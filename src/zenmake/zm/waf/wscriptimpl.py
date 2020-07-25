@@ -218,6 +218,9 @@ def build(bld):
         # create build task generator
         bld(**bldParams)
 
+        if isInstall:
+            bld.setUpInstallFiles(taskParams)
+
     # just in case
     bld.path = bldPathNode
 
