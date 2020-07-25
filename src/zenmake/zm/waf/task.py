@@ -8,9 +8,10 @@
 
 import os
 
-from waflib import Task as WafTask, Node as WafNode, Errors as waferror
+from waflib import Task as WafTask, Node as WafNode
 from zm.constants import TASK_TARGET_KINDS, SYSTEM_LIB_PATHS
 from zm.utils import asmethod
+from zm import log, error
 from zm.features import TASK_TARGET_FEATURES_TO_LANG
 
 listdir = os.listdir
@@ -88,4 +89,36 @@ def _signatureExplicitDeps(self):
             else:
                 msg = 'could not find library %r' % libs[0]
             msg += '\nsearch paths: %s' % str(libpaths)[1:-1]
-            raise waferror.WafError(msg)
+            raise error.WafError(msg)
+
+@asmethod(WafTask.Task, 'display', saveOrigAs = 'origDisplay')
+def _display(self):
+
+    bld = self.generator.bld
+
+    if bld.progress_bar in (1,2):
+        return self.origDisplay()
+
+    description = str(self)
+    if not description:
+        return None
+
+    col1 = log.colors(self.color)
+    col2 = log.colors.NORMAL
+    master = bld.producer
+
+    total = master.total
+    installTasksAmount = getattr(bld, 'installTasksAmount', 0)
+    if installTasksAmount:
+        # hide install task counters
+        total -= installTasksAmount
+
+    maxLen = len(str(total))
+    template = '[%%%dd/%%%dd] %%s%%s%%s%%s\n' % (maxLen, maxLen)
+    keyword = self.keyword()
+    if keyword:
+        keyword += ' '
+
+    current = master.taskCounter.increment()
+
+    return template % (current, total, keyword, col1, description, col2)

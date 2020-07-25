@@ -36,6 +36,8 @@ def _ctxInit(self, **kwargs):
         if buildWorkDirName is not None:
             self.buildWorkDirName = buildWorkDirName
 
+    self.installTasksAmount = 0
+
 @asmethod(WafBuildContext, 'load_envs', wrap = True, callOrigFirst = True)
 def _loadEnvs(self):
     self.loadTasks()
@@ -178,6 +180,23 @@ def _postGroup(self):
                 # owner TaskGen object
                 runAfter = [x for x in ownerTaskGen.tasks if not isinstance(x, InstallTask)]
                 task.run_after.update(runAfter)
+
+@asmethod(WafBuildContext, 'total')
+def _calcTotalTasksAmount(self):
+
+    total = 0
+    installAmount = 0
+    for group in self.groups:
+        for tgen in group:
+            try:
+                tasks = tgen.tasks
+                total += len(tasks)
+                installAmount += sum(1 for x in tasks if isinstance(x, InstallTask))
+            except AttributeError:
+                total += 1
+
+    self.installTasksAmount = installAmount
+    return total
 
 @asmethod(WafBuildContext, 'validateVariant')
 def _validateVariant(self):

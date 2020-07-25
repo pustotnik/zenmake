@@ -475,6 +475,32 @@ def loadPyModule(name, dirpath = None, withImport = True):
         module = loadModule(name)
     return module
 
+class SafeCounter(object):
+    """
+    Thread safe counter
+    """
+
+    def __init__(self):
+        self._value = 0
+        self._lock = threading.Lock()
+
+    def increment(self, val = 1):
+        ''' Increment value with lock '''
+        with self._lock:
+            self._value += val
+            return self._value
+
+    @property
+    def value(self):
+        ''' Get value '''
+        return self._value
+
+    @value.setter
+    def value(self, val):
+        ''' Set value with lock '''
+        with self._lock:
+            self._value = val
+
 class ProcCmd(object):
     """
     Class to run external command in a subprocess
