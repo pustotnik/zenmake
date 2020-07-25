@@ -13,6 +13,8 @@ from waflib.Utils import is_win32 as _isWindows
 from zm.utils import asmethod, toListSimple
 from zm import error
 
+_antReCache = {}
+
 @asmethod(WafNode, 'ant_matcher')
 def _antMatcher(patterns, ignorecase):
     """
@@ -39,16 +41,20 @@ def _antMatcher(patterns, ignorecase):
                     continue
                 accu.append(part)
             else:
-                part = part.replace('.', '[.]').replace('*', '.*')
-                part = part.replace('?', '.').replace('+', '\\+')
-                part = '^%s$' % part
-                try:
-                    exp = re.compile(part, flags = reflags)
-                except Exception as ex:
-                    msg = 'Invalid part %r in pattern %r' % (part, pattern)
-                    raise error.WafError(msg, ex)
-                else:
-                    accu.append(exp)
+                cacheKey = (part, reflags)
+                regExp = _antReCache.get(cacheKey)
+                if regExp is None:
+                    _part = part.replace('.', '[.]').replace('*', '.*')
+                    _part = _part.replace('?', '.').replace('+', '\\+')
+                    _part = '^%s$' % _part
+                    try:
+                        regExp = re.compile(_part, flags = reflags)
+                    except Exception as ex:
+                        msg = 'Invalid part %r in pattern %r' % (part, pattern)
+                        raise error.WafError(msg, ex)
+                    else:
+                        _antReCache[cacheKey] = regExp
+                accu.append(regExp)
             prev = part
 
         results.append(accu)
