@@ -121,7 +121,7 @@ def testsSetDirectEnv(cfgctx):
     assert ctx.variant == name
     assert ctx.all_envs[name] == env
 
-def testRunConfigActionsCheckPrograms(mocker, cfgctx):
+def testRunConfigActionsFindProgram(mocker, cfgctx):
 
     mocker.patch('zm.log.info')
     mocker.patch('zm.log.warn')
@@ -131,8 +131,8 @@ def testRunConfigActionsCheckPrograms(mocker, cfgctx):
     tasks.task.name = 'task'
     tasks.task.features = ['c', 'cshlib']
     tasks.task['config-actions'] = [
-        dict(do = 'check-programs', names = 'python2', mandatory = False),
-        dict(do = 'check-programs', names = 'python2 python3', paths = '1 2')
+        dict(do = 'find-program', names = 'python2', mandatory = False),
+        dict(do = 'find-program', names = 'python2 python3', paths = '1 2')
     ]
     tasks.task['$task.variant'] = 'test'
 
@@ -146,8 +146,7 @@ def testRunConfigActionsCheckPrograms(mocker, cfgctx):
 
     calls = [
         mocker.call(['python2'], mandatory = False, path_list = mocker.ANY, **ignoreArgs),
-        mocker.call(['python2'], path_list = ['1', '2'], **ignoreArgs),
-        mocker.call(['python3'], path_list = ['1', '2'], **ignoreArgs),
+        mocker.call(['python2', 'python3'], path_list = ['1', '2'], **ignoreArgs),
     ]
 
     assert ctx.find_program.mock_calls == calls

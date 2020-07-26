@@ -30,7 +30,7 @@ If some name exist in the both ``substvars`` then value from task ``substvars``
 will be used.
 
 Also such variables can be set by some :ref:`config-actions<config-actions>`.
-See ``var`` in config action ``check-programs``.
+See ``var`` in config action ``find-program``.
 
 There are some variables which ZenMake sets always:
 

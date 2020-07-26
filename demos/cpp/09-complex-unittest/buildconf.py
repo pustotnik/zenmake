@@ -93,7 +93,7 @@ tasks = {
             'shell' : False,
         },
         'use'       : 'shlibmain',
-        'config-actions' : [ dict(do = 'check-programs', names = 'python'), ],
+        'config-actions' : [ dict(do = 'find-program', names = 'python'), ],
         'target' : '',
     },
     'altscript' : {
@@ -119,7 +119,7 @@ tasks = {
             'shell' : False,
         },
         'use' : 'complex',
-        'config-actions' : [ dict(do = 'check-programs', names = 'python'), ]
+        'config-actions' : [ dict(do = 'find-program', names = 'python'), ]
     },
     'testcmn' : {
         'features' : 'cxxshlib test',

@@ -98,27 +98,33 @@ These configuration actions in ``dict`` format:
         :ref:`includes<buildconf-taskparams-includes>`
         and :ref:`libpath<buildconf-taskparams-libpath>` affect this type of action.
 
-    ``do`` = ``check-programs``
+    ``do`` = ``find-program``
         *Parameters*: ``names``, ``paths``,  ``var`` = '', ``mandatory`` = True.
 
         *Supported languages*: all languages supported by ZenMake.
 
-        Check existence of programs from list in the ``names``.
+        Find a program.
+        Parameter ``names`` must be used to specify one or more possible file
+        names for the program. Do not add an extension for portability.
+
         Parameter ``paths`` can be used to set paths to find
-        these programs, but usually you don't need to use it.
+        the program, but usually you don't need to use it because by default
+        system environment variable ``PATH`` is used. Also the Windows Registry
+        is used on MS Windows if the program is not found.
+
         Parameter ``var`` can be used to set
         :ref:`substitution<buildconf-substitutions>` variable name.
         By default it's a first name from the ``names`` in upper case.
-        If this name is found in enviroment then ZenMake will use it instead of
-        trying to find selected program. Also this name can be used in parameter
+        If this name is found in environment variables, ZenMake will use it instead of
+        trying to find the program. Also this name can be used in parameter
         :ref:`run <buildconf-taskparams-run>` like this:
 
         .. code-block:: python
 
             'foo.luac' : {
                 'source' : 'foo.lua',
-                'config-actions' : [ dict(do = 'check-programs', names = 'luac'), ],
-                # var 'LUAC' will be set in 'check-programs' if 'luac' is found.
+                'config-actions' : [ dict(do = 'find-program', names = 'luac'), ],
+                # var 'LUAC' will be set in 'find-program' if 'luac' is found.
                 'run': '${LUAC} -s -o ${TGT} ${SRC}',
             },
 
@@ -343,7 +349,7 @@ Example in python format:
             # Each lib will have define 'HAVE_LIB_<LIBNAME>' if autodefine = True
             { 'do' : 'check-libs', 'names' : 'pthread', 'autodefine' : True,
                         'mandatory' : False },
-            { 'do' : 'check-programs', 'names' = 'python' },
+            { 'do' : 'find-program', 'names' = 'python' },
             { 'do' : 'parallel',
                 'actions' : [
                     { 'do' : 'check-libs', 'id' : 'syslibs' },

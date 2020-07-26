@@ -16,7 +16,7 @@ tasks = {
         'toolchain'   : 'nasm',
         'config-actions'   : [
             check,
-            { 'do' : 'check-programs', 'names' : 'ld', 'var' : 'ASLINK' },
+            { 'do' : 'find-program', 'names' : 'ld', 'var' : 'ASLINK' },
         ],
     },
 }

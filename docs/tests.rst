@@ -48,7 +48,7 @@ control order of running of tests.
                 'shell'   : False,
             },
             'use'       : 'complex',
-            'config-actions' : [ dict(do = 'check-programs', names = 'python'), ]
+            'config-actions' : [ dict(do = 'find-program', names = 'python'), ]
         },
         # testcmn is a library with common code for tests only
         'testcmn' : {

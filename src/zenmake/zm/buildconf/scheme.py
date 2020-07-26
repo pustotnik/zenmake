@@ -45,7 +45,7 @@ _actionToVars = {
     'call-pyfunc' : {
         'func': { 'type': 'func' },
     },
-    'check-programs' : {
+    'find-program' : {
         'names' : { 'type': ('str', 'list-of-strs') },
         'paths' : { 'type': ('str', 'list-of-strs') },
         'var':    { 'type': 'str' },

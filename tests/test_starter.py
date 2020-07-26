@@ -23,6 +23,8 @@ joinpath = os.path.join
 
 def testHandleCLI(capsys):
 
+    oldCliSelected = cli.selected
+
     noBuildConf = True
     args = [APPNAME]
     options = {}
@@ -76,6 +78,9 @@ def testHandleCLI(capsys):
     assert cmd.args.verbose == 1
     assert cmd.args.jobs is None
     assert not cmd.args.progress
+
+    # don't affect other tests
+    cli.selected = oldCliSelected
 
 def testFindTopLevelBuildConfDir(tmpdir):
 

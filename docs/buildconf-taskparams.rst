@@ -627,7 +627,7 @@ run
                 'shell' : False,
             },
             'target': '',
-            'config-actions'  : [ dict(do = 'check-programs', names = 'python'), ]
+            'config-actions'  : [ dict(do = 'find-program', names = 'python'), ]
         },
 
         'shlib-test' : {
@@ -644,7 +644,7 @@ run
 
         'foo.luac' : {
             'source' : 'foo.lua',
-            'config-actions' : [ dict(do = 'check-programs', names = 'luac'), ],
+            'config-actions' : [ dict(do = 'find-program', names = 'luac'), ],
             'run': '${LUAC} -s -o ${TGT} ${SRC}',
         },
 

@@ -106,9 +106,9 @@ def _applyFindProgramResults(cfgCtx, args):
 def _getDefaultFindProgramVar(filename):
     return _RE_FINDPROG_VAR.sub('_', filename.upper())
 
-def _findProgram(params, filename, checkArgs):
+def _findProgram(params, filenames, checkArgs):
 
-    assert isinstance(filename, stringtype)
+    filenames = utils.toList(filenames)
 
     cfgCtx = params['cfgCtx']
     taskParams = params['taskParams']
@@ -118,10 +118,9 @@ def _findProgram(params, filename, checkArgs):
         checkArgs['path_list'] = utils.toList(checkArgs.pop('paths', []))
 
     if not checkArgs.get('var'):
-        checkArgs['var'] = _getDefaultFindProgramVar(filename)
+        checkArgs['var'] = _getDefaultFindProgramVar(filenames[0])
 
-    # We expect a filename as a string with one name here
-    result = cfgCtx.find_program([filename], **checkArgs)
+    result = cfgCtx.find_program(filenames, **checkArgs)
 
     if result:
         result = ' '.join(result)
@@ -487,21 +486,23 @@ def callPyFunc(actionArgs, params):
     else:
         cfgCtx.runPyFuncAsAction(**actionArgs)
 
-def checkPrograms(checkArgs, params):
-    """ Check programs """
+def findProgram(checkArgs, params):
+    """ Find program """
 
-    names = utils.toList(checkArgs.pop('names', []))
+    names = checkArgs.pop('names', [])
     checkArgs['path_list'] = utils.toList(checkArgs.pop('paths', []))
 
-    for name in names:
-        _findProgram(params, name, checkArgs)
+    _findProgram(params, names, checkArgs)
 
 def _handleLoadedActionsCache(cache):
     """
     Handle loaded cache data for config actions.
     """
 
-    cacheCfgActionResults = cli.selected.args.get('cacheCfgActionResults')
+    cacheCfgActionResults = False
+    if cli.selected:
+        # cli.selected can be None in unit tests
+        cacheCfgActionResults = cli.selected.args.get('cacheCfgActionResults')
 
     if 'config-actions' not in cache:
         cache['config-actions'] = {}
@@ -1341,7 +1342,7 @@ def runActionsInParallel(actionArgs, params):
 
 _cmnActionsFuncs = {
     'call-pyfunc'    : callPyFunc,
-    'check-programs' : checkPrograms,
+    'find-program'   : findProgram,
     'parallel'       : runActionsInParallel,
 }
 
