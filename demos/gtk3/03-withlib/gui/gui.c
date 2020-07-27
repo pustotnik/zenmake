@@ -1,4 +1,5 @@
 
+#include <unistd.h>
 #include "gui/gui.h"
 
 static void say_hello(GtkWidget *widget, gpointer data)
@@ -16,7 +17,13 @@ int activateGUI()
     GError* error = NULL;
 
     GtkBuilder* builder = gtk_builder_new();
-    if(gtk_builder_add_from_file(builder, "builder.ui", &error) == 0)
+
+    const gchar* uiFilePath = g_build_filename(PACKAGE_DATA_DIR, "builder.ui", NULL);
+    if( access( "builder.ui", F_OK ) != -1 ) {
+        uiFilePath = "builder.ui";
+    }
+
+    if(!gtk_builder_add_from_file(builder, uiFilePath, &error))
     {
         g_printerr("Error loading file: %s\n", error->message);
         g_clear_error(&error);

@@ -1,4 +1,8 @@
 
+project = {
+    'name' : 'mygtk3app',
+}
+
 tasks = {
     'builder.ui' : {
         'source' : 'gui/builder.ui',
@@ -8,12 +12,20 @@ tasks = {
         'features' : 'cshlib',
         'source'   : 'gui/*.c',
         'use'      : 'builder.ui',
+        'ver-num'  : '0.1.2',
         'config-actions'  : [
             { 'do' : 'pkgconfig', 'packages' : 'gtk+-3.0' },
         ],
         'export-config-actions' : True,
+        'install-files' : [
+            {
+                'src' : '${BUILDTYPE_DIR}/builder.ui',
+                'dst': '${PREFIX}/share/${PROJECT_NAME}',
+            },
+        ],
+        'defines' : 'PACKAGE_DATA_DIR=\"${PREFIX}/share/${PROJECT_NAME}\"',
     },
-    'app' : {
+    'gtk3demo' : {
         'features' : 'cprogram',
         'source'   : 'app/*.c',
         'use'  : 'gui',

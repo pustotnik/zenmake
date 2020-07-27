@@ -371,7 +371,10 @@ defines
 
         'defines'  : 'MYDEFINE'
         'defines'  : ['ABC=1', 'DOIT']
-        'defines'  : 'ABC=1 DOIT AAA="some long string"',
+        'defines'  : 'ABC=1 DOIT AAA="some long string"'
+
+    You can use :ref:`substitution<buildconf-substitutions>`
+    variables for this parameter.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.

@@ -75,10 +75,22 @@ class ConfigurationContext(WafConfContext):
             if val is not None:
                 environ[var] = val.replace('"', '').replace("'", '')
 
-    def _handleTaskExportDefinesParam(self, taskParams):
+    def _handleTaskDefinesParam(self, taskParams):
         """
-        Get valid 'export-defines' for build task
+        Get valid 'defines' and 'export-defines' for build task
         """
+
+        defines = toList(taskParams.get('defines', []))
+        if defines:
+            env = utils.copyEnv(self.all_envs[taskParams['$task.variant']])
+            env.parent = utils.copyEnv(self.all_envs[''])
+            substvars = taskParams.get('substvars')
+            if substvars:
+                env = env.derive()
+                env.update(substvars)
+
+            defines = [ utils.substVars(x, env) for x in defines]
+            taskParams['defines'] = defines
 
         exportDefines = taskParams.get('export-defines', None)
         if not exportDefines:
@@ -608,7 +620,7 @@ class ConfigurationContext(WafConfContext):
         assist.handleTaskIncludesParam(taskParams, bconf.startdir)
         assist.handleTaskLibPathParams(taskParams)
 
-        self._handleTaskExportDefinesParam(taskParams)
+        self._handleTaskDefinesParam(taskParams)
         self._handleMonitLibs(taskParams)
 
         #counter for the object file extension
