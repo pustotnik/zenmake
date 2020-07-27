@@ -106,6 +106,7 @@ These configuration actions in ``dict`` format:
         Find a program.
         Parameter ``names`` must be used to specify one or more possible file
         names for the program. Do not add an extension for portability.
+        This action does nothing if ``names`` is empty.
 
         Parameter ``paths`` can be used to set paths to find
         the program, but usually you don't need to use it because by default
@@ -114,7 +115,8 @@ These configuration actions in ``dict`` format:
 
         Parameter ``var`` can be used to set
         :ref:`substitution<buildconf-substitutions>` variable name.
-        By default it's a first name from the ``names`` in upper case.
+        By default it's a first name from the ``names`` in upper case and without
+        symbols '-' and '.'.
         If this name is found in environment variables, ZenMake will use it instead of
         trying to find the program. Also this name can be used in parameter
         :ref:`run <buildconf-taskparams-run>` like this:
@@ -127,6 +129,26 @@ These configuration actions in ``dict`` format:
                 # var 'LUAC' will be set in 'find-program' if 'luac' is found.
                 'run': '${LUAC} -s -o ${TGT} ${SRC}',
             },
+
+    ``do`` = ``find-file``
+        *Parameters*: ``names``, ``paths``,  ``var`` = '', ``mandatory`` = True.
+
+        *Supported languages*: all languages supported by ZenMake.
+
+        Find a file on file system.
+        Parameter ``names`` must be used to specify one or more possible file
+        names.
+        This action does nothing if ``names`` is empty.
+
+        Parameter ``paths`` must be used to set paths to find
+        the file. Each path can be absolute or relative to
+        the :ref:`startdir<buildconf-startdir>`.
+        By default it's '.' which means :ref:`startdir<buildconf-startdir>`.
+
+        Parameter ``var`` can be used to set
+        :ref:`substitution<buildconf-substitutions>` variable name.
+        By default it's a first name from the ``names`` in upper case and without
+        symbols '-' and '.'.
 
     ``do`` = ``call-pyfunc``
         *Parameters*: ``func``, ``mandatory`` = True.

@@ -50,6 +50,11 @@ _actionToVars = {
         'paths' : { 'type': ('str', 'list-of-strs') },
         'var':    { 'type': 'str' },
     },
+    'find-file' : {
+        'names' : { 'type': ('str', 'list-of-strs') },
+        'paths' : { 'type': ('str', 'list-of-strs') },
+        'var':    { 'type': 'str' },
+    },
     'check-headers' : {
         'names' :   { 'type': ('str', 'list-of-strs') },
         'defname' : { 'type': 'str' },

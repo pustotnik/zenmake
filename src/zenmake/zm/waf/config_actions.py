@@ -29,14 +29,14 @@ from zm.constants import CONFTEST_DIR_PREFIX
 from zm.pyutils import maptype, stringtype, viewitems, viewvalues
 from zm.autodict import AutoDict as _AutoDict
 from zm import utils, log, error, cli
-from zm.pathutils import getNativePath
+from zm.pathutils import getNativePath, unfoldPath
 from zm.features import ToolchainVars
 from zm.waf import ccroot
 
 joinpath = os.path.join
 
 _RE_PKGCONFIG_PKGS = re.compile(r"(\S+)(\s*(?:[<>]|=|[<>]\s*=)\s*[^\s<>=]+)?")
-_RE_FINDPROG_VAR = re.compile(r"[-.]")
+_RE_FINDFILE_VAR = re.compile(r"[-.]")
 
 try:
     inspectArgSpec = inspect.getfullargspec
@@ -103,8 +103,11 @@ def find_program(self, filename, **kwargs):
 def _applyFindProgramResults(cfgCtx, args):
     cfgCtx.env[args['var']] = args['$result']
 
-def _getDefaultFindProgramVar(filename):
-    return _RE_FINDPROG_VAR.sub('_', filename.upper())
+def _applyFindFileResults(cfgCtx, args):
+    cfgCtx.env[args['var']] = args['$result']
+
+def _getDefaultFindFileVar(filename):
+    return _RE_FINDFILE_VAR.sub('_', filename.upper())
 
 def _findProgram(params, filenames, checkArgs):
 
@@ -118,7 +121,7 @@ def _findProgram(params, filenames, checkArgs):
         checkArgs['path_list'] = utils.toList(checkArgs.pop('paths', []))
 
     if not checkArgs.get('var'):
-        checkArgs['var'] = _getDefaultFindProgramVar(filenames[0])
+        checkArgs['var'] = _getDefaultFindFileVar(filenames[0])
 
     result = cfgCtx.find_program(filenames, **checkArgs)
 
@@ -487,12 +490,83 @@ def callPyFunc(actionArgs, params):
         cfgCtx.runPyFuncAsAction(**actionArgs)
 
 def findProgram(checkArgs, params):
-    """ Find program """
+    """ Find a program """
 
     names = checkArgs.pop('names', [])
+    if not names:
+        # do nothing
+        return
+
     checkArgs['path_list'] = utils.toList(checkArgs.pop('paths', []))
 
     _findProgram(params, names, checkArgs)
+
+def findFile(checkArgs, params):
+    """ Find a file """
+
+    cfgCtx = params['cfgCtx']
+    taskParams = params['taskParams']
+
+    names = utils.toList(checkArgs.get('names', []))
+    if not names:
+        # do nothing
+        return
+
+    names = [getNativePath(x) for x in names]
+    checkArgs['names'] = names
+
+    paths = utils.toList(checkArgs.get('paths', []))
+    if not paths:
+        paths = ['.']
+    paths = [getNativePath(x) for x in paths]
+    checkArgs['paths'] = paths
+
+    var = checkArgs.get('var')
+    if not var:
+        var = _getDefaultFindFileVar(names[0])
+    checkArgs['var'] = var
+
+    checkArgs['startdir'] = params['bconf'].confPaths.startdir
+
+    @cfgmandatory
+    def _find(cfgCtx, **kwargs):
+        msgArgs = {}
+
+        names = kwargs['names']
+        paths = kwargs['paths']
+        var = kwargs['var']
+        startdir = checkArgs['startdir']
+
+        result = None
+        for name in names:
+            for path in paths:
+                path = unfoldPath(startdir, joinpath(path, name))
+                if os.path.isfile(path) or os.path.islink(path):
+                    result = path
+                    break
+
+        msg = ', '.join(names)
+        msgArgs['result'] = result if result else False
+        cfgCtx.msg('Checking for file %r' % msg, **msgArgs)
+        cfgCtx.to_log('find file=%r paths=%r var=%r -> %r' % (names, paths, var, result))
+
+        if result:
+            cfgCtx.env[var] = result
+        else:
+            msg = 'Could not find'
+            msg += ' %r' % (names if len(names) > 1 else names[0])
+            cfgCtx.fatal(msg)
+
+        return result
+
+    result = _find(cfgCtx, **checkArgs)
+
+    if result:
+        cfgCtx.env[var] = result
+        storedActions = taskParams['$stored-actions']
+        checkArgs['var'] = var
+        checkArgs['$result'] = result
+        storedActions.append({'type' : 'find-file', 'data' : checkArgs })
 
 def _handleLoadedActionsCache(cache):
     """
@@ -882,7 +956,7 @@ def _getToolConfigPath(actionArgs, params):
     cfgCtx = params['cfgCtx']
     toolname = actionArgs['toolname']
 
-    toolEnvVar = _getDefaultFindProgramVar(toolname)
+    toolEnvVar = _getDefaultFindFileVar(toolname)
     toolPath = cfgCtx.env[toolEnvVar]
     if not toolPath:
         toolpaths = actionArgs.get('toolpaths', [])
@@ -1343,6 +1417,7 @@ def runActionsInParallel(actionArgs, params):
 _cmnActionsFuncs = {
     'call-pyfunc'    : callPyFunc,
     'find-program'   : findProgram,
+    'find-file'      : findFile,
     'parallel'       : runActionsInParallel,
 }
 
@@ -1389,6 +1464,7 @@ def _handleActions(actions, params):
 _exportedActionsFuncs = {
     'check'             : _applyCheckResults,
     'find-program'      : _applyFindProgramResults,
+    'find-file'         : _applyFindFileResults,
     'tool-config'       : _applyToolConfigResults,
     'write-conf-header' : _applyWriteConfigHeaderResults,
 }
