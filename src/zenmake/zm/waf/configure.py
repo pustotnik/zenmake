@@ -22,7 +22,7 @@ from waflib.ConfigSet import ConfigSet
 from waflib.Configure import ConfigurationContext as WafConfContext
 from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFIG_LOG
 from zm.constants import TASK_TARGET_KINDS
-from zm.pyutils import viewitems, viewvalues, viewkeys
+from zm.pyutils import viewitems, viewvalues, viewkeys, stringtype
 from zm import utils, log, toolchains, error, db, version, cli, deps
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
@@ -39,6 +39,7 @@ def _genToolAutoName(lang):
     return 'auto-%s' % lang.replace('xx', '++')
 
 TOOL_AUTO_NAMES = { _genToolAutoName(x) for x in ToolchainVars.allLangs() }
+DONT_STORE_TASK_PARAMS = ('$bconf', )
 
 CONFLOG_HEADER_TEMPLATE = '''# Project %(prj)s configured on %(now)s by
 # ZenMake %(zmver)s, based on Waf %(wafver)s (abi %(wafabi)s)
@@ -75,32 +76,47 @@ class ConfigurationContext(WafConfContext):
             if val is not None:
                 environ[var] = val.replace('"', '').replace("'", '')
 
+    def _applySubstVars(self, taskParams):
+
+        substEnv = self.all_envs[taskParams['$task.variant']]
+        substvars = taskParams.get('substvars')
+        if substvars:
+            substEnv = substEnv.derive()
+            substEnv.update(substvars)
+
+        def apply(val, env):
+            if isinstance(val, stringtype):
+                return utils.substVars(val, env)
+            if isinstance(val, (list, tuple)):
+                return [utils.substVars(x, env) for x in val]
+            return val
+
+        paramNames = ('target', 'source', 'defines', 'export-defines')
+        for name in paramNames:
+            param = taskParams.get(name)
+            if not param:
+                continue
+
+            if name == 'source':
+                for k in param:
+                    param[k] = apply(param[k], substEnv)
+            else:
+                taskParams[name] = apply(param, substEnv)
+
     def _handleTaskDefinesParam(self, taskParams):
         """
         Get valid 'defines' and 'export-defines' for build task
         """
 
-        defines = toList(taskParams.get('defines', []))
-        if defines:
-            env = utils.copyEnv(self.all_envs[taskParams['$task.variant']])
-            env.parent = utils.copyEnv(self.all_envs[''])
-            substvars = taskParams.get('substvars')
-            if substvars:
-                env = env.derive()
-                env.update(substvars)
+        exportDefines = taskParams.get('export-defines')
+        if exportDefines is True:
+            exportDefines = taskParams.get('defines', [])
 
-            defines = [ utils.substVars(x, env) for x in defines]
-            taskParams['defines'] = defines
-
-        exportDefines = taskParams.get('export-defines', None)
         if not exportDefines:
             taskParams.pop('export-defines', None)
             return
 
-        if exportDefines is True:
-            exportDefines = taskParams.get('defines', [])
-
-        taskParams['export-defines'] = toList(exportDefines)
+        taskParams['export-defines'] = exportDefines
 
     def _handleMonitLibs(self, taskParams):
 
@@ -358,8 +374,9 @@ class ConfigurationContext(WafConfContext):
     # override
     def store(self):
         for taskParams in self.allOrderedTasks:
-            # don't store $bconf
-            taskParams.pop('$bconf')
+            # don't store some params
+            for name in DONT_STORE_TASK_PARAMS:
+                taskParams.pop(name, None)
 
         self.saveCaches()
         super(ConfigurationContext, self).store()
@@ -617,6 +634,8 @@ class ConfigurationContext(WafConfContext):
         Handle some known task params that can be handled at configure stage.
         """
 
+        self._applySubstVars(taskParams)
+
         assist.handleTaskIncludesParam(taskParams, bconf.startdir)
         assist.handleTaskLibPathParams(taskParams)
 
@@ -674,6 +693,7 @@ class ConfigurationContext(WafConfContext):
         btypeDir = rootbconf.selectedBuildTypeDir
         defaultLibVersion = rootbconf.defaultLibVersion
 
+        rootEnv = self.all_envs['']
         emptyEnv = ConfigSet()
         toolchainEnvs = self.getToolchainEnvs()
         allTasks = self.allTasks
@@ -712,6 +732,9 @@ class ConfigurationContext(WafConfContext):
             # Do deepcopy instead of baseEnv.derive() because an access to
             # isolated env will be faster
             taskEnv = utils.deepcopyEnv(baseEnv)
+
+            # make task env complete
+            taskEnv.parent = rootEnv
 
             # conf.setenv with unknown name or non-empty env makes deriving or
             # creates the new object and it is not really needed here

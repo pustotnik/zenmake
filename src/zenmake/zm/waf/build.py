@@ -97,12 +97,10 @@ def _loadTasks(self):
     self.zmtasks = tasks = tasksData['tasks']
     taskenvs = tasksData['taskenvs']
 
-    rootenv = self.all_envs['']
     for taskParams in viewvalues(tasks):
         taskVariant = taskParams['$task.variant']
         env = ConfigSet()
         env.table = taskenvs[taskVariant]
-        env.parent = rootenv
         self.all_envs[taskVariant] = env
 
     self.zmdepconfs = tasksData['depconfs']

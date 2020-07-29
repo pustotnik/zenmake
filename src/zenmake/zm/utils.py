@@ -110,10 +110,18 @@ readFile           = wafutils.readf
 hashObj            = wafutils.h_list
 hashFunc           = wafutils.h_fun
 hexOfStr           = wafutils.to_hex
-substVars          = wafutils.subst_vars
 libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
 subprocess         = wafutils.subprocess
+
+def substVars(value, svars):
+    """
+	Replaces ${VAR} with the value of VAR taken from a dict or a config set
+    """
+
+    if '${' not in value:
+        return value
+    return wafutils.subst_vars(value, svars)
 
 def setDefaultHashAlgo(algo):
     """

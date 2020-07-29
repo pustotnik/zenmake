@@ -22,11 +22,11 @@ where ``VAR`` is a name of substitution. If you set this var to some value like 
 
 then ``param`` from above example will be resolved as ``myvalue/some-string``.
 
-Such variables can set in the
+Such variables can be set in the
 :ref:`root substvars<buildconf-substvars>` or in the
 :ref:`task substvars<buildconf-taskparams-substvars>`. Root ``substvars`` are
 visible in any build task while task ``substvars`` only in selected task.
-If some name exist in the both ``substvars`` then value from task ``substvars``
+If some name exists in the both ``substvars`` then value from task ``substvars``
 will be used.
 
 Also such variables can be set by some :ref:`config-actions<config-actions>`.

@@ -124,7 +124,10 @@ target
     By default it's equal to the name of the build task. So in most cases
     it is not needed to be set explicitly.
 
-    It's possible to use :ref:`selectable parameters<buildconf-select>`
+    You can use :ref:`substitution<buildconf-substitutions>`
+    variables for this parameter.
+
+    And it's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
 .. _buildconf-taskparams-source:
@@ -219,7 +222,10 @@ source
         source:
             include: 'mylib/**/*.cpp'
 
-    It's possible to use :ref:`selectable parameters<buildconf-select>`
+    You can use :ref:`substitution<buildconf-substitutions>`
+    variables in string values for this parameter.
+
+    And it's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
 .. _buildconf-taskparams-includes:
@@ -376,7 +382,7 @@ defines
     You can use :ref:`substitution<buildconf-substitutions>`
     variables for this parameter.
 
-    It's possible to use :ref:`selectable parameters<buildconf-select>`
+    And it's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
 export-defines
@@ -385,7 +391,10 @@ export-defines
     which depend on the current task. Also it can be one or more defines
     for explicit exporting. By default it's False.
 
-    It's possible to use :ref:`selectable parameters<buildconf-select>`
+    You can use :ref:`substitution<buildconf-substitutions>`
+    variables for this parameter.
+
+    And it's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
 .. _buildconf-taskparams-use:
