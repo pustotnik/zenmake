@@ -22,7 +22,7 @@ To change hash algorithm you can use parameter ``hash-algo`` in buildconf
 
 Task features
 """""""""""""""""""""
-Prefer using ``<lang>stlib``/``<lang>shlib``/``<lang>program`` instead of alieses
+Prefer using ``<lang>stlib``/``<lang>shlib``/``<lang>program`` instead of aliases
 ``stlib``/``shlib``/``program`` in :ref:`features<buildconf-taskparams-features>`.
-Using these alieses is always slower than without ones and for some projects
+Using these aliases is always slower than without ones and for some projects
 with a lot of files it can be significant.

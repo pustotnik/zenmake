@@ -43,7 +43,7 @@ features
         For example: ``cprogram``, ``cxxprogram``, etc.
     :stlib:
         Means that result of the task is a static library. It's a special
-        alies where type of code
+        alias where type of code
         is detected by file extensions found in
         `source <buildconf-taskparams-source_>`_.
         Be careful - it's slower than using of form <lang>stlib,
@@ -51,7 +51,7 @@ features
         Also see note below.
     :shlib:
         Means that result of the task is a shared library. It's a special
-        alies where type of code
+        alias where type of code
         is detected by file extensions found in
         `source <buildconf-taskparams-source_>`_.
         Be careful - it's slower than using of form <lang>shlib,
@@ -59,7 +59,7 @@ features
         Also see note below.
     :program:
         Means that result of the task is an executable file. It's a special
-        alies where type of code
+        alias where type of code
         is detected by file extensions found in
         `source <buildconf-taskparams-source_>`_.
         Be careful - it's slower than using of form <lang>program,
@@ -97,7 +97,7 @@ features
 
     .. note::
 
-        If you use any of alieses ``stlib``, ``shlib``, ``program``
+        If you use any of aliases ``stlib``, ``shlib``, ``program``
         (don't confuse with features in form of <lang>stlib,
         <lang>shlib, <lang>program) and
         patterns in `source <buildconf-taskparams-source_>`_ then you cannot
@@ -110,7 +110,7 @@ features
             'source' :  { 'include': ['**/*.c', '**/*.cpp'] } # correct
             'source' :  { 'include': '**' }                   # incorrect
 
-        If you don't use these alieses you can use any patterns.
+        If you don't use these aliases you can use any patterns.
 
 .. _buildconf-taskparams-target:
 

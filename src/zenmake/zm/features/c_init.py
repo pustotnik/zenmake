@@ -6,7 +6,7 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-from zm.constants import TASK_TARGET_KINDS, TASK_FEATURE_ALIESES
+from zm.constants import TASK_TARGET_KINDS, TASK_FEATURE_ALIASES
 from zm.buildconf.schemeutils import addSelectToParams
 
 VALIDATION_TASKSCHEME_SPEC = {
@@ -18,7 +18,7 @@ addSelectToParams(VALIDATION_TASKSCHEME_SPEC)
 TASK_FEATURES_SETUP = {
     'c' : {
         'target-kinds' : TASK_TARGET_KINDS,
-        'alieses' : TASK_FEATURE_ALIESES,
+        'aliases' : TASK_FEATURE_ALIASES,
         'file-extensions' : ('.c', '.C',),
     },
 }

@@ -10,7 +10,7 @@ import os
 import sys
 from collections import namedtuple, defaultdict
 
-# argparse from the https://pypi.org/project/argparse/ supports alieses
+# argparse from the https://pypi.org/project/argparse/ supports aliases
 from auxiliary.argparse import argparse
 from zm.constants import APPNAME, CAP_APPNAME, PLATFORM, CWD
 from zm.pyutils import maptype, viewitems
@@ -97,7 +97,7 @@ config.commands = [
     ),
 ]
 
-# map: cmd name/alies -> Command
+# map: cmd name/alias -> Command
 def _makeCmdNameMap():
     cmdNameMap = {}
     for cmd in config.commands:
@@ -154,7 +154,7 @@ config.options = [
         names = ['--version'],
         isglobal = True,
         runcmd = 'version',
-        help = 'alies for command "version"',
+        help = 'alias for command "version"',
     ),
     # command options
     Option(
@@ -393,7 +393,7 @@ class CmdLineParser(object):
         return val
 
     @staticmethod
-    def _joinCmdNameWithAlieses(cmd):
+    def _joinCmdNameWithAliases(cmd):
         if not cmd.aliases:
             return cmd.name
         return cmd.name + '|' + '|'.join(cmd.aliases)
@@ -401,7 +401,7 @@ class CmdLineParser(object):
     @staticmethod
     def _makeCmdUsageText(progName, cmd):
         template = "%s " + cmd.usageTextTempl
-        return template % (progName, CmdLineParser._joinCmdNameWithAlieses(cmd))
+        return template % (progName, CmdLineParser._joinCmdNameWithAliases(cmd))
 
     def _showHelp(self, cmdHelps, topic):
         if topic == 'overview':

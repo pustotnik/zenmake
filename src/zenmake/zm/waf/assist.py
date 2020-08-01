@@ -11,14 +11,14 @@
 import os
 import re
 
-from zm.constants import TASK_FEATURE_ALIESES, PLATFORM
+from zm.constants import TASK_FEATURE_ALIASES, PLATFORM
 from zm.pyutils import viewitems, listvalues, stringtype, _unicode, _encode
 from zm.autodict import AutoDict as _AutoDict
 from zm.pathutils import getNodesFromPathsDict
 from zm.error import ZenMakeError, ZenMakeConfError
 from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
-from zm.features import SUPPORTED_TASK_FEATURES, resolveAliesesInFeatures
+from zm.features import SUPPORTED_TASK_FEATURES, resolveAliasesInFeatures
 from zm.features import ToolchainVars, getLoadedFeatures
 from zm import utils, log, version, toolchains, db
 
@@ -332,22 +332,22 @@ def convertTaskParamNamesForWaf(taskParams):
         if val is not None:
             taskParams[wafKey] = val
 
-def getAliesFromFeatures(features):
-    """ Return True if any alies exists in features """
+def getAliasFromFeatures(features):
+    """ Return True if any alias exists in features """
 
-    alies = [ x for x in features if x in TASK_FEATURE_ALIESES]
-    if not alies:
+    aliases = [ x for x in features if x in TASK_FEATURE_ALIASES]
+    if not aliases:
         return None
-    return alies[0]
+    return aliases[0]
 
 def detectTaskFeatures(ctx, taskParams):
     """
     Detect all features for task
-    Param 'ctx' is used only if an alies exists in features.
+    Param 'ctx' is used only if an alias exists in features.
     """
 
     taskParams['features'] = toListSimple(taskParams.get('features', []))
-    features = handleTaskFeatureAlieses(ctx, taskParams)
+    features = handleTaskFeatureAliases(ctx, taskParams)
 
     detected = [ TASK_TARGET_FEATURES_TO_LANG.get(x, '') for x in features ]
     features = detected + features
@@ -362,19 +362,19 @@ def detectTaskFeatures(ctx, taskParams):
 
     return features
 
-def handleTaskFeatureAlieses(ctx, taskParams):
+def handleTaskFeatureAliases(ctx, taskParams):
     """
-    Detect features for alieses 'stlib', 'shlib', 'program' and 'objects'
+    Detect features for aliases 'stlib', 'shlib', 'program' and 'objects'
     """
 
     features = taskParams['features']
-    alies = getAliesFromFeatures(features)
-    if not alies:
+    alias = getAliasFromFeatures(features)
+    if not alias:
         return features
 
     source = taskParams.get('source')
     if not source:
-        msg = "Feature alies %r can not be used without parameter 'source'" % alies
+        msg = "Feature alias %r can not be used without parameter 'source'" % alias
         raise ZenMakeConfError(msg)
 
     if source.get('paths') is None:
@@ -390,7 +390,7 @@ def handleTaskFeatureAlieses(ctx, taskParams):
                 raise ZenMakeConfError(msg)
 
     source = handleTaskSourceParam(ctx, taskParams)
-    return resolveAliesesInFeatures(source, features, taskParams['name'])
+    return resolveAliasesInFeatures(source, features, taskParams['name'])
 
 def validateTaskFeatures(taskParams):
     """

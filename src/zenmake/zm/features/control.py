@@ -11,7 +11,7 @@
 import os
 from collections import namedtuple
 
-from zm.constants import TASK_TARGET_KINDS, TASK_FEATURE_ALIESES
+from zm.constants import TASK_TARGET_KINDS, TASK_FEATURE_ALIASES
 from zm.pyutils import stringtype, viewvalues, viewitems
 from zm.autodict import AutoDict as _AutoDict
 from zm.pypkg import PkgPath
@@ -72,7 +72,7 @@ def _generateFeaturesMap():
 
     targetMap = {}
     extensionsMap = {}
-    aliesesMap = {}
+    aliasesMap = {}
     allFeatures = []
 
     for module in modules:
@@ -92,12 +92,12 @@ def _generateFeaturesMap():
             for ext in extensions:
                 extensionsMap[ext] = feature
 
-            alieses = params.get('alieses')
-            if alieses:
-                aliesesMap[feature] = alieses
-                allFeatures.extend(alieses)
+            aliases = params.get('aliases')
+            if aliases:
+                aliasesMap[feature] = aliases
+                allFeatures.extend(aliases)
 
-    return targetMap, extensionsMap, aliesesMap, frozenset(allFeatures)
+    return targetMap, extensionsMap, aliasesMap, frozenset(allFeatures)
 
 def _generateToolchainVars():
 
@@ -138,7 +138,7 @@ def _generateToolchainVarToLang(toolchainVars):
 
 TASK_TARGET_FEATURES_TO_LANG, \
 FILE_EXTENSIONS_TO_LANG, \
-TASK_LANG_FEATURES_TO_ALIESES, \
+TASK_LANG_FEATURES_TO_ALIASES, \
 SUPPORTED_TASK_FEATURES = _generateFeaturesMap()
 
 TASK_TARGET_FEATURES = frozenset(TASK_TARGET_FEATURES_TO_LANG.keys())
@@ -181,19 +181,19 @@ def _gatherFileExtensions(src):
             ret.add(path[dotIndex:])
     return ret
 
-def resolveAliesesInFeatures(source, features, taskName = None):
+def resolveAliasesInFeatures(source, features, taskName = None):
     """
-    Detect features from alieses in features
+    Detect features from aliases in features
     """
 
-    alies = [ x for x in features if x in TASK_FEATURE_ALIESES]
-    if not alies:
+    alias = [ x for x in features if x in TASK_FEATURE_ALIASES]
+    if not alias:
         return features
 
-    alies = alies[0]
+    alias = alias[0]
 
-    # remove all alieses from features
-    features = [ x for x in features if x not in TASK_FEATURE_ALIESES]
+    # remove all aliases from features
+    features = [ x for x in features if x not in TASK_FEATURE_ALIASES]
 
     lfeatures = []
     extensions = _gatherFileExtensions(source)
@@ -203,29 +203,29 @@ def resolveAliesesInFeatures(source, features, taskName = None):
             lfeatures.append(feature)
 
     if not lfeatures:
-        msg = "Unable to determine how to resolve alies %r" % alies
+        msg = "Unable to determine how to resolve alias %r" % alias
         if taskName:
             msg += " in task %r" % taskName
         msg += ": there are no supported file extensions or files at all."
         raise ZenMakeConfError(msg)
 
     targetFeature = None
-    if alies in TASK_TARGET_KINDS:
-        _map = TASK_LANG_FEATURES_TO_ALIESES
-        targetLangs = [ x for x in lfeatures if alies in _map.get(x, [])]
+    if alias in TASK_TARGET_KINDS:
+        _map = TASK_LANG_FEATURES_TO_ALIASES
+        targetLangs = [ x for x in lfeatures if alias in _map.get(x, [])]
 
         if not targetLangs and not features:
-            msg = 'Unable to determine how to resolve alies %r with features %r' % (alies, features)
+            msg = 'Unable to determine how to resolve alias %r with features %r' % (alias, features)
             raise ZenMakeConfError(msg)
 
         # Only one target feature can be used for one build task
         for lang in TASK_LANG_FEATURES_PRIORITY:
             if lang in targetLangs:
-                targetFeature = lang + alies
+                targetFeature = lang + alias
                 break
         else:
             if targetLangs:
-                targetFeature = targetLangs[0] + alies
+                targetFeature = targetLangs[0] + alias
 
     features.extend(lfeatures)
     if targetFeature:

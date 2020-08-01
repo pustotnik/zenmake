@@ -38,7 +38,7 @@ BUILDCONF_FILENAMES = ['%s%s' % (BUILDCONF_NAME, x) for x in BUILDCONF_EXTS]
 INVALID_BUILDTYPES = (WAF_CONFIG_LOG, WAF_CACHE_DIRNAME, WAF_LOCKFILE)
 
 TASK_TARGET_KINDS = frozenset(('stlib', 'shlib', 'program'))
-TASK_FEATURE_ALIESES = frozenset(('stlib', 'shlib', 'program', 'objects'))
+TASK_FEATURE_ALIASES = frozenset(('stlib', 'shlib', 'program', 'objects'))
 
 CWD = os.getcwd()
 PLATFORM = _platform()

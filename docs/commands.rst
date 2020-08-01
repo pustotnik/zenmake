@@ -9,7 +9,7 @@ Here are some descriptions of general commands. You can get the list of the all
 commands with a short description by ``zenmake help`` or ``zenmake --help``.
 To get help on selected command you
 can use ``zenmake help <selected command>`` or
-``zenmake <selected comman> --help``. Some commands have short alieses.
+``zenmake <selected comman> --help``. Some commands have short aliases.
 For example you can use ``bld`` instead of ``build`` or ``dc``
 instead of ``distclean``.
 
