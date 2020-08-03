@@ -13,7 +13,9 @@ verbose = 2
 class ZenMakeError(WafError):
     """Base class for all ZenMake errors"""
 
-    def __init__(self, msg = '', ex = None):
+    def __init__(self, msg = None, ex = None):
+        if msg is None:
+            msg = ''
         super(ZenMakeError, self).__init__(msg, ex)
         self.fullmsg = self.verbose_msg
 
@@ -23,7 +25,9 @@ class ZenMakeLogicError(ZenMakeError):
 class ZenMakeConfError(ZenMakeError):
     """Invalid buildconf fle error"""
 
-    def __init__(self, msg = '', ex = None, confpath = None):
+    def __init__(self, msg = None, ex = None, confpath = None):
+        if msg is None:
+            msg = ''
         if confpath and msg:
             _msg = "Error in the file %r:" % confpath
             for line in msg.splitlines():
@@ -51,38 +55,42 @@ class ZenMakeConfValueError(ZenMakeConfError):
 class ZenMakePathNotFoundError(ZenMakeError):
     """ Path doesn't exist """
 
-    def __init__(self, path):
+    def __init__(self, path, msg = None):
         self.path = path
-        msg = "Path %r doesn't exist." % path
+        if not msg:
+            msg = "Path %r doesn't exist." % path
         super(ZenMakePathNotFoundError, self).__init__(msg)
 
-class ZenMakeDirNotFoundError(ZenMakeError):
+class ZenMakeDirNotFoundError(ZenMakePathNotFoundError):
     """ Directory doesn't exist """
 
-    def __init__(self, path):
-        self.path = path
-        msg = "Directory %r doesn't exist." % path
-        super(ZenMakeDirNotFoundError, self).__init__(msg)
+    def __init__(self, path, msg = None):
+        if not msg:
+            msg = "Directory %r doesn't exist." % path
+        super(ZenMakeDirNotFoundError, self).__init__(path, msg)
 
 class ZenMakeProcessFailed(ZenMakeError):
     """ Process failed with exitcode """
 
-    def __init__(self, cmd, exitcode):
+    def __init__(self, cmd, exitcode, msg = None):
         self.cmd = cmd
         self.exitcode = exitcode
-        msg = "Command %r failed with exit code %d." % (cmd, exitcode)
+        if not msg:
+            msg = "Command %r failed with exit code %d." % (cmd, exitcode)
         super(ZenMakeProcessFailed, self).__init__(msg)
 
 class ZenMakeProcessTimeoutExpired(ZenMakeError):
     """ Raised when a timeout expires while waiting for a process """
 
-    def __init__(self, cmd, timeout, output):
+    def __init__(self, cmd, timeout, output, msg = None):
         self.cmd = cmd
         self.timeout = timeout
         self.output = output
-        msg = "Timeout (%d sec.) for command expired." % timeout
-        msg += "\nCommand: %r" % cmd
-        if output:
-            msg += '\nCaptured output:\n'
-            msg += output
+
+        if not msg:
+            msg = "Timeout (%d sec.) for command expired." % timeout
+            msg += "\nCommand: %r" % cmd
+            if output:
+                msg += '\nCaptured output:\n'
+                msg += output
         super(ZenMakeProcessTimeoutExpired, self).__init__(msg)
