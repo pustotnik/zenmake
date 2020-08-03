@@ -123,6 +123,7 @@ class inst(WafInstallTask):
                 self.srcnode = None
                 self.bldnode = None
                 self.path = None
+                self.buildWorkDirName = ''
 
         ctx = self.generator.bld
 

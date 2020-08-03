@@ -594,6 +594,7 @@ def _checkTriggerPathsExist(ctx, rule):
         pathsDictParamsToList(paths)
         try:
             paths = getNodesFromPathsDict(ctx, paths, rootdir, withDirs = True)
+            paths = list(paths)
             pathsExist = True
         except error.ZenMakePathNotFoundError:
             pathsExist = False

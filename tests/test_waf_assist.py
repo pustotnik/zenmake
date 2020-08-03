@@ -298,6 +298,7 @@ def testHandleTaskSourceParam(tmpdir, mocker):
         ])
 
     # find as is
+    srcParams.pop('include')
 
     # case 4
     srcParams['paths'] = ['some/2/main.c']

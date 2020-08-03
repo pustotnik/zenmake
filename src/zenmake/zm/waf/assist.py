@@ -16,7 +16,7 @@ from zm.pyutils import viewitems, listvalues, stringtype, _unicode, _encode
 from zm.autodict import AutoDict as _AutoDict
 from zm.pathutils import getNodesFromPathsDict
 from zm.error import ZenMakeError, ZenMakeConfError
-from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
+from zm.error import ZenMakePathNotFoundError
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
 from zm.features import SUPPORTED_TASK_FEATURES, resolveAliasesInFeatures
 from zm.features import ToolchainVars, getLoadedFeatures
@@ -40,8 +40,6 @@ _usedWafTaskKeys = set([
     'rpath', 'use', 'vnum', 'idx', 'export_includes', 'export_defines',
     'install_path',
 ])
-
-_srcCache = {}
 
 _RE_TASKVARIANT_NAME = re.compile(r'[^-\w.]', re.UNICODE)
 _RE_EXT_AT_THE_END = re.compile(r'\.\w+$', re.UNICODE)
@@ -377,18 +375,14 @@ def handleTaskFeatureAliases(ctx, taskParams):
         msg = "Feature alias %r can not be used without parameter 'source'" % alias
         raise ZenMakeConfError(msg)
 
-    if source.get('paths') is None:
-        patterns = toList(source.get('include', []))
-        #ignorecase = source.get('ignorecase', False)
-        #if ignorecase:
-        #    patterns = [x.lower() for x in patterns]
+    patterns = toList(source.get('include', []))
+    for pattern in patterns:
+        if not _RE_EXT_AT_THE_END.search(_unicode(pattern)):
+            msg = "Pattern %r in 'source'" % pattern
+            msg += " must have some file extension at the end."
+            raise ZenMakeConfError(msg)
 
-        for pattern in patterns:
-            if not _RE_EXT_AT_THE_END.search(_unicode(pattern)):
-                msg = "Pattern %r in 'source'" % pattern
-                msg += " must have some file extension at the end."
-                raise ZenMakeConfError(msg)
-
+    taskParams['$cache-source'] = True
     source = handleTaskSourceParam(ctx, taskParams)
     return resolveAliasesInFeatures(source, features, taskParams['name'])
 
@@ -480,15 +474,6 @@ def handleTaskSourceParam(ctx, taskParams):
     if not src:
         return []
 
-    pathsWithPattern = not src.get('paths')
-    if pathsWithPattern:
-        # There is no reasons to cache lists of paths and
-        # the cache key for them can be too big
-        cacheKey = repr(sorted(src.items()))
-        cached = _srcCache.get(cacheKey)
-        if cached is not None:
-            return [ctx.root.make_node(x) for x in cached]
-
     wspath = ctx.getStartDirNode(taskParams['$startdir'])
     bconf = ctx.getbconf(wspath)
 
@@ -499,20 +484,20 @@ def handleTaskSourceParam(ctx, taskParams):
         buildrootNode = ctx.root.make_node(buildroot)
         ctx.brootNode = buildrootNode
 
-    try:
-        result = getNodesFromPathsDict(ctx, src, bconf.rootdir,
-                                       excludeExtraPaths = [buildrootNode])
-    except ZenMakeDirNotFoundError as ex:
-        msg = "Directory %r for the 'source' doesn't exist." % ex.path
-        raise ZenMakeError(msg)
-    except ZenMakePathNotFoundError as ex:
-        msg = "Error in the file %r:" % bconf.path
-        msg += "\n  File %r from the 'source' not found." % ex.path
-        raise ZenMakeError(msg)
+    def onNoPath(ex):
+        if isinstance(ex, ZenMakePathNotFoundError):
+            msg = "Error in the file %r:" % bconf.path
+            msg += "\n  File %r from the 'source' not found." % ex.path
+            raise ZenMakeError(msg)
+        raise ex
 
-    if pathsWithPattern:
-        _srcCache[cacheKey] = [x.abspath() for x in result]
-    return result
+    kwargs = {
+        'cache' : taskParams.get('$cache-source', False),
+        'excludeExtraPaths' : [buildrootNode],
+        'onNoPath' : onNoPath,
+    }
+
+    return getNodesFromPathsDict(ctx, src, bconf.rootdir, **kwargs)
 
 def checkWafTasksForFeatures(taskParams):
     """
