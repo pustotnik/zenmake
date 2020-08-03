@@ -42,7 +42,7 @@ def _formatBuildError(self):
                     continue
                 pos = line.find(':')
                 errmsg = line[pos + 1:] if pos >= 0 else line
-                errmsg = " -> task in %r failed: %s" % (taskName, errmsg)
+                errmsg = " -> running of job for task %r failed: %s" % (taskName, errmsg)
                 break
             else:
                 # do nothing with errmsg
