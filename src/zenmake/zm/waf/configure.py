@@ -341,6 +341,7 @@ class ConfigurationContext(WafConfContext):
             'taskenvs'  : envs,
             'buildtype' : buildtype,
             'depconfs'  : self.zmdepconfs,
+            'ordered-tasknames' : [x['name'] for x in self.allOrderedTasks],
         }
 
         cachePath = assist.makeTasksCachePath(cachedir, buildtype)

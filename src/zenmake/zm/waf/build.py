@@ -81,6 +81,7 @@ def _loadTasks(self):
     cachePath = makeTasksCachePath(cachedir, buildtype)
 
     self.zmtasks = {}
+    self.zmOrderedTaskNames = tuple()
     self.zmdepconfs = {}
 
     if self.cmd == 'clean':
@@ -103,6 +104,7 @@ def _loadTasks(self):
         env.table = taskenvs[taskVariant]
         self.all_envs[taskVariant] = env
 
+    self.zmOrderedTaskNames = tuple(tasksData['ordered-tasknames'])
     self.zmdepconfs = tasksData['depconfs']
 
 @asmethod(WafBuildContext, 'init_dirs', wrap = True, callOrigFirst = True)
@@ -148,17 +150,22 @@ def _executeBuild(self):
 @asmethod(WafBuildContext, 'post_group', wrap = True, callOrigFirst = True)
 def _postGroup(self):
 
-    isInstall = self.is_install
+    isInstallUninstall = self.is_install
 
-    for tgen in self.groups[self.current_group]:
-        # all runtime tasks are created already
+    curGroupIdx = self.current_group
+    for tgen in self.groups[curGroupIdx]:
+        # all runtime tasks in current group are created already
         zmTaskParams = getattr(tgen, 'zm-task-params', {})
         runBefore = zmTaskParams.pop('$run-task-before-tgen', [])
         for task, tgname in runBefore:
             other = self.get_tgen_by_name(tgname)
-            other.tasks[0].set_run_after(task)
+            if not other.tasks:
+                if self.get_group_idx(other) <= curGroupIdx:
+                    raise error.ZenMakeError("Wrong build group order is detected")
+            else:
+                other.tasks[0].set_run_after(task)
 
-        if isInstall:
+        if isInstallUninstall:
 
             # Waf controls the order of install tasks with task inputs/outputs
             # but ZenMake 'massive-install-files' doesn't use task inputs/ouputs
@@ -176,6 +183,7 @@ def _postGroup(self):
 
                 # set install task to run after all other non-install tasks of
                 # owner TaskGen object
+                assert ownerTaskGen.tasks
                 runAfter = [x for x in ownerTaskGen.tasks if not isinstance(x, InstallTask)]
                 task.run_after.update(runAfter)
 

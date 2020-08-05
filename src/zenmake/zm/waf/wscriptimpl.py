@@ -22,7 +22,6 @@ __all__ = [
 import os
 
 from waflib.Build import BuildContext
-from zm.pyutils import viewitems
 from zm.constants import WAF_CACHE_DIRNAME, WAF_CFG_FILES_ENV_KEY
 from zm.constants import WAF_CONFIG_LOG, CONFTEST_DIR_PREFIX
 from zm import cli, error, log
@@ -129,6 +128,24 @@ def _setupClean(bld, bconfPaths):
 
     bld.clean_files = list(removeFiles)
 
+def _getAllowedBuildTaskNames(allTasks):
+
+    allowedTasks = cli.selected.args.tasks
+    if not allowedTasks:
+        return allowedTasks
+
+    allTaskNames = set(allTasks.keys())
+    if not set(allowedTasks).issubset(allTaskNames):
+        unknownTasks = list(set(allowedTasks) - allTaskNames)
+        if len(unknownTasks) == 1:
+            msg = "Unknown task name %r" % unknownTasks[0]
+        else:
+            msg = "Unknown task names: %s" % str(unknownTasks)[1:-1]
+        raise error.ZenMakeError(msg)
+
+    allowedTasks = set(assist.getTaskNamesWithDeps(allTasks, allowedTasks))
+    return allowedTasks
+
 def build(bld):
     """
     Implementation of wscript.build
@@ -137,8 +154,8 @@ def build(bld):
     buildtype = bld.validateVariant()
     rootbconf = bld.bconfManager.root
 
-    isInstall = bld.cmd in ('install', 'uninstall')
-    if isInstall:
+    isInstallUninstall = bld.cmd in ('install', 'uninstall')
+    if isInstallUninstall:
         assist.applyInstallPaths(bld.env, cli.selected)
     elif bld.cmd == 'clean':
         _setupClean(bld, rootbconf.confPaths)
@@ -161,22 +178,15 @@ def build(bld):
 
     # tasks from bconf cannot be used here
     tasks = bld.zmtasks
+    taskNames = bld.zmOrderedTaskNames
 
-    allowedTasks = cli.selected.args.tasks
+    allowedTasks = _getAllowedBuildTaskNames(tasks)
     if allowedTasks:
-        if not set(allowedTasks).issubset(tasks):
-            unknownTasks = list(set(allowedTasks) - set(tasks))
-            if len(unknownTasks) == 1:
-                msg = "Unknown task name %r" % unknownTasks[0]
-            else:
-                msg = "Unknown task names: %s" % str(unknownTasks)[1:-1]
-            raise error.ZenMakeError(msg)
-        allowedTasks = set(assist.getTaskNamesWithDeps(tasks, allowedTasks))
+        taskNames = [x for x in taskNames if x in allowedTasks]
 
-    for taskName, taskParams in viewitems(tasks):
+    for taskName in taskNames:
 
-        if allowedTasks and taskName not in allowedTasks:
-            continue
+        taskParams = tasks[taskName]
 
         # set bld.path to startdir of the buildconf from which the current task
         bld.path = bld.getStartDirNode(taskParams['$startdir'])
@@ -218,8 +228,14 @@ def build(bld):
         # create build task generator
         bld(**bldParams)
 
-        if isInstall:
-            bld.setUpInstallFiles(taskParams)
+        # don't make empty group for last task
+        if taskParams.get('group-dependent-tasks', False) and taskName != taskNames[-1]:
+            bld.add_group()
+
+    if isInstallUninstall:
+        # Make all install tasks in last build group to avoid some problems
+        for taskName in taskNames:
+            bld.setUpInstallFiles(tasks[taskName])
 
     # just in case
     bld.path = bldPathNode

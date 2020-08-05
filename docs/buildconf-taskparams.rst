@@ -204,7 +204,7 @@ source
         'source' :  dict( include = 'mylib/**/*.cpp' )
 
         # get all *.cpp files in the 'startdir'/src recursively
-        # but don't include files according pattern 'src/extra*
+        # but don't include files according pattern 'src/extra*'
         'source' :  dict( include = 'src/**/*.cpp', exclude = 'src/extra*' ),
 
     Examples in YAML format:
@@ -846,6 +846,29 @@ enabled
     :ref:`matrix<buildconf-matrix>`. With this parameter you can make a build
     task which is used, for example, on Linux only or for specific toolchain
     or with another condition.
+
+group-dependent-tasks
+"""""""""""""""""""""
+    Although runtime jobs for the tasks may be executed in parallel, some
+    preparation is made before this in one thread. It includes, for example,
+    analyzing of the task dependencies and file paths in :ref:`source<buildconf-taskparams-source>`.
+    Such list of tasks is called `build group` and, by default, it's only one
+    build group for each project which uses ZenMake. If this parameter is true,
+    ZenMake creates a new build group for all other tasks which depend on the current task and
+    preparation for these dependent tasks will be run only when all jobs for current
+    task, including all dependencies, are done.
+
+    For example, if some task produces source files (\*.c, \*.cpp, etc) that
+    don't exist at the time
+    of such a preparation, you can get a problem because ZenMake cannot find
+    not existing files. It is not a problem if such a
+    file is declared in :ref:`target<buildconf-taskparams-target>` and then this
+    file is specified without use of ant pattern in ``source`` of dependent tasks.
+    In other cases you can solve the problem by setting this parameter to True
+    for a task which produces these source files.
+
+    By default it is False. Don't set it to True without reasons because it
+    can slow building down.
 
 objfile-index
 """""""""""""""""""""
