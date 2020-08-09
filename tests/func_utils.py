@@ -363,10 +363,10 @@ def checkBuildResults(testSuit, cmdLine, resultExists, withTests = False,
     targets = obtainBuildTargets(testSuit, cmdLine, withTests)
     checkBuildTargets(targets, resultExists, fakeBuild)
 
-_RE_ANY_TASK = re.compile(r"^\s*\[\s*-?\d+/(\d+)\s*\]\s+.+")
-_RE_COMPILE_TASK = re.compile(r"^\s*\[\s*-?\d+/\d+\s*\]\s+Compiling\s+([\w\d]+.+)", re.U)
-_RE_LINK_TASK = re.compile(r"^\s*\[\s*-?\d+/\d+\s*\]\s+Linking\s+.+\%s(lib)?([\w\-\s]+)" % os.sep, re.U)
-_RE_RUNCMD_TASK = re.compile(r"^\s*\[\s*-?\d+/\d+\s*\]\s+Running\s+command\s+.*?\'([\w\s.\-]+)\'$", re.U)
+_RE_ANY_TASK = re.compile(r"\s*\[\s*-?\d+/(\d+)\s*\]\s+.+")
+_RE_COMPILE_TASK = re.compile(r"\s*\[\s*-?\d+/\d+\s*\]\s+Compiling\s+([\w\d]+.+)", re.U)
+_RE_LINK_TASK = re.compile(r"\s*\[\s*-?\d+/\d+\s*\]\s+Linking\s+.+\%s(lib)?([\w\-\s]+)" % os.sep, re.U)
+_RE_RUNCMD_TASK = re.compile(r"\s*\[\s*-?\d+/\d+\s*\]\s+Running\s+command\s+.*?\'([\w\s.\-]+)\'$", re.U)
 _RE_TEST_TASK = re.compile(r"\s*Running\s+test:\s+\'([\w\s.\-]+)\'$", re.U)
 
 def gatherEventsFromOutput(output):
