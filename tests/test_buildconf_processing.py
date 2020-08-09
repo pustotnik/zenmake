@@ -19,7 +19,7 @@ from zm.error import *
 from zm.constants import *
 from zm.pyutils import viewitems
 from zm.pathutils import unfoldPath
-from zm.buildconf.processing import convertTaskParamToList, Config as BuildConfig
+from zm.buildconf.processing import convertTaskParamValue, Config as BuildConfig
 from tests.common import asRealConf, randomstr
 
 joinpath = os.path.join
@@ -296,9 +296,10 @@ class TestSuite(object):
         for task in expected:
             taskParams = expected[task]
             taskParams['$startdir'] = '.'
+            taskParams['$bconf'] = bconf
             for name, value in viewitems(taskParams):
                 taskParams[name] = value
-                convertTaskParamToList(taskParams, name)
+                convertTaskParamValue(taskParams, name)
         assert bconf.tasks == expected
         # to force covering of cache
         assert bconf.tasks == expected

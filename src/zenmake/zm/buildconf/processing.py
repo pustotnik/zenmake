@@ -18,7 +18,7 @@ from zm.error import ZenMakeError, ZenMakeLogicError, ZenMakeConfError
 from zm.pyutils import stringtype, maptype, viewitems, viewvalues
 from zm import utils, log
 from zm.pathutils import unfoldPath, getNativePath
-from zm.pathutils import PathsParam, makePathsDict, pathsDictParamsToList
+from zm.pathutils import PathsParam, makePathsConf
 from zm.buildconf import loader
 from zm.buildconf.scheme import taskscheme, KNOWN_CONF_PARAM_NAMES
 from zm.features import ToolchainVars, BUILDCONF_PREPARE_TASKPARAMS
@@ -51,14 +51,11 @@ def _applyStartDirToParam(bconf, param):
         return param
     return PathsParam(param, bconf.startdir, kind = 'paths')
 
-def _applyStartDirToSrcParam(bconf, param):
-    return makePathsDict(param, bconf.startdir)
-
 _PREPARE_TASKPARAMS_HOOKS = [(x, _applyStartDirToParam)
                              for x in ('includes', 'export-includes', 'libpath', 'stlibpath')]
-_PREPARE_TASKPARAMS_HOOKS = (('source', _applyStartDirToSrcParam),) \
-                            + tuple(_PREPARE_TASKPARAMS_HOOKS) \
-                            + BUILDCONF_PREPARE_TASKPARAMS
+
+_PREPARE_TASKPARAMS_HOOKS = tuple(_PREPARE_TASKPARAMS_HOOKS) + \
+                            BUILDCONF_PREPARE_TASKPARAMS
 
 def _genTaskParamsToListMap(result):
 
@@ -82,15 +79,17 @@ def _genTaskParamsToListMap(result):
     })
     return result
 
-def convertTaskParamToList(taskParams, paramName):
+def convertTaskParamValue(taskParams, paramName):
     """
-    Convert task param value to list where it's possible.
+    Convert task param value to list or to dict with correct structure
+    where it's necessary.
     """
 
     paramVal = taskParams[paramName]
 
-    if paramName == 'source' and isinstance(paramVal, maptype):
-        pathsDictParamsToList(paramVal)
+    if paramName == 'source':
+        startdir = taskParams['$bconf'].startdir
+        taskParams[paramName] = makePathsConf(paramVal, startdir)
         return
 
     if paramName.endswith('.select'):
@@ -235,7 +234,7 @@ class Config(object):
         def _makePathParamWithPattern(param, name):
             value = param.get(name)
             if value:
-                param[name] = makePathsDict(value, relStartDir)
+                param[name] = makePathsConf(value, relStartDir)
             else:
                 param.pop(name, None)
 
@@ -291,23 +290,29 @@ class Config(object):
             # save task name in task params
             taskParams['name'] = taskName
 
-            # set startdir
+            # set startdir and bconf in task params
             taskParams['$startdir'] = taskStartDir
+            taskParams['$bconf'] = self
 
             for paramName, paramVal in viewitems(taskParams):
 
                 taskParams[paramName] = paramVal
-                convertTaskParamToList(taskParams, paramName)
+                convertTaskParamValue(taskParams, paramName)
 
                 if paramName != 'source':
                     continue
 
-                # set startdir
-                paramStartDir = paramVal['startdir']
-                if paramStartDir == startdir:
-                    paramVal['startdir'] = taskStartDir
-                else:
-                    paramVal['startdir'] = relpath(paramStartDir, rootdir)
+                # set relative startdir, just to reduce size of build cache
+                paramVal = taskParams[paramName]
+                for item in paramVal:
+                    paramStartDir = item['startdir']
+                    if utils.hasSubstVar(paramStartDir):
+                        # don't touch 'startdir' if it has subst var
+                        continue
+                    if paramStartDir == startdir:
+                        item['startdir'] = taskStartDir
+                    elif isabs(paramStartDir):
+                        item['startdir'] = relpath(paramStartDir, rootdir)
 
             substVars = rootSubstVars.copy()
             substVars.update(taskParams.get('substvars', {}))

@@ -14,9 +14,9 @@ import re
 from zm.constants import TASK_FEATURE_ALIASES, PLATFORM
 from zm.pyutils import viewitems, listvalues, stringtype, _unicode, _encode
 from zm.autodict import AutoDict as _AutoDict
-from zm.pathutils import getNodesFromPathsDict
+from zm.pathutils import getNodesFromPathsConf
 from zm.error import ZenMakeError, ZenMakeConfError
-from zm.error import ZenMakePathNotFoundError
+from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
 from zm.features import SUPPORTED_TASK_FEATURES, resolveAliasesInFeatures
 from zm.features import ToolchainVars, getLoadedFeatures
@@ -375,7 +375,9 @@ def handleTaskFeatureAliases(ctx, taskParams):
         msg = "Feature alias %r can not be used without parameter 'source'" % alias
         raise ZenMakeConfError(msg)
 
-    patterns = toList(source.get('include', []))
+    patterns = []
+    for item in source:
+        patterns.extend(item.get('include', []))
     for pattern in patterns:
         if not _RE_EXT_AT_THE_END.search(_unicode(pattern)):
             msg = "Pattern %r in 'source'" % pattern
@@ -485,6 +487,9 @@ def handleTaskSourceParam(ctx, taskParams):
         ctx.brootNode = buildrootNode
 
     def onNoPath(ex):
+        if isinstance(ex, ZenMakeDirNotFoundError):
+            msg = "Directory %r for the 'source' doesn't exist." % ex.path
+            raise ZenMakeError(msg)
         if isinstance(ex, ZenMakePathNotFoundError):
             msg = "Error in the file %r:" % bconf.path
             msg += "\n  File %r from the 'source' not found." % ex.path
@@ -497,7 +502,7 @@ def handleTaskSourceParam(ctx, taskParams):
         'onNoPath' : onNoPath,
     }
 
-    return getNodesFromPathsDict(ctx, src, bconf.rootdir, **kwargs)
+    return getNodesFromPathsConf(ctx, src, bconf.rootdir, **kwargs)
 
 def checkWafTasksForFeatures(taskParams):
     """

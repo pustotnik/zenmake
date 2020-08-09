@@ -23,6 +23,7 @@ from waflib.Configure import ConfigurationContext as WafConfContext
 from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFIG_LOG
 from zm.constants import TASK_TARGET_KINDS
 from zm.pyutils import viewitems, viewvalues, viewkeys, stringtype
+from zm.pathutils import substPathsConf
 from zm import utils, log, toolchains, error, db, version, cli, deps
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
@@ -98,8 +99,7 @@ class ConfigurationContext(WafConfContext):
                 continue
 
             if name == 'source':
-                for k in param:
-                    param[k] = apply(param[k], substEnv)
+                substPathsConf(param, substEnv)
             else:
                 taskParams[name] = apply(param, substEnv)
 
@@ -611,6 +611,7 @@ class ConfigurationContext(WafConfContext):
         for bconf in self.bconfManager.configs:
             newtasks = bconf.tasks
             for taskParams in viewvalues(newtasks):
+                assert taskParams.get('$bconf', bconf) == bconf
                 taskParams['$bconf'] = bconf
                 sameNameTask = tasks.get(taskParams['name'])
                 if sameNameTask is not None:

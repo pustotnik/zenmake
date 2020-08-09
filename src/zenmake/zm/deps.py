@@ -16,7 +16,7 @@ from zm.constants import DEPNAME_DELIMITER, SYSTEM_LIB_PATHS, PYTHON_EXE, PLATFO
 from zm.pyutils import viewvalues, viewitems, maptype
 from zm import error, log, db, cli
 from zm.utils import toListSimple, runCmd, uniqueListWithOrder, uniqueDictListWithOrder
-from zm.pathutils import PathsParam, getNodesFromPathsDict, pathsDictParamsToList
+from zm.pathutils import PathsParam, getNodesFromPathsConf
 from zm.buildconf import loader as buildconfLoader
 from zm.buildconf.processing import Config as BuildConfig
 from zm.waf import assist
@@ -591,9 +591,8 @@ def _checkTriggerPathsExist(ctx, rule):
         if not paths:
             continue
 
-        pathsDictParamsToList(paths)
         try:
-            paths = getNodesFromPathsDict(ctx, paths, rootdir, withDirs = True)
+            paths = getNodesFromPathsConf(ctx, paths, rootdir, withDirs = True)
             paths = list(paths)
             pathsExist = True
         except error.ZenMakePathNotFoundError:

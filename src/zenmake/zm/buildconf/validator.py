@@ -76,9 +76,11 @@ class Validator(object):
             else:
                 val = confnode
 
+            _schemeAttrs = schemeAttrs.get(_type, schemeAttrs)
+
             try:
                 handler = Validator._getHandler(_type)
-                handler(val, schemeAttrs, fullkey)
+                handler(val, _schemeAttrs, fullkey)
             except ZenMakeConfSubTypeError:
                 # it's an error from a sub type
                 raise

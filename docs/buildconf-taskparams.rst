@@ -135,8 +135,12 @@ target
 source
 """""""""""""""""""""
     One or more source files for compiler/toolchain.
-    It can be string with path or list of such strings or
-    a :ref:`dict<buildconf-dict-def>`.
+    It can be:
+
+        - a string with one or more paths separated by space
+        - a :ref:`dict<buildconf-dict-def>`, description see below
+        - a list of items where each item is a string with one or more paths or a dict
+
     Type ``dict`` is used for Waf_ ``ant_glob`` function. Format of patterns
     for ``ant_glob`` you can find on https://waf.io/book/.
     Most significant details from there:
@@ -206,6 +210,12 @@ source
         # get all *.cpp files in the 'startdir'/src recursively
         # but don't include files according pattern 'src/extra*'
         'source' :  dict( include = 'src/**/*.cpp', exclude = 'src/extra*' ),
+
+        # get all *.c files in the 'src' and in '../others' recursively
+        'source'   : [
+            'src/**/*.c',
+            { 'include': '**/*.c', 'startdir' : '../others' },
+        ],
 
     Examples in YAML format:
 

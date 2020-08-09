@@ -11,8 +11,8 @@ import os
 from waflib.Node import exclude_regs as DEFAULT_PATH_EXCLUDES
 from waflib import Utils as wafutils
 from zm.pyutils import PY2, maptype, stringtype
-from zm.utils import toList, toListSimple
-from zm.error import ZenMakePathNotFoundError
+from zm.utils import toList, toListSimple, substVars
+from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
 
 DEFAULT_PATH_EXCLUDES = toListSimple(DEFAULT_PATH_EXCLUDES)
 
@@ -295,55 +295,91 @@ class PathsParam(object):
         def __ne__(self, other):
             return not self == other
 
-def makePathsDict(param, startdir):
+def pathsDictParamsToList(item):
     """
-    Convert/Adjust param with paths/patterns to dict which is used in
-    buildconf params, as storage for such paths in db, etc.
-    """
-
-    if not param:
-        return {}
-
-    if isinstance(param, maptype):
-        _startdir = param.get('startdir')
-        if _startdir is not None:
-            startdir = _normpath(_joinpath(startdir, _startdir))
-        param['startdir'] = startdir
-    else:
-        include = []
-        paths = []
-        for val in toList(param):
-            if any(x in val for x in ('*', '?')):
-                # use as pattern
-                include.append(val)
-            else:
-                paths.append(val)
-        param = { 'startdir' : startdir }
-        if include:
-            param['include'] = include
-        if paths:
-            param['paths'] = paths
-
-    return param
-
-def pathsDictParamsToList(paths):
-    """
-    Call 'toList' to all appropriate params of paths dict
+    Call 'toList' to all appropriate params of paths conf dict item
     """
 
     for name in ('include', 'exclude', 'paths'):
-        val = paths.get(name)
+        val = item.get(name)
         if val is not None:
-            paths[name] = toList(val)
+            item[name] = toList(val)
+
+def makePathsConf(param, startdir):
+    """
+    Convert/Adjust param with paths/patterns to list of dicts which is used in
+    buildconf params, as storage for such paths in db, etc.
+    Param 'startdir' must be absolute or relative to rootdir
+    """
+
+    if not param:
+        return []
+
+    if isinstance(param, stringtype):
+        param = toList(param)
+    elif isinstance(param, maptype):
+        param = [param]
+    else:
+        # avoid conversion of already processed param
+        if isinstance(param[0], maptype) and '$' in param[0]:
+            return param
+
+        items = []
+        for item in param:
+            subitems = toList(item) if isinstance(item, stringtype) else [item]
+            items.extend(subitems)
+        param = items
+
+    result = []
+    paths = []
+    for item in param:
+
+        if isinstance(item, maptype):
+            item.setdefault('startdir', startdir)
+            pathsDictParamsToList(item)
+            result.append(item)
+            continue
+
+        assert isinstance(item, stringtype)
+
+        if not any(x in item for x in ('*', '?')):
+            # use as a path
+            paths.append(item)
+            continue
+
+        # use as a pattern
+        result.append({ 'startdir' : startdir, 'include': [item] })
+
+    if paths:
+        # gather all paths in one item
+        result.append({ 'startdir' : startdir, 'paths' : paths })
+
+    result[0]['$'] = 1 # marker about finished work
+    return result
+
+def substPathsConf(param, substEnv):
+    """
+    Do substitution in paths conf.
+    It must be called after function 'makePathsConf'
+    """
+
+    for item in param:
+        for k in item:
+            val = item[k]
+            if isinstance(val, (list, tuple)):
+                item[k] = [substVars(x, substEnv) for x in val]
+            elif isinstance(val, stringtype):
+                item[k] = substVars(val, substEnv)
 
 def _getNodesFromPathPatterns(ctx, param, startNode, withDirs,
                               excludeExtraPaths, cache):
 
     # pylint: disable = too-many-arguments
 
-    include = param.get('include', [])
-    if not include:
+    if not ('include' in param or 'exclude' in param):
         return []
+
+    include = param.get('include', '**')
 
     if cache:
         cacheKey = repr(sorted(param.items()))
@@ -379,10 +415,10 @@ def _getNodesFromPathPatterns(ctx, param, startNode, withDirs,
 
     return nodes
 
-def getNodesFromPathsDict(ctx, param, rootdir, withDirs = False,
+def getNodesFromPathsConf(ctx, param, rootdir, withDirs = False,
                           excludeExtraPaths = None, cache = False, onNoPath = None):
     """
-    Get list of Waf nodes from 'paths dict'.
+    Get list of Waf nodes from 'paths config'.
     """
 
     # pylint: disable = too-many-arguments
@@ -391,6 +427,9 @@ def getNodesFromPathsDict(ctx, param, rootdir, withDirs = False,
         # stop iteration
         return
 
+    if not isinstance(param, (list, tuple)):
+        param = [param]
+
     def doNoPathError(excCls, arg):
         ex = excCls(arg)
         if onNoPath:
@@ -398,52 +437,56 @@ def getNodesFromPathsDict(ctx, param, rootdir, withDirs = False,
         else:
             raise ex
 
-    startdir = _normpath(_joinpath(rootdir, param['startdir']))
-
     ctxPathNode = ctx.path
     ctxAbsPath = ctxPathNode.abspath()
 
-    # Waf method Node.ant_glob can traverse both source and build folders, so
-    # it is better to call this method only from the most specific node.
-    # Also it is better, for performance, to use the ctx.path, not ctx.root
-    if startdir == ctxAbsPath:
-        startNode = ctxPathNode
-    else:
-        startNodeDir = _normpath(_relpath(startdir, ctxAbsPath))
-        startNode = ctxPathNode.make_node(startNodeDir)
-
-    nodes = _getNodesFromPathPatterns(ctx, param, startNode, withDirs,
-                                      excludeExtraPaths, cache)
-
-    for node in nodes:
-        yield node
-
-    paths = param.get('paths', [])
-    if not paths:
-        return
-
     try:
-        btypeNode = ctx.bldnode
-        if ctx.buildWorkDirName:
-            btypeNode = ctx.bldnode.parent
+        btypeNode = ctx.bldnode.parent if ctx.buildWorkDirName else ctx.bldnode
     except AttributeError:
         btypeNode = None
 
-    # There is no reasons to cache lists of paths and
-    # the cache key for them can be too big
+    for item in param:
 
-    for path in paths:
-        isRelative = not _isabs(path)
-        snode = startNode if isRelative else ctx.root
-        splittedPath = [x for x in splitPath(path) if x and x != '.']
+        startdir = _normpath(_joinpath(rootdir, item['startdir']))
 
-        node = snode.find_node(splittedPath)
-        if not node and btypeNode and isRelative:
-            # try to find declared node in build dir
-            # it can be 'target' from standalone runcmd task
-            node = btypeNode.search_node(splittedPath)
-        if not node:
-            doNoPathError(ZenMakePathNotFoundError, path)
+        if not _isdir(startdir):
+            doNoPathError(ZenMakeDirNotFoundError, startdir)
             return
 
-        yield node
+        # Waf method Node.ant_glob can traverse both source and build folders, so
+        # it is better to call this method only from the most specific node.
+        # Also it is better, for performance, to use the ctx.path, not ctx.root
+        if startdir == ctxAbsPath:
+            startNode = ctxPathNode
+        else:
+            startNodeDir = _normpath(_relpath(startdir, ctxAbsPath))
+            startNode = ctxPathNode.make_node(startNodeDir)
+
+        nodes = _getNodesFromPathPatterns(ctx, item, startNode, withDirs,
+                                          excludeExtraPaths, cache)
+
+        for node in nodes:
+            yield node
+
+        paths = item.get('paths', [])
+        if not paths:
+            continue
+
+        # There is no reasons to cache lists of paths and
+        # the cache key for them can be too big
+
+        for path in paths:
+            isRelative = not _isabs(path)
+            snode = startNode if isRelative else ctx.root
+            splittedPath = [x for x in splitPath(path) if x and x != '.']
+
+            node = snode.find_node(splittedPath)
+            if not node and btypeNode and isRelative:
+                # try to find declared node in build dir
+                # it can be 'target' from standalone runcmd task
+                node = btypeNode.search_node(splittedPath)
+            if not node:
+                doNoPathError(ZenMakePathNotFoundError, path)
+                return
+
+            yield node

@@ -149,7 +149,7 @@ def checkExpectedTarget(result, expected):
     assert os.path.basename(result) == expected
 
 def checkExpectedSource(result, expected):
-    assert utils.toList(result['paths']) == utils.toList(expected)
+    assert utils.toList(result[0]['paths']) == utils.toList(expected)
 
 def checkExpectedIncludes(result, expected):
     if isinstance(result, maptype):

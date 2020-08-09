@@ -146,13 +146,21 @@ def _genConfActionsDictVarsScheme(confnode, fullkey):
         schemeDictVars.update(_actionToVars.get(action, {}))
     return schemeDictVars
 
+_PATHS_SCHEME_DICT_VARS = {
+    'include'    : { 'type': ('str', 'list-of-strs') },
+    'exclude'    : { 'type': ('str', 'list-of-strs') },
+    'ignorecase' : { 'type': 'bool' },
+    'startdir'   : { 'type': 'str' },
+}
+
 _PATHS_SCHEME = {
-    'type': ('str', 'list-of-strs', 'dict'),
-    'dict-vars' : {
-        'include'    : { 'type': ('str', 'list-of-strs') },
-        'exclude'    : { 'type': ('str', 'list-of-strs') },
-        'ignorecase' : { 'type': 'bool' },
-        'startdir'   : { 'type': 'str' },
+    'type': ('str', 'list', 'dict'),
+    'dict' : {
+        'vars' : _PATHS_SCHEME_DICT_VARS,
+    },
+    'list' : {
+        'vars-type' : ('str', 'dict'),
+        'dict-vars' : _PATHS_SCHEME_DICT_VARS,
     },
 }
 

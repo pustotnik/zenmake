@@ -114,12 +114,16 @@ libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
 subprocess         = wafutils.subprocess
 
+def hasSubstVar(value):
+    """ Return True if value has substitution variable """
+    return '${' in value
+
 def substVars(value, svars):
     """
 	Replaces ${VAR} with the value of VAR taken from a dict or a config set
     """
 
-    if '${' not in value:
+    if not hasSubstVar(value): # optimization
         return value
     return wafutils.subst_vars(value, svars)
 

@@ -19,9 +19,9 @@ from waflib.Task import ASK_LATER as TASK_ASK_LATER, RUN_ME as TASK_RUN_ME
 from waflib.Build import INSTALL, UNINSTALL, inst as WafInstallTask
 from zm import error, log
 from zm.pyutils import stringtype
-from zm.pathutils import getNativePath, makePathsDict, getNodesFromPathsDict
+from zm.pathutils import getNativePath, makePathsConf, substPathsConf, getNodesFromPathsConf
 from zm.autodict import AutoDict
-from zm.utils import substVars, hashObj, toList
+from zm.utils import substVars, hashObj
 from zm.waf.build import BuildContext
 
 joinpath = os.path.join
@@ -307,15 +307,9 @@ class inst(WafInstallTask):
         topdir = nodes.srcdir.abspath()
         startdir = nodes.startdir.abspath()
 
-        src = makePathsDict(src, startdir)
-
-        substEnv = self._getSubstEnv()
-        for name in ('include', 'exclude', 'paths'):
-            val = src.get(name)
-            if val is not None:
-                src[name] = [substVars(path, substEnv) for path in toList(val) ]
-
-        foundNodes = getNodesFromPathsDict(nodes.root.ctx, src, topdir)
+        src = makePathsConf(src, startdir)
+        substPathsConf(src, self._getSubstEnv())
+        foundNodes = getNodesFromPathsConf(nodes.root.ctx, src, topdir)
 
         dstDirNode = nodes.root.make_node(dst)
         makeDstNode = dstDirNode.make_node
@@ -324,8 +318,8 @@ class inst(WafInstallTask):
             nodePath = node.abspath()
             if isdir(nodePath):
                 pattern = '%s/**' % relpath(nodePath, startdir)
-                param = { 'startdir' : startdir, 'include' : pattern }
-                files = getNodesFromPathsDict(nodes.root.ctx, param, topdir)
+                param = [{ 'startdir' : startdir, 'include' : pattern }]
+                files = getNodesFromPathsConf(nodes.root.ctx, param, topdir)
                 files = [(x, makeDstNode(x.path_from(node))) for x in files]
                 allNodes.extend(files)
             else:
