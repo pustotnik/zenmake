@@ -6,8 +6,10 @@ Build config: dependencies
 =============================
 
 The config parameter ``dependencies`` is a :ref:`dict<buildconf-dict-def>` with
-configurations of external non-system dependencies. Each such a dependency
-can have own unique name and parameters:
+configurations of external non-system dependencies.
+General description of external dependencies is :ref:`here<dependencies-external>`.
+
+Each such a dependency can have own unique name and parameters:
 
 .. _buildconf-dep-params-rootdir:
 

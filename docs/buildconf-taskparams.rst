@@ -112,6 +112,13 @@ features
 
         If you don't use these aliases you can use any patterns.
 
+        Also you cannot use these aliases if you want to use
+        a file from :ref:`target<buildconf-taskparams-target>` of
+        another task in :ref:`source<buildconf-taskparams-source>` of
+        the task.
+
+        In general, it is better to avoid use of these aliases.
+
 .. _buildconf-taskparams-target:
 
 target
@@ -626,7 +633,7 @@ run
     ``use`` of the current task.
 
     By default ZenMake expects that any build task produces a target file
-    (one or more) and if it doesn't find this file when the task is finished
+    and if it doesn't find this file when the task is finished
     it will throw an error. And it is true for standalone runcmd tasks also.
     If you want to create standalone runcmd task which doesn't produce target
     file you can set task parameter
@@ -724,6 +731,8 @@ install-path
     .. code-block:: python
 
         'install-path' : '${PREFIX}/exe'
+
+    By default this parameter is false for standalone runcmd tasks.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
