@@ -153,7 +153,7 @@ These configuration actions in ``dict`` format:
     ``do`` = ``call-pyfunc``
         *Parameters*: ``func``, ``mandatory`` = True.
 
-        *Supported languages*: all languages supported by ZenMake.
+        *Supported languages*: any.
 
         Call a python function. It'a another way to use python
         function as an action. In this way you can use parameter
@@ -240,13 +240,16 @@ These configuration actions in ``dict`` format:
     ``do`` = ``toolconfig``
         *Parameters*: ``toolname`` = 'pkg-config', ``toolpaths``,
         ``args`` = '\\-\\-cflags \\-\\-libs', ``static`` = False,
-        ``parse-as`` = 'flags-libs', ``defname``, ``msg``,
+        ``parse-as`` = 'flags-libs', ``defname``, ``var``, ``msg``,
         ``mandatory`` = True.
 
-        *Supported languages*: C, C++.
+        *Supported languages*: any.
 
         Execute any ``*-config`` tool. It can be pkg-config, sdl-config,
         sdl2-config, mpicc, etc.
+
+        ZenMake doesn't know which tool will be used and therefore this action
+        can be used in any task including standalone runcmd task.
 
         Parameter ``toolname`` must be used to set name of such a tool.
         Parameter ``toolpaths`` can be used to set
@@ -260,9 +263,11 @@ These configuration actions in ``dict`` format:
 
         Parameter ``parse-as`` describes how to parse output. If it is 'none'
         then output will not be parsed. If it is 'flags-libs' then ZenMake will
-        try to parse the output for compiler/linker options. And if it is 'entire'
+        try to parse the output for compiler/linker options but ZenMake knows how
+        to parse C/C++ compiler/linker options only, other languages are not
+        supported for this value. And if it is 'entire'
         then output will not be parsed but value of output will be set to define
-        name from parameter ``defname``.
+        name from parameter ``defname`` and/or ``var`` if they were defined.
         By default ``parse-as`` is set to 'flags-libs'.
 
         Parameter ``defname`` can be used to set C/C++ define. If ``parse-as``
@@ -271,6 +276,11 @@ These configuration actions in ``dict`` format:
         if ``toolname`` is 'sdl2-config' then 'HAVE_SDL2=1' will be used.
         For other values of ``parse-as`` there is no default value for ``defname``
         but you can set some custom define name.
+
+        Parameter ``var`` can be used to set
+        :ref:`substitution<buildconf-substitutions>` variable name. This parameter
+        is ignored if value of ``parse-as`` is not 'entire'.
+        By default it is not defined.
 
         Parameter ``msg`` can be used to set custom message for this action.
 

@@ -837,6 +837,12 @@ def _applyToolConfigResults(cfgCtx, args):
         defquote = args.get('defquote', True)
         cfgCtx.define(defvar, defval, quote = defquote)
 
+    substvar = args.get('substvar')
+    if substvar:
+        substval = args.get('substval', '')
+        taskSubstvars = taskParams.setdefault('substvars', {})
+        taskSubstvars[substvar] = substval
+
     storeArgs = args.get('store-args', False)
     if storeArgs:
         args = args.copy()
@@ -1052,16 +1058,25 @@ def doToolConfig(actionArgs, params):
     if not defvar and parseAs == 'flags-libs':
         defvar = 'HAVE_%s' % uselib
 
+    output = output.strip()
     if defvar:
         defval = 1
         quoteDefVal = False
         if parseAs == 'entire':
-            defval = output.strip()
+            defval = output
             quoteDefVal = True
 
         kwargs = {
             '$task-params' : taskParams, 'store-args' : True,
             'defname' : defvar, 'defval' : defval, 'defquote' : quoteDefVal,
+        }
+        _applyToolConfigResults(cfgCtx, kwargs)
+
+    substvar = actionArgs.get('var')
+    if substvar and parseAs == 'entire':
+        kwargs = {
+            '$task-params' : taskParams, 'store-args' : True,
+            'substvar' : substvar, 'substval' : output,
         }
         _applyToolConfigResults(cfgCtx, kwargs)
 
@@ -1418,6 +1433,7 @@ _cmnActionsFuncs = {
     'call-pyfunc'    : callPyFunc,
     'find-program'   : findProgram,
     'find-file'      : findFile,
+    'toolconfig'     : doToolConfig,
     'parallel'       : runActionsInParallel,
 }
 

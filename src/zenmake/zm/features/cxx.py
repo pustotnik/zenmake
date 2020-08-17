@@ -32,7 +32,6 @@ _confActionFuncs = {
     'check-libs'          : _checkWrapper(configActions.checkLibs),
     'check-code'          : _checkWrapper(configActions.checkCode),
     'pkgconfig'           : configActions.doPkgConfig,
-    'toolconfig'          : configActions.doToolConfig,
     'write-config-header' : configActions.writeConfigHeader,
 }
 

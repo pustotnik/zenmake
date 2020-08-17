@@ -108,6 +108,7 @@ _actionToVars = {
         },
         'static' : { 'type': 'bool' },
         'defname' : { 'type': 'str' },
+        'var':    { 'type': 'str' },
     },
     'write-config-header' : {
         'file' : { 'type': 'str' },
