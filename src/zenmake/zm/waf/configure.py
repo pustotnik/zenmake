@@ -370,7 +370,10 @@ class ConfigurationContext(WafConfContext):
     def post_recurse(self, node):
         # Avoid some actions from WafConfContext.post_recurse.
         # It's mostly for performance.
-        WafContext.Context.post_recurse(self, node)
+        # WafContext.Context.post_recurse(self, node)
+
+        # this method must not be used
+        raise NotImplementedError
 
     # override
     def store(self):
