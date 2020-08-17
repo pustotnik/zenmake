@@ -68,15 +68,6 @@ def _getLocalCache(self):
     self._zmcache = _AutoDict()
     return self._zmcache
 
-def _preRecurse(ctx, dirNode):
-    ctx.stack_path.append(ctx.path)
-    ctx.path = dirNode
-
-def _postRecurse(ctx):
-    dirNode = ctx.stack_path.pop()
-    if dirNode:
-        ctx.path = dirNode
-
 @asmethod(WafContext, 'recurse')
 def _ctxRecurse(self, dirs, name = None, mandatory = True, once = True, encoding = None):
     #pylint: disable=too-many-arguments,unused-argument
@@ -101,7 +92,8 @@ def _ctxRecurse(self, dirs, name = None, mandatory = True, once = True, encoding
             continue
 
         cache[tup] = True
-        _preRecurse(self, node)
+        self.stack_path.append(self.path)
+        self.path = node
 
         try:
             # try to get function for command
@@ -115,7 +107,7 @@ def _ctxRecurse(self, dirs, name = None, mandatory = True, once = True, encoding
             # call function for command
             func(self)
         finally:
-            _postRecurse(self)
+            self.path = self.stack_path.pop()
 
 @asmethod(WafContext, 'getPathNode')
 def _getPathNode(self, path):
