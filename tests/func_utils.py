@@ -405,34 +405,34 @@ def gatherEventsFromOutput(output):
             continue
 
         isWafTaskStarting = False
-        m = _RE_ANY_TASK.match(line)
+        m = _RE_ANY_TASK.search(line)
         if m:
             taskRealCount += 1
             taskMaxCount = int(m.group(1))
             isWafTaskStarting = True
 
-        m = _RE_COMPILE_TASK.match(line)
+        m = _RE_COMPILE_TASK.search(line)
         if m:
             task = m.group(1).replace('\\', '/')
             cmdEvents.append(['compiling', task])
             cmdIndexes['compiling'][task] = len(cmdEvents) - 1
             continue
 
-        m = _RE_LINK_TASK.match(line)
+        m = _RE_LINK_TASK.search(line)
         if m:
             task = m.group(2)
             cmdEvents.append(['linking', task])
             cmdIndexes['linking'][task] = len(cmdEvents) - 1
             continue
 
-        m = _RE_RUNCMD_TASK.match(line)
+        m = _RE_RUNCMD_TASK.search(line)
         if m:
             task = m.group(1)
             cmdEvents.append(['running', task])
             cmdIndexes['running'][task] = len(cmdEvents) - 1
             continue
 
-        m = _RE_TEST_TASK.match(line)
+        m = _RE_TEST_TASK.search(line)
         if m:
             task = m.group(1)
             cmdEvents.append(['running', task])
