@@ -384,6 +384,8 @@ arflags
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
+.. _buildconf-taskparams-defines:
+
 defines
 """""""""""""""""""""
     One or more defines for C/C++/Assembler/Fortran.
@@ -404,9 +406,15 @@ defines
 
 export-defines
 """""""""""""""""""""
-    If it's True then it exports value of ``defines`` for all build tasks
+    If it's True then it exports value of
+    :ref:`defines<buildconf-taskparams-defines>` for all build tasks
     which depend on the current task. Also it can be one or more defines
-    for explicit exporting. By default it's False.
+    for explicit exporting. Defines from :ref:`config-actions<config-actions>`
+    are not exported.
+    Use :ref:`export-config-actions<buildconf-taskparams-export-config-actions>`
+    to export defines from ``config-actions``.
+
+    By default it's False.
 
     You can use :ref:`substitution<buildconf-substitutions>`
     variables for this parameter.
