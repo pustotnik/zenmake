@@ -239,7 +239,7 @@ These configuration actions in ``dict`` format:
 
     ``do`` = ``toolconfig``
         *Parameters*: ``toolname`` = 'pkg-config', ``toolpaths``,
-        ``args`` = '\\-\\-cflags \\-\\-libs', ``static`` = False,
+        ``args`` = '\-\-cflags \-\-libs', ``static`` = False,
         ``parse-as`` = 'flags-libs', ``defname``, ``var``, ``msg``,
         ``mandatory`` = True.
 
@@ -256,7 +256,7 @@ These configuration actions in ``dict`` format:
         paths to find the tool, but usually you don't need to use it.
 
         Parameter ``args`` can be used to set command line arguments. By default
-        it is '\\-\\-cflags \\-\\-libs'.
+        it is '\-\-cflags \-\-libs'.
 
         Parameter ``static`` means forcing of static libraries and
         it is ignored if ``parse-as`` is not set to 'flags-libs'.
