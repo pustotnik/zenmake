@@ -8,6 +8,6 @@
 
 # pylint: disable = unused-import
 # These modules must be just imported
-from zm.waf import errors, node, task, taskrunner, options
+from zm.waf import errors, node, task, taskgen, taskrunner, options
 from zm.waf import context, configure, build, clean, install
 # pylint: enable = unused-import
