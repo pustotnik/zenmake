@@ -2,19 +2,24 @@
 Changelog
 =========
 
-Version 0.9.0
+Version 0.9.0 (2019-12-10)
 ----------------------------
 
-- remove config parameters 'project.root' and 'srcroot'
-- add config parameter 'startdir'
-- add config parameter 'subdirs' to support sub configs
-- fix default command-line command
-- rid of the wscript file during building
-- add 'buildroot' as the command-line arg and the environment variable
-- print header with some project info
-- improve buildconf validator
-- improve checking of the task features
-- update Waf to version 2.0.19
-- fix problem of too long paths in configuration tests on Windows
-- add parallel configuration tests
-- fix some small bugs in configuration tests
+Added
+    - add config parameter 'startdir'
+    - add config parameter 'subdirs' to support sub configs
+    - add 'buildroot' as the command-line arg and the environment variable
+    - print header with some project info
+    - add parallel configuration tests
+
+Changed
+    - fix default command-line command
+    - fix problem of too long paths in configuration tests on Windows
+    - fix some small bugs in configuration tests
+    - rid of the wscript file during building
+    - improve buildconf validator
+    - improve checking of the task features
+    - update Waf to version 2.0.19
+
+Removed
+    - remove config parameters 'project.root' and 'srcroot'

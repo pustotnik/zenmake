@@ -123,7 +123,7 @@ def _checkChangeLog(newVer):
         print("File %r doesn't exist" % filePath)
         sys.exit(1)
 
-    pattern = 'Version\s+' + newVer
+    pattern = 'Version\s+%s\s+' % newVer
     pattern = re.compile(pattern)
     with io.open(filePath, 'rt') as file:
         for line in file:
