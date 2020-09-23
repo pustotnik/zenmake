@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding=utf-8
 #
 # pylint: skip-file
@@ -40,8 +40,8 @@ import re
 import subprocess
 from distutils.spawn import find_executable as findProg
 
-if sys.hexversion < 0x2070000:
-    raise ImportError('Python >= 2.7 is required')
+if sys.hexversion < 0x3050000:
+    raise ImportError('Python >= 3.5 is required')
 
 here = os.path.dirname(os.path.abspath(__file__))
 os.chdir(here)
@@ -68,7 +68,7 @@ def _runInShell(cmd):
         sys.exit(ex.returncode)
     return output.decode(sys.stdout.encoding)
 
-def _runPyScript(args, tryPy3 = False):
+def _runPyScript(args, tryPy3 = True):
     python = findProg('python3') if tryPy3 else PY_EXE
     if not python:
         python = PY_EXE
