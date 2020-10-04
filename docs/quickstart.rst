@@ -26,12 +26,12 @@ For this project ``buildconf.py`` can be like that:
     tasks = {
         'util' : {
             'features' : 'shlib',
-            'source'   :  { 'include' : 'shlib/**/*.cpp' },
+            'source'   : 'shlib/**/*.cpp',
             'includes' : '.',
         },
         'program' : {
             'features' : 'program',
-            'source'   :  { 'include' : 'prog/**/*.cpp' },
+            'source'   : 'prog/**/*.cpp',
             'includes' : '.',
             'use'      : 'util',
         },
@@ -39,7 +39,8 @@ For this project ``buildconf.py`` can be like that:
 
     buildtypes = {
         'debug' : {
-            'toolchain' : 'auto-c++',
+            'toolchain' : 'clang++',
+            'cxxflags'  : '-O0 -g',
         },
         'release' : {
             'toolchain' : 'g++',
@@ -65,10 +66,11 @@ Lines  Description
 11     Specify task 'util' as dependency to task 'program'.
 15     Section with build types.
 16,19  Names of build types. They can be almost any.
-17     Specify auto detecting system C++ compiler.
-20     Specify g++ compiler (from gcc).
-21     Specify C++ compiler flags.
-23     Special case: specify default build type that is used when no build
+17     Specify Clang C++ compiler for debug.
+18     Specify C++ compiler flags for debug.
+21     Specify g++ compiler (from gcc) for release.
+22     Specify C++ compiler flags for release.
+24     Special case: specify default build type that is used when no build
        type was specified for ZenMake command.
 =====  =======================================================================
 
@@ -80,17 +82,18 @@ would look like this:
     tasks:
       util :
         features : shlib
-        source   :  { include : 'shlib/**/*.cpp' }
+        source   : 'shlib/**/*.cpp'
         includes : '.'
       program :
         features : program
-        source   :  { include : 'prog/**/*.cpp' }
+        source   : 'prog/**/*.cpp'
         includes : '.'
         use      : util
 
     buildtypes:
       debug :
-        toolchain : auto-c++
+        toolchain : clang++
+        cxxflags  : -O0 -g
       release :
         toolchain : g++
         cxxflags  : -O2

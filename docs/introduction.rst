@@ -7,27 +7,24 @@ Introduction
 What is it?
 -----------
 
-ZenMake is a build system based on the meta build system/framework Waf_.
-The main purpose of ZenMake is to be as simple to use as possible
-but remain flexible.
+ZenMake is a cross-platform build system for C/C++ and some other languages.
+It uses meta build system Waf_ as a framework.
 
 Some reasons to create this project can be found :ref:`here<why>`.
 
-It uses declarative configuration files with ability to use the real 
+It uses declarative configuration files with ability to use the real
 programming language (python).
 
 Main features
 -------------
-    - Easy to use and flexible build config as python (.py) or as yaml file.
+    - Build config as python (.py) or as yaml file.
       Details are :ref:`here<buildconf>`.
     - Distribution as zip application or as system package (pip).
       See :ref:`Installation<installation>`.
-    - Automatic build order and dependencies.
     - Automatic reconfiguring: no need to run command 'configure'.
     - Compiler autodetection.
     - Building and running functional/unit tests including an ability to
       build and run tests only on changes. Details are :ref:`here<buildtests>`.
-    - Running custom scripts during a build phase.
     - Build configs in sub directories.
     - Building external dependencies.
     - Supported platforms: GNU/Linux, MacOS, MS Windows. Some other

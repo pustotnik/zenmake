@@ -1,4 +1,3 @@
-.. _Waf: https://waf.io
 
 ZenMake
 =======
@@ -6,21 +5,17 @@ ZenMake
 |Licence| |Python| |PythonImpl| |PyPI| |Docs| |Travis| |coveralls|
 |ProjectStatus|
 
-ZenMake is a build system based on the meta build system/framework Waf_.
-The main purpose of ZenMake is to be as simple to use as possible
-but remain flexible.
+ZenMake is a cross-platform build system for C/C++ and some other languages.
 
 Main features
 -------------
 
-- Easy to use and flexible build config as python (.py) or as yaml file.
+- Build config as python (.py) or as yaml file.
 - Distribution as zip application or as system package (pip).
-- Automatic build order and dependencies.
 - Automatic reconfiguring: no need to run command 'configure'.
 - Compiler autodetection.
 - Building and running functional/unit tests including an ability to
   build and run tests only on changes.
-- Running custom scripts during a build phase.
 - Build configs in sub directories.
 - Building external dependencies.
 - Supported platforms: GNU/Linux, MacOS, MS Windows. Some other

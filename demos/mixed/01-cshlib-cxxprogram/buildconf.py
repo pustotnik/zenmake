@@ -6,8 +6,8 @@ substvars = {
 tasks = {
     'util' : {
         'features'  : 'cshlib',
-        'source'    :  dict( include = 'shlib/**/*.c' ),
-        'includes'  : '.',
+        'source'    : 'shlib/**/*.c',
+        #'includes'  : '.',
         #'toolchain' : 'auto-c',
 
         # 'install-files' testing
@@ -42,8 +42,8 @@ tasks = {
     },
     'test' : {
         'features'  : 'cxxprogram',
-        'source'    :  dict( include = 'prog/**/*.cpp' ),
-        'includes'  : '.',
+        'source'    : 'prog/**/*.cpp',
+        #'includes'  : '.',
         'use'       : 'util',
         #'toolchain' : 'auto-c++',
 

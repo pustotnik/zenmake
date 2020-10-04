@@ -78,11 +78,19 @@ class TestAutoconfig(object):
         # then it should be checked
 
         buildConfFile = joinpath(self.cwd, 'buildconf.py')
-        assert isfile(buildConfFile)
+        buildConfFile2 = joinpath(self.cwd, 'buildconf.yaml')
+        assert isfile(buildConfFile) or isfile(buildConfFile2)
+
+        yamlFormat = not isfile(buildConfFile) and isfile(buildConfFile2)
+        if yamlFormat:
+            buildConfFile = buildConfFile2
 
         with open(buildConfFile, 'r') as file:
             lines = file.readlines()
-        lines.append("somevar = 'qq'\n")
+        if yamlFormat:
+            lines.append("somevar : 'qq'\n")
+        else:
+            lines.append("somevar = 'qq'\n")
         with open(buildConfFile, 'w') as file:
             file.writelines(lines)
 

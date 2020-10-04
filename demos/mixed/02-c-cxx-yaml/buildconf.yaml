@@ -22,7 +22,7 @@ fragment2: &fragment2 |
 tasks:
   util:
     features : cshlib
-    source   : { include: 'shlib/**/*.c' }
+    source   : 'shlib/**/*.c'
     config-actions :
       - do: parallel
         actions:
@@ -31,7 +31,7 @@ tasks:
       - { do: check-code, text: *fragment1 }
   testprg:
     features : cxxprogram
-    source   : { include: 'prog/**/*.cpp' }
+    source   : 'prog/**/*.cpp'
     config-actions :
       - do: parallel
         actions:
