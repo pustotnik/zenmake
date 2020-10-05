@@ -43,9 +43,5 @@ else:
     def _encode(s):
         return s.encode('utf-8', 'replace')
 
-try:
-    from collections.abc import Mapping, MutableMapping
-except ImportError:
-    from collections import Mapping, MutableMapping
-
+from collections.abc import Mapping, MutableMapping
 maptype = Mapping

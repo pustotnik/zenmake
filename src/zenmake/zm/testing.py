@@ -41,21 +41,7 @@ def loadFromJson(data):
     Deserialize obj from the JSON formatted str.
     """
 
-    hook = None
-    if PY2:
-        def convert(value):
-            if isinstance(value, list):
-                return [convert(x) for x in value]
-            if isinstance(value, texttype):
-                return str(value)
-            return value
-
-        def pairs(pairs):
-            return { str(pair[0]): convert(pair[1]) for pair in pairs}
-
-        hook = pairs
-
-    return json.loads(data, object_pairs_hook = hook)
+    return json.loads(data)
 
 def nobuildTaskRun(task):
     """

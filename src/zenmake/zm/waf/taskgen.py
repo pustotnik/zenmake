@@ -33,7 +33,7 @@ def _tgenGetHook(self, node):
             supportedExts.append(ext)
     supportedExts = ', '.join(supportedExts)
 
-    msg = "File %r has unkwnown/unsupported extension." % node
+    msg = "File %r has unknown/unsupported extension." % node
     msg += "\nSupported file extensions for task %r are: %s" % (self.name, supportedExts)
     if error.verbose > 0:
         mapExts = ', '.join(self.mappings.keys())
