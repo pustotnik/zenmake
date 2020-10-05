@@ -11,14 +11,14 @@
 import os
 import re
 
-from zm.constants import TASK_FEATURE_ALIASES, PLATFORM
+from zm.constants import PLATFORM
 from zm.pyutils import stringtype, _unicode, _encode
 from zm.autodict import AutoDict as _AutoDict
 from zm.pathutils import getNodesFromPathsConf
 from zm.error import ZenMakeError, ZenMakeConfError
 from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
-from zm.features import SUPPORTED_TASK_FEATURES, resolveAliasesInFeatures
+from zm.features import SUPPORTED_TASK_FEATURES
 from zm.features import ToolchainVars, getLoadedFeatures
 from zm import utils, log, version, toolchains, db
 
@@ -330,22 +330,13 @@ def convertTaskParamNamesForWaf(taskParams):
         if val is not None:
             taskParams[wafKey] = val
 
-def getAliasFromFeatures(features):
-    """ Return True if any alias exists in features """
-
-    aliases = [ x for x in features if x in TASK_FEATURE_ALIASES]
-    if not aliases:
-        return None
-    return aliases[0]
-
-def detectTaskFeatures(ctx, taskParams):
+def detectTaskFeatures(taskParams):
     """
     Detect all features for task
     Param 'ctx' is used only if an alias exists in features.
     """
 
-    taskParams['features'] = toListSimple(taskParams.get('features', []))
-    features = handleTaskFeatureAliases(ctx, taskParams)
+    features = toListSimple(taskParams.get('features', []))
 
     detected = [ TASK_TARGET_FEATURES_TO_LANG.get(x, '') for x in features ]
     features = detected + features
@@ -360,48 +351,21 @@ def detectTaskFeatures(ctx, taskParams):
 
     return features
 
-def handleTaskFeatureAliases(ctx, taskParams):
-    """
-    Detect features for aliases 'stlib', 'shlib', 'program' and 'objects'
-    """
-
-    features = taskParams['features']
-    alias = getAliasFromFeatures(features)
-    if not alias:
-        return features
-
-    source = taskParams.get('source')
-    if not source:
-        msg = "Feature alias %r can not be used without parameter 'source'" % alias
-        raise ZenMakeConfError(msg)
-
-    patterns = []
-    for item in source:
-        patterns.extend(item.get('include', []))
-    for pattern in patterns:
-        if not _RE_EXT_AT_THE_END.search(_unicode(pattern)):
-            msg = "Pattern %r in 'source'" % pattern
-            msg += " must have some file extension at the end."
-            raise ZenMakeConfError(msg)
-
-    taskParams['$cache-source'] = True
-    source = handleTaskSourceParam(ctx, taskParams)
-    return resolveAliasesInFeatures(source, features, taskParams['name'])
-
 def validateTaskFeatures(taskParams):
     """
-    Check all features are valid and remove unsupported features
+    Check all features are valid
     """
 
     features = taskParams['features']
     unknown = [x for x in features if x not in SUPPORTED_TASK_FEATURES]
     if unknown:
-        for val in unknown:
-            features.remove(val)
-            msg = 'Feature %r in task %r is not supported. Removed.' % \
-                  (val, taskParams['name'])
-            log.warn(msg)
-    taskParams['features'] = features
+        if len(unknown) == 1:
+            msg = "Feature %r in task %r is not supported." % \
+                (unknown[0], taskParams['name'])
+        else:
+            msg = "Features '%s' in task %r are not supported." % \
+                (', '.join(unknown), taskParams['name'])
+        raise ZenMakeConfError(msg)
 
     if not features and taskParams.get('source'):
         msg = "There is no way to proccess task %r" % taskParams['name']

@@ -18,18 +18,15 @@ int main()
 
 tasks = {
     'dll' : {
-        #'features' : 'dshlib',
-        'features' : 'shlib',
+        'features' : 'dshlib',
         'source'   : 'src/dll.d',
     },
     'staticlib' : {
-        #'features' : 'dstlib',
-        'features' : 'stlib',
+        'features' : 'dstlib',
         'source'   : 'src/static_lib.d',
     },
     'test' : {
-        #'features' : 'dprogram',
-        'features' : 'program',
+        'features' : 'dprogram',
         'source'   : 'src/main.d',
         'includes' : 'src',
         'use'      : 'staticlib dll',

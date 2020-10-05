@@ -11,8 +11,8 @@ tasks = {
         }
     },
     'hello' : {
-        'features': 'program',
-        'source' : dict( include = '*.c' ),
+        'features': 'cprogram',
+        'source' : '*.c',
         #'includes' : '/usr/include/glib-2.0 /usr/lib/glib-2.0/include /usr/include/dbus-1.0',
         'use': 'test',
     },

@@ -1,7 +1,7 @@
 
 tasks = {
     'hello' : {
-        'features' : 'program',
+        'features' : 'cprogram',
         'source'   : 'hello.c',
         'config-actions'  : [
             { 'do' : 'pkgconfig', 'packages' : 'gtk+-3.0' },

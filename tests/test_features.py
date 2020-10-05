@@ -29,7 +29,6 @@ def testInitModules():
 
     targetMap = {}
     extensionsMap = {}
-    aliasesMap = {}
     scheme = {}
 
     for name in names:
@@ -50,11 +49,6 @@ def testInitModules():
             for ext in extensions:
                 assert ext not in extensionsMap
                 extensionsMap[ext] = feature
-
-            aliases = params.get('aliases')
-            if aliases:
-                assert feature not in aliasesMap
-                aliasesMap[feature] = aliases
 
         spec = getattr(module, 'VALIDATION_TASKSCHEME_SPEC', {})
         for param in spec:

@@ -15,7 +15,7 @@ features = {
 
 tasks = {
     'shlib' : {
-        'features' : 'shlib',
+        'features' : 'cxxshlib',
         'source'   : 'shlib/**/*.cpp',
         'includes' : 'include',
         'defines'  : 'ABC=1 DOIT MY_LONG_STRING="some long string"',
@@ -35,17 +35,17 @@ tasks = {
         ],
     },
     'stlib' : {
-        'features' : 'stlib',
+        'features' : 'cxxstlib',
         'source'   : 'stlib/**/*.cpp',
     },
     'shlibmain' : {
-        'features' : 'shlib',
+        'features' : 'cxxshlib',
         'source'   : 'shlibmain/**/*.cpp',
         'use'      : 'shlib stlib',
         'install-path' : '${PREFIX}/lbr',
     },
     'main' : {
-        'features' : 'program',
+        'features' : 'cxxprogram',
         'source'   : 'prog/**/*.cpp',
         'use'      : 'shlibmain',
         'target'   : '@bld', # to check 'build-work-dir-name'

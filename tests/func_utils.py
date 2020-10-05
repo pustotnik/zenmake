@@ -240,9 +240,7 @@ def getCachedTargetPattern(testSuit, taskName, features):
     return result
 
 def handleTaskFeatures(testSuit, taskParams):
-    ctx = Context.Context(run_dir = testSuit.cwd)
-    setattr(ctx, 'bconfManager', testSuit.confManager)
-    assist.detectTaskFeatures(ctx, taskParams)
+    assist.detectTaskFeatures(taskParams)
     assert isinstance(taskParams['features'], list)
 
 def getBuildTasks(confManager):

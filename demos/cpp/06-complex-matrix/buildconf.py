@@ -27,7 +27,7 @@ matrix = [
     },
     {
         'for' : { 'task' : 'shlib shlibmain', },
-        'set' : { 'features' : 'cxx cxxshlib', }
+        'set' : { 'features' : 'cxxshlib', }
     },
     {
         'for' : { 'task' : 'shlib', },
@@ -36,7 +36,7 @@ matrix = [
     {
         'for' : { 'task' : 'stlib', },
         'set' : {
-            'features' : 'cxx cxxstlib',
+            'features' : 'cxxstlib',
             'source'   : 'stlib/**/*.cpp',
         }
     },
@@ -50,7 +50,7 @@ matrix = [
     {
         'for' : { 'task' : 'test', },
         'set' : {
-            'features' : 'cxx cxxprogram',
+            'features' : 'cxxprogram',
             'source'   : 'prog/**/*.cpp',
             'use'      : 'shlibmain',
         }

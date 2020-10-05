@@ -5,7 +5,7 @@ def check(**kwargs):
 
 tasks = {
     'corelib' : {
-        'features' : 'shlib',
+        'features' : 'cshlib',
         'source'   : '**/*.c',
         'includes' : 'src',
         'export-includes' : True,

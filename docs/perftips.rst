@@ -19,10 +19,3 @@ difference in performance of ZenMake.
 It's recommended to check if it really has positive effect before using of md5.
 To change hash algorithm you can use parameter ``hash-algo`` in buildconf
 :ref:`features<buildconf-features>`.
-
-Task features
-"""""""""""""""""""""
-Prefer using ``<lang>stlib``/``<lang>shlib``/``<lang>program`` instead of aliases
-``stlib``/``shlib``/``program`` in :ref:`features<buildconf-taskparams-features>`.
-Using these aliases is always slower than without ones and for some projects
-with a lot of files it can be significant.

@@ -1,7 +1,7 @@
 
 tasks = {
     'subdirs-test' : {
-        'features' : 'program',
+        'features' : 'cxxprogram',
         'source'   : 'test.cpp',
         'use'      : 'engine',
     },

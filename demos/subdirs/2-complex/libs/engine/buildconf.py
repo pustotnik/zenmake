@@ -12,7 +12,7 @@ def check2(**kwargs):
 
 tasks = {
     'extra' : {
-        'features' : 'shlib',
+        'features' : 'cxxshlib',
         'source'   : 'src/extra.cpp',
         'includes' : 'src',
         'use'      : 'corelib',
@@ -25,7 +25,7 @@ tasks = {
         ],
     },
     'engine' : {
-        'features' : 'shlib',
+        'features' : 'cxxshlib',
         'source'   :  dict( include = 'src/**/*.cpp', exclude = 'src/extra*' ),
         'includes' : 'src',
         'use'      : 'extra',

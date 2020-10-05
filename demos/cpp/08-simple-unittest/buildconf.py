@@ -1,7 +1,7 @@
 
 tasks = {
     'simple' : {
-        'features' : 'program',
+        'features' : 'cxxprogram',
         'source'   :  {
             'include' : '**/*.cpp',
             'exclude' : '**/test*',
@@ -9,7 +9,7 @@ tasks = {
         'rpath' : '.',
     },
     'simple.tests' : {
-        'features' : 'program test',
+        'features' : 'cxxprogram test',
         'source'   :  {
             'include' : '**/*.cpp',
             'exclude' : 'main.cpp',

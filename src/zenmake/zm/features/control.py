@@ -11,13 +11,10 @@
 import os
 from collections import namedtuple
 
-from zm.constants import TASK_TARGET_KINDS, TASK_FEATURE_ALIASES
-from zm.pyutils import stringtype
 from zm.autodict import AutoDict as _AutoDict
 from zm.pypkg import PkgPath
-from zm.utils import loadPyModule, toList
-from zm.pathutils import getNativePath
-from zm.error import ZenMakeError, ZenMakeConfError
+from zm.utils import loadPyModule
+from zm.error import ZenMakeError
 
 # private cache
 _cache = _AutoDict()
@@ -72,7 +69,6 @@ def _generateFeaturesMap():
 
     targetMap = {}
     extensionsMap = {}
-    aliasesMap = {}
     allFeatures = []
 
     for module in modules:
@@ -92,12 +88,7 @@ def _generateFeaturesMap():
             for ext in extensions:
                 extensionsMap[ext] = feature
 
-            aliases = params.get('aliases')
-            if aliases:
-                aliasesMap[feature] = aliases
-                allFeatures.extend(aliases)
-
-    return targetMap, extensionsMap, aliasesMap, frozenset(allFeatures)
+    return targetMap, extensionsMap, frozenset(allFeatures)
 
 def _generateToolchainVars():
 
@@ -138,7 +129,6 @@ def _generateToolchainVarToLang(toolchainVars):
 
 TASK_TARGET_FEATURES_TO_LANG, \
 FILE_EXTENSIONS_TO_LANG, \
-TASK_LANG_FEATURES_TO_ALIASES, \
 SUPPORTED_TASK_FEATURES = _generateFeaturesMap()
 
 TASK_TARGET_FEATURES = frozenset(TASK_TARGET_FEATURES_TO_LANG.keys())
@@ -152,85 +142,6 @@ TOOLCHAIN_SYSVAR_TO_LANG = _generateToolchainVarToLang(TOOLCHAIN_VARS)
 CCROOT_FEATURES = frozenset(
     ('c', 'cxx', 'asm', 'd', 'fc', 'java', 'cs', )
 )
-
-# Could there be a more elegant solution to define these priorities?
-TASK_LANG_FEATURES_PRIORITY = (
-    'cxx', 'c', 'asm', 'fc', 'd'
-)
-
-def _gatherFileExtensions(src):
-    """
-    Returns the file extensions for the list of files given as input
-
-    :param src: files to process
-    :list src: list of string or waflib.Node.Node
-    :return: set of file extensions
-    :rtype: set of strings
-	"""
-
-    ret = set()
-    for path in toList(src):
-        if isinstance(path, stringtype):
-            path = os.path.basename(getNativePath(path))
-        else:
-            # should be waflib.Node.Node
-            path = path.name
-
-        dotIndex = path.rfind('.')
-        if dotIndex > 0: # if dotIndex == 0 it can mean something like '.bashrc'
-            ret.add(path[dotIndex:])
-    return ret
-
-def resolveAliasesInFeatures(source, features, taskName = None):
-    """
-    Detect features from aliases in features
-    """
-
-    alias = [ x for x in features if x in TASK_FEATURE_ALIASES]
-    if not alias:
-        return features
-
-    alias = alias[0]
-
-    # remove all aliases from features
-    features = [ x for x in features if x not in TASK_FEATURE_ALIASES]
-
-    lfeatures = []
-    extensions = _gatherFileExtensions(source)
-    for ext in tuple(extensions):
-        feature = FILE_EXTENSIONS_TO_LANG.get(ext)
-        if feature:
-            lfeatures.append(feature)
-
-    if not lfeatures:
-        msg = "Unable to determine how to resolve alias %r" % alias
-        if taskName:
-            msg += " in task %r" % taskName
-        msg += ": there are no supported file extensions or files at all."
-        raise ZenMakeConfError(msg)
-
-    targetFeature = None
-    if alias in TASK_TARGET_KINDS:
-        _map = TASK_LANG_FEATURES_TO_ALIASES
-        targetLangs = [ x for x in lfeatures if alias in _map.get(x, [])]
-
-        if not targetLangs and not features:
-            msg = 'Unable to determine how to resolve alias %r with features %r' % (alias, features)
-            raise ZenMakeConfError(msg)
-
-        # Only one target feature can be used for one build task
-        for lang in TASK_LANG_FEATURES_PRIORITY:
-            if lang in targetLangs:
-                targetFeature = lang + alias
-                break
-        else:
-            if targetLangs:
-                targetFeature = targetLangs[0] + alias
-
-    features.extend(lfeatures)
-    if targetFeature:
-        features.append(targetFeature)
-    return features
 
 #######################################################################
 ## Support for precmd/postcmd decorators

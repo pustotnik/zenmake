@@ -1,11 +1,7 @@
 
 def check():
     import sys
-    try:
-        size = sys.maxint
-    except AttributeError:
-        size = sys.maxsize # python >= 3.2
-    return size >= 4**21
+    return sys.maxsize >= 4**21
 
 tasks = {
     'asmtest' : {
@@ -14,7 +10,7 @@ tasks = {
         'asflags'     : '-f elf64',
         'aslinkflags' : '-s',
         'toolchain'   : 'nasm',
-        'config-actions'   : [
+        'config-actions' : [
             check,
             { 'do' : 'find-program', 'names' : 'ld', 'var' : 'ASLINK' },
         ],

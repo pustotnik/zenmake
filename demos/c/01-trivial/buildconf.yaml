@@ -1,7 +1,6 @@
 
 tasks:
   test:
-    #features  : cprogram
-    features  : program
+    features  : cprogram
     source    : test.c
     

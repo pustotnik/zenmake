@@ -52,14 +52,11 @@ def _prepareAndLoadFeatures(bconfManager):
 
     from zm.features import loadFeatures
 
-    ctx = Context.Context()
-    setattr(ctx, 'bconfManager', bconfManager)
-
     try:
         # process all actual features from buildconf(s)
         for bconf in bconfManager.configs:
             for taskParams in bconf.tasks.values():
-                assist.detectTaskFeatures(ctx, taskParams)
+                assist.detectTaskFeatures(taskParams)
                 assist.validateTaskFeatures(taskParams)
     except ZenMakeConfError as ex:
         if not ex.confpath:

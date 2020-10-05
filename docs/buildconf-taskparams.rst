@@ -41,30 +41,6 @@ features
     :<lang>program:
         Means that result of the task is an executable file for the <lang> code.
         For example: ``cprogram``, ``cxxprogram``, etc.
-    :stlib:
-        Means that result of the task is a static library. It's a special
-        alias where type of code
-        is detected by file extensions found in
-        `source <buildconf-taskparams-source_>`_.
-        Be careful - it's slower than using of form <lang>stlib,
-        e.g. ``cstlib``, ``cxxstlib``, etc.
-        Also see note below.
-    :shlib:
-        Means that result of the task is a shared library. It's a special
-        alias where type of code
-        is detected by file extensions found in
-        `source <buildconf-taskparams-source_>`_.
-        Be careful - it's slower than using of form <lang>shlib,
-        e.g. ``cshlib``, ``cxxshlib``, etc.
-        Also see note below.
-    :program:
-        Means that result of the task is an executable file. It's a special
-        alias where type of code
-        is detected by file extensions found in
-        `source <buildconf-taskparams-source_>`_.
-        Be careful - it's slower than using of form <lang>program,
-        e.g. ``cprogram``, ``cxxprogram``, etc.
-        Also see note below.
     :runcmd:
         Means that the task has parameter ``run`` and should run some
         command. It's optional because ZenMake detects this feature
@@ -90,34 +66,9 @@ features
     .. code-block:: python
 
         'features' : 'cprogram'
-        'features' : 'program'
         'features' : 'cxxshlib'
         'features' : 'cxxprogram runcmd'
         'features' : 'cxxprogram test'
-
-    .. note::
-
-        If you use any of aliases ``stlib``, ``shlib``, ``program``
-        (don't confuse with features in form of <lang>stlib,
-        <lang>shlib, <lang>program) and
-        patterns in `source <buildconf-taskparams-source_>`_ then you cannot
-        use patterns without specifying file extension at the end of
-        each pattern in the parameter 'include'.
-
-        .. code-block:: python
-
-            'source' :  { 'include': '**/*.cpp' }             # correct
-            'source' :  { 'include': ['**/*.c', '**/*.cpp'] } # correct
-            'source' :  { 'include': '**' }                   # incorrect
-
-        If you don't use these aliases you can use any patterns.
-
-        Also you cannot use these aliases if you want to use
-        a file from :ref:`target<buildconf-taskparams-target>` of
-        another task in :ref:`source<buildconf-taskparams-source>` of
-        the task.
-
-        In general, it is better to avoid use of these aliases.
 
 .. _buildconf-taskparams-target:
 
@@ -295,12 +246,6 @@ toolchain
         If you don't set ``toolchain`` then ZenMake will try to
         set ``auto-*`` itself
         according values in `features <buildconf-taskparams-features_>`_.
-
-    ..
-        But feature with autodetecting of language by file extensions cannot
-        be used for autodetecting of correct ``auto-*``. For example, with
-        ``cxxshlib`` ZenMake can set ``auto-c++`` itself but not
-        with ``shlib``.
 
     In some rare cases this parameter can contain more than one value as a
     string with values separated by space or as list. For example, for case

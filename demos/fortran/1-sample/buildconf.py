@@ -12,23 +12,20 @@ end program HelloWorld
 
 tasks = {
     'hello': {
-        'features' : 'program',
+        'features' : 'fcprogram',
         'source'   : 'src/hello.f90',
     },
     'sharedlib' : {
-        #'features' : 'fcshlib',
-        'features' : 'shlib',
+        'features' : 'fcshlib',
         'source'   : 'src/funcs.f90',
         'ver-num'  : '2.1.3',
     },
     'staticlib' : {
-        #'features' : 'fcstlib',
-        'features' : 'stlib',
+        'features' : 'fcstlib',
         'source'   : 'src/funcs2.f90',
     },
     'test' : {
         'features' : 'fcprogram',
-        #'features' : 'program',
         'source'   : 'src/calculator.f90 src/main.f90',
         'includes' : 'src/inc',
         'use'      : 'staticlib sharedlib',
