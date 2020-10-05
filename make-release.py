@@ -55,11 +55,6 @@ version = setup.version
 GIT_EXE = findProg('git')
 PY_EXE = sys.executable
 
-if pyutils.PY3:
-    _input = input
-else:
-    _input = raw_input
-
 def _runInShell(cmd):
     try:
         output = subprocess.check_output(cmd, shell = True)
@@ -79,7 +74,7 @@ def _runGitCmd(args):
 
 def _getAnswerYesNo(question):
     while True:
-        answer = _input(question + ' [y/n]')
+        answer = input(question + ' [y/n]')
         if not answer or answer[0] == 'n':
             return False
         if answer != 'y' and answer != 'yes':

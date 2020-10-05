@@ -12,7 +12,6 @@ import sys
 from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext as WafBuildContext, inst as InstallTask
 from zm.constants import DEFAULT_BUILDWORKNAME
-from zm.pyutils import viewvalues
 from zm.utils import asmethod, Timer
 from zm import log, db, error
 from zm.waf.assist import makeTasksCachePath
@@ -98,7 +97,7 @@ def _loadTasks(self):
     self.zmtasks = tasks = tasksData['tasks']
     taskenvs = tasksData['taskenvs']
 
-    for taskParams in viewvalues(tasks):
+    for taskParams in tasks.values():
         taskVariant = taskParams['$task.variant']
         env = ConfigSet()
         env.table = taskenvs[taskVariant]

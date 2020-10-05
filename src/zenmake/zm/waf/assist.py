@@ -12,7 +12,7 @@ import os
 import re
 
 from zm.constants import TASK_FEATURE_ALIASES, PLATFORM
-from zm.pyutils import viewitems, listvalues, stringtype, _unicode, _encode
+from zm.pyutils import stringtype, _unicode, _encode
 from zm.autodict import AutoDict as _AutoDict
 from zm.pathutils import getNodesFromPathsConf
 from zm.error import ZenMakeError, ZenMakeConfError
@@ -178,7 +178,7 @@ def orderTasksByLocalDeps(tasks):
         taskParams['$weight'] = weight
         return weight
 
-    tasksList = listvalues(tasks)
+    tasksList = list(tasks.values())
     for taskParams in tasksList:
         calcWeight(tasks, taskParams)
 
@@ -261,7 +261,7 @@ def setTaskEnvVars(env, taskParams, toolchainSettings):
                 _gathered[var] = _gathered.get(var, []) + val
 
     # merge with the waf env vars
-    for var, val in viewitems(_gathered):
+    for var, val in _gathered.items():
         # Waf has some usefull predefined env vars for some compilers
         # so here we add values, not replace them.
 

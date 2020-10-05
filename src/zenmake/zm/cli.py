@@ -13,7 +13,7 @@ from collections import namedtuple, defaultdict
 # argparse from the https://pypi.org/project/argparse/ supports aliases
 from auxiliary.argparse import argparse
 from zm.constants import APPNAME, CAP_APPNAME, PLATFORM, CWD
-from zm.pyutils import maptype, viewitems
+from zm.pyutils import maptype
 from zm.pathutils import unfoldPath
 from zm.utils import envValToBool
 from zm import log
@@ -423,7 +423,7 @@ class CmdLineParser(object):
         posargs = [x for x in config.posargs if cmd.name in x.commands]
         for arg in posargs:
             kwargs = _AutoDict()
-            for k, v in viewitems(arg):
+            for k, v in arg.items():
                 if v is None or k in PosArg.NOTARGPARSE_FIELDS:
                     continue
                 kwargs[k] = v
@@ -450,7 +450,7 @@ class CmdLineParser(object):
                     kwargs.help = "run command '%s' before command '%s'" \
                                   % (opt.runcmd, cmd.name)
             else:
-                for k, v in viewitems(opt):
+                for k, v in opt.items():
                     if v is None or k in Option.NOTARGPARSE_FIELDS:
                         continue
                     kwargs[k] = v

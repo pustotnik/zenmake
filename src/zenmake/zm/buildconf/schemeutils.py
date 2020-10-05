@@ -6,7 +6,7 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-from zm.pyutils import PY2, stringtype
+from zm.pyutils import stringtype
 
 class AnyAmountStrsKey(object):
     """ Any amount of string keys"""
@@ -17,10 +17,6 @@ class AnyAmountStrsKey(object):
             # don't attempt to compare against unrelated types
             return NotImplemented # pragma: no cover
         return True
-
-    if PY2: # python 3 has it by default and it's more performant
-        def __ne__(self, other):
-            return not self == other
 
     def __hash__(self):
         # necessary for instances to behave sanely in dicts and sets.

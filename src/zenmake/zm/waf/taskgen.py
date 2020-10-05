@@ -7,7 +7,6 @@
 """
 
 from waflib import TaskGen as WafTaskGen
-from zm.pyutils import viewitems
 from zm.utils import asmethod
 from zm import error
 
@@ -29,7 +28,7 @@ def _tgenGetHook(self, node):
     from zm.features import FILE_EXTENSIONS_TO_LANG
 
     supportedExts = []
-    for ext, lang in viewitems(FILE_EXTENSIONS_TO_LANG):
+    for ext, lang in FILE_EXTENSIONS_TO_LANG.items():
         if lang in self.features:
             supportedExts.append(ext)
     supportedExts = ', '.join(supportedExts)

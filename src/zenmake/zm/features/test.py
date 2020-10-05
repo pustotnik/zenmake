@@ -14,7 +14,6 @@ from collections import deque
 from waflib.TaskGen import feature, after
 from waflib import Build, Task
 from waflib.Build import BuildContext
-from zm.pyutils import viewitems, viewvalues
 from zm import log, cli, error
 from zm.autodict import AutoDict as _AutoDict
 from zm.features import precmd, postcmd
@@ -91,7 +90,7 @@ def preInit(ctx):
         tasks = bconf.tasks
 
         testTaskNames = []
-        for name, params in viewitems(tasks):
+        for name, params in tasks.items():
             features = params['features']
 
             if 'test' in features:
@@ -170,7 +169,7 @@ def preBuild(bld):
     tasks = bld.zmtasks
 
     _shared.testsBuilt = False
-    for params in viewvalues(tasks):
+    for params in tasks.values():
 
         features = params['features']
         if 'test' not in features:
@@ -209,7 +208,7 @@ def postBuild(bld):
 
     assert _shared.testsBuilt
 
-    for params in viewvalues(bld.zmtasks):
+    for params in bld.zmtasks.values():
         params['$istest'] = 'test' in params['features']
 
     #Gather some info from BuildContext at the end of the 'build' call.

@@ -9,7 +9,6 @@
 import os
 
 from zm.constants import PLATFORM, KNOWN_PLATFORMS, CPU_ARCH
-from zm.pyutils import viewitems, viewvalues
 from zm.utils import toList
 from zm.error import ZenMakeLogicError, ZenMakeConfError
 from zm.buildconf.scheme import KNOWN_CONDITION_PARAM_NAMES
@@ -122,7 +121,7 @@ def handleOneTaskParamSelect(bconf, taskParams, paramName):
 
         # check system env vars
         filterVals = condition.get('env', {})
-        for var, val in viewitems(filterVals):
+        for var, val in filterVals.items():
             if os.environ.get(var) != val:
                 return False
 
@@ -131,7 +130,7 @@ def handleOneTaskParamSelect(bconf, taskParams, paramName):
     defaultValue = selectParam.get('default', taskParams.get(paramName))
     detectedValue = None
 
-    for label, param in viewitems(selectParam):
+    for label, param in selectParam.items():
         if label == 'default':
             continue
 
@@ -165,7 +164,7 @@ def handleTaskParamSelects(bconf):
     Handle all *.select params
     """
 
-    for taskParams in viewvalues(bconf.tasks):
+    for taskParams in bconf.tasks.values():
         paramNames = [x[:x.rfind('.')] for x in taskParams if x.endswith('.select')]
 
         for name in paramNames:

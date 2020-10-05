@@ -26,7 +26,7 @@ from waflib.Configure import find_program as wafFindProgram
 from waflib import Errors as waferror
 from waflib.Tools.c_config import DEFKEYS, SNIP_EMPTY_PROGRAM, build_fun as defaultCfgBuildFunc
 from zm.constants import CONFTEST_DIR_PREFIX
-from zm.pyutils import maptype, stringtype, viewitems, viewvalues
+from zm.pyutils import maptype, stringtype
 from zm.autodict import AutoDict as _AutoDict
 from zm import utils, log, error, cli
 from zm.pathutils import getNativePath, unfoldPath
@@ -149,7 +149,7 @@ def _makeRunBuildBldCtx(ctx, args, topdir, bdir):
     bld.env = args['env']
 
     # for function 'build_fun' only
-    bld.kw = { k:v for k,v in viewitems(args) if k[0] != '$' }
+    bld.kw = { k:v for k,v in args.items() if k[0] != '$' }
     bld.conf = ctx # it's used for bld.conf.to_log
 
     return bld
@@ -584,7 +584,7 @@ def _handleLoadedActionsCache(cache):
 
     if not cacheCfgActionResults:
         # reset all but not 'id'
-        for v in viewvalues(actions):
+        for v in actions.values():
             if isinstance(v, maptype):
                 _new = { 'id' : v['id']}
                 v.clear()
@@ -614,7 +614,7 @@ def _calcConfCheckHexHash(checkArgs, params):
     taskParams = params['taskParams']
 
     hashVals = {}
-    for k, v in viewitems(checkArgs):
+    for k, v in checkArgs.items():
         if k in CONFTEST_HASH_IGNORED_FUNC_ARGS or k[0] == '$':
             continue
         hashVals[k] = v
@@ -932,7 +932,7 @@ def _doPkgConfigForOne(cfgCtx, pkgInfo, actionArgs, taskParams):
     # cmd line args
     cmdArgs = ['--%s' % x for x in ('libs', 'cflags', 'static') if actionArgs[x]]
 
-    for k, v in viewitems(actionArgs.get('def-pkg-vars', {})):
+    for k, v in actionArgs.get('def-pkg-vars', {}).items():
         cmdArgs.append('--define-variable=%s=%s' % (k, v))
 
     cmdArgs += pkgInfo.cmdline

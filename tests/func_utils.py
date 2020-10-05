@@ -24,7 +24,7 @@ from waflib import Context
 from waflib.ConfigSet import ConfigSet
 from zm import starter
 from zm import utils, zipapp, db
-from zm.pyutils import viewitems, viewvalues, stringtype
+from zm.pyutils import stringtype
 from zm.waf import assist
 from zm.autodict import AutoDict
 from zm.buildconf import loader as bconfloader
@@ -279,7 +279,7 @@ def obtainBuildTargets(testSuit, cmdLine, withTests = False):
     isLinux = PLATFORM == 'linux'
 
     tasks = getBuildTasks(confManager)
-    for taskName, taskParams in viewitems(tasks):
+    for taskName, taskParams in tasks.items():
 
         handleTaskFeatures(testSuit, taskParams)
         features = taskParams['features']
@@ -339,7 +339,7 @@ def obtainBuildTargets(testSuit, cmdLine, withTests = False):
 
 def checkBuildTargets(targets, resultExists, fakeBuild = False):
 
-    for targetsInfo in viewvalues(targets):
+    for targetsInfo in targets.values():
 
         kind = targetsInfo['kind']
         targets = targetsInfo['targets-required']

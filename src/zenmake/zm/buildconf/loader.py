@@ -19,7 +19,7 @@ import io
 from zm import log
 from zm.constants import BUILDCONF_FILENAMES, DEFAULT_BUILDROOTNAME
 from zm.error import ZenMakeConfError
-from zm.pyutils import maptype, viewitems
+from zm.pyutils import maptype
 from zm.utils import loadPyModule
 from zm.buildconf.validator import Validator as _Validator
 
@@ -118,7 +118,7 @@ def _loadYaml(filepath):
     if not isinstance(data, maptype):
         raise ZenMakeConfError("File %r has invalid structure" % filepath)
 
-    for k, v in viewitems(data):
+    for k, v in data.items():
         setattr(buildconf, k, v)
     return buildconf
 

@@ -52,13 +52,15 @@ addons:
 # most problematic jobs are at first places
 jobs:
   include:
-  - name: Python 2.7 on Ubuntu (bionic)
-    python: 2.7
-    env: NAME='Python 2.7 on Linux'
+  #- name: Python 2.7 on Ubuntu (bionic)
+  #  python: 2.7
+  #  env: NAME='Python 2.7 on Linux'
+
   - name: Python 3.4 on Ubuntu (xenial)
     dist: xenial
     python: 3.4
     env: NAME='Python 3.4 on Linux'
+
   - name: Python 3.7 on Windows 10
     # https://docs.travis-ci.com/user/reference/windows/
     # https://github.com/cclauss/Travis-CI-Python-on-three-OSes
@@ -71,21 +73,15 @@ jobs:
     cache:
       directories:
         - $HOME/AppData/Local/Temp/chocolatey
-  - name: Python 2.7 on macOS 10.13
+
+  - name: Python 3.5 on macOS 10.13
     os: osx
     osx_image: xcode9.4
     language: shell
     env:
-      - PYENV_VERSION=2.7.17
-      - NAME='Python 2.7 on macOS'
+      - PYENV_VERSION=3.5.8
+      - NAME='Python 3.5 on macOS'
 
-  #- name: Python 3.4 on macOS 10.13
-  #  os: osx
-  #  osx_image: xcode9.4
-  #  language: shell
-  #  env:
-  #    - PYENV_VERSION=3.4.9
-  #    - NAME='Python 3.4 on macOS'
   - name: PyPy (with python 3.5) on Ubuntu (xenial)
     # https://docs.travis-ci.com/user/languages/python/#pypy-support
     # https://travis-ci.community/t/confusing-pypy-versions/2505
@@ -95,13 +91,6 @@ jobs:
     env: NAME='PyPy (with python 3.5) on Linux'
 
 ########################################################
-  #- name: Python 3.5 on macOS 10.13
-  #  os: osx
-  #  osx_image: xcode9.4
-  #  language: shell
-  #  env:
-  #    - PYENV_VERSION=3.5.8
-  #    - NAME='Python 3.5 on macOS'
   #- name: Python 3.6 on macOS 10.13
   #  os: osx
   #  osx_image: xcode9.4

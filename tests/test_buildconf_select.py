@@ -18,7 +18,7 @@ from waflib import Options, Context, Build
 from waflib.ConfigSet import ConfigSet
 from waflib.Errors import WafError
 from zm.constants import PLATFORM, CPU_ARCH
-from zm.pyutils import viewvalues, maptype
+from zm.pyutils import maptype
 from zm.autodict import AutoDict
 from zm import cli, utils
 from zm.waf import assist
@@ -181,7 +181,7 @@ def _postBuildconfSetup(buildconf, paramName):
             values.update(vals)
         libsValues = list(values)
 
-        for params in viewvalues(buildconf.tasks):
+        for params in buildconf.tasks.values():
             params[libsparamName] = libsValues
 
 def getFixtureCase1(_, testingBuildConf, paramName):
@@ -476,6 +476,6 @@ def testParam(cfgctx, monkeypatch, paramfixture):
     if checkExpected is None:
         checkExpected = checkExpectedDefault
     bconf = bconfManager.root
-    for taskParams in viewvalues(bconf.tasks):
+    for taskParams in bconf.tasks.values():
         _expected = expected[taskParams['name']]
         checkExpected(taskParams[paramname], _expected)

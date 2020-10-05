@@ -10,7 +10,7 @@ import os
 
 from waflib.Node import exclude_regs as DEFAULT_PATH_EXCLUDES
 from waflib import Utils as wafutils
-from zm.pyutils import PY2, maptype, stringtype
+from zm.pyutils import maptype, stringtype
 from zm.utils import toList, toListSimple, substVars
 from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
 
@@ -290,10 +290,6 @@ class PathsParam(object):
         if self._startdir == other._startdir:
             return self.relpaths() == other.relpaths()
         return self.abspaths() == other.abspaths()
-
-    if PY2: # python 3 has it by default and it's more performant
-        def __ne__(self, other):
-            return not self == other
 
 def pathsDictParamsToList(item):
     """

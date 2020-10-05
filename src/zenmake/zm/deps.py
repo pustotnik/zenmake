@@ -13,7 +13,7 @@ from copy import deepcopy
 from collections import defaultdict
 
 from zm.constants import DEPNAME_DELIMITER, SYSTEM_LIB_PATHS, PYTHON_EXE, PLATFORM
-from zm.pyutils import viewvalues, viewitems, maptype
+from zm.pyutils import maptype
 from zm import error, log, db, cli
 from zm.utils import toListSimple, runCmd, uniqueListWithOrder, uniqueDictListWithOrder
 from zm.pathutils import PathsParam, getNodesFromPathsConf
@@ -48,7 +48,7 @@ def _handleTasksWithDeps(bconf, allTasks):
     depNames = set()
     depsConf = bconf.dependencies
 
-    for taskParams in viewvalues(bconf.tasks):
+    for taskParams in bconf.tasks.values():
 
         use = taskParams.get('use')
         if use is None:
@@ -136,7 +136,7 @@ def _dispatchRules(rules):
             cmdRules.append(ruleParams)
 
     # uniqify rules
-    for cmdRules in viewvalues(producers):
+    for cmdRules in producers.values():
         seen = {}
         _rules = []
         for ruleParams in cmdRules:
@@ -290,7 +290,7 @@ def preconfigureExternalDeps(cfgCtx):
             _detectZenMakeProjectRules(depConf, buildtype)
 
             rules = depConf.get('rules', {})
-            for ruleName, ruleParams in viewitems(rules):
+            for ruleName, ruleParams in rules.items():
 
                 ruleParams = _initRule(ruleName, ruleParams, rootdir, depRootDir)
 
@@ -399,7 +399,7 @@ def _prepareZenMakeProjectDep(depConf, buildtype, rootdir):
     targetConfs = depConf.setdefault('targets', targetsData['targets'])
 
     targetsBTypeDir = normpath(joinpath(targetsRootDir, targetsData['btypedir']))
-    for target in viewvalues(targetConfs):
+    for target in targetConfs.values():
         # zenmake db doesn't have field 'dir' in target confs
         target['dir'] = PathsParam(targetsBTypeDir, rootdir, kind = 'path')
 
@@ -414,7 +414,7 @@ def _setupTaskDeps(ctx, bconf, taskParams):
     rootdir = bconf.rootdir
     depTargets = []
 
-    for depName, useNames in viewitems(taskDeps):
+    for depName, useNames in taskDeps.items():
         depConf = depsConf[depName]
 
         exportIncludes = depConf.get('export-includes')
@@ -467,7 +467,7 @@ def _setupTaskDeps(ctx, bconf, taskParams):
 def _makeDepTargetsForDb(depConf, rootdir):
 
     _targets = []
-    for target in viewvalues(depConf.get('targets', {})):
+    for target in depConf.get('targets', {}).values():
         _dir = target.get('dir')
         if _dir:
             target['dir'] = _dir.relpath(rootdir)
@@ -491,14 +491,14 @@ def finishExternalDepsConfig(cfgCtx):
 
     depTargets = []
     for bconf in bconfManager.configs:
-        for taskParams in viewvalues(bconf.tasks):
+        for taskParams in bconf.tasks.values():
             depTargets.extend(_setupTaskDeps(cfgCtx, bconf, taskParams))
 
     ### setup rule targets
 
     depConfToRules = {}
     seenRules = set()
-    for rules in viewvalues(zmdepconfs):
+    for rules in zmdepconfs.values():
         for rule in rules:
             if id(rule) in seenRules:
                 continue
@@ -509,7 +509,7 @@ def finishExternalDepsConfig(cfgCtx):
                 _depRules[1].append(rule)
             seenRules.add(id(rule))
 
-    for depConf, rules in viewvalues(depConfToRules):
+    for depConf, rules in depConfToRules.values():
         targets = _makeDepTargetsForDb(depConf, rootdir)
         if not targets:
             log.warn("Dependency %r has no field 'targets'" % depConf['name'])
@@ -548,7 +548,7 @@ def _checkTriggerEnv(_, rule):
     if not envTrigger:
         return False
 
-    return all(os.environ.get(x) == y for x, y in viewitems(envTrigger))
+    return all(os.environ.get(x) == y for x, y in envTrigger.items())
 
 def _checkTriggerNoTargets(ctx, rule):
 

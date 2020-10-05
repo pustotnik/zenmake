@@ -8,7 +8,7 @@
 
 from os.path import relpath
 
-from zm.pyutils import viewvalues, maptype
+from zm.pyutils import maptype
 from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY, addSelectToParams
 
 VALIDATION_TASKSCHEME_SPEC = {
@@ -57,7 +57,7 @@ def detectFeatures(bconf):
     It should return a list of detected features.
     """
 
-    for taskParams in viewvalues(bconf.tasks):
+    for taskParams in bconf.tasks.values():
         if 'runcmd' in taskParams['features']:
             return ['runcmd']
         if 'run' in taskParams:

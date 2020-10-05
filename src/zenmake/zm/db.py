@@ -8,35 +8,22 @@
 
 import os
 import io
+import pickle
 
 from waflib import ConfigSet
 from zm.constants import PLATFORM
-from zm.pyutils import texttype, PY_MAJOR_VER, PY2
+from zm.pyutils import texttype, PY_MAJOR_VER
 from zm.utils import configSetToDict
 
-try:
-    _repr = ascii
-except NameError:
-    _repr = repr
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
-
 _MSGPACK_EXISTS = False
-if not PY2:
-    try:
-        import msgpack
-        _MSGPACK_EXISTS = True
-    except ImportError:
-        pass
+try:
+    import msgpack
+    _MSGPACK_EXISTS = True
+except ImportError:
+    pass
 
-if PY2:
-    _PICKLE_PROTOCOL = 2 # highest protocol for python 2.x, was added in python 2.3
-else:
-    # use fixed proto to avoid problems with upgrading/downgrading of python
-    _PICKLE_PROTOCOL = 4 # version 4 was added in python 3.4
+# use fixed proto to avoid problems with upgrading/downgrading of python
+_PICKLE_PROTOCOL = 4 # version 4 was added in python 3.4
 
 class DBFile(object):
     """
@@ -114,7 +101,7 @@ class PyDBFile(DBFile):
         buff = []
         keys = sorted(data.keys())
         for key in keys:
-            buff.append('%s = %s\n' % (key, _repr(data[key])))
+            buff.append('%s = %s\n' % (key, ascii(data[key])))
         dump = ''.join(buff)
 
         pathname = self._pathname
@@ -146,13 +133,9 @@ class PyDBFile(DBFile):
         #   function 'open' uses 'str' in text mode
         #   function 'io.open' uses 'unicode' in text mode
 
-        if PY2:
-            with open(fname, 'rt') as file:
-                dump = file.read()
-        else:
-            # default encoding for 'open' in python 3.x is often 'utf-8'
-            with open(fname, 'rt', encoding = "latin-1") as file:
-                dump = file.read()
+        # default encoding for 'open' in python 3.x is often 'utf-8'
+        with open(fname, 'rt', encoding = "latin-1") as file:
+            dump = file.read()
 
         data = {}
         for reIt in ConfigSet.re_imp.finditer(dump):

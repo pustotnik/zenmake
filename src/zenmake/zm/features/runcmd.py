@@ -15,7 +15,7 @@ import shlex
 from waflib.TaskGen import feature, after
 from waflib import Task
 from zm.constants import PLATFORM, EXE_FILE_EXTS
-from zm.pyutils import viewitems, maptype
+from zm.pyutils import maptype
 from zm import log, error
 from zm.utils import cmdHasShellSymbols
 from zm.pathutils import PathsParam
@@ -311,7 +311,7 @@ def applyRunCmd(tgen):
 
     cmdTask = None
     if _isCmdStandalone(tgen):
-        for k, v in viewitems(ruleArgs):
+        for k, v in ruleArgs.items():
             setattr(tgen, k, v)
         tgen.process_rule()
         delattr(tgen, 'rule')

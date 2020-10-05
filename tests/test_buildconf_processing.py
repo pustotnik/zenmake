@@ -17,7 +17,6 @@ import pytest
 from zm.autodict import AutoDict
 from zm.error import *
 from zm.constants import *
-from zm.pyutils import viewitems
 from zm.pathutils import unfoldPath
 from zm.buildconf.processing import convertTaskParamValue, Config as BuildConfig
 from tests.common import asRealConf, randomstr
@@ -297,7 +296,7 @@ class TestSuite(object):
             taskParams = expected[task]
             taskParams['$startdir'] = '.'
             taskParams['$bconf'] = bconf
-            for name, value in viewitems(taskParams):
+            for name, value in taskParams.items():
                 taskParams[name] = value
                 convertTaskParamValue(taskParams, name)
         assert bconf.tasks == expected

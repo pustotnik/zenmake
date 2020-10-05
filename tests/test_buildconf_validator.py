@@ -15,7 +15,7 @@ from collections import defaultdict
 import pytest
 from zm.error import *
 from zm.constants import KNOWN_PLATFORMS
-from zm.pyutils import stringtype, viewitems
+from zm.pyutils import stringtype
 from zm.buildconf.scheme import KNOWN_CONF_ACTIONS
 from zm.buildconf.validator import Validator
 import tests.common as cmn
@@ -45,7 +45,7 @@ class TestSuite(object):
                 # pylint: disable = not-callable
                 func(self, *args, **kwargs)
             finally:
-                for k, v in viewitems(old):
+                for k, v in old.items():
                     confnode[k] = v
         return wrapper
 
@@ -105,7 +105,7 @@ class TestSuite(object):
             confnode[param] = { cmn.randomstr() : cmn.randomint() }
             validator.validate(buildconf)
         else:
-            for k, v in viewitems(validVals):
+            for k, v in validVals.items():
                 _type = v['type']
                 methodName = ''.join([x.capitalize() for x in _type.split('-')])
                 methodName = '_validate%sValues' % methodName
@@ -288,7 +288,7 @@ class TestSuite(object):
                     with pytest.raises(ZenMakeConfTypeError):
                         validator.validate(buildconf)
 
-            for t, validVals in viewitems(validTypesAndVals):
+            for t, validVals in validTypesAndVals.items():
                 methodName = ''.join([x.capitalize() for x in t.split('-')])
                 validateValues = getattr(self, '_validate%sValues' % methodName)
                 validateValues(buildconf, confnode, param, validVals)

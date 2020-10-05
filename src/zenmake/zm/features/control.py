@@ -12,7 +12,7 @@ import os
 from collections import namedtuple
 
 from zm.constants import TASK_TARGET_KINDS, TASK_FEATURE_ALIASES
-from zm.pyutils import stringtype, viewvalues, viewitems
+from zm.pyutils import stringtype
 from zm.autodict import AutoDict as _AutoDict
 from zm.pypkg import PkgPath
 from zm.utils import loadPyModule, toList
@@ -129,7 +129,7 @@ def _getFeatureDetectFuncs():
 
 def _generateToolchainVarToLang(toolchainVars):
     result = {}
-    for lang, info in viewitems(toolchainVars):
+    for lang, info in toolchainVars.items():
         var = info['sysenv-var']
         assert var not in result
         result[var] = lang
@@ -374,7 +374,7 @@ def loadFeatures(bconfManager):
     features = set()
     for bconf in bconfManager.configs:
         tasks = bconf.tasks
-        for taskParams in viewvalues(tasks):
+        for taskParams in tasks.values():
             features.update(taskParams['features'])
         for func in detectFeaturesFuncs:
             features.update(func(bconf))

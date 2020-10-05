@@ -15,7 +15,7 @@ from zm.constants import PLATFORM, KNOWN_PLATFORMS, DEPNAME_DELIMITER
 from zm.constants import CWD, INVALID_BUILDTYPES, CONFTEST_DIR_PREFIX
 from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeLogicError, ZenMakeConfError
-from zm.pyutils import stringtype, maptype, viewitems, viewvalues
+from zm.pyutils import stringtype, maptype
 from zm import utils, log
 from zm.pathutils import unfoldPath, getNativePath
 from zm.pathutils import PathsParam, makePathsConf
@@ -60,7 +60,7 @@ _PREPARE_TASKPARAMS_HOOKS = tuple(_PREPARE_TASKPARAMS_HOOKS) + \
 def _genTaskParamsToListMap(result):
 
     skipNames = ('config-actions', 'name', 'install-files')
-    for name, scheme in viewitems(taskscheme):
+    for name, scheme in taskscheme.items():
         if name in skipNames or name.endswith('.select'):
             continue
         types = scheme['type']
@@ -200,7 +200,7 @@ class Config(object):
         # tasks, buildtypes
         for varName in ('tasks', 'buildtypes'):
             confVar = getattr(buildconf, varName)
-            for taskparams in viewvalues(confVar):
+            for taskparams in confVar.values():
                 if not isinstance(taskparams, maptype):
                     # buildtypes has special key 'default'
                     continue
@@ -213,8 +213,8 @@ class Config(object):
                 prepareTaskParams(_PREPARE_TASKPARAMS_HOOKS, taskparams)
 
         # 'toolchains'
-        for params in viewvalues(buildconf.toolchains):
-            for k, v in viewitems(params):
+        for params in buildconf.toolchains.values():
+            for k, v in params.items():
                 if k not in TOOLCHAIN_PATH_ENVVARS:
                     continue
                 params[k] = unfoldPath(startdir, getNativePath(v))
@@ -243,16 +243,16 @@ class Config(object):
         makePathParam(confFeatures, 'monitor-files', kind = 'paths')
 
         # dependencies
-        for dep in viewvalues(self._conf.dependencies):
+        for dep in self._conf.dependencies.values():
             makePathParam(dep, 'rootdir', kind = 'path')
             makePathParam(dep, 'export-includes', kind = 'paths')
 
             targets = dep.get('targets', {})
-            for params in viewvalues(targets):
+            for params in targets.values():
                 makePathParam(params, 'dir', kind = 'path')
 
             rules = dep.get('rules', {})
-            for params in viewvalues(rules):
+            for params in rules.values():
                 if not isinstance(params, maptype):
                     continue
                 makePathParam(params, 'cwd', kind = 'path')
@@ -281,7 +281,7 @@ class Config(object):
 
         disabled = []
 
-        for taskName, taskParams in viewitems(tasks):
+        for taskName, taskParams in tasks.items():
 
             if not taskParams.get('enabled', True):
                 disabled.append(taskName)
@@ -294,7 +294,7 @@ class Config(object):
             taskParams['$startdir'] = taskStartDir
             taskParams['$bconf'] = self
 
-            for paramName, paramVal in viewitems(taskParams):
+            for paramName, paramVal in taskParams.items():
 
                 taskParams[paramName] = paramVal
                 convertTaskParamValue(taskParams, paramName)
@@ -338,7 +338,7 @@ class Config(object):
             _current = getattr(currentConf, param, {})
             _parent = getattr(parentConf, param, {})
             _new = _parent.copy()
-            for k, v in viewitems(_current):
+            for k, v in _current.items():
                 if isinstance(v, maptype):
                     _new.setdefault(k, {})
                     _new[k].update(v)
@@ -728,7 +728,7 @@ class Config(object):
             return conditions
 
         conditions = self._conf.conditions
-        for condition in viewvalues(conditions):
+        for condition in conditions.values():
             for param in condition:
                 if param == 'env':
                     continue
@@ -887,12 +887,12 @@ class Config(object):
 
         srcToolchains = self._conf.toolchains
         _customToolchains = AutoDict()
-        for name, info in viewitems(srcToolchains):
+        for name, info in srcToolchains.items():
             _vars = deepcopy(info) # don't change origin
             # checking of the 'kind' value is in 'configure' phase
             kind = _vars.pop('kind', None)
 
-            for k, v in viewitems(_vars):
+            for k, v in _vars.items():
                 if k in TOOLCHAIN_PATH_ENVVARS:
                     # try to identify path and do warning if not
                     path = unfoldPath(self.startdir, v)

@@ -7,7 +7,7 @@
 """
 
 from zm.error import ZenMakeConfError, ZenMakeConfTypeError, ZenMakeConfValueError
-from zm.pyutils import maptype, stringtype, viewitems, viewvalues
+from zm.pyutils import maptype, stringtype
 from zm.utils import toList
 from zm.autodict import AutoDict as _AutoDict
 from zm.buildconf.schemeutils import AnyAmountStrsKey, ANYAMOUNTSTRS_KEY
@@ -247,7 +247,7 @@ class Validator(object):
 
         keysKind = schemeAttrs.pop('keys-kind')
         if keysKind == 'anystr':
-            for key, _confnode in viewitems(confnode):
+            for key, _confnode in confnode.items():
                 Validator._checkStrKey(key, fullkey)
             schemeAttrs['dict-vars'] = { ANYAMOUNTSTRS_KEY : subscheme }
         elif keysKind == 'bylist':
@@ -283,7 +283,7 @@ class Validator(object):
 
         _anyAmountStrsKey = None
         _usualItems = []
-        for key, schemeAttrs in viewitems(scheme):
+        for key, schemeAttrs in scheme.items():
             if isinstance(key, AnyAmountStrsKey):
                 _anyAmountStrsKey = key
             else:
@@ -300,7 +300,7 @@ class Validator(object):
                 schemeAttrs = schemeAttrs(conf, keyprefix)
             handler = Validator._getHandler(schemeAttrs['type'])
 
-        for key, value in viewitems(conf):
+        for key, value in conf.items():
             if disallowedKeys and key in disallowedKeys:
                 msg = "The key '%s' is not allowed in the param %r." % (str(key), keyprefix)
                 raise ZenMakeConfError(msg)
@@ -337,7 +337,7 @@ class Validator(object):
         if 'buildtypes' in _conf and isinstance(_conf['buildtypes'], maptype):
             allowed.extend(_conf['buildtypes'].keys())
         if 'tasks' in _conf and isinstance(_conf['tasks'], maptype):
-            for task in viewvalues(_conf['tasks']):
+            for task in _conf['tasks'].values():
                 if not isinstance(task, maptype):
                     continue
                 buildtypes = task.get('buildtypes', {})

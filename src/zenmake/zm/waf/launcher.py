@@ -17,7 +17,6 @@ import traceback
 from waflib import Options, Context, Errors
 from zm import WAF_DIR
 from zm.constants import WAF_LOCKFILE
-from zm.pyutils import viewvalues
 from zm import log, utils, cli
 from zm.error import ZenMakeConfError
 from zm.waf import wscriptimpl, assist
@@ -59,7 +58,7 @@ def _prepareAndLoadFeatures(bconfManager):
     try:
         # process all actual features from buildconf(s)
         for bconf in bconfManager.configs:
-            for taskParams in viewvalues(bconf.tasks):
+            for taskParams in bconf.tasks.values():
                 assist.detectTaskFeatures(ctx, taskParams)
                 assist.validateTaskFeatures(taskParams)
     except ZenMakeConfError as ex:

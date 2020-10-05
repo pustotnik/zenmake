@@ -16,7 +16,6 @@ import posixpath
 
 import pytest
 from zm import cli, utils
-from zm.pyutils import viewitems
 from zm.autodict import AutoDict
 from zm.constants import PLATFORM
 from zm.features import TASK_TARGET_FEATURES
@@ -103,7 +102,7 @@ class TestInstall(object):
         targets = set()
         processConfManagerWithCLI(self, cmdLine)
         tasks = getBuildTasks(self.confManager)
-        for taskName, taskParams in viewitems(tasks):
+        for taskName, taskParams in tasks.items():
 
             handleTaskFeatures(self, taskParams)
             features = taskParams['features']

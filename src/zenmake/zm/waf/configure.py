@@ -22,7 +22,7 @@ from waflib.ConfigSet import ConfigSet
 from waflib.Configure import ConfigurationContext as WafConfContext
 from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFIG_LOG
 from zm.constants import TASK_TARGET_KINDS
-from zm.pyutils import viewitems, viewvalues, viewkeys, stringtype
+from zm.pyutils import stringtype
 from zm.pathutils import substPathsConf
 from zm import utils, log, toolchains, error, db, version, cli, deps
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
@@ -167,7 +167,7 @@ class ConfigurationContext(WafConfContext):
 
         allTasks = self.allTasks
         for bconf in self.bconfManager.configs:
-            for taskParams in viewvalues(bconf.tasks):
+            for taskParams in bconf.tasks.values():
                 for localDep in taskParams.get('use', []):
                     if localDep not in allTasks:
                         taskName = taskParams['name']
@@ -231,7 +231,7 @@ class ConfigurationContext(WafConfContext):
         else:
             validNames = self.validToolchainNames
 
-        for taskName, taskParams in viewitems(bconf.tasks):
+        for taskName, taskParams in bconf.tasks.items():
             names = taskParams['toolchain']
             for name in names:
                 if name not in validNames:
@@ -314,7 +314,7 @@ class ConfigurationContext(WafConfContext):
 
         targetsData = {}
         envs = {}
-        for taskParams in viewvalues(tasks):
+        for taskParams in tasks.values():
             taskVariant = taskParams['$task.variant']
 
             # It's necessary to delete variant from conf.all_envs. Otherwise
@@ -468,13 +468,13 @@ class ConfigurationContext(WafConfContext):
 
         toolchainNames = set()
 
-        for taskParams in viewvalues(bconf.tasks):
+        for taskParams in bconf.tasks.values():
 
             features = toListSimple(taskParams.get('features', []))
             _toolchains = []
 
             # handle env vars to set toolchain
-            for var, val in viewitems(sysEnvToolVars):
+            for var, val in sysEnvToolVars.items():
                 lang = ToolchainVars.langBySysVarToSetToolchain(var)
                 if not lang or lang not in features:
                     continue
@@ -535,7 +535,7 @@ class ConfigurationContext(WafConfContext):
             toolId = ''
             toolSettings  = customToolchains[toolchain]
 
-            for var, val in viewitems(toolSettings.vars):
+            for var, val in toolSettings.vars.items():
                 lang = ToolchainVars.langBySysVarToSetToolchain(var)
                 if not lang:
                     # it's not toolchain var
@@ -571,7 +571,7 @@ class ConfigurationContext(WafConfContext):
 
         if detectedToolNames:
             # replace all auto-* in build tasks with detected toolchains
-            for taskParams in viewvalues(bconf.tasks):
+            for taskParams in bconf.tasks.values():
                 taskParams['toolchain'] = \
                     [detectedToolNames.get(t, t) for t in taskParams['toolchain']]
 
@@ -613,7 +613,7 @@ class ConfigurationContext(WafConfContext):
         tasks = {}
         for bconf in self.bconfManager.configs:
             newtasks = bconf.tasks
-            for taskParams in viewvalues(newtasks):
+            for taskParams in newtasks.values():
                 assert taskParams.get('$bconf', bconf) == bconf
                 taskParams['$bconf'] = bconf
                 sameNameTask = tasks.get(taskParams['name'])
@@ -785,7 +785,7 @@ class ConfigurationContext(WafConfContext):
             self.path = self.getPathNode(bconf.confdir)
 
             # it's necessary to handle 'toolchain.select' before loading of toolchains
-            for taskParams in viewvalues(bconf.tasks):
+            for taskParams in bconf.tasks.values():
                 handleOneTaskParamSelect(bconf, taskParams, 'toolchain')
 
             # load all toolchains envs
@@ -801,7 +801,7 @@ class ConfigurationContext(WafConfContext):
 
         # Remove toolchain envs from self.all_envs
         # to avoid potential name conflicts and to free mem
-        for toolchain in viewkeys(toolchainEnvs):
+        for toolchain in toolchainEnvs:
             self.all_envs.pop(toolchain, None)
 
         self._preconfigureRootEnv()

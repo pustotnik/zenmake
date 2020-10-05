@@ -23,7 +23,7 @@ except ImportError:
 
 from waflib import Utils as wafutils
 from waflib.ConfigSet import ConfigSet
-from zm.pyutils import stringtype, _unicode, _encode, PY3
+from zm.pyutils import stringtype, _unicode, _encode
 from zm.error import ZenMakeError, ZenMakeProcessTimeoutExpired
 
 _joinpath = os.path.join
@@ -550,12 +550,11 @@ class ProcCmd(object):
         if stdErrToOut:
             self._popenArgs['stderr'] = subprocess.STDOUT
 
-        if PY3:
-            # start_new_session was added in python 3.2
-            # Use 'start_new_session' to change the process(forked) group id to itself
-            # so os.killpg with proc.pid can be used.
-            # This parameter does nothing on Windows.
-            self._popenArgs['start_new_session'] = True
+        # start_new_session was added in python 3.2
+        # Use 'start_new_session' to change the process(forked) group id to itself
+        # so os.killpg with proc.pid can be used.
+        # This parameter does nothing on Windows.
+        self._popenArgs['start_new_session'] = True
 
     def _communicate(self):
         stdout, stderr = self._proc.communicate()
