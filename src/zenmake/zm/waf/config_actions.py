@@ -38,11 +38,6 @@ joinpath = os.path.join
 _RE_PKGCONFIG_PKGS = re.compile(r"(\S+)(\s*(?:[<>]|=|[<>]\s*=)\s*[^\s<>=]+)?")
 _RE_FINDFILE_VAR = re.compile(r"[-.]")
 
-try:
-    inspectArgSpec = inspect.getfullargspec
-except AttributeError:
-    inspectArgSpec = inspect.getargspec
-
 CONFTEST_HASH_USED_ENV_KEYS = set(
     ('DEST_BINFMT', 'DEST_CPU', 'DEST_OS')
 )
@@ -473,7 +468,7 @@ def callPyFunc(actionArgs, params):
     actionArgs = actionArgs.copy()
 
     func = actionArgs['func']
-    argsSpec = inspectArgSpec(func)
+    argsSpec = inspect.getfullargspec(func)
     noFuncArgs = not any(argsSpec[0:3])
     args = { 'taskname' : taskName, 'buildtype' : buildtype }
 
