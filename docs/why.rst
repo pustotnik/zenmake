@@ -5,6 +5,10 @@
 Why?
 ============
 
+Short answer: because I could and wanted.
+
+Long answer is below.
+
 https://news.ycombinator.com/item?id=18789162
 
 ::
@@ -15,12 +19,19 @@ Yes, I know, we already have a lot of them. I decided to create this project
 because I couldn’t find a build tool for Linux which is quick and easy to use,
 flexible, ready to use, with declarative configuration, without the need to learn one more
 special language and suitable for my needs.
-I know about lots of build systems and I have tried some of them. I considered
-only opensource cross-platform build systems that can build C/C++ projects on
-GNU/Linux.
+I know about lots of build systems and I have tried some of them.
+
+Well, a little story of the project. In 2010 year I developed a build system in a
+company where I was working that time. It was a build system based on Waf and it was
+used successfully for linux projects several years. But that system had a lot of
+internal problems and I wanted to remake it from scratch.
+And in `2013 <https://bitbucket.org/pustotnik/zenmake.old/src/master/>`_
+year I tried to begin a new project. But I had no time to develop it at that time.
+Then, in 2019 year I decided to make some own opensorce project and was selecting
+a build system for my project. I was considering only opensource cross-platform build
+systems that can build C/C++ projects on GNU/Linux. Firstly I tried CMake, then
+Meson and Waf. Also I was looking at some other build systems like Bazel.
 Eventually, I concluded that I had to try to make my own build tool.
-Actually I was beginning this project in `2013 <https://bitbucket.org/pustotnik/zenmake.old/src/master/>`_
-year but I had no time to develop it at that time.
 
 I would do it mostly for myself, but I would be glad if my tool was useful
 for others.
@@ -45,7 +56,6 @@ build systems. Remember, it's not complete technical comparison.
 
 - ZenMake uses YAML and/or python language for build config files.
   Meson uses some dialect of python language.
-- ZenMake uses mostly declarative syntax. Meson uses imperative syntax.
 - ZenMake can be used as embedded build system or as installed in an OS build system.
   Meson must be installed in an OS.
 - ZenMake supports gathering of source files with wildcards.
@@ -66,8 +76,9 @@ build systems. Remember, it's not complete technical comparison.
 - ZenMake uses Waf as internal framework.
 - ZenMake uses YAML and/or python language for build config files.
   Waf uses python language.
-- ZenMake uses mostly declarative syntax. Waf uses imperative syntax of
-  the pure python language.
+- Waf is very flexible but build scripts for Waf are often not easy to create/use
+  if you don't know Waf.
+  Build configs for ZenMake are easier to create/use.
 - ZenMake can be used as embedded build system or as installed in an OS build system.
   Waf is not considered for installing in an OS by the author of Waf.
 
