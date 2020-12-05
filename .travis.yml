@@ -124,7 +124,7 @@ before_install:
     if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
       # by default choco installs last version of python
       choco install python --version $PYTHON_VER
-      choco install boost-msvc-14.1
+      choco install boost-msvc-14.1 --version=1.67.0
       #choco install ldc
     elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       #set -ex
