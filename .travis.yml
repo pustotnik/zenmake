@@ -1,12 +1,17 @@
 
 dist: bionic
 
+#disable all travis builds with non existing branch
 branches:
   only:
-  - master
-  # Release branches
-  #- /^[0-9]+\.[0-9]+\.[0-9]+$/
-  - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
+  - none
+
+#branches:
+#  only:
+#  - master
+#  # Release branches
+#  #- /^[0-9]+\.[0-9]+\.[0-9]+$/
+#  - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
 
 os:
   - linux
