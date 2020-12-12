@@ -9,28 +9,41 @@ on:
   #    - master
 
 jobs:
-  ubuntu-python-3_5:
+  #ubuntu-python-3_5:
+  ubuntu-xenial:
 
     #runs-on: ubuntu-latest
     runs-on: ubuntu-16.04
 
+    strategy:
+      matrix:
+        #python-version: [3.5, 3.6, 3.7, 3.8, 3.9]
+        python-version: [3.5, 3.6]
+
     steps:
-    - uses: actions/checkout@v2
-    - name: check python version
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Check python version
       run: python --version
-    - name: install apt packages
+    - name: Install apt packages
       run: |
         sudo apt-get install clang gcc build-essential bison nasm yasm
         sudo apt-get install gdc ldc libboost-all-dev lua5.1 libdbus-glib-1-dev
         sudo apt-get install gfortran libgtk-3-dev libsdl2-dev
-    - name: install pip modules
+    - name: Install pip modules
       run: |
-        sudo python -m pip install pyyaml
-        sudo python -m pip install msgpack
-        sudo python -m pip install pytest
-        sudo python -m pip install pytest-cov
-        sudo python -m pip install pytest-mock
-        sudo python -m pip install coveralls
-    - name: run tests
+        python -m pip install --upgrade pip
+        #python -m pip install pyyaml
+        #python -m pip install msgpack
+        #python -m pip install pytest
+        #python -m pip install pytest-cov
+        #python -m pip install pytest-mock
+        #python -m pip install coveralls
+        pip install -r dev-requirements.txt
+    - name: Run tests
       run: |
         python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=2
