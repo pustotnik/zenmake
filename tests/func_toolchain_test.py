@@ -26,30 +26,51 @@ TOOLCHAN_TO_ENVVAR = dict(
 PARAMS_CONFIG = {
     # D
     ('dmd', joinpath('d', '02-withlibs')) :
-        dict( default = ('linux', 'darwin'), travis = ('darwin'), ),
+        dict( default = ('linux', 'darwin'), ci = ('darwin'), ),
     ('ldc2', joinpath('d', '02-withlibs')) :
-        dict( default = ('linux', 'darwin'), travis = ('linux', 'darwin'), ),
+        dict( default = ('linux', 'darwin'), ci = ('linux', 'darwin'), ),
     ('gdc', joinpath('d', '02-withlibs')) :
-        dict( default = ('linux', 'darwin'), travis = ('linux'), ),
+        dict( default = ('linux', ), ci = ('linux'), ),
 }
+
+def _gatherDistInfo():
+    import csv
+
+    result = {}
+
+    with open("/etc/os-release") as f:
+        reader = csv.reader(f, delimiter="=")
+        for row in reader:
+            if row:
+                result[row[0]] = row[1]
+
+    return result
 
 def _generateParams():
 
     params = []
 
-    isTravisCI = os.environ.get('TRAVIS', None) == 'true' and \
-                    os.environ.get('CI', None) == 'true'
+    isCI = os.environ.get('CI', None) == 'true'
+    isTravisCI = isCI and os.environ.get('TRAVIS', None) == 'true'
+    #isGitHubCI = isCI and os.environ.get('GITHUB_ACTIONS', None) == 'true'
 
     disableGDC = False
 
     # Due to bug with packages ldc + gdc:
     # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=827211
-    if isTravisCI and PLATFORM == 'linux':
-        travisDist = os.environ.get('TRAVIS_DIST', '')
-        disableGDC = travisDist == 'xenial'
+    if PLATFORM == 'linux':
+        if isTravisCI:
+            disableGDC = os.environ.get('TRAVIS_DIST', '') == 'xenial'
+        else:
+            info = _gatherDistInfo()
+            nameId = info.get('ID')
+            if nameId in ('debian', 'ubuntu'):
+                codeName = info.get('VERSION_CODENAME')
+                # do we need the debian codename ?
+                disableGDC = codeName in ('xenial', )
 
     for item, condition in PARAMS_CONFIG.items():
-        condition = condition['travis'] if isTravisCI else condition['default']
+        condition = condition['ci'] if isCI else condition['default']
         if PLATFORM in condition:
             if item[0] == 'gdc' and disableGDC:
                 continue

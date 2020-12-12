@@ -41,7 +41,7 @@ TEST_CONDITIONS = {
     CUSTOM_TOOLCHAIN_PRJDIR: dict( os = ['linux', 'darwin'], ),
     joinpath('asm', '01-simple-gas') : dict( os = ['linux']),
     joinpath('asm', '02-simple-nasm') :
-        dict( os = ['linux'], py = ['2.7', '3.6', '3.7', '3.8']),
+        dict( os = ['linux'], py = ['3.6', '3.7', '3.8', '3.9', '3.10']),
     joinpath('c', '06-strip-release') : dict( os = ['linux']),
     BY_REGEXPS: [
         dict(regexp = RE_ALL_D, condition = dict( os = ['linux', 'darwin'], )),
