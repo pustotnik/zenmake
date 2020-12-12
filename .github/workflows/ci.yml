@@ -9,7 +9,7 @@ on:
   #  branches: [ $default-branch ]
 
 jobs:
-  linux-python-3_5:
+  ubuntu-python-3.5:
 
     #runs-on: ubuntu-latest
     runs-on: ubuntu-16.04
@@ -20,4 +20,5 @@ jobs:
       run: python --version
     - name: install deps
       run: |
-        sudo apt-get install build-essential bison nasm yasm
+        sudo apt-get install clang gcc build-essential bison nasm yasm
+                             gdc ldc libboost-all-dev lua5.1 libdbus-glib-1-dev
