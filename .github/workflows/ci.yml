@@ -4,11 +4,12 @@ on:
   push:
     branches:
       - $default-branch
+      - master
   #pull_request:
   #  branches: [ $default-branch ]
 
 jobs:
-  linux-python-3.5:
+  linux-python-3_5:
 
     #runs-on: ubuntu-latest
     runs-on: ubuntu-16.04
