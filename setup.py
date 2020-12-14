@@ -10,8 +10,8 @@ import sys
 import shutil
 import fnmatch
 import subprocess
-if sys.hexversion < 0x3040000:
-    raise ImportError('Python >= 3.4 is required')
+if sys.hexversion < 0x3050000:
+    raise ImportError('Python >= 3.5 is required')
 
 from distutils.errors import DistutilsOptionError
 from distutils.spawn import find_executable as findProg
@@ -52,20 +52,19 @@ Environment :: Console
 Intended Audience :: Developers
 Programming Language :: Python
 Programming Language :: Python :: 3
-Programming Language :: Python :: 3.4
 Programming Language :: Python :: 3.5
 Programming Language :: Python :: 3.6
 Programming Language :: Python :: 3.7
 Programming Language :: Python :: 3.8
+Programming Language :: Python :: 3.9
 Programming Language :: Python :: Implementation :: CPython
-Programming Language :: Python :: Implementation :: PyPy
 Operating System :: POSIX :: Linux
 Operating System :: MacOS
 Operating System :: Microsoft :: Windows
 Topic :: Software Development :: Build Tools
 """.splitlines()
 
-PYTHON_REQUIRES = '>=3.4'
+PYTHON_REQUIRES = '>=3.5'
 RUNTIME_DEPS = ['PyYAML']
 
 PKG_DIRS = [APPNAME]
