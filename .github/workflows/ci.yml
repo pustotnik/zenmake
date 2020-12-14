@@ -29,7 +29,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     env:
-      - PYTHON_VER: ${{ matrix.python-version }}
+      PYTHON_VER: ${{ matrix.python-version }}
 
     steps:
     - name: Checkout
