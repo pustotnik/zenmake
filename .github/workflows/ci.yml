@@ -30,7 +30,8 @@ jobs:
         include:
           - { os: ubuntu-18.04, python: 3.5 }
           #- { os: ubuntu-18.04, python: 3.6 }
-          - { os: macos-10.15, python: 3.6 }
+          #- { os: macos-10.15, python: 3.6 }
+          - { os: windows-2019, python: 3.7 }
 
     runs-on: ${{ matrix.os }}
 
@@ -58,6 +59,11 @@ jobs:
           brew install boost-python
           brew install dmd
           brew install ldc
+        elif [[ "$RUNNER_OS" == "Windows" ]]; then
+          # by default choco installs last version of python
+          #choco install python --version $PYTHON_VER
+          choco install boost-msvc-14.1 --version=1.67.0
+          #choco install ldc
         fi
     #- name: Install brew packages
     #  if: runner.os == 'macOS'
