@@ -29,7 +29,8 @@ jobs:
 
         include:
           - { os: ubuntu-18.04, python: 3.5 }
-          - { os: ubuntu-18.04, python: 3.6 }
+          #- { os: ubuntu-18.04, python: 3.6 }
+          - { os: macos-10.15, python: 3.6 }
 
     runs-on: ${{ matrix.os }}
 
@@ -45,19 +46,26 @@ jobs:
         python-version: ${{ matrix.python }}
     - name: Display Python version
       run: python -c "import sys; print(sys.version)"
-    - name: Install apt packages
-      if: startsWith(matrix.os,'ubuntu')
+    - name: Install dep packages
+      #if: startsWith(matrix.os,'ubuntu')
       run: |
-        sudo apt-get install clang gcc build-essential bison nasm yasm
-        sudo apt-get install gdc ldc libboost-all-dev lua5.1 libdbus-glib-1-dev
-        sudo apt-get install gfortran libgtk-3-dev libsdl2-dev
-    - name: Install brew packages
-      if: runner.os == 'macOS'
-      run: |
-        brew install boost
-        brew install boost-python
-        brew install dmd
-        brew install ldc
+        if [[ "$RUNNER_OS" == "Linux" ]]; then
+          sudo apt-get install clang gcc build-essential bison nasm yasm
+          sudo apt-get install gdc ldc libboost-all-dev lua5.1 libdbus-glib-1-dev
+          sudo apt-get install gfortran libgtk-3-dev libsdl2-dev
+        elif [[ "$RUNNER_OS" == "macOS" ]]; then
+          brew install boost
+          brew install boost-python
+          brew install dmd
+          brew install ldc
+        fi
+    #- name: Install brew packages
+    #  if: runner.os == 'macOS'
+    #  run: |
+    #    brew install boost
+    #    brew install boost-python
+    #    brew install dmd
+    #    brew install ldc
 
     - name: Install pip modules
       run: |
