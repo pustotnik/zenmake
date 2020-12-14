@@ -28,8 +28,6 @@ jobs:
             python-version: [3.6]
 
     runs-on: ${{ matrix.os }}
-    env:
-      PYTHON_VER: ${{ matrix.python-version }}
 
     steps:
     - name: Checkout
