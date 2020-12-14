@@ -46,7 +46,7 @@ TEST_CONDITIONS = {
     BY_REGEXPS: [
         dict(regexp = RE_ALL_D, condition = dict( os = ['linux', 'darwin'], )),
         dict(regexp = RE_ALL_LUA, condition = dict( os = ['linux'], )),
-        dict(regexp = RE_ALL_FC, condition = dict( os = ['linux'], )),
+        dict(regexp = RE_ALL_FC, condition = dict( os = ['linux', 'darwin'], )),
         dict(regexp = RE_ALL_DBUS, condition = dict( os = ['linux'], )),
         dict(regexp = RE_ALL_GTK3, condition = dict( os = ['linux'], )),
         dict(regexp = RE_ALL_SDL2, condition = dict( os = ['linux'], )),
