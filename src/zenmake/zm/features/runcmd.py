@@ -75,6 +75,7 @@ def _processCmdLine(conf, taskParams, cwd, cmdArgs):
     launcher = cmdSplitted[0]
     cmdExt = os.path.splitext(launcher)[1]
     if partsCount == 1 and cmdExt:
+        cmdExt = cmdExt.strip("'").strip('"')
         # try to detect interpreter for some cases
         for ext, launcher in ( ('.py', 'python'), ('.pl', 'perl'),):
             if cmdExt != ext:
