@@ -18,18 +18,18 @@ jobs:
     strategy:
       matrix:
         include:
-          - { os: ubuntu-18.04, python: 3.5 }
+          #- { os: ubuntu-18.04, python: 3.5 }
           #- { os: ubuntu-18.04, python: 3.6 }
           #- { os: ubuntu-18.04, python: 3.7 }
           #- { os: ubuntu-18.04, python: 3.8 }
           #- { os: ubuntu-18.04, python: 3.9 }
-          - { os: macos-10.15, python: 3.6 }
+          #- { os: macos-10.15, python: 3.6 }
           - { os: windows-2019, python: 3.7 }
 
     runs-on: ${{ matrix.os }}
 
-    env:
-      PYTHON_VER: ${{ matrix.python }}
+    #env:
+    #  PYTHON_VER: ${{ matrix.python }}
 
     steps:
     - name: Checkout
@@ -86,6 +86,7 @@ jobs:
           brew install dmd
           brew install ldc
         elif [[ "$RUNNER_OS" == "Windows" ]]; then
+          #choco install python --version "3.7.4"
           choco install boost-msvc-14.1 --version=1.67.0
           #choco install mingw
           #choco install ldc
@@ -102,7 +103,8 @@ jobs:
 
     - name: Run tests
       run: |
-        python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=2
+        python -m pytest tests -svv -k "TestFeatureRunCmd and testBasis and not zipapp" --maxfail=1
+        #python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=2
         #RESULT=$?
         #if [[ $RESULT -eq 0 ]]; then
         #  python -m pytest tests -v -k "zipapp" --maxfail=2
