@@ -12,7 +12,7 @@ on:
     - cron: '3 2 8 * *'
 
 jobs:
-  tests:
+  test:
 
     strategy:
       matrix:
@@ -95,7 +95,8 @@ jobs:
     - name: Install pip modules
       run: |
         python -m pip install --upgrade pip
-        pip install -r dev-requirements.txt
+        python -m pip install -r dev-requirements.txt
+        python -m pip install coveralls
       shell: bash
 
     ########### tests
@@ -112,18 +113,31 @@ jobs:
       shell: bash
 
     - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        flag-name: ${{matrix.os}}-py-${{ matrix.python }}
-        parallel: true
+      #uses: coverallsapp/github-action@master
+      #with:
+      #  github-token: ${{ secrets.GITHUB_TOKEN }}
+      #  flag-name: ${{matrix.os}}-py-${{ matrix.python }}
+      #  parallel: true
+      env:
+        COVERALLS_PARALLEL: true
+        #COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERALLS_FLAG_NAME: ${{matrix.os}}-py-${{ matrix.python }}
+      run: coveralls
 
-  finish:
-    needs: tests
+  complete-coveralls:
+    needs: test
     runs-on: ubuntu-latest
+    container: python:3-slim
+
     steps:
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel-finished: true
+    - name: Coveralls Finished
+      #uses: coverallsapp/github-action@master
+      #with:
+      #  github-token: ${{ secrets.GITHUB_TOKEN }}
+      #  parallel-finished: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        pip install coveralls
+        coveralls --finish
