@@ -132,7 +132,7 @@ jobs:
         #COVERALLS_FLAG_NAME: ${{matrix.os}}-py-${{ matrix.python }}
         COVERALLS_FLAG_NAME: ${{ matrix.osname }}-${{ matrix.osver }}-py-${{ matrix.python }}
         #COVERALLS_SERVICE_NAME: github
-        COVERALLS_SERVICE_NUMBER: ${{ github.run_id }}
+        COVERALLS_SERVICE_JOB_NUMBER: ${{ github.run_id }}
       run: coveralls
       shell: bash
 
@@ -149,7 +149,6 @@ jobs:
       #  parallel-finished: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_SERVICE_NUMBER: ${{ github.run_id }}
       run: |
         pip install --upgrade coveralls
         coveralls --finish
