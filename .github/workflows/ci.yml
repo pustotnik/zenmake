@@ -24,6 +24,8 @@ jobs:
           #- { os: ubuntu-18.04, python: 3.9 }
           - { os: macos-10.15, python: 3.6 }
           - { os: windows-2019, python: 3.7 }
+        #max-parallel: 4
+        #fail-fast: false
 
     runs-on: ${{ matrix.os }}
 
@@ -119,11 +121,12 @@ jobs:
       #  flag-name: ${{matrix.os}}-py-${{ matrix.python }}
       #  parallel: true
       env:
-        COVERALLS_PARALLEL: true
-        #COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERALLS_PARALLEL: true
         COVERALLS_FLAG_NAME: ${{matrix.os}}-py-${{ matrix.python }}
+        COVERALLS_SERVICE_NAME: github-action
       run: coveralls
+      shell: bash
 
   complete-coveralls:
     needs: test
@@ -139,5 +142,5 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        pip install coveralls
+        pip install --upgrade coveralls
         coveralls --finish
