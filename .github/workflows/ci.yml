@@ -13,25 +13,29 @@ on:
 
 jobs:
   test:
-    name: "Python ${{ matrix.python }} tests"
+    name: "${{ matrix.osname }}: python ${{ matrix.python }} tests"
 
     strategy:
       matrix:
         include:
-          - { os: ubuntu-18.04, python: 3.5 }
+          - { osname: ubuntu, osver: 18.04, python: 3.5 }
           #- { os: ubuntu-18.04, python: 3.6 }
           #- { os: ubuntu-18.04, python: 3.7 }
           #- { os: ubuntu-18.04, python: 3.8 }
           #- { os: ubuntu-18.04, python: 3.9 }
-          - { os: macos-10.15, python: 3.6 }
-          - { os: windows-2019, python: 3.7 }
+          #- { os: macos-10.15, python: 3.6 }
+          - { osname: macos, osver: 10.15, python: 3.6 }
+          #- { os: windows-2019, python: 3.7 }
+          - { osname: windows, osver: 2019, python: 3.7 }
         #max-parallel: 4
         #fail-fast: false
 
-    runs-on: ${{ matrix.os }}
-
-    #env:
+    env:
     #  PYTHON_VER: ${{ matrix.python }}
+      MATRIX_OS: ${{ matrix.osname }}-${{ matrix.osver }}
+
+    #runs-on: ${{ matrix.os }}
+    runs-on: ${MATRIX_OS}
 
     steps:
     - name: Checkout
@@ -124,7 +128,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_PARALLEL: true
-        COVERALLS_FLAG_NAME: ${{matrix.os}}-py-${{ matrix.python }}
+        #COVERALLS_FLAG_NAME: ${{matrix.os}}-py-${{ matrix.python }}
+        COVERALLS_FLAG_NAME: ${MATRIX_OS}-py-${{ matrix.python }}
         #COVERALLS_SERVICE_NAME: github
         COVERALLS_SERVICE_NUMBER: ${GITHUB_RUN_ID}
       run: coveralls
@@ -143,6 +148,7 @@ jobs:
       #  parallel-finished: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERALLS_SERVICE_NUMBER: ${GITHUB_RUN_ID}
       run: |
         pip install --upgrade coveralls
         coveralls --finish
