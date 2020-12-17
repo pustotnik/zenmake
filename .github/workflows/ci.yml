@@ -124,7 +124,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_PARALLEL: true
         COVERALLS_FLAG_NAME: ${{matrix.os}}-py-${{ matrix.python }}
-        COVERALLS_SERVICE_NAME: github-action
+        #COVERALLS_SERVICE_NAME: github-action
       run: coveralls
       shell: bash
 
