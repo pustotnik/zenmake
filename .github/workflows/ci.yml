@@ -13,30 +13,25 @@ on:
 
 jobs:
   test:
-    name: "${{ matrix.osname }}: python ${{ matrix.python }} tests"
+    name: "test: ${{ matrix.os }}, python ${{ matrix.python }}"
 
     strategy:
       matrix:
         include:
-          - { osname: ubuntu, osver: 18.04, python: 3.5 }
-          - { osname: ubuntu, osver: 18.04, python: 3.6 }
-          #- { os: ubuntu-18.04, python: 3.6 }
-          #- { os: ubuntu-18.04, python: 3.7 }
-          #- { os: ubuntu-18.04, python: 3.8 }
-          #- { os: ubuntu-18.04, python: 3.9 }
-          #- { os: macos-10.15, python: 3.6 }
-          #- { osname: macos, osver: 10.15, python: 3.6 }
-          #- { os: windows-2019, python: 3.7 }
-          #- { osname: windows, osver: 2019, python: 3.7 }
+          - { os: ubuntu-18.04, python: 3.5 }
+          - { os: ubuntu-18.04, python: 3.6 }
+          - { os: ubuntu-18.04, python: 3.7 }
+          - { os: ubuntu-18.04, python: 3.8 }
+          - { os: ubuntu-18.04, python: 3.9 }
+          - { os: macos-10.15, python: 3.6 }
+          - { os: windows-2019, python: 3.7 }
         #max-parallel: 4
         #fail-fast: false
 
-    env:
+    #env:
     #  PYTHON_VER: ${{ matrix.python }}
-      MATRIX_OS: ${{ matrix.osname }}-${{ matrix.osver }}
 
-    #runs-on: ${{ matrix.os }}
-    runs-on: ${{ matrix.osname }}-${{ matrix.osver }}
+    runs-on: ${{ matrix.os }}
 
     steps:
     - name: Checkout
@@ -121,18 +116,10 @@ jobs:
       shell: bash
 
     - name: Coveralls
-      #uses: coverallsapp/github-action@master
-      #with:
-      #  github-token: ${{ secrets.GITHUB_TOKEN }}
-      #  flag-name: ${{matrix.os}}-py-${{ matrix.python }}
-      #  parallel: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_PARALLEL: true
-        #COVERALLS_FLAG_NAME: ${{matrix.os}}-py-${{ matrix.python }}
-        COVERALLS_FLAG_NAME: ${{ matrix.osname }}-${{ matrix.osver }}-py-${{ matrix.python }}
-        #COVERALLS_SERVICE_NAME: github
-        COVERALLS_SERVICE_JOB_NUMBER: ${{ github.run_id }}
+        COVERALLS_FLAG_NAME: ${{ matrix.os }}-py-${{ matrix.python }}
       run: coveralls
       shell: bash
 
@@ -143,10 +130,6 @@ jobs:
 
     steps:
     - name: Coveralls Finished
-      #uses: coverallsapp/github-action@master
-      #with:
-      #  github-token: ${{ secrets.GITHUB_TOKEN }}
-      #  parallel-finished: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
