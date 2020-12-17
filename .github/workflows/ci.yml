@@ -35,7 +35,7 @@ jobs:
       MATRIX_OS: ${{ matrix.osname }}-${{ matrix.osver }}
 
     #runs-on: ${{ matrix.os }}
-    runs-on: ${MATRIX_OS}
+    runs-on: ${{ matrix.osname }}-${{ matrix.osver }}
 
     steps:
     - name: Checkout
