@@ -19,14 +19,15 @@ jobs:
       matrix:
         include:
           - { osname: ubuntu, osver: 18.04, python: 3.5 }
+          - { osname: ubuntu, osver: 18.04, python: 3.6 }
           #- { os: ubuntu-18.04, python: 3.6 }
           #- { os: ubuntu-18.04, python: 3.7 }
           #- { os: ubuntu-18.04, python: 3.8 }
           #- { os: ubuntu-18.04, python: 3.9 }
           #- { os: macos-10.15, python: 3.6 }
-          - { osname: macos, osver: 10.15, python: 3.6 }
+          #- { osname: macos, osver: 10.15, python: 3.6 }
           #- { os: windows-2019, python: 3.7 }
-          - { osname: windows, osver: 2019, python: 3.7 }
+          #- { osname: windows, osver: 2019, python: 3.7 }
         #max-parallel: 4
         #fail-fast: false
 
@@ -129,9 +130,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_PARALLEL: true
         #COVERALLS_FLAG_NAME: ${{matrix.os}}-py-${{ matrix.python }}
-        COVERALLS_FLAG_NAME: ${MATRIX_OS}-py-${{ matrix.python }}
+        COVERALLS_FLAG_NAME: ${{ matrix.osname }}-${{ matrix.osver }}-py-${{ matrix.python }}
         #COVERALLS_SERVICE_NAME: github
-        COVERALLS_SERVICE_NUMBER: ${GITHUB_RUN_ID}
+        COVERALLS_SERVICE_NUMBER: ${{ github.run_id }}
       run: coveralls
       shell: bash
 
@@ -148,7 +149,7 @@ jobs:
       #  parallel-finished: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_SERVICE_NUMBER: ${GITHUB_RUN_ID}
+        COVERALLS_SERVICE_NUMBER: ${{ github.run_id }}
       run: |
         pip install --upgrade coveralls
         coveralls --finish
