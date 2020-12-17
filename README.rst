@@ -2,7 +2,7 @@
 ZenMake
 =======
 
-|Licence| |Python| |PythonImpl| |PyPI| |Docs| |GithubActions| |coveralls|
+|Licence| |Python| |PythonImpl| |PyPI| |Docs| |GithubCI| |coveralls|
 |ProjectStatus|
 
 ZenMake is a cross-platform build system for C/C++ and some other languages.
@@ -55,8 +55,9 @@ Project links
 .. |Docs| image:: https://readthedocs.org/projects/zenmake/badge/?version=latest
    :target: https://zenmake.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
-.. |GithubActions| image:: https://github.com/pustotnik/zenmake/workflows/CI/badge.svg
+.. |GithubCI| image:: https://img.shields.io/github/workflow/status/pustotnik/zenmake/CI
    :target: https://github.com/pustotnik/zenmake/actions
+   :alt: GitHub Workflow CI Status
 .. |coveralls| image:: https://coveralls.io/repos/github/pustotnik/zenmake/badge.svg
    :target: https://coveralls.io/github/pustotnik/zenmake
 .. |ProjectStatus| image:: https://img.shields.io/pypi/status/zenmake.svg
