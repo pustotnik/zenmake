@@ -104,6 +104,14 @@ jobs:
 
     ########### tests
 
+    - name: Prapare tests [Windows only]
+      if: startsWith(runner.os, 'Windows')
+      run: |
+        Set-MpPreference -DisableArchiveScanning $true
+        Set-MpPreference -DisableRealtimeMonitoring $true
+        Set-MpPreference -DisableBehaviorMonitoring $true
+      shell: powershell
+
     - name: Run tests
       run: |
         python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=2
