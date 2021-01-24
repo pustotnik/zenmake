@@ -125,23 +125,23 @@ jobs:
         fi
       shell: bash
 
-    - name: Coveralls
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_PARALLEL: true
-        COVERALLS_FLAG_NAME: ${{ matrix.os }}-py-${{ matrix.python }}
-      run: coveralls
-      shell: bash
+    #- name: Coveralls
+    #  env:
+    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #    COVERALLS_PARALLEL: true
+    #    COVERALLS_FLAG_NAME: ${{ matrix.os }}-py-${{ matrix.python }}
+    #  run: coveralls
+    #  shell: bash
 
-  complete-coveralls:
-    needs: test
-    runs-on: ubuntu-latest
-    container: python:3-slim
+  #complete-coveralls:
+  #  needs: test
+  #  runs-on: ubuntu-latest
+  #  container: python:3-slim
 
-    steps:
-    - name: Coveralls Finished
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        pip install --upgrade coveralls
-        coveralls --finish
+  #  steps:
+  #  - name: Coveralls Finished
+  #    env:
+  #      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #    run: |
+  #      pip install --upgrade coveralls
+  #      coveralls --finish
