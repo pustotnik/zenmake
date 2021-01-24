@@ -28,6 +28,13 @@ else:
 
 _RE_WITH_TARGET = re.compile(r'\$\{*TARGET')
 
+RUNBY_FILE_EXT = {
+    '.py'  : 'python',
+    '.pl'  : 'perl',
+    '.lua' : 'lua',
+    '.rb'  : 'ruby',
+}
+
 def _processCmdLine(conf, taskParams, cwd, cmdArgs):
     """ Get and process 'cmd' at 'configure' stage """
 
@@ -77,7 +84,7 @@ def _processCmdLine(conf, taskParams, cwd, cmdArgs):
     if partsCount == 1 and cmdExt:
         cmdExt = cmdExt.strip("'").strip('"')
         # try to detect interpreter for some cases
-        for ext, launcher in ( ('.py', 'python'), ('.pl', 'perl'),):
+        for ext, launcher in RUNBY_FILE_EXT.items():
             if cmdExt != ext:
                 continue
             result = conf.find_program(launcher, **fkw)
