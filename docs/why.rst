@@ -36,52 +36,55 @@ Eventually, I concluded that I had to try to make my own build tool.
 I would do it mostly for myself, but I would be glad if my tool was useful
 for others.
 
-Below there is very small comparison of ZenMake with some of existing popular
-build systems. Remember, it's not complete technical comparison.
+..
+  All text below was hiding and TAB was added
 
-**CMake**
+  Below there is very small comparison of ZenMake with some of existing popular
+  build systems. Remember, it's not complete technical comparison.
 
-- ZenMake uses YAML and/or python language for build config files. CMake uses own language.
-- ZenMake uses mostly declarative syntax. CMake uses imperative syntax.
-- ZenMake can be used as embedded build system or as installed in an OS build system.
-  CMake must be installed in an OS.
-- ZenMake supports gathering of source files with wildcards.
-  CMake doesn't recommend to use wildcards due to a problem::
+  **CMake**
 
-    We do not recommend using GLOB to collect a list of source files from your
-    source tree. If no CMakeLists.txt file changes when a source is added or
-    removed then the generated build system cannot know when to ask CMake to regenerate.
+  - ZenMake uses YAML and/or python language for build config files. CMake uses own language.
+  - ZenMake uses mostly declarative syntax. CMake uses imperative syntax.
+  - ZenMake can be used as embedded build system or as installed in an OS build system.
+    CMake must be installed in an OS.
+  - ZenMake supports gathering of source files with wildcards.
+    CMake doesn't recommend to use wildcards due to a problem::
 
-**Meson**
+      We do not recommend using GLOB to collect a list of source files from your
+      source tree. If no CMakeLists.txt file changes when a source is added or
+      removed then the generated build system cannot know when to ask CMake to regenerate.
 
-- ZenMake uses YAML and/or python language for build config files.
-  Meson uses some dialect of python language.
-- ZenMake can be used as embedded build system or as installed in an OS build system.
-  Meson must be installed in an OS.
-- ZenMake supports gathering of source files with wildcards.
-  Meson doesn't support wildcards for performance reasons:
-  https://mesonbuild.com/FAQ.html#why-cant-i-specify-target-files-with-a-wildcard
+  **Meson**
 
-**Bazel**
+  - ZenMake uses YAML and/or python language for build config files.
+    Meson uses some dialect of python language.
+  - ZenMake can be used as embedded build system or as installed in an OS build system.
+    Meson must be installed in an OS.
+  - ZenMake supports gathering of source files with wildcards.
+    Meson doesn't support wildcards for performance reasons:
+    https://mesonbuild.com/FAQ.html#why-cant-i-specify-target-files-with-a-wildcard
 
-- ZenMake uses YAML and/or python language for build config files.
-  Bazel uses some dialect of python language with name 'Starlark'.
-- ZenMake can be used as embedded build system or as installed in an OS build system.
-  Bazel must be installed in an OS.
-- Bazel is large build system and therefore it almost is not used for
-  opensorce projects. ZenMake is small and has minimum dependencies.
+  **Bazel**
 
-**Waf**
+  - ZenMake uses YAML and/or python language for build config files.
+    Bazel uses some dialect of python language with name 'Starlark'.
+  - ZenMake can be used as embedded build system or as installed in an OS build system.
+    Bazel must be installed in an OS.
+  - Bazel is large build system and therefore it almost is not used for
+    opensorce projects. ZenMake is small and has minimum dependencies.
 
-- ZenMake uses Waf as internal framework.
-- ZenMake uses YAML and/or python language for build config files.
-  Waf uses python language.
-- Waf is very flexible but build scripts for Waf are often not easy to create/use
-  if you don't know Waf.
-  Build configs for ZenMake are easier to create/use.
-- ZenMake can be used as embedded build system or as installed in an OS build system.
-  Waf is not considered for installing in an OS by the author of Waf.
+  **Waf**
 
-There are many other build systems like Make, Autotools, SCons, xmake, etc.
-But I was lazy to make comparison for all existing build systems.
-Anyway ZenMake is very young project and has no large number of features.
+  - ZenMake uses Waf as internal framework.
+  - ZenMake uses YAML and/or python language for build config files.
+    Waf uses python language.
+  - Waf is very flexible but build scripts for Waf are often not easy to create/use
+    if you don't know Waf.
+    Build configs for ZenMake are easier to create/use.
+  - ZenMake can be used as embedded build system or as installed in an OS build system.
+    Waf is not considered for installing in an OS by the author of Waf.
+
+  There are many other build systems like Make, Autotools, SCons, xmake, etc.
+  But I was lazy to make comparison for all existing build systems.
+  Anyway ZenMake is very young project and has no large number of features.
