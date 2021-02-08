@@ -51,9 +51,9 @@ def _loadTasksDataForClean(self, bconf, cachePath):
         lastPyVer = zmMetaConfAttrs['last-python-ver']
         lastPyVer = lastPyVer.split('.')[0]
         lastDbFormat = zmMetaConfAttrs['last-dbformat']
-    except AttributeError:
+    except AttributeError as pex:
         zmmetafile = bconf.confPaths.zmmetafile
-        raise error.ZenMakeError("Invalid format of file %r" % zmmetafile)
+        raise error.ZenMakeError("Invalid format of file %r" % zmmetafile) from pex
 
     curPyVer = str(sys.version_info[0])
 

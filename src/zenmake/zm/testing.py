@@ -10,7 +10,6 @@ import json
 
 from waflib import Task
 from waflib.Tools import ccroot
-from zm.pyutils import PY2, texttype
 import zm.waf.wscriptimpl as wscript
 
 class JSONEncoder(json.JSONEncoder):

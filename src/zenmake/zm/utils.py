@@ -18,8 +18,8 @@ from types import ModuleType
 
 try:
     import threading
-except ImportError:
-    raise ImportError('Python must have threading support')
+except ImportError as pex:
+    raise ImportError('Python must have threading support') from pex
 
 from waflib import Utils as wafutils
 from waflib.ConfigSet import ConfigSet
@@ -145,8 +145,8 @@ if hasattr(os, 'O_NOINHERIT') and sys.hexversion < 0x3040000:
         # pylint: disable = no-member
         try:
             fd = os.open(path, os.O_BINARY | os.O_RDONLY | os.O_NOINHERIT)
-        except OSError:
-            raise OSError('Cannot read from %r' % path)
+        except OSError as pex:
+            raise OSError('Cannot read from %r' % path) from pex
 
         with os.fdopen(fd, 'rb') as file:
             result = True
@@ -214,10 +214,10 @@ else:
             if isinstance(result[idx], stringtype):
                 try:
                     entry = func(result[idx])
-                except KeyError:
-                    raise OSError('chown: unknown %s %r' % (name, user))
+                except KeyError as pex:
+                    raise OSError('chown: unknown %s %r' % (name, user)) from pex
                 if not entry: # just in case
-                    raise OSError('chown: unknown %s %r' % (name, user))
+                    raise OSError('chown: unknown %s %r' % (name, user)) from pex
                 result[idx] = entry[2]
 
         return os.lchown(path, result[0], result[1])
@@ -440,8 +440,8 @@ def _loadPyModuleWithoutImport(name):
 
     try:
         code = modulePath.read()
-    except EnvironmentError:
-        raise ZenMakeError('Could not read the file %r' % str(modulePath))
+    except EnvironmentError as pex:
+        raise ZenMakeError('Could not read the file %r' % str(modulePath)) from pex
 
     module.__file__ = modulePath.path
 

@@ -18,7 +18,7 @@ _antReCache = {}
 @asmethod(WafNode, 'ant_matcher')
 def _antMatcher(patterns, ignorecase):
     """
-    Modified varsion of ant_matcher with fixed some bugs
+    Modified version of ant_matcher with fixed some bugs
     """
 
     reflags = re.I if ignorecase else 0

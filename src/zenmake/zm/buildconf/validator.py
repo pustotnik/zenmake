@@ -164,7 +164,7 @@ class Validator(object):
                 try:
                     handler(elem, _schemeAttrs, '%s.[%d]' % (fullkey, i))
                 except ZenMakeConfTypeError as ex:
-                    raise ZenMakeConfSubTypeError(ex = ex)
+                    raise ZenMakeConfSubTypeError(ex = ex) from ex
 
     @staticmethod
     def _handleFunc(confnode, _, fullkey):
@@ -222,7 +222,7 @@ class Validator(object):
             Validator._validate(confnode, subscheme, fullkey,
                                 allowUnknownKeys, disallowedKeys)
         except ZenMakeConfTypeError as ex:
-            raise ZenMakeConfSubTypeError(ex = ex)
+            raise ZenMakeConfSubTypeError(ex = ex) from ex
 
     @staticmethod
     def _handleVarsInDict(confnode, schemeAttrs, fullkey):
