@@ -7,11 +7,14 @@ Installation
 
 **Dependencies**
 
-* Python_ >=2.7 or >=3.4. Python must have threading support.
+* Python_ >=3.5. Python must have threading support.
   Python has threading in most cases while nobody uses ``--without-threads``
   for Python building. Python >= 3.7 always has threading.
 * `PyYAML <https://pyyaml.org/>`_ It's optional and needed only
-  if you use yaml :ref:`buildconf<buildconf>`.
+  if you use yaml :ref:`buildconf<buildconf>`. ZenMake can be used with yaml
+  buildconf file even though there is no PyYAML in a operation system because
+  ZenMake has an internal copy of PyYAML python library. This copy is used only
+  if there is no PyYAML installed in a operation system.
 
 
 There are different ways to install/use ZenMake:
@@ -86,10 +89,6 @@ or::
 
     $ python <path-to-zenmake-repo>/src/zenmake
 
-.. note::
-    To use yaml build configs you need to install PyYAML
-    (with pip or system package manager).
-
 As a zip application
 ------------------------
 Zenmake can be run as an executable python zip application. And ZenMake can make
@@ -103,7 +102,6 @@ Using steps from `Via Git <installation-via-git_>`_ you can run::
     ...
 
 Resulting file ``zenmake.pyz`` can be run standalone without the repository and pip.
-However, PyYAML must be installed if you want to use yaml build configs.
 You can copy ``zenmake.pyz`` to the root of your project and distribute this
 file with your project. It can be used on any supported platform and doesn't
 require any additional access and changes in your system.

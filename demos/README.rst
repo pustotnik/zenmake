@@ -18,7 +18,7 @@ At the time of writing there are following dependencies:
 
 Linux:
     - python
-    - pyyaml
+    - pyyaml (optional)
     - gcc
     - clang
     - nasm
@@ -35,7 +35,7 @@ Linux:
 
 macOS:
     - python
-    - pyyaml
+    - pyyaml (optional)
     - clang
     - dmd
     - ldc
@@ -43,6 +43,6 @@ macOS:
 
 MS Windows:
     - python 3.x
-    - pyyaml
+    - pyyaml (optional)
     - msvc (Microsoft Visual C++)
     - boost
