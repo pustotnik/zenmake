@@ -15,6 +15,7 @@ __all__ = [
 import os
 import sys
 import io
+import types
 
 from zm import log
 from zm.constants import BUILDCONF_FILENAMES, DEFAULT_BUILDROOTNAME
@@ -95,25 +96,21 @@ def _loadYaml(filepath):
     try:
         import yaml
     except ImportError:
-        errmsg = "Config file is yaml file but python module yaml"
-        errmsg += " is not found. You should install it to use yaml buildconf file."
-        errmsg += " You can do this for example with pip: pip install pyyaml"
-        raise ZenMakeConfError(errmsg)
+        from auxiliary.pyyaml import yaml
 
     try:
-        from yaml import CSafeLoader as SafeLoader
-    except ImportError:
-        from yaml import SafeLoader
+        yamlLoader = yaml.CSafeLoader
+    except AttributeError:
+        yamlLoader = yaml.SafeLoader
 
-    import types
     buildconf = types.ModuleType('buildconf')
     buildconf.__file__ = os.path.abspath(filepath)
     data = {}
     with io.open(filepath, 'rt', encoding = 'utf-8') as stream:
         try:
-            data = yaml.load(stream, SafeLoader)
+            data = yaml.load(stream, yamlLoader)
         except yaml.YAMLError as ex:
-            raise ZenMakeConfError(ex = ex)
+            raise ZenMakeConfError(ex = ex) from ex
 
     if not isinstance(data, maptype):
         raise ZenMakeConfError("File %r has invalid structure" % filepath)

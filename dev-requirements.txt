@@ -4,6 +4,6 @@ setuptools
 keyring
 twine
 requests
-pyyaml<5.3; python_version < '3.5'
-pyyaml; python_version >= '3.5'
+#pyyaml<5.3; python_version < '3.5'
+#pyyaml; python_version >= '3.5'
 msgpack
