@@ -7,17 +7,17 @@ This directory contains demo projects which are used for testing on different
 platforms with different toolchains, libraries, etc. Also they demonstrate
 use of ZenMake and can be used as examples.
 
-Because these projects are used many different things they have many dependencies.
+These projects have many dependencies due to use of many different things.
 Full list of actual dependencies which are used for regular testing on travis-ci
-can be obtained from file '.travis.yml' in the repository root. Different demo
-projects have different dependencies and you need to have all of these
+can be obtained from file 'ci.yml' in the repository directory '.github/workflows'.
+Different demo projects have different dependencies and you need to have all of these
 dependencies only if you want to run all these examples.
-Not all projects can be run on any platform.
+Not every project can be run on all platforms.
 
 At the time of writing there are following dependencies:
 
 Linux:
-    - python
+    - python 3.x
     - pyyaml (optional)
     - gcc
     - clang
@@ -34,7 +34,7 @@ Linux:
     - sdl2 (libsdl2-dev)
 
 macOS:
-    - python
+    - python 3.x
     - pyyaml (optional)
     - clang
     - dmd

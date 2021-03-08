@@ -70,7 +70,7 @@ jobs:
 
     ########## deps
 
-    - name: Install dep packages
+    - name: Install dependency packages
       #if: startsWith(matrix.os,'ubuntu')
       run: |
         if [[ "$RUNNER_OS" == "Linux" ]]; then
@@ -83,6 +83,7 @@ jobs:
           export HOMEBREW_NO_INSTALL_CLEANUP=1
           export HOMEBREW_NO_AUTO_UPDATE=1
           brew install boost
+          # deprecated
           #brew install boost-python
           brew install dmd
           brew install ldc
