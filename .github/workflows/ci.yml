@@ -16,6 +16,8 @@ jobs:
     name: "test: ${{ matrix.os }}, python ${{ matrix.python }}"
 
     strategy:
+      #max-parallel: 4
+      fail-fast: false
       matrix:
         include:
           - { os: ubuntu-18.04, python: 3.5 }
@@ -25,8 +27,6 @@ jobs:
           - { os: ubuntu-18.04, python: 3.9 }
           - { os: macos-10.15, python: 3.6 }
           - { os: windows-2019, python: 3.7 }
-        #max-parallel: 4
-        fail-fast: false
 
     runs-on: ${{ matrix.os }}
 
