@@ -312,8 +312,8 @@ class TestSuite(object):
             'str' : [],
             'list-of-strs' : [],
             'dict' : {
-                'include' :    { 'type': 'str' },
-                'exclude' :    { 'type': 'str' },
+                'incl' :       { 'type': 'str' },
+                'excl' :       { 'type': 'str' },
                 'ignorecase' : { 'type': 'bool' },
             }
         }

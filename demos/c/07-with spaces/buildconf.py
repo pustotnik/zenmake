@@ -4,7 +4,7 @@
 tasks = {
     'my util' : {
         'features' : 'cshlib',
-        'source'   :  dict( include = '"my shlib/**/*.c"' ),
+        'source'   : '"my shlib/**/*.c"',
         'includes' : '"my includes"',
         'export-includes' : True,
         'config-actions'  : [

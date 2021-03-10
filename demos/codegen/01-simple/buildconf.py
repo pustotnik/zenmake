@@ -16,9 +16,9 @@ tasks = {
         'features' : 'cprogram',
         'source'   : [
             '*.c',
-            { 'include': '**/*.c', 'startdir' : '${BUILDTYPE_DIR}/generated' },
+            { 'incl': '**/*.c', 'startdir' : '${BUILDTYPE_DIR}/generated' },
             # another way for the same result:
-            #{ 'include': 'generated/**/*.c', 'startdir' : '${BUILDTYPE_DIR}' },
+            #{ 'incl': 'generated/**/*.c', 'startdir' : '${BUILDTYPE_DIR}' },
         ],
         'use' : 'gen-code2',
     },

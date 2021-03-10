@@ -2,18 +2,12 @@
 tasks = {
     'simple' : {
         'features' : 'cxxprogram',
-        'source'   :  {
-            'include' : '**/*.cpp',
-            'exclude' : '**/test*',
-        },
+        'source' :  { 'incl': '**/*.cpp', 'excl': '**/test*' },
         'rpath' : '.',
     },
     'simple.tests' : {
         'features' : 'cxxprogram test',
-        'source'   :  {
-            'include' : '**/*.cpp',
-            'exclude' : 'main.cpp',
-        },
+        'source' :  { 'incl': '**/*.cpp', 'excl': 'main.cpp' },
         'rpath' : '.',
     },
 }

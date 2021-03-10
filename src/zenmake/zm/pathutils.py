@@ -296,7 +296,7 @@ def pathsDictParamsToList(item):
     Call 'toList' to all appropriate params of paths conf dict item
     """
 
-    for name in ('include', 'exclude', 'paths'):
+    for name in ('incl', 'excl', 'paths'):
         val = item.get(name)
         if val is not None:
             item[name] = toList(val)
@@ -344,7 +344,7 @@ def makePathsConf(param, startdir):
             continue
 
         # use as a pattern
-        result.append({ 'startdir' : startdir, 'include': [item] })
+        result.append({ 'startdir' : startdir, 'incl': [item] })
 
     if paths:
         # gather all paths in one item
@@ -372,10 +372,10 @@ def _getNodesFromPathPatterns(ctx, param, startNode, withDirs,
 
     # pylint: disable = too-many-arguments
 
-    if not ('include' in param or 'exclude' in param):
+    if not ('incl' in param or 'excl' in param):
         return []
 
-    include = param.get('include', '**')
+    include = param.get('incl', '**')
 
     if cache:
         cacheKey = repr(sorted(param.items()))
@@ -383,7 +383,7 @@ def _getNodesFromPathPatterns(ctx, param, startNode, withDirs,
         if cached is not None:
             return [ctx.root.make_node(x) for x in cached]
 
-    exclude = list(param.get('exclude', []))
+    exclude = list(param.get('excl', []))
     exclude.extend(DEFAULT_PATH_EXCLUDES)
 
     if excludeExtraPaths:

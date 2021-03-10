@@ -148,8 +148,8 @@ def _genConfActionsDictVarsScheme(confnode, fullkey):
     return schemeDictVars
 
 _PATHS_SCHEME_DICT_VARS = {
-    'include'    : { 'type': ('str', 'list-of-strs') },
-    'exclude'    : { 'type': ('str', 'list-of-strs') },
+    'incl'       : { 'type': ('str', 'list-of-strs') },
+    'excl'       : { 'type': ('str', 'list-of-strs') },
     'ignorecase' : { 'type': 'bool' },
     'startdir'   : { 'type': 'str' },
 }

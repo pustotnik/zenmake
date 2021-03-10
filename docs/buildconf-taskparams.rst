@@ -112,9 +112,9 @@ source
 
     So such a ``dict`` can contain fields:
 
-        :include:
+        :incl:
             Ant pattern or list of patterns to include, required field.
-        :exclude:
+        :excl:
             Ant pattern or list of patterns to exclude, optional field.
         :ignorecase:
             Ignore case while matching (False by default), optional field.
@@ -151,28 +151,28 @@ source
         'source' : ['main.c', 'about.c'] # the same result
 
         # get all *.cpp files in the 'startdir' recursively
-        'source' :  dict( include = '**/*.cpp' )
+        'source' :  dict( incl = '**/*.cpp' )
         # or
-        'source' :  { 'include': '**/*.cpp' }
-        # or
+        'source' :  { 'incl': '**/*.cpp' }
+        # or (shortest record with the same result)
         'source' :  '**/*.cpp'
 
         # get all *.c and *.cpp files in the 'startdir' recursively
-        'source' :  { 'include': ['**/*.c', '**/*.cpp'] }
-        # or
+        'source' :  { 'incl': ['**/*.c', '**/*.cpp'] }
+        # or (shorter record with the same result)
         'source' :  ['**/*.c', '**/*.cpp']
 
         # get all *.cpp files in the 'startdir'/mylib recursively
-        'source' :  dict( include = 'mylib/**/*.cpp' )
+        'source' :  'mylib/**/*.cpp'
 
         # get all *.cpp files in the 'startdir'/src recursively
         # but don't include files according pattern 'src/extra*'
-        'source' :  dict( include = 'src/**/*.cpp', exclude = 'src/extra*' ),
+        'source' :  dict( incl = 'src/**/*.cpp', excl = 'src/extra*' ),
 
         # get all *.c files in the 'src' and in '../others' recursively
         'source'   : [
             'src/**/*.c',
-            { 'include': '**/*.c', 'startdir' : '../others' },
+            { 'incl': '**/*.c', 'startdir' : '../others' },
         ],
 
     Examples in YAML format:
@@ -185,10 +185,12 @@ source
         source : [main.c, about.c]
 
         # get all *.cpp files in the 'startdir'/mylib recursively
-        source: { include: 'mylib/**/*.cpp' }
+        source: { incl: 'mylib/**/*.cpp' }
         # or
         source:
-            include: 'mylib/**/*.cpp'
+            incl: 'mylib/**/*.cpp'
+        # or (shortest record with the same result)
+        source: 'mylib/**/*.cpp'
 
     You can use :ref:`substitution<buildconf-substitutions>`
     variables in string values for this parameter.

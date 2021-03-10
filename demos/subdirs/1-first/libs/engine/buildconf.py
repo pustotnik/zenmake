@@ -11,7 +11,7 @@ tasks = {
     },
     'engine' : {
         'features' : 'cxxshlib',
-        'source'   :  dict( include = 'src/**/*.cpp', exclude = 'src/extra*' ),
+        'source'   :  dict( incl = 'src/**/*.cpp', excl = 'src/extra*' ),
         'includes' : 'src',
         'use'      : 'extra',
         'export-includes' : True,

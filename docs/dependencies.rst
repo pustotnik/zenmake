@@ -93,7 +93,7 @@ Example in Python format:
         tasks = {
             'myutil' : {
                 'features' : 'cxxshlib',
-                'source'   :  { 'include' : 'shlib/**/*.cpp' },
+                'source'   : 'shlib/**/*.cpp',
                 # Names 'calclib' and 'printlib' are existing tasks in 'zmdep' project
                 'use' : 'zmdep:calclib zmdep:printlib',
             },
@@ -168,11 +168,11 @@ Example in Python format:
         tasks = {
             'util' : {
                 'features' : 'cxxshlib',
-                'source'   :  { 'include' : 'shlib/**/*.cpp' },
+                'source'   : 'shlib/**/*.cpp',
             },
             'program' : {
                 'features' : 'cxxprogram',
-                'source'   :  { 'include' : 'prog/**/*.cpp' },
+                'source'   : 'prog/**/*.cpp',
                 'use.select' : {
                     'debug'   : 'util foo-lib-d:shared-lib',
                     'release' : 'util foo-lib-r:shared-lib',

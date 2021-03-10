@@ -318,7 +318,7 @@ class inst(WafInstallTask):
             nodePath = node.abspath()
             if isdir(nodePath):
                 pattern = '%s/**' % relpath(nodePath, startdir)
-                param = [{ 'startdir' : startdir, 'include' : pattern }]
+                param = [{ 'startdir' : startdir, 'incl' : pattern }]
                 files = getNodesFromPathsConf(nodes.root.ctx, param, topdir)
                 files = [(x, makeDstNode(x.path_from(node))) for x in files]
                 allNodes.extend(files)

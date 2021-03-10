@@ -266,7 +266,7 @@ def testHandleTaskSourceParam(tmpdir, mocker):
     realStartDir = abspath(joinpath(bconf.rootdir, srcParams['startdir']))
 
     # case 1
-    srcParams['include'] = ['some/**/*.cpp']
+    srcParams['incl'] = ['some/**/*.cpp']
     for _ in range(2): # to check with cache
         rv = assist.handleTaskSourceParam(ctx, taskParams)
         assert sorted([x.abspath() for x in rv]) == sorted([
@@ -276,8 +276,8 @@ def testHandleTaskSourceParam(tmpdir, mocker):
         ])
 
     # case 2
-    srcParams['include'] = ['**/*.cpp']
-    srcParams['exclude'] = ['**/*test*']
+    srcParams['incl'] = ['**/*.cpp']
+    srcParams['excl'] = ['**/*test*']
     for _ in range(2): # to check with cache
         rv = assist.handleTaskSourceParam(ctx, taskParams)
         assert sorted([x.abspath() for x in rv]) == sorted([
@@ -286,8 +286,8 @@ def testHandleTaskSourceParam(tmpdir, mocker):
         ])
 
     # case 3
-    srcParams['include'] = ['**/*.cpp', '**/*.c']
-    srcParams['exclude'] = ['**/*test*']
+    srcParams['incl'] = ['**/*.cpp', '**/*.c']
+    srcParams['excl'] = ['**/*test*']
     srcParams['ignorecase'] = True
     for _ in range(2): # to check with cache
         rv = assist.handleTaskSourceParam(ctx, taskParams)

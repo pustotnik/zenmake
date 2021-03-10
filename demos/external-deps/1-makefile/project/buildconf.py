@@ -33,7 +33,7 @@ dependencies = {
                 'trigger' : {
                     'paths-dont-exist' : dict(
                         startdir = foolibdir,
-                        include = '**/*.label',
+                        incl = '**/*.label',
                     ),
                     'func' : triggerConfigure,
                 },

@@ -156,7 +156,7 @@ rules
                 'trigger': {
                     'paths-exist' : dict(
                         startdir = ../foo-lib,
-                        include = '**/*.label',
+                        incl = '**/*.label',
                     ),
                 }
 
