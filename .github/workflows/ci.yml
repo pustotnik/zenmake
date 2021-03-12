@@ -71,13 +71,11 @@ jobs:
     ########## deps
 
     - name: Install dependency packages
-      env:
-        ACCEPT_EULA: Y
       #if: startsWith(matrix.os,'ubuntu')
       run: |
         if [[ "$RUNNER_OS" == "Linux" ]]; then
           sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade --no-install-recommends --yes
+          sudo ACCEPT_EULA=Y DEBIAN_FRONTEND=noninteractive apt-get upgrade --no-install-recommends --yes
           sudo apt-get install clang gcc build-essential bison nasm yasm
           sudo apt-get install gdc ldc libboost-all-dev lua5.1 libdbus-glib-1-dev
           sudo apt-get install gfortran libgtk-3-dev libsdl2-dev
