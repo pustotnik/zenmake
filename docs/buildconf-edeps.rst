@@ -1,17 +1,17 @@
 .. include:: global.rst.inc
 .. highlight:: python
-.. _buildconf-dep-params:
+.. _buildconf-edep-params:
 
-Build config: dependencies
+Build config: edeps
 =============================
 
-The config parameter ``dependencies`` is a :ref:`dict<buildconf-dict-def>` with
+The config parameter ``edeps`` is a :ref:`dict<buildconf-dict-def>` with
 configurations of external non-system dependencies.
 General description of external dependencies is :ref:`here<dependencies-external>`.
 
 Each such a dependency can have own unique name and parameters:
 
-.. _buildconf-dep-params-rootdir:
+.. _buildconf-edep-params-rootdir:
 
 rootdir
 """""""""""""""""""""
@@ -22,7 +22,7 @@ rootdir
 targets
 """""""""""""""""""""
     A :ref:`dict<buildconf-dict-def>` with descriptions of targets of the
-    dependency project. Each target has reference name which can be in
+    dependency project. Each target has a reference name which can be in
     :ref:`use<buildconf-taskparams-use>` in format
     ``dependency-name:target-reference-name`` and parameters:
 
@@ -82,7 +82,7 @@ targets
             },
         },
 
-.. _buildconf-dep-params-export-includes:
+.. _buildconf-edep-params-export-includes:
 
 export-includes
 """""""""""""""""""""
@@ -109,7 +109,7 @@ rules
 
     :cwd:
         A working directory where to run ``cmd``. By default it's
-        the :ref:`rootdir<buildconf-dep-params-rootdir>`.
+        the :ref:`rootdir<buildconf-edep-params-rootdir>`.
         This path can be relative to the :ref:`startdir<buildconf-startdir>` or absolute.
 
     :env:
@@ -136,7 +136,7 @@ rules
             no other triggers then the rule will not be run automatically.
 
         :paths-exist:
-            This trigger returns True only if configured paths are exist on
+            This trigger returns True only if configured paths exist on
             a file system. You can set paths as a string, list of strings or as
             a dict like for config task parameter
             :ref:`source<buildconf-taskparams-source>`.
@@ -161,17 +161,17 @@ rules
                 }
 
         :paths-dont-exist:
-            This trigger is the same as ``paths-exist`` but return True if
-            configured paths are not exist.
+            This trigger is the same as ``paths-exist`` but returns True if
+            configured paths don't exist.
 
         :env:
             This trigger returns True only if all configured environment variables
-            are exist and equal to configured values. Format is simple:
+            exist and equal to configured values. Format is simple:
             it's a ``dict`` where each key is a name of variable and value
             is a value of environment variable.
 
         :no-targets:
-            If it is True this trigger return True only if any of target files
+            If it is True this trigger returns True only if any of target files
             for current dependency doesn't exist. It can be useful to detect
             the need to run 'build' rule.
             This trigger can not be used in ZenMake command 'configure'.
@@ -214,7 +214,7 @@ rules
         'configure' and rule 'build' with the command 'build', etc.
         But here you can set up a different behavior.
 
-.. _buildconf-dep-params-buildtypes-map:
+.. _buildconf-edep-params-buildtypes-map:
 
 buildtypes-map
 """""""""""""""""""""
@@ -231,7 +231,7 @@ buildtypes-map
     .. code-block:: python
 
         buildtypes-map: {
-            'debug' : 'dbg',
+            'debug'   : 'dbg',
             'release' : 'rls',
         }
 

@@ -17,7 +17,7 @@ from waflib.Build import BuildContext
 from zm import log, cli, error
 from zm.autodict import AutoDict as _AutoDict
 from zm.features import precmd, postcmd
-from zm.deps import produceExternalDeps
+from zm.edeps import produceExternalDeps
 from zm.waf import assist
 
 # This module relies on module 'runcmd'. So module 'runcmd' must be loaded.

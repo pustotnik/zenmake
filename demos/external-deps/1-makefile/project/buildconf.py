@@ -1,7 +1,7 @@
 
 features = {
     'db-format' : 'py',
-    'provide-dep-targets' : True,
+    'provide-edep-targets' : True,
 }
 
 foolibdir = '../foo-lib'
@@ -10,7 +10,7 @@ def triggerConfigure(**kwargs):
     #print(kwargs)
     return False
 
-dependencies = {
+edeps = {
     'foo-lib-d' : {
         'rootdir': foolibdir,
         'export-includes' : foolibdir,

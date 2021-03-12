@@ -65,7 +65,7 @@ A few basic types of external dependencies can be used:
     - :ref:`Depending on non-ZenMake projects<dependencies-external-non-zenmake>`
 
 See full description of buildconf parameters for external dependencies
-:ref:`here<buildconf-dep-params>`.
+:ref:`here<buildconf-edep-params>`.
 
 .. _dependencies-external-zenmake:
 
@@ -73,9 +73,9 @@ ZenMake projects
 """"""""""""""""""""
 
 Configuration for this type of dependency is simple in most cases: you set up
-the config variable :ref:`dependencies<buildconf-dependencies>` with
-the :ref:`rootdir<buildconf-dep-params-rootdir>` and
-the :ref:`export-includes<buildconf-dep-params-export-includes>` (if it's necessary)
+the config variable :ref:`edeps<buildconf-edeps>` with
+the :ref:`rootdir<buildconf-edep-params-rootdir>` and
+the :ref:`export-includes<buildconf-edep-params-export-includes>` (if it's necessary)
 and then specify this dependency in :ref:`use<buildconf-taskparams-use>`, using existing
 task names from dependency buildconf.
 
@@ -83,7 +83,7 @@ Example in Python format:
 
     .. code-block:: python
 
-        dependencies = {
+        edeps = {
             'zmdep' : {
                 'rootdir': '../zmdep',
                 'export-includes' : '../zmdep',
@@ -100,7 +100,7 @@ Example in Python format:
         }
 
 Additionally, in some cases, the parameter
-:ref:`buildtypes-map<buildconf-dep-params-buildtypes-map>` can be useful.
+:ref:`buildtypes-map<buildconf-edep-params-buildtypes-map>` can be useful.
 
 Also it's recommended to use always the same version of ZenMake for all such projects.
 Otherwise there are some compatible problems can be occured.
@@ -120,8 +120,8 @@ Non-ZenMake projects
 
 You can use external dependencies from some other build systems but in this
 case you need to set up more parameters in the config
-variable :ref:`dependencies<buildconf-dependencies>`. Full description of these
-parameters can be found :ref:`here<buildconf-dep-params>`. Only one parameter
+variable :ref:`edeps<buildconf-edeps>`. Full description of these
+parameters can be found :ref:`here<buildconf-edep-params>`. Only one parameter
 ``buildtypes-map`` is not used for such dependencies.
 
 If it's necessary to set up different targets for different buildtypes you
@@ -134,7 +134,7 @@ Example in Python format:
 
         foolibdir = '../foo-lib'
 
-        dependencies = {
+        edeps = {
             'foo-lib-d' : {
                 'rootdir': foolibdir,
                 'export-includes' : foolibdir,

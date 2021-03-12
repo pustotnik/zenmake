@@ -1,9 +1,9 @@
 
 features = {
-    'provide-dep-targets' : True,
+    'provide-edep-targets' : True,
 }
 
-dependencies = {
+edeps = {
     'zmdep-b' : {
         'rootdir': '../zmdep-b',
         'export-includes' : '../zmdep-b',

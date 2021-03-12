@@ -1,6 +1,7 @@
 
 zmdepdir = '../../../zmdep-a'
-dependencies = {
+
+edeps = {
     'zmdep-a' : {
         'rootdir': zmdepdir,
         'export-includes' : zmdepdir,

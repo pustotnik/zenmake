@@ -1,10 +1,10 @@
 
 features = {
-    #'provide-dep-targets' : True,
+    #'provide-edep-targets' : True,
 }
 
 zmdepdir = '../zmdep'
-dependencies = {
+edeps = {
     'zmdep' : {
         'rootdir': zmdepdir,
         'export-includes' : zmdepdir,

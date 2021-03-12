@@ -32,7 +32,7 @@ Simplified scheme of buildconf is:
     platforms_ = { name: parameters }
     matrix_ = [ { for: {...}, set: :ref:`task parameters<buildconf-taskparams>` }, ... ]
     :ref:`buildconf-subdirs` = []
-    dependencies_ = { ... }
+    edeps_ = { ... }
 
 .. _buildconf-dict-def:
 
@@ -180,7 +180,7 @@ features
 
                 The default value is ``pickle``.
 
-    :provide-dep-targets: Provide target files of
+    :provide-edep-targets: Provide target files of
                 :ref:`external dependencies<dependencies-external>`
                 in the :ref:`buildroot<buildconf-buildroot>` directory.
                 It is useful to run built files from the build directory without
@@ -476,15 +476,15 @@ subdirs
 
     See some details :ref:`here<dependencies-subdirs>`.
 
-.. _buildconf-dependencies:
+.. _buildconf-edeps:
 
-dependencies
+edeps
 """"""""""""
     A `dict <buildconf-dict-def_>`_ with configurations of external non-system
     dependencies. Each such a dependency has own unique name which can be used in
     task parameter :ref:`use<buildconf-taskparams-use>`.
 
-    See full description of parameters :ref:`here<buildconf-dep-params>`.
+    See full description of parameters :ref:`here<buildconf-edep-params>`.
     Description of external dependencies is :ref:`here<dependencies-external>`.
 
 .. note::

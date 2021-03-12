@@ -342,7 +342,7 @@ confscheme = {
                 'type': 'str',
                 'allowed' : set(('py', 'pickle', 'msgpack', )),
             },
-            'provide-dep-targets' : { 'type': 'bool' },
+            'provide-edep-targets' : { 'type': 'bool' },
             'build-work-dir-name' : { 'type': 'str' },
         },
     },
@@ -379,7 +379,7 @@ confscheme = {
             },
         },
     },
-    'dependencies' : {
+    'edeps' : {
         'type' : 'vars-in-dict',
         'keys-kind' : 'anystr',
         'vars-type' : 'dict',

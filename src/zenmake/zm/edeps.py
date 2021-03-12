@@ -46,7 +46,7 @@ def _handleTasksWithDeps(bconf, allTasks):
     """
 
     depNames = set()
-    depsConf = bconf.dependencies
+    depsConf = bconf.edeps
 
     for taskParams in bconf.tasks.values():
 
@@ -243,7 +243,7 @@ def _initRule(ruleName, ruleParams, rootdir, depRootDir):
     if not isinstance(ruleParams, maptype):
         ruleParams = { 'cmd' : ruleParams }
     else:
-        # don't change bconf.dependencies
+        # don't change bconf.edeps
         ruleParams = deepcopy(ruleParams)
 
     ruleParams['name'] = ruleName
@@ -278,7 +278,7 @@ def preconfigureExternalDeps(cfgCtx):
         if not deps:
             continue
 
-        depConfs = bconf.dependencies
+        depConfs = bconf.edeps
         for depName in deps:
             depConf = depConfs[depName]
             depConf['name'] = depName
@@ -408,7 +408,7 @@ def _prepareZenMakeProjectDep(depConf, buildtype, rootdir):
 
 def _setupTaskDeps(ctx, bconf, taskParams):
 
-    depsConf = bconf.dependencies
+    depsConf = bconf.edeps
     taskDeps = taskParams.get('$external-deps', {})
     buildtype = bconf.selectedBuildType
     rootdir = bconf.rootdir
@@ -789,7 +789,7 @@ def produceExternalDeps(ctx):
         _runRule(ctx, rule)
 
     bconfFeatures = ctx.bconfManager.root.features
-    if cmd == 'build' and bconfFeatures.get('provide-dep-targets', False):
+    if cmd == 'build' and bconfFeatures.get('provide-edep-targets', False):
         _provideDepTargetFiles(ctx)
 
     if cmd == 'configure':

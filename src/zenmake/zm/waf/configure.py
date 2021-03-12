@@ -24,7 +24,7 @@ from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFI
 from zm.constants import TASK_TARGET_KINDS
 from zm.pyutils import stringtype
 from zm.pathutils import substPathsConf
-from zm import utils, log, toolchains, error, db, version, cli, deps
+from zm import utils, log, toolchains, error, db, version, cli, edeps
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
 from zm.features import ToolchainVars
@@ -865,13 +865,13 @@ class ConfigurationContext(WafConfContext):
         self.loadCaches()
         self.preconfigure()
 
-        # prepare dep rules to run
-        deps.preconfigureExternalDeps(self)
+        # prepare external dep rules to run
+        edeps.preconfigureExternalDeps(self)
         self._checkTaskLocalDeps()
 
-        # run dep 'configure' rules and gather needed info after them
-        deps.produceExternalDeps(self)
-        deps.finishExternalDepsConfig(self)
+        # run external dep 'configure' rules and gather needed info after them
+        edeps.produceExternalDeps(self)
+        edeps.finishExternalDepsConfig(self)
 
         # finally run rest configuration including conf tests
         WafContext.Context.execute(self)
@@ -879,7 +879,7 @@ class ConfigurationContext(WafConfContext):
         if self.zmdepconfs:
             # insert into 'libs'/'stlibs' after conf actions to avoid problems
             # with some cont tests (check-libs)
-            deps.applyExternalDepLibsToTasks(self.allOrderedTasks)
+            edeps.applyExternalDepLibsToTasks(self.allOrderedTasks)
 
         # store necessary info
         self.store()

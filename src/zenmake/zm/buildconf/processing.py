@@ -242,8 +242,8 @@ class Config(object):
         confFeatures = self._conf.features
         makePathParam(confFeatures, 'monitor-files', kind = 'paths')
 
-        # dependencies
-        for dep in self._conf.dependencies.values():
+        # external dependencies
+        for dep in self._conf.edeps.values():
             makePathParam(dep, 'rootdir', kind = 'path')
             makePathParam(dep, 'export-includes', kind = 'paths')
 
@@ -359,8 +359,8 @@ class Config(object):
         # buildroot, realbuildroot - see _makeBuildDirParams
         mergedParams.update(('buildroot', 'realbuildroot'))
 
-        # substvars, conditions, dependencies
-        for param in ('substvars', 'conditions', 'dependencies'):
+        # substvars, conditions, edeps
+        for param in ('substvars', 'conditions', 'edeps'):
             mergeDict(param)
             mergedParams.add(param)
 
@@ -742,10 +742,10 @@ class Config(object):
         return conditions
 
     @property
-    def dependencies(self):
-        """ Get dependencies """
+    def edeps(self):
+        """ Get edeps """
 
-        return self._conf.dependencies
+        return self._conf.edeps
 
     @property
     def subdirs(self):

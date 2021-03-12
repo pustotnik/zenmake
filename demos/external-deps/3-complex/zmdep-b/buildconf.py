@@ -1,5 +1,5 @@
 
-dependencies = {
+edeps = {
     'zmdep-a' : {
         'rootdir': '../zmdep-a',
         'export-includes' : '../zmdep-a',

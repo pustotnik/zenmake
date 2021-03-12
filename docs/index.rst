@@ -22,7 +22,7 @@ ZenMake documentation
    buildconf-taskparams
    buildconf-select
    buildconf-substitutions
-   buildconf-deps
+   buildconf-edeps
    commands
    envvars
    langs

@@ -8,7 +8,7 @@
 
 from waflib.Build import CleanContext as WafCleanContext
 from zm.utils import asmethod
-from zm.deps import produceExternalDeps
+from zm.edeps import produceExternalDeps
 
 @asmethod(WafCleanContext, 'execute')
 def _ctxExecute(self):

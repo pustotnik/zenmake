@@ -15,7 +15,7 @@ from zm.constants import DEFAULT_BUILDWORKNAME
 from zm.utils import asmethod, Timer
 from zm import log, db, error
 from zm.waf.assist import makeTasksCachePath
-from zm.deps import produceExternalDeps
+from zm.edeps import produceExternalDeps
 
 joinpath = os.path.join
 
