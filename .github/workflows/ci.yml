@@ -71,6 +71,8 @@ jobs:
     ########## deps
 
     - name: Install dependency packages
+      env:
+        ACCEPT_EULA: Y
       #if: startsWith(matrix.os,'ubuntu')
       run: |
         if [[ "$RUNNER_OS" == "Linux" ]]; then
