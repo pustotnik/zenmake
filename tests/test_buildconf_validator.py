@@ -511,19 +511,19 @@ class TestSuite(object):
             self._checkParamAsDict(buildconf, buildconf.tasks, taskName)
             self._checkTaskScheme(buildconf, buildconf.tasks[taskName])
 
-    def testValidateParamMatrix(self):
+    def testValidateParamByfilter(self):
 
         buildconf = FakeBuildConf()
-        self._checkAttrAsList(buildconf, 'matrix')
+        self._checkAttrAsList(buildconf, 'byfilter')
 
-        setattr(buildconf, 'matrix', [])
-        buildconf.matrix = [ {} ]
+        setattr(buildconf, 'byfilter', [])
+        buildconf.byfilter = [ {} ]
         validator.validate(buildconf)
-        self._checkParamAsDict(buildconf, buildconf.matrix[0], 'for')
-        self._checkParamAsDict(buildconf, buildconf.matrix[0], 'set')
+        self._checkParamAsDict(buildconf, buildconf.byfilter[0], 'for')
+        self._checkParamAsDict(buildconf, buildconf.byfilter[0], 'set')
 
-        buildconf.matrix = [ { 'for' : {}, }, { 'for' : {}, 'set' : {} } ]
+        buildconf.byfilter = [ { 'for' : {}, }, { 'for' : {}, 'set' : {} } ]
         validator.validate(buildconf)
-        self._checkParamsAsStrOrListOfStrs(buildconf, buildconf.matrix[1]['for'],
+        self._checkParamsAsStrOrListOfStrs(buildconf, buildconf.byfilter[1]['for'],
                                ['task', 'buildtype', 'platform'])
-        self._checkTaskScheme(buildconf, buildconf.matrix[1]['set'])
+        self._checkTaskScheme(buildconf, buildconf.byfilter[1]['set'])

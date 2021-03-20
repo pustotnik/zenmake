@@ -47,8 +47,8 @@ These parameters are always used without merging with parent buildconfs:
 
 ZenMake doesn't merge your own variables in your buildconf
 files if you use some of them.
-Other variables are merged including ``matrix``. But build tasks in
-the ``matrix`` which are not from the current buildconf are ignored
+Other variables are merged including ``byfilter``. But build tasks in
+the ``byfilter`` which are not from the current buildconf are ignored
 excepting explicit specified ones.
 
 Some examples can be found in the directory 'subdirs'

@@ -15,7 +15,7 @@ platforms:
     darwin: { default: debug-clang }
     #windows: { default: debug-msvc }
 
-matrix:
+byfilter:
 - for: {} # for all
   set: { includes: '.', rpath : '.', }
 

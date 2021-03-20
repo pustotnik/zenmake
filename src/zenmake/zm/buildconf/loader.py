@@ -88,9 +88,9 @@ def applyDefaults(buildconf, isTopLevel, projectDir):
             params['name'] = os.path.basename(projectDir)
         params['version'] = params.get('version', '')
 
-    # matrix
-    if not hasattr(buildconf, 'matrix'):
-        setattr(buildconf, 'matrix', [])
+    # byfilter
+    if not hasattr(buildconf, 'byfilter'):
+        setattr(buildconf, 'byfilter', [])
 
 def _loadYaml(filepath):
     try:

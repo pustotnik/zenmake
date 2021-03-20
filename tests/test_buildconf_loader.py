@@ -41,8 +41,8 @@ def checkCommonDefaults(buildconf):
         assert hasattr(buildconf, param)
         assert getattr(buildconf, param) == {}
 
-    assert hasattr(buildconf, 'matrix')
-    assert buildconf.matrix == []
+    assert hasattr(buildconf, 'byfilter')
+    assert buildconf.byfilter == []
 
 def testInitDefaults():
 

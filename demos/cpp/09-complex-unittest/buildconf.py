@@ -200,6 +200,6 @@ platforms = {
     },
 }
 
-matrix = [
+byfilter = [
     { 'for' : {}, 'set' : { 'rpath' : '.', } },
 ]

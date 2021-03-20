@@ -7,7 +7,7 @@ Build config: task parameters
 
 It's a :ref:`dict<buildconf-dict-def>` as a collection of build task parameters
 for a build task. This collection is used in :ref:`tasks<buildconf-tasks>`,
-:ref:`buildtypes<buildconf-buildtypes>` and :ref:`matrix<buildconf-matrix>`.
+:ref:`buildtypes<buildconf-buildtypes>` and :ref:`byfilter<buildconf-byfilter>`.
 And it's core buildconf element.
 
 .. _buildconf-taskparams-features:
@@ -817,8 +817,8 @@ enabled
 
     It has sense mostly to use with
     :ref:`selectable parameters<buildconf-select>` or with
-    :ref:`matrix<buildconf-matrix>`. With this parameter you can make a build
-    task which is used, for example, on Linux only or for specific toolchain
+    :ref:`byfilter<buildconf-byfilter>`. With this parameter you can make a build
+    task which can be used, for example, on Linux only or for specific toolchain
     or with another condition.
 
 group-dependent-tasks

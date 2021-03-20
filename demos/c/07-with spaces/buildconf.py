@@ -66,7 +66,7 @@ buildtypes = {
     'default' : 'my debug',
 }
 
-matrix = [
+byfilter = [
     {
         'for' : {},
         'set' : {

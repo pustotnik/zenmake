@@ -61,13 +61,13 @@ buildtypes = {
     'default' : 'debug',
 }
 
-matrix = [
+byfilter = [
     {
         'for' : { 'buildtype' : ['debug', 'release'] },
         'set' : {
             'toolchain.select' : {
                 'default' : 'auto-c++',
-                'windows' : 'msvc', # it's not necessary usually
+                'windows' : 'msvc', # it's usually not necessary
             },
             'rpath' : '.', # to have ability to run from the build directory
         }

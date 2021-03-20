@@ -17,7 +17,7 @@ platforms = {
     #'windows' : { 'default' : 'debug-msvc' },
 }
 
-matrix = [
+byfilter = [
     {
         'for' : {}, # for all
         'set' : {

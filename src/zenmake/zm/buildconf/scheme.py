@@ -458,7 +458,7 @@ confscheme = {
             'default' : { 'type': 'str' },
         },
     },
-    'matrix' : {
+    'byfilter' : {
         'type' : 'list',
         'vars-type' : 'dict',
         'dict-allow-unknown-keys' : False,

@@ -206,8 +206,8 @@ class Config(object):
                     continue
                 prepareTaskParams(_PREPARE_TASKPARAMS_HOOKS, taskparams)
 
-        # matrix
-        for entry in buildconf.matrix:
+        # byfilter
+        for entry in buildconf.byfilter:
             taskparams = entry.get('set')
             if taskparams:
                 prepareTaskParams(_PREPARE_TASKPARAMS_HOOKS, taskparams)
@@ -372,11 +372,11 @@ class Config(object):
             mergeDict(param)
             mergedParams.add(param)
 
-        # matrix
+        # byfilter
         if parentConf:
-            # append the parentConf.matrix to the front of the currentConf.matrix
-            currentConf.matrix[0:0] = parentConf.matrix
-        mergedParams.add('matrix')
+            # append the parentConf.byfilter to the front of the currentConf.byfilter
+            currentConf.byfilter[0:0] = parentConf.byfilter
+        mergedParams.add('byfilter')
 
         #TODO: move to tests
         # check all params were processed
@@ -393,8 +393,8 @@ class Config(object):
 
         # check buildtype names
 
-        matrixBuildTypes = self._getMatrixBuildtypes()
-        buildtypes = list(matrixBuildTypes.keys())
+        filterBuildTypes = self._getFilterBuildtypes()
+        buildtypes = list(filterBuildTypes.keys())
         buildtypes.extend(self._conf.buildtypes.keys())
         buildtypes = tuple(set(buildtypes)) # make unique list
         for buildtype in buildtypes:
@@ -407,7 +407,7 @@ class Config(object):
     def _handleTaskNames(self):
 
         names = list(self._conf.tasks.keys())
-        for entry in self._conf.matrix:
+        for entry in self._conf.byfilter:
             names.extend(toList(entry.get('for', {}).get('task', [])))
         for name in names:
             if DEPNAME_DELIMITER in name:
@@ -417,9 +417,9 @@ class Config(object):
         names = set(names)
         self._meta.tasknames = names
 
-    def _handleMatrixBuildtypes(self):
+    def _handleFilterBuildtypes(self):
         destPlatform = PLATFORM
-        matrixBuildTypes = defaultdict(set)
+        filterBuildTypes = defaultdict(set)
 
         def handleCondition(entry, name):
             condition = entry.get(name, {})
@@ -428,15 +428,15 @@ class Config(object):
 
             if buildtypes:
                 if not platforms:
-                    matrixBuildTypes['all'].update(buildtypes)
+                    filterBuildTypes['all'].update(buildtypes)
                 elif name == 'for' and destPlatform in platforms:
-                    matrixBuildTypes[destPlatform].update(buildtypes)
+                    filterBuildTypes[destPlatform].update(buildtypes)
                 elif name == 'not-for' and destPlatform not in platforms:
-                    matrixBuildTypes[destPlatform].update(buildtypes)
+                    filterBuildTypes[destPlatform].update(buildtypes)
 
             return platforms
 
-        for entry in self._conf.matrix:
+        for entry in self._conf.byfilter:
 
             enabledPlatforms = handleCondition(entry, 'for')
             disabledPlatforms = handleCondition(entry, 'not-for')
@@ -448,18 +448,18 @@ class Config(object):
 
                 enabledPlatforms = set(enabledPlatforms) - set(disabledPlatforms)
                 if destPlatform in enabledPlatforms:
-                    matrixBuildTypes['default'] = defaultBuildType
+                    filterBuildTypes['default'] = defaultBuildType
 
-        self._meta.matrix.buildtypes = matrixBuildTypes
+        self._meta.byfilter.buildtypes = filterBuildTypes
 
-    def _getMatrixBuildtypes(self):
+    def _getFilterBuildtypes(self):
 
-        matrix = self._meta.matrix
-        if 'buildtypes' not in matrix:
-            self._handleMatrixBuildtypes()
-            assert 'buildtypes' in matrix
+        byfilter = self._meta.byfilter
+        if 'buildtypes' not in byfilter:
+            self._handleFilterBuildtypes()
+            assert 'buildtypes' in byfilter
 
-        return matrix.buildtypes
+        return byfilter.buildtypes
 
     def _handleSupportedBuildTypes(self):
         """
@@ -469,7 +469,7 @@ class Config(object):
         destPlatform = PLATFORM
 
         supported = set()
-        matrixBuildTypes = self._getMatrixBuildtypes()
+        filterBuildTypes = self._getFilterBuildtypes()
 
         platformFound = False
         platforms = self._conf.platforms
@@ -481,11 +481,11 @@ class Config(object):
             supported = self._conf.buildtypes.keys()
         supported = set(supported)
 
-        if destPlatform in matrixBuildTypes:
+        if destPlatform in filterBuildTypes:
             platformFound = True
-            supported.update(matrixBuildTypes[destPlatform])
+            supported.update(filterBuildTypes[destPlatform])
 
-        supported.update(matrixBuildTypes.get('all', set()))
+        supported.update(filterBuildTypes.get('all', set()))
 
         if 'default' in supported:
             supported.remove('default')
@@ -508,8 +508,8 @@ class Config(object):
         if PLATFORM in platforms:
             buildtype = platforms[PLATFORM].get('default', buildtype)
 
-        matrixBuildTypes = self._getMatrixBuildtypes()
-        buildtype = matrixBuildTypes.get('default', buildtype)
+        filterBuildTypes = self._getFilterBuildtypes()
+        buildtype = filterBuildTypes.get('default', buildtype)
 
         supportedBuildTypes = self.supportedBuildTypes
         if buildtype is None:
@@ -520,8 +520,8 @@ class Config(object):
 
         if buildtype not in supportedBuildTypes:
             errmsg = "Default build type '%s'" % buildtype
-            if 'default' in matrixBuildTypes:
-                errmsg += " from the config variable 'matrix'"
+            if 'default' in filterBuildTypes:
+                errmsg += " from the config variable 'byfilter'"
             elif PLATFORM in platforms and 'default' in platforms[PLATFORM]:
                 errmsg += " from the config variable 'platform'"
             else:
@@ -819,7 +819,7 @@ class Config(object):
             # 2. Copy/replace exising params of selected buildtype from 'buildtypes'
             task.update(self._conf.buildtypes.get(buildtype, {}))
 
-        def getMatrixCondition(entry, name):
+        def getFilterCondition(entry, name):
             condition = entry.get(name, None)
             result = { 'condition' : condition }
 
@@ -850,13 +850,13 @@ class Config(object):
 
             return result
 
-        for entry in self._conf.matrix:
+        for entry in self._conf.byfilter:
 
-            enabled = getMatrixCondition(entry, 'for')
-            disabled = getMatrixCondition(entry, 'not-for')
+            enabled = getFilterCondition(entry, 'for')
+            disabled = getFilterCondition(entry, 'not-for')
 
             if enabled['condition'] is None and disabled['condition'] is None:
-                log.warn("WARN: buildconf.matrix has an item without 'for' and 'not-for'. "
+                log.warn("WARN: buildconf.byfilter has an item without 'for' and 'not-for'. "
                          "It's probably a mistake.")
 
             enabledTasks = tuple(enabled['tasks'])

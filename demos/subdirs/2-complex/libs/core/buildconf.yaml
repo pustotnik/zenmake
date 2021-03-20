@@ -10,7 +10,7 @@ tasks:
     config-actions :
       - { do: check-headers, names: stdio.h }
 
-matrix:
+byfilter:
   - for : { buildtype : [debug-gcc, release-gcc] }
     set :
       toolchain : gcc

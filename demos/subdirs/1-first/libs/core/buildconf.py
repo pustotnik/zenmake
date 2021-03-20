@@ -17,7 +17,7 @@ tasks = {
     },
 }
 
-matrix = [
+byfilter = [
     {
         'for' : { 'buildtype' : ['debug-gcc', 'release-gcc'], },
         'set' : {

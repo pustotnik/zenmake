@@ -30,7 +30,7 @@ Simplified scheme of buildconf is:
     buildtypes_ = { name: :ref:`task parameters<buildconf-taskparams>` }
     toolchains_ = { name: parameters }
     platforms_ = { name: parameters }
-    matrix_ = [ { for: {...}, set: :ref:`task parameters<buildconf-taskparams>` }, ... ]
+    byfilter_ = [ { for: {...}, set: :ref:`task parameters<buildconf-taskparams>` }, ... ]
     :ref:`buildconf-subdirs` = []
     edeps_ = { ... }
 
@@ -269,7 +269,7 @@ tasks
 
     .. note::
         Parameters in this variable can be overridden by parameters in
-        buildtypes_ and matrix_.
+        buildtypes_ and/or byfilter_.
 
     .. note::
         Name of a task can not contain symbol ``:``. You can use
@@ -310,7 +310,7 @@ buildtypes
 
     .. note::
         Parameters in this variable can override parameters in tasks_ and
-        can be overridden by parameters in matrix_.
+        can be overridden by parameters in byfilter_.
 
 .. _buildconf-toolchains:
 
@@ -379,10 +379,10 @@ platforms
             valid : [debug-msvc, release-msvc ]
             default : debug-msvc
 
-.. _buildconf-matrix:
+.. _buildconf-byfilter:
 
-matrix
-""""""
+byfilter
+""""""""
     This variable describes extra/alternative way to set up build tasks.
     It's a list of `dicts <buildconf-dict-def_>`_ with variables:
     ``set`` and ``for`` and/or ``not-for``.
@@ -404,24 +404,27 @@ matrix
     Variable ``set`` has value of the :ref:`task parameters<buildconf-taskparams>`
     with additional variable ``default-buildtype``.
 
-    Other features of matrix:
+    Other features:
 
     - If some variable is not specified in ``for``/``not-for`` it means that
       this is for all possible values of this kind of condition. For example
       if no ``task`` it means for all existing tasks.
-    - Matrix overrides all values defined in tasks_ and buildtypes_
+    - Parameter 'byfilter' overrides all values defined in tasks_ and buildtypes_
       if they are matching.
     - Items in ``set`` with the same names and the same conditions in ``for``
       and ``not-for`` override items defined before.
     - When ``set`` is empty or not defined it does nothing.
 
-    You can use only ``matrix`` without tasks_ and buildtypes_ if you want.
+    .. note::
+      ZenMake applies every item in the list in the order as they were written.
+
+    You can use only ``byfilter`` without tasks_ and buildtypes_ if you want.
 
     Example in YAML format:
 
     .. code-block:: yaml
 
-        matrix:
+        byfilter:
           - for: {} # for all
             set: { includes: '.', rpath : '.', }
 

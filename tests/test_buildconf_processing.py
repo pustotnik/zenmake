@@ -81,9 +81,9 @@ class TestSuite(object):
             bconf = BuildConfig(asRealConf(buildconf))
             bt = bconf.defaultBuildType
 
-        # CASE: global buildconf.matrix[..].default-buildtype
+        # CASE: global buildconf.byfilter[..].default-buildtype
         buildconf = deepcopy(testingBuildConf)
-        buildconf.matrix = [
+        buildconf.byfilter = [
             {
                 'for' : {}, 'set' : { 'default-buildtype' : 'abc' }
             }
@@ -91,9 +91,9 @@ class TestSuite(object):
         bconf = BuildConfig(asRealConf(buildconf))
         assert bconf.defaultBuildType == 'abc'
 
-        # CASE: platform buildconf.matrix[..].default-buildtype
+        # CASE: platform buildconf.byfilter[..].default-buildtype
         buildconf = deepcopy(testingBuildConf)
-        buildconf.matrix = [
+        buildconf.byfilter = [
             {
                 'for' : { 'platform' : PLATFORM },
                 'set' : { 'default-buildtype' : 'abc' }
@@ -101,7 +101,7 @@ class TestSuite(object):
         ]
         bconf = BuildConfig(asRealConf(buildconf))
         assert bconf.defaultBuildType == 'abc'
-        buildconf.matrix = [
+        buildconf.byfilter = [
             {
                 'for' : { 'platform' : PLATFORM + randomstr() },
                 'set' : { 'default-buildtype' : 'abc' }
@@ -176,33 +176,33 @@ class TestSuite(object):
             'mybuildtype', 'extrabtype'
         ])
 
-    def testSupportedBuildTypesMatrix(self, testingBuildConf):
+    def testSupportedBuildTypesByfilter(self, testingBuildConf):
 
         buildconf = testingBuildConf
         buildconf.buildtypes.default = 'b1'
 
         # CASE: no buildtypes in buildconf.buildtypes and global
-        # buildtypes in matrix
+        # buildtypes in byfilter
         buildconf = deepcopy(testingBuildConf)
-        buildconf.matrix = [
+        buildconf.byfilter = [
             { 'for' : { 'buildtype' : 'b1 b2' } }
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2' ])
-        buildconf.matrix = [
+        buildconf.byfilter = [
             { 'for' : { 'buildtype' : 'b1 b2' } },
             { 'for' : { 'buildtype' : ['b3', 'b2'] } }
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3' ])
 
         # CASE: no buildtypes in buildconf.buildtypes and platform
-        # buildtypes in matrix
+        # buildtypes in byfilter
         buildconf = deepcopy(testingBuildConf)
         buildconf.buildtypes.default = 'b2'
-        buildconf.matrix = [
+        buildconf.byfilter = [
             { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM } }
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2' ])
-        buildconf.matrix = [
+        buildconf.byfilter = [
             { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM + randomstr() } },
             { 'for' : { 'buildtype' : 'b4 b2', 'platform' : PLATFORM } },
             { 'for' : { 'buildtype' : 'b5 b6', 'platform' : PLATFORM } }
@@ -210,59 +210,59 @@ class TestSuite(object):
         self._checkSupportedBuildTypes(buildconf, [ 'b4', 'b2', 'b5', 'b6' ])
 
         # CASE: no buildtypes in buildconf.buildtypes and global/platform
-        # buildtypes in matrix
+        # buildtypes in byfilter
         buildconf = deepcopy(testingBuildConf)
-        buildconf.matrix = [
+        buildconf.byfilter = [
             { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM } },
             { 'for' : { 'buildtype' : 'b3 b2', } },
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3' ])
         buildconf.buildtypes.default = 'b2'
-        buildconf.matrix = [
+        buildconf.byfilter = [
             { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM + randomstr() } },
             { 'for' : { 'buildtype' : 'b3 b2', } },
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'b2', 'b3' ])
 
         # CASE: buildtypes in buildconf.buildtypes and global/platform
-        # buildtypes in matrix
+        # buildtypes in byfilter
         buildconf = deepcopy(testingBuildConf)
         buildconf.buildtypes.gb1 = {}
         buildconf.buildtypes.default = 'b2'
-        buildconf.matrix = [
+        buildconf.byfilter = [
             { 'for' : { 'buildtype' : 'b1 b2' } },
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'gb1', 'b1', 'b2' ])
-        buildconf.matrix = [
+        buildconf.byfilter = [
             { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM } },
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'gb1', 'b1', 'b2' ])
-        buildconf.matrix = [
+        buildconf.byfilter = [
             { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM + randomstr() } },
             { 'for' : { 'buildtype' : 'b3 b2', } },
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'gb1', 'b2', 'b3' ])
 
         # CASE: buildtypes in buildconf.buildtypes, non-empty buildconf.platforms
-        # and global/platform buildtypes in matrix
+        # and global/platform buildtypes in byfilter
         buildconf = deepcopy(testingBuildConf)
         buildconf.buildtypes.b1 = {}
         buildconf.buildtypes.b2 = {}
         buildconf.platforms[PLATFORM].valid = [ 'b1', 'b2' ]
-        buildconf.matrix = [
+        buildconf.byfilter = [
             { 'for' : { 'buildtype' : 'b3 b4' } },
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3', 'b4' ])
-        buildconf.matrix = [
+        buildconf.byfilter = [
             { 'for' : { 'buildtype' : 'b3 b4', 'platform' : PLATFORM } },
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3', 'b4' ])
-        buildconf.matrix = [
+        buildconf.byfilter = [
             { 'for' : { 'buildtype' : 'b5 b3', 'platform' : PLATFORM + randomstr() } },
             { 'for' : { 'buildtype' : 'b4 b3', } },
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3', 'b4' ])
-        buildconf.matrix = [
+        buildconf.byfilter = [
             { 'for' : { 'buildtype' : 'b1' } },
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2' ])
@@ -375,17 +375,17 @@ class TestSuite(object):
         assert expected.test2.toolchain == 'gcc'
         self._checkTasks(buildconf, buildtype, expected)
 
-    def testTasksMatrix(self, testingBuildConf):
+    def testTasksByfilter(self, testingBuildConf):
 
         buildtype = 'mybt'
-        baseMatrix = [
+        baseByfilter = [
             { 'for' : { 'buildtype' : 'mybt' }  },
         ]
         testingBuildConf.buildtypes.default = 'mybt'
 
-        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
+        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.byfilter
         buildconf = deepcopy(testingBuildConf)
-        buildconf.matrix = baseMatrix + [
+        buildconf.byfilter = baseByfilter + [
             { 'for' : { 'task' : 't1' }, 'set' : { 'param1' : '1' } },
             { 'for' : { 'task' : 't2' }, 'set' : { 'param2' : '2' } },
         ]
@@ -395,10 +395,10 @@ class TestSuite(object):
         }
         self._checkTasks(buildconf, buildtype, expected)
 
-        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
+        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.byfilter
         # No param 'default-buildtype' in resulting tasks
         buildconf = deepcopy(testingBuildConf)
-        buildconf.matrix = baseMatrix + [
+        buildconf.byfilter = baseByfilter + [
             { 'for' : { 'task' : 't1' }, 'set' : { 'param1' : '1' } },
             { 'for' : { 'task' : 't2' }, 'set' : { 'param2' : '2' } },
             { 'for' : {}, 'set' : { 'default-buildtype' : 'mybt' } },
@@ -408,10 +408,10 @@ class TestSuite(object):
             't2': {'name' : 't2', 'param2': '2'}
         })
 
-        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
+        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.byfilter
         # with non-empty selected buildtype
         buildconf = deepcopy(testingBuildConf)
-        buildconf.matrix = baseMatrix + [
+        buildconf.byfilter = baseByfilter + [
             {
                 'for' : { 'task' : 't1', 'buildtype' : 'b1 b2', },
                 'set' : { 'param1' : '1' }
@@ -426,10 +426,10 @@ class TestSuite(object):
             't2': {'name' : 't2', 'param2': '2'}
         })
 
-        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
+        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.byfilter
         # Applying for all tasks
         buildconf = deepcopy(testingBuildConf)
-        buildconf.matrix = baseMatrix + [
+        buildconf.byfilter = baseByfilter + [
             { 'for' : {}, 'set' : { 'p3' : '3' } },
             { 'for' : { 'task' : 't1' }, 'set' : { 'p1' : '1' } },
             { 'for' : { 'task' : 't2' }, 'set' : { 'p2' : '2' } },
@@ -439,10 +439,10 @@ class TestSuite(object):
             't2': {'name' : 't2', 'p2': '2', 'p3': '3'},
         })
 
-        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
+        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.byfilter
         # Merging/replacing params in tasks
         buildconf = deepcopy(testingBuildConf)
-        buildconf.matrix = baseMatrix + [
+        buildconf.byfilter = baseByfilter + [
             { 'for' : {}, 'set' : { 'p3' : '3' } },
             { 'for' : { 'task' : 't1' }, 'set' : { 'p1' : '1', 'p2' : '2' } },
             { 'for' : { 'task' : 't2' }, 'set' : { 'p2' : '22' } },
@@ -453,10 +453,10 @@ class TestSuite(object):
             't2': {'name' : 't2', 'p2': '22', 'p3': '3'},
         })
 
-        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.matrix
+        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.byfilter
         # with non-empty platform
         buildconf = deepcopy(testingBuildConf)
-        buildconf.matrix = baseMatrix + [
+        buildconf.byfilter = baseByfilter + [
             {
                 'for' : { 'task' : 't1', },
                 'set' : { 'p1' : '1' }
@@ -471,7 +471,7 @@ class TestSuite(object):
             't2': {'name' : 't2', 'p2': '2'}
         }
         self._checkTasks(buildconf, buildtype, expected)
-        buildconf.matrix = baseMatrix + [
+        buildconf.byfilter = baseByfilter + [
             {
                 'for' : { 'task' : 't1', 'platform' : PLATFORM },
                 'set' : { 'p1' : '1' }
@@ -486,13 +486,13 @@ class TestSuite(object):
         }
         self._checkTasks(buildconf, buildtype, expected)
 
-        # CASE: some tasks in buildconf.tasks, some tasks in buildconf.matrix
+        # CASE: some tasks in buildconf.tasks, some tasks in buildconf.byfilter
         # complex merging
         buildconf = deepcopy(testingBuildConf)
         buildconf.tasks.t1.p1 = '1'
         buildconf.tasks.t2.p2 = '2'
         buildconf.tasks.t2.p3 = '2'
-        buildconf.matrix = baseMatrix + [
+        buildconf.byfilter = baseByfilter + [
             { 'for' : {}, 'set' : { 'p3' : '3' } },
             { 'for' : { 'task' : 't3' }, 'set' : { 'p1' : '1', 'p2' : '2' } },
             { 'for' : { 'task' : 't2' }, 'set' : { 'p1' : '11' } },

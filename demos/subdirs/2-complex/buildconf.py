@@ -61,7 +61,7 @@ platforms = {
     },
 }
 
-matrix = [
+byfilter = [
     {
         'for' : {}, # for all
         'set' : {

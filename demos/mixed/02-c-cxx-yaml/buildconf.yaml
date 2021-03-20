@@ -85,7 +85,7 @@ platforms:
     valid   : debug-msvc release-msvc
     default : debug-msvc
 
-matrix:
+byfilter:
   - for : { task: util, buildtype : [debug-gcc, release-gcc] }
     set :
       toolchain : gcc

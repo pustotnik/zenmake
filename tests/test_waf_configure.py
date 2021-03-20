@@ -386,11 +386,11 @@ def testToolchainNames(testingBuildConf, cfgctx, monkeypatch):
         _checkToolchainNames(ctx, buildconf, buildtype, [tool])
         monkeypatch.delenv('CC')
 
-    ### matrix
+    ### byfilter
 
-    # CASE: empty toolchains in matrix
+    # CASE: empty toolchains in byfilter
     buildconf = deepcopy(testingBuildConf)
-    buildconf.matrix = [
+    buildconf.byfilter = [
         {
             'for' : { 'task' : 'test1' },
             'set' : { 'param1' : '11', 'param2' : '22' }
@@ -401,17 +401,17 @@ def testToolchainNames(testingBuildConf, cfgctx, monkeypatch):
     # it returns tuple but it can return list so we check by len
     assert len(ctx.handleToolchains(bconf)) == 0
 
-    # CASE: tasks in matrix with the same toolchain
+    # CASE: tasks in byfilter with the same toolchain
     buildconf = deepcopy(testingBuildConf)
-    buildconf.matrix = [
+    buildconf.byfilter = [
         { 'for' : { 'task' : 'test1' }, 'set' : { 'toolchain' : 'gxx' } },
         { 'for' : { 'task' : 'test2' }, 'set' : { 'toolchain' : 'gxx' } },
     ]
     _checkToolchainNames(ctx, buildconf, buildtype, ['gxx'])
 
-    # CASE: tasks in matrix with the different toolchains
+    # CASE: tasks in byfilter with the different toolchains
     buildconf = deepcopy(testingBuildConf)
-    buildconf.matrix = [
+    buildconf.byfilter = [
         { 'for' : { 'task' : 'test1' }, 'set' : { 'toolchain' : 'gxx' } },
         { 'for' : { 'task' : 'test2' }, 'set' : { 'toolchain' : 'lgxx' } },
     ]
