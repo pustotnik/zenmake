@@ -408,7 +408,12 @@ class Config(object):
 
         names = list(self._conf.tasks.keys())
         for entry in self._conf.byfilter:
-            names.extend(toList(entry.get('for', {}).get('task', [])))
+            cond = entry.get('for', {})
+            try:
+                _names = toList(cond.get('task', []))
+            except AttributeError:
+                _names = []
+            names.extend(_names)
         for name in names:
             if DEPNAME_DELIMITER in name:
                 msg = 'Name of task %r is invalid.' % name
@@ -423,6 +428,9 @@ class Config(object):
 
         def handleCondition(entry, name):
             condition = entry.get(name, {})
+            if isinstance(condition, stringtype):
+                condition = entry[name] = {}
+
             buildtypes = toList(condition.get('buildtype', []))
             platforms = toListSimple(condition.get('platform', []))
 

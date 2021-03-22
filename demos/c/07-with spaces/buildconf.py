@@ -68,7 +68,7 @@ buildtypes = {
 
 byfilter = [
     {
-        'for' : {},
+        'for' : 'all',
         'set' : {
             'toolchain' : '"my toolchain"',
             'rpath' : '.', # to have ability to run from the build directory

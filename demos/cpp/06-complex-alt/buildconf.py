@@ -19,7 +19,7 @@ platforms = {
 
 byfilter = [
     {
-        'for' : {}, # for all
+        'for' : 'all',
         'set' : {
           'includes' : '.',
           'rpath' : '.',

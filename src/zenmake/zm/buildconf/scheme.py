@@ -464,12 +464,13 @@ confscheme = {
         'dict-allow-unknown-keys' : False,
         'dict-vars' : {
             'for' : {
-                'type': 'dict',
-                'vars' : {
+                'type': ('dict', 'str'),
+                'dict' : {
                     'task' : { 'type': ('str', 'list-of-strs') },
                     'buildtype' : { 'type': ('str', 'list-of-strs') },
                     'platform' : { 'type': ('str', 'list-of-strs') },
                 },
+                'str-allowed': ('all',),
             },
             'not-for' : {
                 'type': 'dict',

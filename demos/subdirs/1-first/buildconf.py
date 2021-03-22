@@ -57,7 +57,7 @@ platforms = {
 
 byfilter = [
     {
-        'for' : {}, # for all
+        'for' : 'all',
         'set' : {
           'rpath' : '.',
         }

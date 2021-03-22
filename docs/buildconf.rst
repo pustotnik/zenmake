@@ -384,15 +384,17 @@ platforms
 byfilter
 """"""""
     This variable describes extra/alternative way to set up build tasks.
-    It's a list of `dicts <buildconf-dict-def_>`_ with variables:
+    It's a list of `dicts <buildconf-dict-def_>`_ with variables
     ``set`` and ``for`` and/or ``not-for``.
-    Variables ``for`` and ``not-for`` describe conditions for parameters
-    in variable ``set``. The variable ``for`` is like a ``if a`` and the variable
+    Variables ``for``/``not-for`` describe conditions for parameters
+    in variable ``set``, that is, a filter to set some build task parameters.
+    The variable ``for`` is like a ``if a`` and the variable
     ``not-for`` is like a ``if not b`` where ``a`` and ``b`` are some conditions.
-    When both of them exist in the same item
-    they are like a ``if a and if not b``. In the case of the same condition
-    in both of them the variable ``not-for`` has higher priority.
-    Each this variable is a dict with one or more keys:
+    And they are like a ``if a and if not b`` when both of them exist in the
+    same item. The variable ``not-for`` has higher priority in the case of the
+    same condition in the both of them.
+
+    The variables ``for``/``not-for`` are dicts with one or more such keys:
 
     :task:      Build task name or list of build task names.
                 It can be existing task(s) from tasks_ or new.
@@ -401,7 +403,7 @@ byfilter
     :buildtype: Build type or list of build types.
                 It can be existing build type(s) from buildtypes_ or new.
 
-    Variable ``set`` has value of the :ref:`task parameters<buildconf-taskparams>`
+    The variable ``set`` has value of the :ref:`task parameters<buildconf-taskparams>`
     with additional variable ``default-buildtype``.
 
     Other features:
@@ -409,23 +411,26 @@ byfilter
     - If some variable is not specified in ``for``/``not-for`` it means that
       this is for all possible values of this kind of condition. For example
       if no ``task`` it means for all existing tasks.
+      Special word ``all`` can be used to indicate that current item must be applied
+      to all build tasks.
+      Empty dict (i.e. ``{}``) can be used for the same reason as well.
     - Parameter 'byfilter' overrides all values defined in tasks_ and buildtypes_
       if they are matching.
-    - Items in ``set`` with the same names and the same conditions in ``for``
-      and ``not-for`` override items defined before.
+    - Items in ``set`` with the same names and the same conditions in ``for``/``not-for``
+      override items defined before.
     - When ``set`` is empty or not defined it does nothing.
 
     .. note::
-      ZenMake applies every item in the list in the order as they were written.
+      ZenMake applies every item in the ``byfilter`` in the order as they were written.
 
-    You can use only ``byfilter`` without tasks_ and buildtypes_ if you want.
+    It's possible to use only ``byfilter`` without tasks_ and buildtypes_.
 
     Example in YAML format:
 
     .. code-block:: yaml
 
         byfilter:
-          - for: {} # for all
+          - for: all
             set: { includes: '.', rpath : '.', }
 
           - for: { task: shlib shlibmain }
