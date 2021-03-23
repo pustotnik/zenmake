@@ -346,7 +346,7 @@ confscheme = {
             'build-work-dir-name' : { 'type': 'str' },
         },
     },
-    'options' : {
+    'cliopts' : {
         'type' : 'dict',
         'vars' : _genOptionsVarsScheme,
     },

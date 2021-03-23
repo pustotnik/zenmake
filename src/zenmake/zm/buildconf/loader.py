@@ -67,7 +67,7 @@ def applyDefaults(buildconf, isTopLevel, projectDir):
 
     # dict params
     dictParams = (
-        'options', 'conditions', 'edeps', 'toolchains',
+        'cliopts', 'conditions', 'edeps', 'toolchains',
         'platforms', 'buildtypes', 'tasks'
     )
     for param in dictParams:

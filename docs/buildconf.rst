@@ -23,7 +23,7 @@ Simplified scheme of buildconf is:
     realbuildroot_ = path
     project_ = { ... }
     :ref:`buildconf-features` = { ... }
-    options_ = { ... }
+    cliopts_ = { ... }
     substvars_ = { ... }
     conditions_ = { ... }
     tasks_ = { name: :ref:`task parameters<buildconf-taskparams>` }
@@ -202,7 +202,7 @@ features
 
             The default value is ``@bld``.
 
-options
+cliopts
 """"""""
     A `dict <buildconf-dict-def_>`_ array with default values for command
     line options. It can be any existing command line option that ZenMake has.
@@ -214,7 +214,7 @@ options
 
     .. code-block:: yaml
 
-        options:
+        cliopts:
           verbose: 1
           jobs : { build : 4 }
           progress :

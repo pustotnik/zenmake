@@ -189,7 +189,7 @@ def processConfManagerWithCLI(testSuit, cmdLine):
     testSuit.confManager = confManager
     testSuit.confPaths = confManager.root.confPaths
 
-    cmd, _ = starter.handleCLI(cmdLine, False, confManager.root.options)
+    cmd, _ = starter.handleCLI(cmdLine, False, confManager.root.cliopts)
     assist.initBuildType(confManager, cmd.args.buildtype)
 
     testSuit.cmdLine = cmdLine

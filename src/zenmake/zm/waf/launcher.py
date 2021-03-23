@@ -80,7 +80,7 @@ def setWscriptVars(module, bconf):
 
 def setupWafOptions(bconfManager, wafCmdLine):
     """
-    Execure 'options' as the Waf command.
+    Execute 'options' as the Waf command.
     This command parses command line args for the Waf.
     """
 

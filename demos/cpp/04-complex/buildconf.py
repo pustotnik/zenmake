@@ -1,7 +1,7 @@
 
 from buildconf_tools import *
 
-options = {
+cliopts = {
     #'color': 'no',
     'jobs' : { 'build' : 4 },
     #'progress' : {'any': False, 'build': True },

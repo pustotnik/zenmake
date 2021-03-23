@@ -27,8 +27,8 @@ def checkCommonDefaults(buildconf):
     assert not hasattr(buildconf, 'startdir')
     assert not hasattr(buildconf, 'realbuildroot')
 
-    assert hasattr(buildconf, 'options')
-    assert buildconf.options == {}
+    assert hasattr(buildconf, 'cliopts')
+    assert buildconf.cliopts == {}
 
     assert hasattr(buildconf, 'features')
 

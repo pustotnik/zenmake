@@ -350,8 +350,8 @@ class Config(object):
         # startdir, subdirs - they are not merged
         mergedParams.update(('startdir', 'subdirs'))
 
-        # project, features, options - they are not merged and always use parent values
-        for param in ('project', 'features', 'options'):
+        # project, features, cliopts - they are not merged and always use parent values
+        for param in ('project', 'features', 'cliopts'):
             if parentConf is not None:
                 setattr(currentConf, param, getattr(parentConf, param))
             mergedParams.add(param)
@@ -660,9 +660,9 @@ class Config(object):
         return version
 
     @property
-    def options(self):
+    def cliopts(self):
         """ Get default options for cli from buildconf """
-        return self._conf.options
+        return self._conf.cliopts
 
     @property
     def confPaths(self):
