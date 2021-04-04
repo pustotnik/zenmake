@@ -384,17 +384,17 @@ platforms
 byfilter
 """"""""
     This variable describes extra/alternative way to set up build tasks.
-    It's a list of `dicts <buildconf-dict-def_>`_ with variables
+    It's a list of `dicts <buildconf-dict-def_>`_ with attributes
     ``set`` and ``for`` and/or ``not-for``.
-    Variables ``for``/``not-for`` describe conditions for parameters
-    in variable ``set``, that is, a filter to set some build task parameters.
-    The variable ``for`` is like a ``if a`` and the variable
+    Attributes ``for``/``not-for`` describe conditions for parameters
+    in attribute ``set``, that is, a filter to set some build task parameters.
+    The attribute ``for`` is like a ``if a`` and the attribute
     ``not-for`` is like a ``if not b`` where ``a`` and ``b`` are some conditions.
     And they are like a ``if a and if not b`` when both of them exist in the
-    same item. The variable ``not-for`` has higher priority in the case of the
+    same item. The attribute ``not-for`` has higher priority in the case of the
     same condition in the both of them.
 
-    The variables ``for``/``not-for`` are dicts with one or more such keys:
+    The attributes ``for``/``not-for`` are dicts with one or more such keys:
 
     :task:      Build task name or list of build task names.
                 It can be existing task(s) from tasks_ or new.
@@ -403,19 +403,19 @@ byfilter
     :buildtype: Build type or list of build types.
                 It can be existing build type(s) from buildtypes_ or new.
 
-    The variable ``set`` has value of the :ref:`task parameters<buildconf-taskparams>`
-    with additional variable ``default-buildtype``.
+    The attribute ``set`` has value of the :ref:`task parameters<buildconf-taskparams>`
+    with additional attribute ``default-buildtype``.
 
     Other features:
 
-    - If some variable is not specified in ``for``/``not-for`` it means that
+    - If some key parameter is not specified in ``for``/``not-for`` it means that
       this is for all possible values of this kind of condition. For example
-      if no ``task`` it means for all existing tasks.
+      if it has no ``task`` it means 'for all existing tasks'.
       Special word ``all`` can be used to indicate that current item must be applied
       to all build tasks.
       Empty dict (i.e. ``{}``) can be used for the same reason as well.
-    - Parameter 'byfilter' overrides all values defined in tasks_ and buildtypes_
-      if they are matching.
+    - Variable 'byfilter' overrides all matched values defined in
+      tasks_ and buildtypes_.
     - Items in ``set`` with the same names and the same conditions in ``for``/``not-for``
       override items defined before.
     - When ``set`` is empty or not defined it does nothing.
