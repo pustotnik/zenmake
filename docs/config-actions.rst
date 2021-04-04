@@ -13,16 +13,17 @@ can be a ``dict`` where ``do`` specifies what to do, some type of
 configuration action. It's like a function where ``do`` describes the name of
 a function and others parameters are parameters for the function.
 
-Another possible value of the item is a python function that must return
-True/False on Success/Failure. If this function raise some exception then it
-means the function returns False. Arguments for such a function can be
-absent or: ``taskname``, ``buildtype``. It's better to use `**kwargs` in this
-function to have universal way to work with any input arguments.
+There is another possible value for such a item in python format of buildconf file
+and it is a python function which must return True/False on Success/Failure.
+If such a function raises some exception then ZenMake interprets it
+as if the function returns False. A function can be without arguments or
+have arguments with names: ``taskname``, ``buildtype``.
+It's better to use `**kwargs` to have universal way to work with any input arguments.
 
 These actions can be run sequentially or in parallel (see ``do`` = ``parallel``).
-And they all are called on **configure** step (command **configure**).
+And they all are called on **configure** step (in command **configure**).
 
-When it's possible results of the same configuration actions are cached
+Results of the same configuration actions are cached when it's possible
 but not between runnings of ZenMake.
 
 These configuration actions in ``dict`` format:
@@ -85,7 +86,7 @@ These configuration actions in ``dict`` format:
 
         Parameter ``label`` can be used to mark message of the test.
         If parameter ``execute`` is True it means that the resulting binary
-        will be executed.
+        will be executed and result will have effect on current configuration action.
 
         Parameter ``defname`` is a name of C/C++/D/Fortran define to set
         for your code when the test is over. There is no such a name by default.
@@ -153,7 +154,7 @@ These configuration actions in ``dict`` format:
     ``do`` = ``call-pyfunc``
         *Parameters*: ``func``, ``mandatory`` = True.
 
-        *Supported languages*: any.
+        *Supported languages*: any but only in python format of buildconf file.
 
         Call a python function. It'a another way to use python
         function as an action. In this way you can use parameter
