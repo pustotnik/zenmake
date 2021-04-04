@@ -29,7 +29,7 @@ tasks = {
         'config-actions'  : [
             { 'do' : 'pkgconfig', 'packages' : 'gtk+-3.0' },
         ],
-        'export-config-actions' : True,
+        'export-config-results' : True,
     },
     'gtk3demo2' : {
         'features' : 'cprogram',

@@ -1488,7 +1488,7 @@ def _importConfigActions(cfgCtx, taskParams):
 
     for name in localDeps:
         depTaskParams = allTasks.get(name)
-        if not depTaskParams or not depTaskParams.get('export-config-actions', False):
+        if not depTaskParams or not depTaskParams.get('export-config-results', False):
             continue
 
         storedActions = depTaskParams['$stored-actions']

@@ -358,7 +358,7 @@ export-defines
     which depend on the current task. Also it can be one or more defines
     for explicit exporting. Defines from :ref:`config-actions<config-actions>`
     are not exported.
-    Use :ref:`export-config-actions<buildconf-taskparams-export-config-actions>`
+    Use :ref:`export-config-results<buildconf-taskparams-export-config-results>`
     to export defines from ``config-actions``.
 
     By default it's False.
@@ -646,9 +646,9 @@ config-actions
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
-.. _buildconf-taskparams-export-config-actions:
+.. _buildconf-taskparams-export-config-results:
 
-export-config-actions
+export-config-results
 """""""""""""""""""""
     If it's True then it exports all results of
     :ref:`config-actions<buildconf-taskparams-config-actions>` for all

@@ -263,7 +263,7 @@ taskscheme = {
     'install-path' :    { 'type': ('bool', 'str') },
     'install-files' :   _genInstallFilesScheme,
     'config-actions' :  _genConfActionsScheme,
-    'export-config-actions' : { 'type': 'bool' },
+    'export-config-results' : { 'type': 'bool' },
     'group-dependent-tasks' : { 'type': 'bool' },
     'normalize-target-name' : { 'type': 'bool' },
     'enabled'       : { 'type': 'bool' },

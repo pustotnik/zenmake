@@ -51,7 +51,7 @@ tasks = {
             dict( do = 'write-config-header'),
             dict( do = 'check-headers', names = 'string vector' ),
         ],
-        'export-config-actions' : True,
+        'export-config-results' : True,
     },
     'extra-test' : {
         'features' : 'cxxprogram test',

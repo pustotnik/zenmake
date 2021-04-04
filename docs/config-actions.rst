@@ -354,7 +354,7 @@ for parallel actions and for the whole bundle of parallel actions as well.
 All results (defines and some other values) of configuration actions
 (excluding ``call-pyfunc``) in one build
 task can be exported to all build tasks which depend on the current task.
-Use :ref:`export-config-actions<buildconf-taskparams-export-config-actions>`
+Use :ref:`export-config-results<buildconf-taskparams-export-config-results>`
 for this ability. It allows you to avoid writing the same config actions in tasks
 and reduce configuration actions time run.
 

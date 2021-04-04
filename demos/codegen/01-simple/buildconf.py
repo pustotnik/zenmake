@@ -4,7 +4,7 @@ tasks = {
         'config-actions' : [ dict(do = 'find-program', names = 'python'), ],
         'run' : '${PYTHON} ${TOP_DIR}/gencode.py ${BUILDTYPE_DIR}/generated',
         'target' : '',
-        'export-config-actions' : True,
+        'export-config-results' : True,
     },
     'gen-code2' : {
         'run' : '${PYTHON} ${TOP_DIR}/gencode.py ${BUILDTYPE_DIR}/generated step2',
