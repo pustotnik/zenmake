@@ -37,7 +37,7 @@ class Command(_AutoDict):
     """ Class to setup a command for CLI """
 
     def __init__(self, *args, **kwargs):
-        super(Command, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.setdefault('aliases', [])
         self.setdefault('usageTextTempl', "%s [options]")
 
@@ -129,7 +129,7 @@ class Option(_AutoDict):
     NOTARGPARSE_FIELDS = ('names', 'commands', 'runcmd', 'isglobal')
 
     def __init__(self, *args, **kwargs):
-        super(Option, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.setdefault('isglobal', False)
         self.setdefault('commands', [])
         self.setdefault('action', 'store')
@@ -323,8 +323,7 @@ class CmdLineParser(object):
         class MyHelpFormatter(argparse.HelpFormatter):
             """ Some customization"""
             def __init__(self, prog):
-                super(MyHelpFormatter, self).__init__(prog,
-                                                      max_help_position = 27)
+                super().__init__(prog, max_help_position = 27)
                 self._action_max_length = 23
 
         kwargs = dict(

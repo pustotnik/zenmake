@@ -40,7 +40,7 @@ class ConfContext(WafConfContext):
         _tempdirs.append(path)
 
         kwargs['run_dir'] = path
-        super(ConfContext, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.top_dir = path
         self.out_dir = os.path.join(path, 'b')

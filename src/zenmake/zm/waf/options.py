@@ -27,7 +27,7 @@ class OptionsContext(WafOptionsContext):
         # WafOptionsContext.execute() makes preforked processes so it can
         # be better for general performance to free some memory before it.
         gc.collect()
-        super(OptionsContext, self).execute()
+        super().execute()
 
 def setupOptionVerbose(wafOptions):
     """

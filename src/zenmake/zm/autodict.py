@@ -48,7 +48,7 @@ class AutoDict(dict):
 
     def copy(self):
         """ shallow copy """
-        return AutoDict(super(AutoDict, self).copy())
+        return AutoDict(super().copy())
 
     def getByDots(self, keystring, default = None):
         """

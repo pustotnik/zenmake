@@ -16,7 +16,7 @@ class ZenMakeError(WafError):
     def __init__(self, msg = None, ex = None):
         if msg is None:
             msg = ''
-        super(ZenMakeError, self).__init__(msg, ex)
+        super().__init__(msg, ex)
         self.fullmsg = self.verbose_msg
 
 class ZenMakeLogicError(ZenMakeError):
@@ -44,7 +44,7 @@ class ZenMakeConfError(ZenMakeError):
 
             self.fullmsg = self.verbose_msg = self.msg = msg
         else:
-            super(ZenMakeConfError, self).__init__(msg, ex)
+            super().__init__(msg, ex)
 
 class ZenMakeConfTypeError(ZenMakeConfError):
     """Invalid buildconf param type error"""
@@ -59,7 +59,7 @@ class ZenMakePathNotFoundError(ZenMakeError):
         self.path = path
         if not msg:
             msg = "Path %r doesn't exist." % path
-        super(ZenMakePathNotFoundError, self).__init__(msg)
+        super().__init__(msg)
 
 class ZenMakeDirNotFoundError(ZenMakePathNotFoundError):
     """ Directory doesn't exist """
@@ -67,7 +67,7 @@ class ZenMakeDirNotFoundError(ZenMakePathNotFoundError):
     def __init__(self, path, msg = None):
         if not msg:
             msg = "Directory %r doesn't exist." % path
-        super(ZenMakeDirNotFoundError, self).__init__(path, msg)
+        super().__init__(path, msg)
 
 class ZenMakeProcessFailed(ZenMakeError):
     """ Process failed with exitcode """
@@ -77,7 +77,7 @@ class ZenMakeProcessFailed(ZenMakeError):
         self.exitcode = exitcode
         if not msg:
             msg = "Command %r failed with exit code %d." % (cmd, exitcode)
-        super(ZenMakeProcessFailed, self).__init__(msg)
+        super().__init__(msg)
 
 class ZenMakeProcessTimeoutExpired(ZenMakeError):
     """ Raised when a timeout expires while waiting for a process """
@@ -93,4 +93,4 @@ class ZenMakeProcessTimeoutExpired(ZenMakeError):
             if output:
                 msg += '\nCaptured output:\n'
                 msg += output
-        super(ZenMakeProcessTimeoutExpired, self).__init__(msg)
+        super().__init__(msg)

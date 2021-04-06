@@ -57,7 +57,7 @@ class ConfigurationContext(WafConfContext):
     def __init__(self, *args, **kwargs):
 
         self._fixSysEnvVars()
-        super(ConfigurationContext, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self._loadedTools = {}
         self._toolchainEnvs = {}
@@ -383,7 +383,7 @@ class ConfigurationContext(WafConfContext):
                 taskParams.pop(name, None)
 
         self.saveCaches()
-        super(ConfigurationContext, self).store()
+        super().store()
 
     def setDirectEnv(self, name, env):
         """ Set env without deriving and other actions """

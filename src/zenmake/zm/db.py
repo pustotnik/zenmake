@@ -93,7 +93,7 @@ class PyDBFile(DBFile):
 
     def __init__(self, pathname, extension = None):
         extension = '.pydict' if extension is None else extension
-        super(PyDBFile, self).__init__(pathname, extension)
+        super().__init__(pathname, extension)
 
     def _save(self, data):
         """ Save to file """
@@ -161,7 +161,7 @@ class _DBFileGen(DBFile):
         self._dumpArgs = kwargs.get('dumpArgs', ([],{}))
         self._loadArgs = kwargs.get('loadArgs', ([],{}))
 
-        super(_DBFileGen, self).__init__(pathname, extension)
+        super().__init__(pathname, extension)
 
     def _save(self, data):
         """ Save to file """
@@ -211,8 +211,7 @@ class PickleDBFile(_DBFileGen):
         # To avoid compatible problems it's better to use different extensions
         # for different python versions
         extension = '.pickle%d' % PY_MAJOR_VER if extension is None else extension
-        super(PickleDBFile, self).__init__(pathname, module, extension,
-                                           **_PICKLE_ARGS)
+        super().__init__(pathname, module, extension, **_PICKLE_ARGS)
 
 if _MSGPACK_EXISTS:
     _MSGPACK_ARGS = {
@@ -230,8 +229,7 @@ if _MSGPACK_EXISTS:
         def __init__(self, pathname, extension = None):
             module = msgpack
             extension = '.msgpack' if extension is None else extension
-            super(MsgpackDBFile, self).__init__(pathname, module, extension,
-                                                **_MSGPACK_ARGS)
+            super().__init__(pathname, module, extension, **_MSGPACK_ARGS)
 
 _defaultDbFormat = 'py'
 

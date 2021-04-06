@@ -42,14 +42,14 @@ class InstallContext(BuildContext):
     cmd = 'install'
 
     def __init__(self, **kw):
-        super(InstallContext, self).__init__(**kw)
+        super().__init__(**kw)
         self.is_install = INSTALL
         self.buildWorkDirName = ''
 
     def execute(self):
 
         try:
-            super(InstallContext, self).execute()
+            super().execute()
         except error.WafError as ex:
 
             # Cut out only error message
@@ -87,7 +87,7 @@ class UninstallContext(InstallContext):
     cmd = 'uninstall'
 
     def __init__(self, **kw):
-        super(UninstallContext, self).__init__(**kw)
+        super().__init__(**kw)
         self.is_install = UNINSTALL
 
 ############ 'inst' Task overriding
@@ -104,7 +104,7 @@ class inst(WafInstallTask):
         self.install_group = None
         self.chmod = 0o644
 
-        super(inst, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.zmTaskParams = getattr(self.generator, 'zm-task-params', {})
         self._actions = []
@@ -201,7 +201,7 @@ class inst(WafInstallTask):
     def init_files(self):
 
         if self.type != 'massive-install-files':
-            super(inst, self).init_files()
+            super().init_files()
             return
 
         # This method is not used in parallel so not thread safe code can be used here
@@ -253,7 +253,7 @@ class inst(WafInstallTask):
     def copy_fun(self, src, tgt):
 
         try:
-            super(inst, self).copy_fun(src, tgt)
+            super().copy_fun(src, tgt)
         except EnvironmentError as ex:
             # Reformat Waf error report
             msg = 'Could not install the file %r' % tgt
@@ -267,7 +267,7 @@ class inst(WafInstallTask):
 
     def fix_perms(self, tgt):
         try:
-            super(inst, self).fix_perms(tgt)
+            super().fix_perms(tgt)
         except Exception as ex:
             # Reformat Waf error report
             msg = 'Could not set permissions for the file %r' % tgt
@@ -276,11 +276,11 @@ class inst(WafInstallTask):
 
     def do_uninstall(self, src, tgt, lbl, **kwargs):
         if pathlexists(tgt):
-            super(inst, self).do_uninstall(src, tgt, lbl, **kwargs)
+            super().do_uninstall(src, tgt, lbl, **kwargs)
 
     def do_unlink(self, src, tgt, **kwargs):
         if pathlexists(tgt):
-            super(inst, self).do_unlink(src, tgt, **kwargs)
+            super().do_unlink(src, tgt, **kwargs)
 
     def rm_empty_dirs(self, tgt):
         while tgt:
@@ -436,4 +436,4 @@ class inst(WafInstallTask):
             if output.parent:
                 self._checkDestDir(output.parent.abspath())
 
-        super(inst, self).run()
+        super().run()

@@ -36,7 +36,7 @@ class BConfManager(ConfManager):
     def __init__(self, topdir, buildroot, buildconf):
         self._buildconfs = {}
         self.setBuildConf(topdir, buildconf)
-        super(BConfManager, self).__init__(topdir, buildroot)
+        super().__init__(topdir, buildroot)
 
     def setBuildConf(self, dirpath, buildconf):
         self._buildconfs[dirpath] = buildconf
@@ -50,7 +50,7 @@ class BConfManager(ConfManager):
         bconf = Config(buildconf, self._buildroot, parent)
         self._orderedConfigs.append(bconf)
 
-        return super(BConfManager, self).makeConfig(dirpath, parent)
+        return super().makeConfig(dirpath, parent)
 
 PARAM_TEST_VALUES = {
     'toolchain' : ['gcc', 'clang', 'auto-c'],
