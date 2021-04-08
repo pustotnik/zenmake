@@ -30,7 +30,7 @@ tasks = {
         'source'   : 'src/main.d',
         'includes' : 'src',
         'use'      : 'staticlib dll',
-        'config-actions'  : [
+        'configure'  : [
             {
                 'do' : 'parallel', 'actions' : [
                     { 'do' : 'check-code', 'text' : fragment1, 'label' : 'fragment1' },

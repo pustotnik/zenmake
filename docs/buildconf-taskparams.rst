@@ -356,10 +356,10 @@ export-defines
     If it's True then it exports value of
     :ref:`defines<buildconf-taskparams-defines>` for all build tasks
     which depend on the current task. Also it can be one or more defines
-    for explicit exporting. Defines from :ref:`config-actions<config-actions>`
+    for explicit exporting. Defines from :ref:`configuration actions<config-actions>`
     are not exported.
     Use :ref:`export-config-results<buildconf-taskparams-export-config-results>`
-    to export defines from ``config-actions``.
+    to export defines from configuration actions.
 
     By default it's False.
 
@@ -611,7 +611,7 @@ run
                 'shell' : False,
             },
             'target': '',
-            'config-actions'  : [ dict(do = 'find-program', names = 'python'), ]
+            'configure'  : [ dict(do = 'find-program', names = 'python'), ]
         },
 
         'shlib-test' : {
@@ -628,20 +628,20 @@ run
 
         'foo.luac' : {
             'source' : 'foo.lua',
-            'config-actions' : [ dict(do = 'find-program', names = 'luac'), ],
+            'configure' : [ dict(do = 'find-program', names = 'luac'), ],
             'run': '${LUAC} -s -o ${TGT} ${SRC}',
         },
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
-.. _buildconf-taskparams-config-actions:
+.. _buildconf-taskparams-configure:
 
-config-actions
+configure
 """""""""""""""""""""
     A list of configuration actions (configuration checks and others).
     Details are :ref:`here<config-actions>`.
-    These actions are called on **configure** step (command **configure**).
+    These actions are called on **configure** step (in command **configure**).
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
@@ -650,8 +650,8 @@ config-actions
 
 export-config-results
 """""""""""""""""""""
-    If it's True then it exports all results of
-    :ref:`config-actions<buildconf-taskparams-config-actions>` for all
+    If it's True then it exports all results of actions in
+    :ref:`configure<buildconf-taskparams-configure>` for all
     build tasks which depend on the current task.
     By default it's False.
 

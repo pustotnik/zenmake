@@ -4,7 +4,7 @@ tasks = {
         'features' : 'cshlib',
         'source'   : 'shlib/**/*.c',
         'includes' : '.',
-        'config-actions'  : [
+        'configure'  : [
             { 'do' : 'check-headers', 'names' : 'stdio.h' },
         ],
         'ver-num' : '0.1.2',
@@ -14,7 +14,7 @@ tasks = {
         'source'   : 'prog/**/*.c',
         'includes' : '.',
         'use'      : 'util',
-        'config-actions'  : [
+        'configure'  : [
             { 'do' : 'check-headers', 'names' : 'stdio.h' },
         ],
     },

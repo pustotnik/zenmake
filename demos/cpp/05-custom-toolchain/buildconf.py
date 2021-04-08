@@ -3,14 +3,14 @@ tasks = {
     'shlib' : {
         'features' : 'cxxshlib',
         'source'   : 'shlib/**/*.cpp',
-        'config-actions'  : [
+        'configure'  : [
             dict(do = 'check-headers', names = 'cstdio'),
         ],
     },
     'stlib' : {
         'features' : 'cxxstlib',
         'source'   : 'stlib/**/*.cpp',
-        'config-actions'  : [
+        'configure'  : [
             dict(do = 'check-headers', names = 'cstdio'),
         ],
     },

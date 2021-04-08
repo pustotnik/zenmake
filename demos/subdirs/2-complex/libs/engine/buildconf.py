@@ -17,7 +17,7 @@ tasks = {
         'includes' : 'src',
         'use'      : 'corelib',
         'ver-num'  : '0.3.0',
-        'config-actions'  : [
+        'configure'  : [
             dict(do = 'check-headers', names = 'cstdio iostream'),
             check,
             dict(do = 'check-headers', names = 'iostream'), # for test only
@@ -31,7 +31,7 @@ tasks = {
         'use'      : 'extra',
         'ver-num'  : '0.3.1',
         'export-includes' : True,
-        'config-actions'  : [
+        'configure'  : [
             dict( do = 'check-headers', names = 'stdio.h iostream' ),
             dict( do = 'parallel', actions = [
                     dict(do = 'check-headers', names = 'cstdio iostream', id = 'first'),

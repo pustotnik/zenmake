@@ -7,8 +7,9 @@ tasks:
     source   : '**/*.c'
     export-includes : true
     ver-num : 0.4.0
-    config-actions :
-      - { do: check-headers, names: stdio.h }
+    configure :
+      - do: check-headers
+        names: stdio.h
 
 byfilter:
   - for : { buildtype : [debug-gcc, release-gcc] }

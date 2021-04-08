@@ -89,7 +89,7 @@ def configure(conf):
         bconf = taskParams['$bconf']
 
         # It's not needed anymore.
-        taskParams.pop('config-actions', None)
+        taskParams.pop('configure', None)
 
         # switch env
         conf.variant = taskParams['$task.variant']
@@ -199,7 +199,7 @@ def build(bld):
 
         if 'includes' in taskParams:
             # Add the build directory path.
-            # It's needed to use config header with 'config-actions'.
+            # It's needed to use config header with 'configure'.
             taskParams['includes'].append(btypeDir)
 
         if 'source' in taskParams:

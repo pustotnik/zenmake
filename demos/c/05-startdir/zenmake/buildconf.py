@@ -8,7 +8,7 @@ tasks = {
         'source'   : 'src/shlib/**/*.c',
         'includes' : 'includes',
         'export-includes': True,
-        'config-actions'  : [
+        'configure'  : [
             dict(do = 'check-headers', names = 'stdio.h'),
         ],
     },
@@ -16,7 +16,7 @@ tasks = {
         'features' : 'cprogram',
         'source'   : 'src/prog/**/*.c',
         'use'      : 'util',
-        'config-actions'  : [
+        'configure'  : [
             dict(do = 'check-headers', names = 'stdio.h'),
         ],
     },

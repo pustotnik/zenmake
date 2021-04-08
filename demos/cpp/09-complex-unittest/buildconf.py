@@ -29,11 +29,11 @@ tasks = {
         'source'   : 'shlib/**/*.cpp',
         'includes' : '.',
         'run'      : "echo 'This is runcmd in task \"shlib\"'",
-        #'config-actions'  : [
+        #'configure'  : [
         #    dict(do = 'check-headers', names = 'iostream'),
         #],
-        # testing of 'config-actions.select' feature
-        'config-actions.select'  : {
+        # testing of 'configure.select' feature
+        'configure.select'  : {
             'default' : [
                 dict(do = 'check-headers', names = 'iostream'),
             ],
@@ -46,7 +46,7 @@ tasks = {
         'features' : 'cxxstlib',
         'source'   : 'stlib/**/*.cpp',
         'includes' : '.',
-        'config-actions'  : [
+        'configure'  : [
             dict(do = 'check-headers', names = 'cstdio'),
         ],
     },
@@ -93,7 +93,7 @@ tasks = {
             'shell' : False,
         },
         'use'       : 'shlibmain',
-        'config-actions' : [ dict(do = 'find-program', names = 'python'), ],
+        'configure' : [ dict(do = 'find-program', names = 'python'), ],
         'target' : '',
     },
     'altscript' : {
@@ -119,7 +119,7 @@ tasks = {
             'shell' : False,
         },
         'use' : 'complex',
-        'config-actions' : [ dict(do = 'find-program', names = 'python'), ]
+        'configure' : [ dict(do = 'find-program', names = 'python'), ]
     },
     'testcmn' : {
         'features' : 'cxxshlib test',
@@ -139,7 +139,7 @@ tasks = {
             'timeout' : 10, # in seconds, Python 3 only
             'shell'   : False,
         },
-        'config-actions' : [ dict(do = 'check-headers', names = 'vector'), ]
+        'configure' : [ dict(do = 'check-headers', names = 'vector'), ]
     },
     'shlibmain-test' : {
         'features' : 'cxxprogram test',

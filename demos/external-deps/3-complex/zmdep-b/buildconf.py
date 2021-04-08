@@ -17,7 +17,7 @@ tasks = {
         'features' : 'cstlib',
         'source'   : 'print/**/*.c',
         'use' : 'zmdep-a:printlib',
-        'config-actions'  : [
+        'configure'  : [
             # ZenMake tests only: check there is no problem with this conf action
             dict(do = 'check-libs'),
         ],
@@ -26,7 +26,7 @@ tasks = {
         'features' : 'cprogram',
         'source'   : 'service/**/*.c',
         'use'      : 'calc print',
-        'config-actions' : [
+        'configure' : [
             dict(do = 'check-headers', names = 'stdio.h'),
             # ZenMake tests only: check there is no problem with this conf action
             dict(do = 'check-libs'),

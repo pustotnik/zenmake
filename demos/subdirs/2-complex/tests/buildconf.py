@@ -13,6 +13,6 @@ tasks = {
             'env'   : { 'JUST_ENV_VAR' : 'qwerty', },
             'shell' : False,
         },
-        'config-actions' : [ dict(do = 'find-program', names = 'python'), ]
+        'configure' : [ dict(do = 'find-program', names = 'python'), ]
     },
 }

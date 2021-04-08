@@ -13,7 +13,7 @@ tasks = {
         'source'   : 'gui/*.c',
         'use'      : 'builder.ui',
         'ver-num'  : '0.1.2',
-        'config-actions'  : [
+        'configure'  : [
             { 'do' : 'pkgconfig', 'packages' : 'gtk+-3.0' },
         ],
         'export-config-results' : True,

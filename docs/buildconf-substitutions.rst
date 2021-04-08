@@ -29,8 +29,8 @@ visible in any build task while task ``substvars`` only in selected task.
 If some name exists in the both ``substvars`` then value from task ``substvars``
 will be used.
 
-Also such variables can be set by some :ref:`config-actions<config-actions>`.
-See ``var`` in config action ``find-program``.
+Also such variables can be set by some :ref:`configuration actions<config-actions>`.
+See ``var`` in configuration action ``find-program``.
 
 There are some variables which ZenMake sets always:
 

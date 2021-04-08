@@ -8,7 +8,7 @@ tasks = {
     'printlib' : {
         'features' : 'cstlib',
         'source'   : 'printlib/**/*.c',
-        'config-actions' : [
+        'configure' : [
             dict(do = 'check-headers', names = 'stdio.h'),
         ],
     },
@@ -16,7 +16,7 @@ tasks = {
         'features' : 'cprogram',
         'source'   : 'service/**/*.c',
         'use'      : 'calclib printlib',
-        'config-actions' : [
+        'configure' : [
             dict(do = 'check-headers', names = 'stdio.h'),
         ],
     },

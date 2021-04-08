@@ -4,8 +4,9 @@ tasks :
     features : cprogram
     source   : test.c util.c
     includes : '.'
-    config-actions:
-      - { do: check-headers, names: stdio.h }
+    configure:
+      - do: check-headers
+        names: stdio.h
 
 buildtypes:
   debug :

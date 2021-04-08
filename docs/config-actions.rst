@@ -6,9 +6,9 @@ Configuration actions
 =====================
 
 ZenMake supports some configuration actions. They can be used to check system
-libraries, headers, etc. To set configuration actions the parameter ``config-actions``
-in :ref:`task params<buildconf-taskparams>` is used. The value of the parameter
-``config-actions`` must be a list of such actions. An item in the list
+libraries, headers, etc. To set configuration actions use the parameter ``configure``
+in :ref:`task params<buildconf-taskparams>`. The value of the parameter
+``configure`` must be a list of such actions. An item in the list
 can be a ``dict`` where ``do`` specifies what to do, some type of
 configuration action. It's like a function where ``do`` describes the name of
 a function and others parameters are parameters for the function.
@@ -126,7 +126,7 @@ These configuration actions in ``dict`` format:
 
             'foo.luac' : {
                 'source' : 'foo.lua',
-                'config-actions' : [ dict(do = 'find-program', names = 'luac'), ],
+                'configure' : [ dict(do = 'find-program', names = 'luac'), ],
                 # var 'LUAC' will be set in 'find-program' if 'luac' is found.
                 'run': '${LUAC} -s -o ${TGT} ${SRC}',
             },
@@ -213,7 +213,7 @@ These configuration actions in ``dict`` format:
         .. code-block:: python
 
             # ZenMake will check package 'gtk+-3.0' and set define 'HAVE_GTK_3_0=1'
-            'config-actions'  : [
+            'configure'  : [
                 { 'do' : 'pkgconfig', 'packages' : 'gtk+-3.0' },
             ]
 
@@ -225,7 +225,7 @@ These configuration actions in ``dict`` format:
             # GTK3_VER="gtk3-ver" and LIBPANGO_VER="pango-ver" where 'gtk3-ver'
             # and 'pango-ver' are values of current versions of
             # 'gtk+-3.0' and 'pango'.
-            'config-actions'  : [
+            'configure'  : [
                 {
                     'do' : 'pkgconfig',
                     'packages' : 'gtk+-3.0 > 1 pango gtk+-3.0 <= 100 ',
@@ -289,7 +289,7 @@ These configuration actions in ``dict`` format:
 
         .. code-block:: python
 
-            'config-actions'  : [
+            'configure'  : [
                 # ZenMake will get compiler/linker options for SDL2 and set define 'HAVE_SDL2=1'
                 { 'do' : 'toolconfig', 'toolname' : 'sdl2-config' },
                 # ZenMake will get SDL2 version and set it in the define 'SDL2_VERSION'
@@ -372,7 +372,7 @@ Example in python format:
         'features'   : 'cxxshlib',
         'libs'   : ['m', 'rt'],
         # ...
-        'config-actions'  : [
+        'configure'  : [
             # do checking in function 'check'
             check,
             # Check libs from param 'libs'

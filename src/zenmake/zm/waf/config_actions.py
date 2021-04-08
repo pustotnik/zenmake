@@ -1385,7 +1385,7 @@ def runActionsInParallel(actionArgs, params):
 
     subactions = actionArgs.pop('actions', [])
     if not subactions:
-        msg = "No actions for 'parallel' in config-actions for task %r" % taskName
+        msg = "Nothing to configure in parallel for task %r" % taskName
         log.warn(msg)
         return
 
@@ -1522,7 +1522,7 @@ def runActions(cfgCtx):
         taskParams['$stored-actions'] = deque()
         _importConfigActions(cfgCtx, taskParams)
 
-        actions = taskParams.get('config-actions', [])
+        actions = taskParams.get('configure', [])
         if not actions:
             continue
 

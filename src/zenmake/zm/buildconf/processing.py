@@ -59,7 +59,7 @@ _PREPARE_TASKPARAMS_HOOKS = tuple(_PREPARE_TASKPARAMS_HOOKS) + \
 
 def _genTaskParamsToListMap(result):
 
-    skipNames = ('config-actions', 'name', 'install-files')
+    skipNames = ('configure', 'name', 'install-files')
     for name, scheme in taskscheme.items():
         if name in skipNames or name.endswith('.select'):
             continue
@@ -74,7 +74,7 @@ def _genTaskParamsToListMap(result):
     result.update({
         'name' : None,
         'features' : toListSimple,
-        'config-actions' : None,
+        'configure' : None,
         'install-files' : None, # all convertions are in commands install/uninstall
     })
     return result

@@ -1,7 +1,7 @@
 
 tasks = {
     'gen-code1' : {
-        'config-actions' : [ dict(do = 'find-program', names = 'python'), ],
+        'configure' : [ dict(do = 'find-program', names = 'python'), ],
         'run' : '${PYTHON} ${TOP_DIR}/gencode.py ${BUILDTYPE_DIR}/generated',
         'target' : '',
         'export-config-results' : True,

@@ -23,7 +23,7 @@ tasks:
   util:
     features : cshlib
     source   : 'shlib/**/*.c'
-    config-actions :
+    configure :
       - do: parallel
         actions:
           - { do: check-headers, names: stdio.h }
@@ -32,7 +32,7 @@ tasks:
   testprg:
     features : cxxprogram
     source   : 'prog/**/*.cpp'
-    config-actions :
+    configure :
       - do: parallel
         actions:
           - { do: check-headers, names: cstdio iostream }

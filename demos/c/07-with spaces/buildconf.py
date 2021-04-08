@@ -7,7 +7,7 @@ tasks = {
         'source'   : '"my shlib/**/*.c"',
         'includes' : '"my includes"',
         'export-includes' : True,
-        'config-actions'  : [
+        'configure'  : [
             { 'do' : 'check-headers', 'names' : 'stdio.h' },
         ],
     },
@@ -15,7 +15,7 @@ tasks = {
         'features' : 'cprogram',
         'source'   : '"my prog/**/*.c"',
         'use'      : "'my util'",
-        'config-actions'  : [
+        'configure'  : [
             { 'do' : 'check-headers', 'names' : 'stdio.h' },
         ],
     },
@@ -25,7 +25,7 @@ tasks = {
         'source'   : '"my shlib/my util.c" "my shlib/my util2.c"',
         'includes' : '"my includes"',
         'export-includes' : True,
-        'config-actions'  : [
+        'configure'  : [
             { 'do' : 'check-headers', 'names' : 'stdio.h' },
         ],
     },
@@ -33,7 +33,7 @@ tasks = {
         'features' : 'cprogram',
         'source'   : '"my prog/my test.c"',
         'use'      : "'my util alt'",
-        'config-actions'  : [
+        'configure'  : [
             { 'do' : 'check-headers', 'names' : 'stdio.h' },
         ],
     },

@@ -22,7 +22,7 @@ tasks = {
         'export-includes' : True,
         'export-defines' : True,
         'install-path' : False,
-        'config-actions'  : [
+        'configure'  : [
             {
                 'do' : 'parallel', 'actions' : [
                     { 'do' : 'check-headers', 'names' : 'cstdio iostream', 'id' : 'first' },

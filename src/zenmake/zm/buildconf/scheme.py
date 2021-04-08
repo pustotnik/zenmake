@@ -262,7 +262,7 @@ taskscheme = {
     'substvars' :       _SUBST_VARS_SCHEME,
     'install-path' :    { 'type': ('bool', 'str') },
     'install-files' :   _genInstallFilesScheme,
-    'config-actions' :  _genConfActionsScheme,
+    'configure' :       _genConfActionsScheme,
     'export-config-results' : { 'type': 'bool' },
     'group-dependent-tasks' : { 'type': 'bool' },
     'normalize-target-name' : { 'type': 'bool' },

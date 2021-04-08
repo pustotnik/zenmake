@@ -83,7 +83,7 @@ tasks = {
             'debug'   : 'foo-lib-d:static-lib',
             'release' : 'foo-lib-r:static-lib',
         },
-        'config-actions'  : [
+        'configure'  : [
             { 'do' : 'check-headers', 'names' : 'cstdio iostream' },
         ],
     },

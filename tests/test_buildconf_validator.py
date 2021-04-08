@@ -319,31 +319,31 @@ class TestSuite(object):
         }
         self._checkParamsAs(buildconf, confnode, ['source'], validTypesAndVals)
 
-        confnode['config-actions'] = cmn.randomint()
+        confnode['configure'] = cmn.randomint()
         with pytest.raises(ZenMakeConfTypeError):
             validator.validate(buildconf)
-        confnode['config-actions'] = cmn.randomstr()
+        confnode['configure'] = cmn.randomstr()
         with pytest.raises(ZenMakeConfTypeError):
             validator.validate(buildconf)
-        confnode['config-actions'] = tuple()
+        confnode['configure'] = tuple()
         validator.validate(buildconf)
-        confnode['config-actions'] = []
+        confnode['configure'] = []
         validator.validate(buildconf)
 
-        confnode['config-actions'] = [ { 'do' : 'check-headers', } ]
+        confnode['configure'] = [ { 'do' : 'check-headers', } ]
         validator.validate(buildconf)
-        self._checkParamsAsStr(buildconf, confnode['config-actions'][0],
+        self._checkParamsAsStr(buildconf, confnode['configure'][0],
                                ['do'], list(KNOWN_CONF_ACTIONS))
-        self._checkParamsAsStrOrListOfStrs(buildconf, confnode['config-actions'][0],
+        self._checkParamsAsStrOrListOfStrs(buildconf, confnode['configure'][0],
                                ['names'])
-        self._validateBoolValues(buildconf, confnode['config-actions'][0], 'mandatory')
+        self._validateBoolValues(buildconf, confnode['configure'][0], 'mandatory')
 
-        confnode['config-actions'] = [ { 'do' : 'check-libs', } ]
+        confnode['configure'] = [ { 'do' : 'check-libs', } ]
         validator.validate(buildconf)
-        self._checkParamsAsStr(buildconf, confnode['config-actions'][0],
+        self._checkParamsAsStr(buildconf, confnode['configure'][0],
                                ['do'], list(KNOWN_CONF_ACTIONS))
-        self._validateBoolValues(buildconf, confnode['config-actions'][0], 'autodefine')
-        self._validateBoolValues(buildconf, confnode['config-actions'][0], 'fromtask')
+        self._validateBoolValues(buildconf, confnode['configure'][0], 'autodefine')
+        self._validateBoolValues(buildconf, confnode['configure'][0], 'fromtask')
 
         confnode['run'] = {}
         validTypesAndVals = { 'str' : None, 'func' : None, }

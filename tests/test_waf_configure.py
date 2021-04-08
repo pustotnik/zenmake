@@ -130,7 +130,7 @@ def testRunConfigActionsFindProgram(mocker, cfgctx):
     tasks = AutoDict()
     tasks.task.name = 'task'
     tasks.task.features = ['c', 'cshlib']
-    tasks.task['config-actions'] = [
+    tasks.task['configure'] = [
         dict(do = 'find-program', names = 'python2', mandatory = False),
         dict(do = 'find-program', names = 'python2 python3', paths = '1 2')
     ]
@@ -164,7 +164,7 @@ def testRunConfigActionsCheckSysLibs(mocker, cfgctx):
     tasks.task['libs'] = 'lib1 lib2'
     tasks.task['$task.variant'] = buildtype
     tasks.task['$tlang'] = 'cxx'
-    tasks.task['config-actions'] = [
+    tasks.task['configure'] = [
         dict(do = 'check-libs', fromtask = True, mandatory = False),
     ]
 
@@ -197,7 +197,7 @@ def testRunConfigActionsCheckHeaders(mocker, cfgctx):
     tasks.task.features = ['c', 'cshlib']
     tasks.task['$task.variant'] = buildtype
     tasks.task['$tlang'] = 'c'
-    tasks.task['config-actions'] = [
+    tasks.task['configure'] = [
         dict(do = 'check-headers', names = 'header1 header2', mandatory = False),
     ]
 
@@ -232,7 +232,7 @@ def testRunConfigActionsCheckLibs(mocker, cfgctx):
     tasks.task.features = ['c', 'cshlib']
     tasks.task['$task.variant'] = buildtype
     tasks.task['$tlang'] = 'c'
-    tasks.task['config-actions'] = [
+    tasks.task['configure'] = [
         dict(do = 'check-libs', names = 'lib1 lib2', mandatory = False),
         dict(do = 'check-libs', names = 'lib3', autodefine = True),
     ]
@@ -270,7 +270,7 @@ def testRunConfigActionsWriteHeader(mocker, cfgctx):
     tasks['some task'].features = ['c', 'cshlib']
     tasks['some task']['$task.variant'] = buildtype
     tasks['some task']['$tlang'] = 'c'
-    tasks['some task']['config-actions'] = [
+    tasks['some task']['configure'] = [
         { 'do' : 'write-config-header', },
         { 'do' : 'write-config-header', 'file' : 'file1' },
         { 'do' : 'write-config-header', 'file' : 'file2', 'guard' : 'myguard' },
@@ -325,7 +325,7 @@ def testRunConfigActionsUnknown(mocker, cfgctx):
     tasks = AutoDict()
     tasks.task.name = 'task'
     tasks.task.features = ['c', 'cshlib']
-    tasks.task['config-actions'] = [
+    tasks.task['configure'] = [
         dict(do = 'random act',),
     ]
     tasks.task['$task.variant'] = 'test'

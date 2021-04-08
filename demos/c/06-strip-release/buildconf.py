@@ -5,7 +5,7 @@ tasks = {
     'program' : {
         'features' : 'cprogram',
         'source'   : 'test.c util.c',
-        'config-actions' : [ { 'do' : 'find-program', 'names' : 'strip'} ],
+        'configure' : [ { 'do' : 'find-program', 'names' : 'strip'} ],
         'run': '${STRIP} ${TARGET}',
     },
 }

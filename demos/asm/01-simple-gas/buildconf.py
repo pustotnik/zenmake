@@ -10,9 +10,6 @@ tasks = {
         'defines'   : 'foo=12',
         'asflags'   : '-Os',
         'toolchain' : 'gcc gas',
-        'config-actions' : [
-            #{ 'do' : 'call-pyfunc', 'func' : check, 'mandatory': False  },
-            check,
-        ],
+        'configure' : [ check ],
     },
 }

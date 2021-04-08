@@ -5,7 +5,7 @@ project = {
 
 tasks = {
     'gui-resources' : {
-        'config-actions'  : [
+        'configure'  : [
             # find 'glib-compile-resources' by pkg-config
             {
                 'msg' : 'Looking for glib-compile-resources',
@@ -14,7 +14,8 @@ tasks = {
                 'parse-as' : 'entire',
                 'var' : 'COMPILE_RES',
             },
-            # it's different and more simple way to find tool 'glib-compile-resources':
+            # it's different and more simple way to find tool 'glib-compile-resources'
+            # but it doesn't use pkg-config:
             #{ 'do' : 'find-program', 'names' : 'glib-compile-resources', 'var' : 'COMPILE_RES' },
         ],
         'source' : 'gui/gui.gresource.xml',
@@ -26,7 +27,7 @@ tasks = {
         'source'   : 'gui/*.c generated/resources.c',
         'use'      : 'gui-resources',
         'ver-num'  : '0.1.2',
-        'config-actions'  : [
+        'configure'  : [
             { 'do' : 'pkgconfig', 'packages' : 'gtk+-3.0' },
         ],
         'export-config-results' : True,

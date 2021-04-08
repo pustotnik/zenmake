@@ -152,10 +152,10 @@ LIBDIR
 
 ZM_CACHE_CFGACTIONS
     When set to a 'True', 'true', 'yes' or non-zero number, ZenMake tries
-    to use cache for some :ref:`config actions<config-actions>`.
+    to use cache for some :ref:`configuration actions<config-actions>`.
     Has no effect when ``--cache-cfg-actions`` is provided on the command line.
-    It can speed up next runs of some config actions but also it can ignore
-    changes in toolchains, system paths, etc. It's safe to use if no changes
-    in the used system. Example::
+    It can speed up next runs of some configuration actions but also it can ignore
+    changes in toolchains, system paths, etc. In general, it is safe to use
+    if there were no changes in the used system. Example::
 
         ZM_CACHE_CFGACTIONS=1 zenmake configure

@@ -10,7 +10,7 @@ tasks = {
         'includes' : 'src',
         'export-includes' : True,
         'ver-num' : '0.4.0',
-        'config-actions'  : [
+        'configure'  : [
             dict(do = 'check-headers', names = 'stdio.h'),
             check,
         ],

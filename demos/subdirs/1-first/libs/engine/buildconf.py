@@ -5,7 +5,7 @@ tasks = {
         'source'   : 'src/extra.cpp',
         'includes' : 'src',
         'use'      : 'corelib',
-        'config-actions'  : [
+        'configure'  : [
             dict(do = 'check-headers', names = 'iostream'),
         ],
     },
@@ -15,7 +15,7 @@ tasks = {
         'includes' : 'src',
         'use'      : 'extra',
         'export-includes' : True,
-        'config-actions'  : [
+        'configure'  : [
             dict(do = 'check-headers', names = 'iostream'),
         ],
     },

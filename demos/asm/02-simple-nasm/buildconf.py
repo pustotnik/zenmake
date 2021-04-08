@@ -10,7 +10,7 @@ tasks = {
         'asflags'     : '-f elf64',
         'aslinkflags' : '-s',
         'toolchain'   : 'nasm',
-        'config-actions' : [
+        'configure' : [
             check,
             { 'do' : 'find-program', 'names' : 'ld', 'var' : 'ASLINK' },
         ],
