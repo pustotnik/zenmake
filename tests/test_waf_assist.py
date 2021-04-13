@@ -190,11 +190,13 @@ def testHandleTaskIncludesParam():
                 'includes': PathsParam(incPaths, paramStartDir, kind = 'paths'),
             }
 
-            if isinstance(expPaths, bool):
-                taskParams['export-includes'] = expPaths
-            else:
-                taskParams['export-includes'] = \
-                    PathsParam(expPaths, paramStartDir, kind = 'paths')
+            # TODO: it's better to do new test with
+            # ConfigurationContext._handleTaskExportParams
+            #if isinstance(expPaths, bool):
+            #    taskParams['export-includes'] = expPaths
+            #else:
+            #    taskParams['export-includes'] = \
+            #        PathsParam(expPaths, paramStartDir, kind = 'paths')
 
             _taskParams = deepcopy(taskParams)
             assist.handleTaskIncludesParam(_taskParams, startdir)
@@ -204,15 +206,15 @@ def testHandleTaskIncludesParam():
             expected.extend(includePaths)
             assert _taskParams['includes'] == expected
 
-            if isinstance(expPaths, bool):
-                if expPaths:
-                    assert _taskParams['export-includes'] == expected
-                else:
-                    assert 'export-includes' not in _taskParams
-            else:
-                exportPaths = calcExpectedPaths(startdir, paramStartDir,
-                                                expPaths)
-                assert _taskParams['export-includes'] == exportPaths
+            #if isinstance(expPaths, bool):
+            #    if expPaths:
+            #        assert _taskParams['export-includes'] == expected
+            #    else:
+            #        assert 'export-includes' not in _taskParams
+            #else:
+            #    exportPaths = calcExpectedPaths(startdir, paramStartDir,
+            #                                    expPaths)
+            #    assert _taskParams['export-includes'] == exportPaths
 
 def testHandleTaskSourceParam(tmpdir, mocker):
 

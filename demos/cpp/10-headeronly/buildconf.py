@@ -2,7 +2,7 @@
 tasks = {
     'util' : {
         'includes' : 'headers',
-        'export-includes' : True,
+        'export'   : 'includes',
     },
     'program' : {
         'features' : 'cxxprogram',

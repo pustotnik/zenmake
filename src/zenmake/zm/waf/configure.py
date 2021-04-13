@@ -21,9 +21,9 @@ from waflib import Errors as waferror, Context as WafContext
 from waflib.ConfigSet import ConfigSet
 from waflib.Configure import ConfigurationContext as WafConfContext
 from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFIG_LOG
-from zm.constants import TASK_TARGET_KINDS
+from zm.constants import TASK_TARGET_KINDS, EXPORTING_TASK_PARAMS
 from zm.pyutils import stringtype
-from zm.pathutils import substPathsConf
+from zm.pathutils import PathsParam, substPathsConf
 from zm import utils, log, toolchains, error, db, version, cli, edeps
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
@@ -64,6 +64,7 @@ class ConfigurationContext(WafConfContext):
         self._confCache = None
         self.allTasks = None
         self.allOrderedTasks = None
+        self.cleanExportParams = True
         self.monitFiles = []
         self.zmMetaConfAttrs = {}
 
@@ -76,6 +77,91 @@ class ConfigurationContext(WafConfContext):
             val = environ.get(var)
             if val is not None:
                 environ[var] = val.replace('"', '').replace("'", '')
+
+    def _adjustTaskExportParams(self, taskParams):
+
+        # handle all export params in buildconf and bring to one form
+        export = taskParams.get('export', [])
+        exportCount = len(EXPORTING_TASK_PARAMS)
+        for param in EXPORTING_TASK_PARAMS:
+            exportName = 'export-%s' % param
+            exportParam = taskParams.get(exportName, bool(param in export))
+            taskParams[exportName] = exportParam
+            if not exportParam and self.cleanExportParams:
+                taskParams.pop(exportName, None)
+                exportCount -= 1
+
+        if not exportCount: # optimization
+            taskParams['$no-exports'] = True
+
+        # remove task param 'export'
+        taskParams.pop('export', None)
+
+    def _handleTaskExportParams(self, taskParams):
+
+        if taskParams.pop('$no-exports', False):
+            return
+
+        startdir = taskParams['$bconf'].startdir
+
+        pathParams = ('includes', 'libpath', 'stlibpath')
+        ignoreParams = set(['config-results'])
+        exportingParams = tuple(set(EXPORTING_TASK_PARAMS) - ignoreParams)
+
+        # gather values for export
+        export = []
+        for param in exportingParams:
+            exportName = 'export-%s' % param
+
+            exportVal = taskParams.get(exportName, False)
+            if isinstance(exportVal, bool):
+                exportVal = taskParams.get(param) if exportVal else None
+
+            if not exportVal:
+                if self.cleanExportParams:
+                    taskParams.pop(exportName, None)
+                continue
+
+            withPaths = param in pathParams
+            if withPaths and not isinstance(exportVal, PathsParam):
+                exportVal = PathsParam(exportVal, startdir)
+
+            export.append((param, exportVal, withPaths))
+
+        if not export:
+            return
+
+        # apply gathered values to all task where they are needed
+        def applyExports(rdeps, export):
+
+            for name in rdeps:
+                depTaskParams = self.allTasks.get(name)
+                if not depTaskParams:
+                    continue
+
+                depStartdir = depTaskParams['$bconf'].startdir
+
+                for param, exportVal, withPaths in export:
+                    if withPaths:
+                        exportVal = exportVal.relpaths(depStartdir)
+                    depTaskParams.setdefault(param, [])
+                    depTaskParams[param][0:0] = exportVal
+
+                applyExports(depTaskParams.get('$ruse', []), export)
+
+        applyExports(taskParams.get('$ruse', []), export)
+
+        if self.cleanExportParams:
+            for param, _, _ in export:
+                # they are not needed anymore
+                exportName = 'export-%s' % param
+                taskParams.pop(exportName, None)
+        else:
+            for param, exportVal, _ in export:
+                exportName = 'export-%s' % param
+                if isinstance(exportVal, PathsParam):
+                    exportVal = exportVal.relpaths(startdir)
+                taskParams[exportName] = exportVal
 
     def _applySubstVars(self, taskParams):
 
@@ -102,21 +188,6 @@ class ConfigurationContext(WafConfContext):
                 substPathsConf(param, substEnv)
             else:
                 taskParams[name] = apply(param, substEnv)
-
-    def _handleTaskDefinesParam(self, taskParams):
-        """
-        Get valid 'defines' and 'export-defines' for build task
-        """
-
-        exportDefines = taskParams.get('export-defines')
-        if exportDefines is True:
-            exportDefines = taskParams.get('defines', [])
-
-        if not exportDefines:
-            taskParams.pop('export-defines', None)
-            return
-
-        taskParams['export-defines'] = exportDefines
 
     def _handleMonitLibs(self, taskParams):
 
@@ -634,21 +705,30 @@ class ConfigurationContext(WafConfContext):
         """
         configActions.runActions(self)
 
-    def configureTaskParams(self, bconf, taskParams):
+    def configureTaskParams(self):
         """
         Handle some known task params that can be handled at configure stage.
         """
 
-        self._applySubstVars(taskParams)
+        for taskParams in self.allOrderedTasks:
+            bconf = taskParams['$bconf']
 
-        assist.handleTaskIncludesParam(taskParams, bconf.startdir)
-        assist.handleTaskLibPathParams(taskParams)
+            # should be called before handling of 'casual' params
+            self._adjustTaskExportParams(taskParams)
 
-        self._handleTaskDefinesParam(taskParams)
-        self._handleMonitLibs(taskParams)
+            self._applySubstVars(taskParams)
 
-        #counter for the object file extension
-        taskParams['objfile-index'] = self._calcObjectsIndex(bconf, taskParams)
+            assist.handleTaskIncludesParam(taskParams, bconf.startdir)
+            assist.handleTaskLibPathParams(taskParams)
+
+            self._handleMonitLibs(taskParams)
+
+            #counter for the object file extension
+            taskParams['objfile-index'] = self._calcObjectsIndex(bconf, taskParams)
+
+        for taskParams in self.allOrderedTasks:
+            # should be called after handling of 'casual' params
+            self._handleTaskExportParams(taskParams)
 
     def _setupTaskTarget(self, taskParams, taskEnv, btypeDir):
 

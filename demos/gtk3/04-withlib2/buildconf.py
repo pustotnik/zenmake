@@ -9,7 +9,8 @@ tasks = {
             # find 'glib-compile-resources' by pkg-config
             {
                 'msg' : 'Looking for glib-compile-resources',
-                'do' : 'toolconfig', 'toolname' : 'pkg-config',
+                'do' : 'toolconfig',
+                'toolname' : 'pkg-config',
                 'args' : '--variable=glib_compile_resources gio-2.0',
                 'parse-as' : 'entire',
                 'var' : 'COMPILE_RES',
@@ -30,7 +31,7 @@ tasks = {
         'configure'  : [
             { 'do' : 'pkgconfig', 'packages' : 'gtk+-3.0' },
         ],
-        'export-config-results' : True,
+        'export' : 'config-results',
     },
     'gtk3demo2' : {
         'features' : 'cprogram',

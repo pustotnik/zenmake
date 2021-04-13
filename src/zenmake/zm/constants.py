@@ -56,3 +56,7 @@ if PLATFORM == 'windows':
     SYSTEM_LIB_PATHS = []
 else:
     SYSTEM_LIB_PATHS = ['/usr/lib64', '/usr/lib', '/usr/local/lib64', '/usr/local/lib']
+
+EXPORTING_TASK_PARAMS = (
+    'includes', 'defines', 'config-results',
+)

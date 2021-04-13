@@ -30,7 +30,6 @@ tasks = {
         'includes' : 'src',
         'use'      : 'extra',
         'ver-num'  : '0.3.1',
-        'export-includes' : True,
         'configure'  : [
             dict( do = 'check-headers', names = 'stdio.h iostream' ),
             dict( do = 'parallel', actions = [
@@ -51,7 +50,7 @@ tasks = {
             dict( do = 'write-config-header'),
             dict( do = 'check-headers', names = 'string vector' ),
         ],
-        'export-config-results' : True,
+        'export' : 'includes config-results',
     },
     'extra-test' : {
         'features' : 'cxxprogram test',

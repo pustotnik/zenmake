@@ -19,8 +19,7 @@ tasks = {
         'source'   : 'shlib/**/*.cpp',
         'includes' : 'include',
         'defines'  : 'ABC=1 DOIT MY_LONG_STRING="some long string"',
-        'export-includes' : True,
-        'export-defines' : True,
+        'export'   : 'includes defines',
         'install-path' : False,
         'configure'  : [
             {

@@ -212,17 +212,7 @@ includes
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
-export-includes
-"""""""""""""""""""""
-    If it's True then it exports value of ``includes`` for all build tasks
-    which depend on the current task. Also it can be one or more paths
-    for explicit exporting. By default it's False.
-
-    If paths contain spaces and all these paths are listed
-    in one string then each such a path must be in quotes.
-
-    It's possible to use :ref:`selectable parameters<buildconf-select>`
-    to set this parameter.
+    This parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
 .. _buildconf-taskparams-toolchain:
 
@@ -351,23 +341,7 @@ defines
     And it's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
-export-defines
-"""""""""""""""""""""
-    If it's True then it exports value of
-    :ref:`defines<buildconf-taskparams-defines>` for all build tasks
-    which depend on the current task. Also it can be one or more defines
-    for explicit exporting. Defines from :ref:`configuration actions<config-actions>`
-    are not exported.
-    Use :ref:`export-config-results<buildconf-taskparams-export-config-results>`
-    to export defines from configuration actions.
-
-    By default it's False.
-
-    You can use :ref:`substitution<buildconf-substitutions>`
-    variables for this parameter.
-
-    And it's possible to use :ref:`selectable parameters<buildconf-select>`
-    to set this parameter.
+    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
 .. _buildconf-taskparams-use:
 
@@ -410,12 +384,12 @@ libs
     task you may need to specify the same libraries for all other tasks which
     depend on the current task. For example, you set library 'mylib'
     to the task A but the task B has parameter ``use`` with 'A',
-    then it's recommended to add 'mylib' to the parameter ``libs`` of the
+    then it's recommended to add 'mylib' to the parameter ``libs`` for the
     task B. Otherwise you can get link error ``... undefined reference to ...``
     or something like that.
-    Some other ways to solve this problem includes using environment variable
-    ``LD_LIBRARY_PATH`` or changing of /etc/ld.so.conf file. But last way usually
-    is not recommended.
+    Some other ways to solve this problem include using environment variable
+    ``LD_LIBRARY_PATH`` or changing of /etc/ld.so.conf file. But usually last
+    method is not recommended.
 
     Example:
 
@@ -646,17 +620,8 @@ configure
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
-.. _buildconf-taskparams-export-config-results:
-
-export-config-results
-"""""""""""""""""""""
-    If it's True then it exports all results of actions in
-    :ref:`configure<buildconf-taskparams-configure>` for all
-    build tasks which depend on the current task.
-    By default it's False.
-
-    It's possible to use :ref:`selectable parameters<buildconf-select>`
-    to set this parameter.
+    Results of these configuration actions
+    can be :ref:`exported<buildconf-taskparams-export>` with the name `config-results`.
 
 .. _buildconf-taskparams-substvars:
 
@@ -672,6 +637,82 @@ substvars
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
+.. _buildconf-taskparams-export:
+
+export-<param> / export
+""""""""""""""""""""""""
+
+    Some task parameters can be exported to all dependent build tasks.
+
+    There two forms: ``export-<param>`` and ``export``.
+
+    In first form ``<param>`` is a name of task parameter that can be exported.
+    As value can be used True/False or specific value to export.
+    If value is True then ZenMake exports value of parameter from current task
+    to all dependent build tasks. If value is False then ZenMake
+    exports nothing.
+
+    Supported names:  ``includes``, ``defines``, ``config-results``.
+
+    The parameter with ``config-results`` can not be used to export specific values.
+    It always must be True/False only.
+
+    In second form it must be string or list with the names of parameters to export.
+    Second form is simplified form of the first form when all values are True.
+    This form can not be used to set specific value to export.
+
+    By default ZenMake doesn't export anything (all values are False).
+
+    Exported values are inserted in the beginning of the current parameter values
+    in dependent tasks. It was made to have ability to overwrite parent values.
+    For example, task A has ``defines`` with value ``AAA=q`` and task B depends
+    on task A and has ``defines`` with value ``BBB=v``. So if task A has
+    ``export-defines`` with True, then actual value of ``defines`` in task B will
+    be ``AAA=q BBB=v``.
+
+    Examples in YAML format:
+
+    .. code-block:: yaml
+
+        # export all includes from current task
+        export-includes: true
+        # the same result:
+        export: includes
+
+        # export all includes and defines from current task
+        export-includes: true
+        export-defines: true
+        # the same result:
+        export: includes defines
+
+        # export specific includes, value of parameter 'includes' from current
+        # task is not used
+        export-includes: incl1 incl2
+
+        # export specific defines, value of parameter 'defines' from current
+        # task is not used
+        export-defines  : 'ABC=1 DOIT AAA="some long string"'
+
+        # export results of all configuration actions from current task
+        export-config-results: true
+
+        # export all includes, defines and results of configuration actions
+        export: includes defines config-results
+
+    Specific remarks:
+
+        :includes:
+            If specified paths contain spaces and all these paths are listed
+            in one string then each such a path must be in quotes.
+
+        :defines:
+            Defines from :ref:`configuration actions<config-actions>`
+            are not exported. Use ``export-config-results`` or
+            ``export`` with ``config-results`` for that.
+
+    It's possible to use :ref:`selectable parameters<buildconf-select>`
+    to set this parameter.
+
 install-path
 """""""""""""""""""""
     String representing the installation path for the output files.
@@ -679,6 +720,7 @@ install-path
     To disable installation, set it to False or empty string.
     If it's absent then general values of ``PREFIX``, ``BINDIR``
     and ``LIBDIR`` will be used to detect path.
+    Path must be absolute.
     You can use any :ref:`substitution<buildconf-substitutions>` variable
     including ``${PREFIX}``, ``${BINDIR}`` and ``${LIBDIR}`` here
     like this:
@@ -828,7 +870,7 @@ group-dependent-tasks
     analyzing of the task dependencies and file paths in :ref:`source<buildconf-taskparams-source>`.
     Such list of tasks is called `build group` and, by default, it's only one
     build group for each project which uses ZenMake. If this parameter is true,
-    ZenMake creates a new build group for all other tasks which depend on the current task and
+    ZenMake creates a new build group for all other dependent tasks and
     preparation for these dependent tasks will be run only when all jobs for current
     task, including all dependencies, are done.
 
@@ -851,12 +893,12 @@ objfile-index
     build task.
 
     If you set this for one task but not for others in the same project and your
-    selected index number is matched with an one of automatic generated indexes
-    then it can cause compilation errors if different tasks uses the same files in
+    index number is matched with one of automatic generated indexes
+    then it can cause compilation errors if different tasks use the same files in
     parameter ``source``.
 
     Also you can set the same value for the all build tasks and often it's not a
-    problem while different tasks uses the different files in
+    problem while different tasks use the different files in
     parameter ``source``.
 
     Set this parameter only if you know what you do.

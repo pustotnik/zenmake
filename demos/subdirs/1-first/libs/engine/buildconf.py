@@ -14,7 +14,7 @@ tasks = {
         'source'   :  dict( incl = 'src/**/*.cpp', excl = 'src/extra*' ),
         'includes' : 'src',
         'use'      : 'extra',
-        'export-includes' : True,
+        'export'   : 'includes',
         'configure'  : [
             dict(do = 'check-headers', names = 'iostream'),
         ],

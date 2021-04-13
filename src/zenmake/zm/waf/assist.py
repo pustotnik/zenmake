@@ -319,10 +319,10 @@ def convertTaskParamNamesForWaf(taskParams):
         ('libs', 'lib'),
         ('stlibs', 'stlib'),
         ('ver-num', 'vnum'),
-        ('export-includes', 'export_includes'),
-        ('export-defines', 'export_defines'),
         ('install-path', 'install_path'),
         ('objfile-index', 'idx'),
+
+        # ZenMake doesn't use Waf 'export_includes' and 'export_defines' anymore
     )
 
     for zmKey, wafKey in nameMap:
@@ -393,13 +393,10 @@ def handleTaskLibPathParams(taskParams):
 
 def handleTaskIncludesParam(taskParams, startdir):
     """
-    Make valid 'includes' and 'export-includes' for build task
+    Make valid 'includes' for build task
     """
 
     # Includes paths must be relative to the startdir
-
-    #####################
-    ### 'includes'
 
     if 'includes' in taskParams:
         param = taskParams['includes']
@@ -412,24 +409,6 @@ def handleTaskIncludesParam(taskParams, startdir):
     # it's inserted in front of the list.
     includes.insert(0, '.')
     taskParams['includes'] = includes
-
-    #####################
-    ### 'export-includes'
-
-    if 'export-includes' not in taskParams:
-        return
-
-    param = taskParams['export-includes']
-    if isinstance(param, bool):
-        exportIncludes = includes if param else None
-    else:
-        exportIncludes = param.relpaths(startdir)
-
-    if not exportIncludes:
-        taskParams.pop('export-includes', None)
-        return
-
-    taskParams['export-includes'] = exportIncludes
 
 def handleTaskSourceParam(ctx, taskParams):
     """

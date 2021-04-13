@@ -8,7 +8,7 @@ tasks = {
         'features' : 'cshlib',
         'source'   : '**/*.c',
         'includes' : 'src',
-        'export-includes' : True,
+        'export'   : 'includes',
         'ver-num' : '0.4.0',
         'configure'  : [
             dict(do = 'check-headers', names = 'stdio.h'),

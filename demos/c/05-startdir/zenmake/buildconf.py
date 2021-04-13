@@ -7,7 +7,7 @@ tasks = {
         'features' : 'cshlib',
         'source'   : 'src/shlib/**/*.c',
         'includes' : 'includes',
-        'export-includes': True,
+        'export'   : 'includes config-results',
         'configure'  : [
             dict(do = 'check-headers', names = 'stdio.h'),
         ],
@@ -16,9 +16,6 @@ tasks = {
         'features' : 'cprogram',
         'source'   : 'src/prog/**/*.c',
         'use'      : 'util',
-        'configure'  : [
-            dict(do = 'check-headers', names = 'stdio.h'),
-        ],
     },
 }
 

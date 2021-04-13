@@ -6,7 +6,7 @@ tasks = {
         'features' : 'cshlib',
         'source'   : '"my shlib/**/*.c"',
         'includes' : '"my includes"',
-        'export-includes' : True,
+        'export'   : 'includes',
         'configure'  : [
             { 'do' : 'check-headers', 'names' : 'stdio.h' },
         ],
@@ -24,7 +24,7 @@ tasks = {
         'features' : 'cshlib',
         'source'   : '"my shlib/my util.c" "my shlib/my util2.c"',
         'includes' : '"my includes"',
-        'export-includes' : True,
+        'export'   : 'includes',
         'configure'  : [
             { 'do' : 'check-headers', 'names' : 'stdio.h' },
         ],

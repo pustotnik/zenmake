@@ -1480,24 +1480,36 @@ _exportedActionsFuncs = {
     'write-conf-header' : _applyWriteConfigHeaderResults,
 }
 
-def _importConfigActions(cfgCtx, taskParams):
+def _exportConfigActions(cfgCtx, taskParams):
 
-    allTasks = cfgCtx.allTasks
-    localDeps = taskParams.get('use', [])
-    assert isinstance(localDeps, list)
+    if not taskParams.get('export-config-results', False):
+        return
 
-    for name in localDeps:
-        depTaskParams = allTasks.get(name)
-        if not depTaskParams or not depTaskParams.get('export-config-results', False):
-            continue
+    exports = []
+    storedActions = taskParams['$stored-actions']
+    for actionData in storedActions:
+        func = _exportedActionsFuncs.get(actionData['type'])
+        assert func is not None
+        exports.append([func, actionData['data']])
 
-        storedActions = depTaskParams['$stored-actions']
-        for actionData in storedActions:
-            func = _exportedActionsFuncs.get(actionData['type'])
-            assert func is not None
-            data = actionData['data']
-            data['$task-params'] = taskParams
-            func(cfgCtx, data)
+    def applyExports(rdeps, exports):
+
+        for name in rdeps:
+            depTaskParams = cfgCtx.allTasks.get(name)
+            if not depTaskParams:
+                continue
+
+            cfgCtx.setenv(depTaskParams['$task.variant'])
+            for func, data in exports:
+                data['$task-params'] = depTaskParams
+                func(cfgCtx, data)
+
+            applyExports(depTaskParams.get('$ruse', []), exports)
+
+    applyExports(taskParams.get('$ruse', []), exports)
+
+    # return back the current task env
+    cfgCtx.setenv(taskParams['$task.variant'])
 
 def runActions(cfgCtx):
     """
@@ -1520,7 +1532,6 @@ def runActions(cfgCtx):
         #cfgCtx.path = cfgCtx.getPathNode(bconf.confdir)
 
         taskParams['$stored-actions'] = deque()
-        _importConfigActions(cfgCtx, taskParams)
 
         actions = taskParams.get('configure', [])
         if not actions:
@@ -1544,6 +1555,8 @@ def runActions(cfgCtx):
         }
 
         _handleActions(actions, params)
+
+        _exportConfigActions(cfgCtx, taskParams)
 
     for taskParams in tasksList:
         taskParams.pop('$stored-actions')

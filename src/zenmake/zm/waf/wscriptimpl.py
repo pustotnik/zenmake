@@ -73,18 +73,14 @@ def configure(conf):
     Implementation of wscript.configure
     """
 
-    configs = conf.bconfManager.configs
-    tasksList = conf.allOrderedTasks
-
-    for taskParams in tasksList:
-        # handle such task params as includes, libpath, ...
-        conf.configureTaskParams(taskParams['$bconf'], taskParams)
+    # handle such task params as includes, libpath, etc.
+    conf.configureTaskParams()
 
     # run conf actions
     conf.runConfigActions()
 
     # save envs
-    for taskParams in tasksList:
+    for taskParams in conf.allOrderedTasks:
 
         bconf = taskParams['$bconf']
 
@@ -106,7 +102,7 @@ def configure(conf):
     # switch current env to the root env
     conf.setenv('')
 
-    for bconf in configs:
+    for bconf in conf.bconfManager.configs:
         conf.addExtraMonitFiles(bconf)
 
 def _setupClean(bld, bconfPaths):

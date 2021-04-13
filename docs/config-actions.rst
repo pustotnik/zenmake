@@ -310,10 +310,9 @@ These configuration actions in ``dict`` format:
 
         *Supported languages*: C, C++.
 
-        After some configuration actions are executed, write a
-        configuration header in the build directory.
-        The configuration header is used to limit the size of the
-        command-line. By default file name is ``<task name>_config.h``.
+        Write a configuration header in the build directory after some
+        configuration actions.
+        By default file name is ``<task name>_config.h``.
         Parameter ``guard`` can be used to change C/C++ header guard.
         Parameter ``remove-defines`` means removing the defines after they are
         added into configuration header file and it is True by default.
@@ -354,8 +353,8 @@ for parallel actions and for the whole bundle of parallel actions as well.
 
 All results (defines and some other values) of configuration actions
 (excluding ``call-pyfunc``) in one build
-task can be exported to all build tasks which depend on the current task.
-Use :ref:`export-config-results<buildconf-taskparams-export-config-results>`
+task can be exported to all dependent build tasks.
+Use :ref:`export<buildconf-taskparams-export>` with the name `config-results`
 for this ability. It allows you to avoid writing the same config actions in tasks
 and reduce configuration actions time run.
 

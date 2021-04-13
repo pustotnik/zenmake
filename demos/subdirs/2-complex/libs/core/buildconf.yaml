@@ -5,7 +5,7 @@ tasks:
   corelib :
     features : cshlib
     source   : '**/*.c'
-    export-includes : true
+    export   : includes
     ver-num : 0.4.0
     configure :
       - do: check-headers

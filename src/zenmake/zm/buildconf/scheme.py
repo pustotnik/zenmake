@@ -6,9 +6,10 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+from copy import deepcopy
 import re
 
-from zm.constants import KNOWN_PLATFORMS, TASK_TARGET_KINDS
+from zm.constants import KNOWN_PLATFORMS, TASK_TARGET_KINDS, EXPORTING_TASK_PARAMS
 from zm.pyutils import stringtype
 from zm.error import ZenMakeConfValueError
 from zm.cli import config as cliConfig
@@ -23,6 +24,14 @@ def _checkVerNum(value, fullkey):
         msg = "Value %r is invalid version number" % value
         msg += " for the param %r." % fullkey
         raise ZenMakeConfValueError(msg)
+
+def _checkExportParams(values, fullkey):
+
+    for val in values:
+        if val not in EXPORTING_TASK_PARAMS:
+            msg = "Value %r is invalid" % val
+            msg += " for the param %r." % fullkey
+            raise ZenMakeConfValueError(msg)
 
 def _genSameSchemeDict(keys, scheme):
     return { k:scheme for k in keys }
@@ -239,6 +248,21 @@ def _genInstallFilesDictVarsScheme(confnode, fullkey):
 
     return schemeDictVars
 
+def _addExportParamsToScheme(tscheme):
+
+    tscheme['export'] = {
+        'type': ('str', 'list-of-strs'),
+        'allowed': _checkExportParams,
+    }
+
+    for param in EXPORTING_TASK_PARAMS:
+        if param == 'config-results':
+            paramScheme = { 'type': 'bool' }
+        else:
+            paramScheme = deepcopy(tscheme[param])
+            paramScheme['type'] = ('bool', ) + paramScheme['type']
+        tscheme['export-%s' % param] = paramScheme
+
 taskscheme = {
     'target' :          { 'type': 'str' },
     'features' :        { 'type': ('str', 'list-of-strs') },
@@ -257,18 +281,17 @@ taskscheme = {
     'linkflags' :       { 'type': ('str', 'list-of-strs') },
     'ldflags' :         { 'type': ('str', 'list-of-strs') },
     'defines' :         { 'type': ('str', 'list-of-strs') },
-    'export-includes' : { 'type': ('bool', 'str', 'list-of-strs') },
-    'export-defines' :  { 'type': ('bool', 'str', 'list-of-strs') },
     'substvars' :       _SUBST_VARS_SCHEME,
     'install-path' :    { 'type': ('bool', 'str') },
     'install-files' :   _genInstallFilesScheme,
     'configure' :       _genConfActionsScheme,
-    'export-config-results' : { 'type': 'bool' },
     'group-dependent-tasks' : { 'type': 'bool' },
     'normalize-target-name' : { 'type': 'bool' },
     'enabled'       : { 'type': 'bool' },
     'objfile-index' : { 'type': 'int' },
 }
+
+_addExportParamsToScheme(taskscheme)
 
 addSelectToParams(taskscheme, [x for x in taskscheme if x != 'features'])
 

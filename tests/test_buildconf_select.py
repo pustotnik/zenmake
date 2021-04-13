@@ -17,8 +17,9 @@ import pytest
 from waflib import Options, Context, Build
 from waflib.ConfigSet import ConfigSet
 from waflib.Errors import WafError
-from zm.constants import PLATFORM, CPU_ARCH
-from zm.pyutils import maptype
+from zm.constants import PLATFORM, CPU_ARCH, EXPORTING_TASK_PARAMS
+from zm.pyutils import maptype, stringtype
+from zm.pathutils import PathsParam
 from zm.autodict import AutoDict
 from zm import cli, utils
 from zm.waf import assist
@@ -58,6 +59,7 @@ PARAM_TEST_VALUES = {
     'source'    : ['test.c', 'test.c main.c', ['test.c', 'mmain.c']],
     'includes'  : ['inc1', 'inc1 inc2', ['inc1', 'inc3']],
     'export-includes'  : ['inc1', 'inc1 inc2', ['inc1', 'inc3']],
+    'export'  : [ 'defines', 'defines includes', ['defines', 'includes'] ],
     'run' : [ {}, {'cmd': 'ls'}, {'cmd': 'ls -la'}],
     'substvars' : [ {'VAR': 'ls'}, {'MYVAR': 'ls'}, {'MYVAR1': 'ls -la'}],
     'objfile-index' : [1, 2, 3],
@@ -89,6 +91,7 @@ def cfgctx(monkeypatch, mocker, tmpdir):
 
     monkeypatch.setattr(Options, 'options', AutoDict())
     cfgCtx = ConfigurationContext(run_dir = rundir)
+    cfgCtx.cleanExportParams = False
 
     cfgCtx.fatal = mocker.MagicMock(side_effect = WafError)
 
@@ -139,33 +142,59 @@ def cfgctx(monkeypatch, mocker, tmpdir):
 def paramName(request):
     return request.param
 
-def checkExpectedDefault(result, expected):
+def checkExpectedDefault(taskParams, paramName, expected):
+    result = taskParams[paramName]
     assert utils.toList(result) == utils.toList(expected)
 
-def checkExpectedToolchain(result, expected):
+def checkExpectedToolchain(taskParams, paramName, expected):
+    result = taskParams[paramName]
     assert result == [expected]
 
-def checkExpectedTarget(result, expected):
+def checkExpectedTarget(taskParams, paramName, expected):
+    result = taskParams[paramName]
     assert os.path.basename(result) == expected
 
-def checkExpectedSource(result, expected):
+def checkExpectedSource(taskParams, paramName, expected):
+    result = taskParams[paramName]
     assert utils.toList(result[0]['paths']) == utils.toList(expected)
 
-def checkExpectedIncludes(result, expected):
+def checkExpectedIncludes(taskParams, paramName, expected):
+    result = taskParams[paramName]
     if isinstance(result, maptype):
         result = result['paths']
+    elif isinstance(result, PathsParam):
+        result = result.relpaths()
     result = [x for x in utils.toList(result) if x != '.']
     assert result == utils.toList(expected)
 
 checkExpectedExportIncludes = checkExpectedIncludes
 
-def checkExpectedLibpath(result, expected):
+def checkExpectedExport(taskParams, _, expected):
+
+    if isinstance(expected, stringtype):
+        expectedParams = utils.toList(expected)
+    elif isinstance(expected, (list, tuple)):
+        expectedParams = expected
+    else:
+        assert False
+
+    for param in EXPORTING_TASK_PARAMS:
+        exportName = 'export-%s' % param
+        if param in expectedParams:
+            assert taskParams[exportName]
+        else:
+            assert not taskParams.get(exportName)
+
+def checkExpectedLibpath(taskParams, paramName, expected):
+    result = taskParams[paramName]
     assert [os.path.basename(x) for x in result]  == utils.toList(expected)
 
-def checkExpectedStlibpath(result, expected):
+def checkExpectedStlibpath(taskParams, paramName, expected):
+    result = taskParams[paramName]
     assert [os.path.basename(x) for x in result]  == utils.toList(expected)
 
-def checkExpectedRun(result, expected):
+def checkExpectedRun(taskParams, paramName, expected):
+    result = taskParams[paramName]
     for name in expected:
         assert result[name] == expected[name]
 
@@ -478,4 +507,4 @@ def testParam(cfgctx, monkeypatch, paramfixture):
     bconf = bconfManager.root
     for taskParams in bconf.tasks.values():
         _expected = expected[taskParams['name']]
-        checkExpected(taskParams[paramname], _expected)
+        checkExpected(taskParams, paramname, _expected)

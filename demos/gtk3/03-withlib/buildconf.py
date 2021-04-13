@@ -16,7 +16,7 @@ tasks = {
         'configure'  : [
             { 'do' : 'pkgconfig', 'packages' : 'gtk+-3.0' },
         ],
-        'export-config-results' : True,
+        'export' : 'config-results',
         'install-files' : [
             {
                 'src' : '${BUILDTYPE_DIR}/builder.ui',
