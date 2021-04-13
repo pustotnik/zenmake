@@ -2,7 +2,7 @@
 #
 
 # pylint: disable = wildcard-import, unused-wildcard-import
-# pylint: disable = missing-docstring, invalid-name, bad-continuation
+# pylint: disable = missing-docstring, invalid-name
 # pylint: disable = unused-argument, no-member, attribute-defined-outside-init
 # pylint: disable = too-many-lines, too-many-branches, too-many-statements
 

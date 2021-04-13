@@ -1,9 +1,8 @@
 # coding=utf-8
 #
 
-# _pylint: skip-file
 # pylint: disable = wildcard-import, unused-wildcard-import
-# pylint: disable = missing-docstring, invalid-name, bad-continuation
+# pylint: disable = missing-docstring, invalid-name
 # pylint: disable = no-member
 
 """

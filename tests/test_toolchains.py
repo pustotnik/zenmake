@@ -2,7 +2,7 @@
 #
 
 # _pylint: skip-file
-# pylint: disable = missing-docstring, invalid-name, bad-continuation
+# pylint: disable = missing-docstring, invalid-name
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.

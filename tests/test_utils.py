@@ -1,7 +1,7 @@
 # coding=utf-8
 #
 
-# pylint: disable = missing-docstring, invalid-name, bad-continuation
+# pylint: disable = missing-docstring, invalid-name
 # pylint: disable = too-many-statements, protected-access
 
 """
