@@ -14,6 +14,9 @@ CONF_TASKSCHEME_SPEC = {
         'aslinkflags' : { 'type': ('str', 'list-of-strs') },
     },
     # Can be boolean or list of particular param names
+    # True means all keys from 'base'
+    'export' : True,
+    # Can be boolean or list of particular param names
     # True means all keys from 'base' and 'export' (prefix 'export-' will be added)
     'select' : True,
 }

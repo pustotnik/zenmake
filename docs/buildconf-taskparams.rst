@@ -258,12 +258,16 @@ cflags
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
+    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
+
 cxxflags
 """""""""""""""""""""
     One or more compiler flags for C++.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
+
+    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
 dflags
 """""""""""""""""""""
@@ -272,12 +276,16 @@ dflags
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
+    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
+
 fcflags
 """""""""""""""""""""
     One or more compiler flags for Fortran.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
+
+    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
 asflags
 """""""""""""""""""""
@@ -286,12 +294,16 @@ asflags
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
+    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
+
 cppflags
 """""""""""""""""""""
     One or more compiler flags added at the end of compilation commands for C/C++.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
+
+    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
 linkflags
 """""""""""""""""""""
@@ -300,12 +312,16 @@ linkflags
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
+    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
+
 ldflags
 """""""""""""""""""""
     One or more linker flags for C/C++/D/Fortran at the end of the link command.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
+
+    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
 aslinkflags
 """""""""""""""""""""
@@ -314,12 +330,16 @@ aslinkflags
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
+    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
+
 arflags
 """""""""""""""""""""
     Flags to give the archive-maintaining program.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
+
+    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
 .. _buildconf-taskparams-defines:
 
@@ -659,7 +679,7 @@ export-<param> / export
     exports nothing.
 
     Supported names:  ``includes``, ``defines``, ``config-results``,
-    ``libpath``, ``stlibpath``.
+    ``libpath``, ``stlibpath`` and all ``*flags``.
 
     The parameter with ``config-results`` can not be used to export specific values.
     It always must be True/False only.

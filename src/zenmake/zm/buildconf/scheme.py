@@ -308,7 +308,7 @@ def _applyExportAndSelectedTaskParams():
     #---------- export params
     exportingParams = [
         'includes', 'defines', 'config-results',
-        'libpath', 'stlibpath',
+        'libpath', 'stlibpath', 'linkflags', 'ldflags',
     ]
     selectableParams.extend(['export-%s' % x for x in exportingParams])
 
