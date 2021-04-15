@@ -6,8 +6,6 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-from zm.pyutils import stringtype
-
 class AnyAmountStrsKey(object):
     """ Any amount of string keys"""
     __slots__ = ()
@@ -31,8 +29,6 @@ def addSelectToParams(scheme, paramNames = None):
 
     if paramNames is None:
         paramNames = tuple(scheme.keys())
-    elif isinstance(paramNames, stringtype):
-        paramNames = tuple(paramNames)
 
     for name in paramNames:
         origParam = scheme[name]

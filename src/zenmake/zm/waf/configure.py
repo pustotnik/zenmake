@@ -21,11 +21,12 @@ from waflib import Errors as waferror, Context as WafContext
 from waflib.ConfigSet import ConfigSet
 from waflib.Configure import ConfigurationContext as WafConfContext
 from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFIG_LOG
-from zm.constants import TASK_TARGET_KINDS, EXPORTING_TASK_PARAMS
+from zm.constants import TASK_TARGET_KINDS
 from zm.pyutils import stringtype
 from zm.pathutils import PathsParam, substPathsConf
 from zm import utils, log, toolchains, error, db, version, cli, edeps
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
+from zm.buildconf.scheme import EXPORTING_TASK_PARAMS
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
 from zm.features import ToolchainVars
 from zm.waf import assist, context, config_actions as configActions
@@ -41,6 +42,7 @@ def _genToolAutoName(lang):
 
 TOOL_AUTO_NAMES = { _genToolAutoName(x) for x in ToolchainVars.allLangs() }
 DONT_STORE_TASK_PARAMS = ('$bconf', )
+EXPORTING_PARAMS_TOHANDLE = [x for x in EXPORTING_TASK_PARAMS if x != 'config-results']
 
 CONFLOG_HEADER_TEMPLATE = '''# Project %(prj)s configured on %(now)s by
 # ZenMake %(zmver)s, based on Waf %(wafver)s (abi %(wafabi)s)
@@ -104,13 +106,15 @@ class ConfigurationContext(WafConfContext):
 
         startdir = taskParams['$bconf'].startdir
 
-        pathParams = ('includes', 'libpath', 'stlibpath')
-        ignoreParams = set(['config-results'])
-        exportingParams = tuple(set(EXPORTING_TASK_PARAMS) - ignoreParams)
+        pathHandlers = {
+            'includes' : lambda val, sdir: val.relpaths(sdir),
+            'libpath'  : lambda val, _: val.abspaths(),
+            'stlibpath': lambda val, _: val.abspaths(),
+        }
 
         # gather values for export
         export = []
-        for param in exportingParams:
+        for param in EXPORTING_PARAMS_TOHANDLE:
             exportName = 'export-%s' % param
 
             exportVal = taskParams.get(exportName, False)
@@ -122,11 +126,11 @@ class ConfigurationContext(WafConfContext):
                     taskParams.pop(exportName, None)
                 continue
 
-            withPaths = param in pathParams
+            withPaths = param in pathHandlers
             if withPaths and not isinstance(exportVal, PathsParam):
                 exportVal = PathsParam(exportVal, startdir)
 
-            export.append((param, exportVal, withPaths))
+            export.append((param, exportVal))
 
         if not export:
             return
@@ -141,9 +145,10 @@ class ConfigurationContext(WafConfContext):
 
                 depStartdir = depTaskParams['$bconf'].startdir
 
-                for param, exportVal, withPaths in export:
-                    if withPaths:
-                        exportVal = exportVal.relpaths(depStartdir)
+                for param, exportVal in export:
+                    func = pathHandlers.get(param)
+                    if func:
+                        exportVal = func(exportVal, depStartdir)
                     depTaskParams.setdefault(param, [])
                     depTaskParams[param][0:0] = exportVal
 
@@ -152,12 +157,13 @@ class ConfigurationContext(WafConfContext):
         applyExports(taskParams.get('$ruse', []), export)
 
         if self.cleanExportParams:
-            for param, _, _ in export:
+            for param, _ in export:
                 # they are not needed anymore
                 exportName = 'export-%s' % param
                 taskParams.pop(exportName, None)
         else:
-            for param, exportVal, _ in export:
+            # for tests
+            for param, exportVal in export:
                 exportName = 'export-%s' % param
                 if isinstance(exportVal, PathsParam):
                     exportVal = exportVal.relpaths(startdir)

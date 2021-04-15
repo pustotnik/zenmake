@@ -9,7 +9,7 @@
 from copy import deepcopy
 import re
 
-from zm.constants import KNOWN_PLATFORMS, TASK_TARGET_KINDS, EXPORTING_TASK_PARAMS
+from zm.constants import KNOWN_PLATFORMS, TASK_TARGET_KINDS
 from zm.pyutils import stringtype
 from zm.error import ZenMakeConfValueError
 from zm.cli import config as cliConfig
@@ -24,14 +24,6 @@ def _checkVerNum(value, fullkey):
         msg = "Value %r is invalid version number" % value
         msg += " for the param %r." % fullkey
         raise ZenMakeConfValueError(msg)
-
-def _checkExportParams(values, fullkey):
-
-    for val in values:
-        if val not in EXPORTING_TASK_PARAMS:
-            msg = "Value %r is invalid" % val
-            msg += " for the param %r." % fullkey
-            raise ZenMakeConfValueError(msg)
 
 def _genSameSchemeDict(keys, scheme):
     return { k:scheme for k in keys }
@@ -248,21 +240,6 @@ def _genInstallFilesDictVarsScheme(confnode, fullkey):
 
     return schemeDictVars
 
-def _addExportParamsToScheme(tscheme):
-
-    tscheme['export'] = {
-        'type': ('str', 'list-of-strs'),
-        'allowed': _checkExportParams,
-    }
-
-    for param in EXPORTING_TASK_PARAMS:
-        if param == 'config-results':
-            paramScheme = { 'type': 'bool' }
-        else:
-            paramScheme = deepcopy(tscheme[param])
-            paramScheme['type'] = ('bool', ) + paramScheme['type']
-        tscheme['export-%s' % param] = paramScheme
-
 taskscheme = {
     'target' :          { 'type': 'str' },
     'features' :        { 'type': ('str', 'list-of-strs') },
@@ -291,11 +268,64 @@ taskscheme = {
     'objfile-index' : { 'type': 'int' },
 }
 
-_addExportParamsToScheme(taskscheme)
+############ EXTEND TASK PARAMS
 
-addSelectToParams(taskscheme, [x for x in taskscheme if x != 'features'])
+def _checkExportParams(values, fullkey):
 
-taskscheme.update(ConfValidation.getTaskSchemeSpecs())
+    for val in values:
+        if val not in EXPORTING_TASK_PARAMS_S:
+            msg = "Value %r is invalid" % val
+            msg += " for the param %r." % fullkey
+            raise ZenMakeConfValueError(msg)
+
+def _addExportParamsToScheme(tscheme, exportingParams):
+
+    tscheme['export'] = {
+        'type': ('str', 'list-of-strs'),
+        'allowed': _checkExportParams,
+    }
+
+    for param in exportingParams:
+        if param == 'config-results':
+            paramScheme = { 'type': 'bool' }
+        else:
+            paramScheme = deepcopy(tscheme[param])
+            paramScheme['type'] = ('bool', ) + paramScheme['type']
+        tscheme['export-%s' % param] = paramScheme
+
+def _applyExportAndSelectedTaskParams():
+
+    featuresTaskSchemes = ConfValidation.getTaskSchemeSpecs()
+
+    #---------- base params
+
+    # It's necessary to save current list of keys before updating with values from features
+    # to avoid mixing with unwanted values from features
+    selectableParams = [x for x in taskscheme if x != 'features']
+
+    taskscheme.update(featuresTaskSchemes['base'])
+
+    #---------- export params
+    exportingParams = [
+        'includes', 'defines', 'config-results',
+        'libpath', 'stlibpath',
+    ]
+    selectableParams.extend(['export-%s' % x for x in exportingParams])
+
+    # Apply values from features
+    exportingParams.extend(featuresTaskSchemes['export'])
+    _addExportParamsToScheme(taskscheme, exportingParams)
+
+    #---------- *.select params
+    selectableParams.extend(featuresTaskSchemes['select'])
+    addSelectToParams(taskscheme, selectableParams)
+
+    return tuple(exportingParams)
+
+EXPORTING_TASK_PARAMS = _applyExportAndSelectedTaskParams()
+EXPORTING_TASK_PARAMS_S = frozenset(EXPORTING_TASK_PARAMS)
+
+###################################
 
 def _genOptionsVarsScheme(confnode, fullkey):
 

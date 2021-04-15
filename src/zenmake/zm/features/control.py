@@ -330,11 +330,28 @@ class ConfValidation(object):
     @staticmethod
     def getTaskSchemeSpecs():
         """ Get validation task scheme specifics """
-        result = {}
+        result = {
+            'base' : {},
+            'export' : [],
+            'select' : [],
+        }
         modules = _getInitModules()
         for module in modules:
-            spec = getattr(module, 'VALIDATION_TASKSCHEME_SPEC', {})
-            result.update(spec)
+            spec = getattr(module, 'CONF_TASKSCHEME_SPEC', {})
+            baseParams = spec.get('base', {})
+            result['base'].update(baseParams)
+
+            exportNames = spec.get('export', [])
+            if isinstance(exportNames, bool):
+                exportNames = baseParams.keys() if exportNames else []
+            result['export'].extend(exportNames)
+
+            selectNames = spec.get('select', [])
+            if isinstance(selectNames, bool):
+                selectNames = list(baseParams.keys()) if selectNames else []
+                selectNames.extend(['export-%s' % x for x in exportNames])
+            result['select'].extend(selectNames)
+
         return result
 
 class ToolchainVars(object):

@@ -9,26 +9,30 @@
 from os.path import relpath
 
 from zm.pyutils import maptype
-from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY, addSelectToParams
+from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY
 
-VALIDATION_TASKSCHEME_SPEC = {
-    'run' : {
-        'type' : ('dict', 'str', 'func'),
-        'dict-allow-unknown-keys' : False,
-        'dict-vars' : {
-            'cmd' : { 'type': ('str', 'func') },
-            'cwd' : { 'type': 'str' },
-            'env' : {
-                'type': 'dict',
-                'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
+CONF_TASKSCHEME_SPEC = {
+    'base' : {
+        'run' : {
+            'type' : ('dict', 'str', 'func'),
+            'dict-allow-unknown-keys' : False,
+            'dict-vars' : {
+                'cmd' : { 'type': ('str', 'func') },
+                'cwd' : { 'type': 'str' },
+                'env' : {
+                    'type': 'dict',
+                    'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
+                },
+                'repeat' : { 'type': 'int' },
+                'timeout' : { 'type': 'int' },
+                'shell' : { 'type': 'bool' },
             },
-            'repeat' : { 'type': 'int' },
-            'timeout' : { 'type': 'int' },
-            'shell' : { 'type': 'bool' },
         },
     },
+    # Can be boolean or list of particular param names
+    # True means all keys from 'base' and 'export' (prefix 'export-' will be added)
+    'select' : True,
 }
-addSelectToParams(VALIDATION_TASKSCHEME_SPEC)
 
 TASK_FEATURES_SETUP = {
     'runcmd' : {}

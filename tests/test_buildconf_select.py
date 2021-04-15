@@ -17,14 +17,14 @@ import pytest
 from waflib import Options, Context, Build
 from waflib.ConfigSet import ConfigSet
 from waflib.Errors import WafError
-from zm.constants import PLATFORM, CPU_ARCH, EXPORTING_TASK_PARAMS
+from zm.constants import PLATFORM, CPU_ARCH
 from zm.pyutils import maptype, stringtype
 from zm.pathutils import PathsParam
 from zm.autodict import AutoDict
 from zm import cli, utils
 from zm.waf import assist
 from zm.buildconf.processing import Config, ConfManager
-from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
+from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES, EXPORTING_TASK_PARAMS
 from zm.buildconf.select import clearLocalCache as clearSelectLocalCache
 from zm.waf.configure import ConfigurationContext
 from zm import features

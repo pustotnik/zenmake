@@ -50,7 +50,8 @@ def testInitModules():
                 assert ext not in extensionsMap
                 extensionsMap[ext] = feature
 
-        spec = getattr(module, 'VALIDATION_TASKSCHEME_SPEC', {})
+        spec = getattr(module, 'CONF_TASKSCHEME_SPEC', {})
+        spec = spec.get('base', {})
         for param in spec:
             assert param not in scheme
         scheme.update(spec)

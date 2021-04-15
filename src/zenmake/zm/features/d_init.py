@@ -7,12 +7,15 @@
 """
 
 from zm.constants import TASK_TARGET_KINDS
-from zm.buildconf.schemeutils import addSelectToParams
 
-VALIDATION_TASKSCHEME_SPEC = {
-    'dflags' :  { 'type': ('str', 'list-of-strs') },
+CONF_TASKSCHEME_SPEC = {
+    'base' : {
+        'dflags' :  { 'type': ('str', 'list-of-strs') },
+    },
+    # Can be boolean or list of particular param names
+    # True means all keys from 'base' and 'export' (prefix 'export-' will be added)
+    'select' : True,
 }
-addSelectToParams(VALIDATION_TASKSCHEME_SPEC)
 
 TASK_FEATURES_SETUP = {
     'd' : {

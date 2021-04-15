@@ -6,12 +6,14 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-from zm.buildconf.schemeutils import addSelectToParams
-
-VALIDATION_TASKSCHEME_SPEC = {
-    'arflags' :    { 'type': ('str', 'list-of-strs') },
+CONF_TASKSCHEME_SPEC = {
+    'base' : {
+        'arflags' :    { 'type': ('str', 'list-of-strs') },
+    },
+    # Can be boolean or list of particular param names
+    # True means all keys from 'base' and 'export' (prefix 'export-' will be added)
+    'select' : True,
 }
-addSelectToParams(VALIDATION_TASKSCHEME_SPEC)
 
 TOOLCHAIN_VARS = {
     # 'sysenv-var' - environment variable to set tool

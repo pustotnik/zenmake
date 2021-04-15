@@ -410,6 +410,8 @@ libpath
     If paths contain spaces and all these paths are listed
     in one string then each such a path must be in quotes.
 
+    Paths should be absolute or relative to :ref:`startdir<buildconf-startdir>`.
+
     Example:
 
     .. code-block:: python
@@ -419,6 +421,8 @@ libpath
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
+
+    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
 monitlibs
 """""""""""""""""""""
@@ -458,6 +462,8 @@ stlibpath
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
+
+    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
 monitstlibs
 """""""""""""""""""""
@@ -652,7 +658,8 @@ export-<param> / export
     to all dependent build tasks. If value is False then ZenMake
     exports nothing.
 
-    Supported names:  ``includes``, ``defines``, ``config-results``.
+    Supported names:  ``includes``, ``defines``, ``config-results``,
+    ``libpath``, ``stlibpath``.
 
     The parameter with ``config-results`` can not be used to export specific values.
     It always must be True/False only.
