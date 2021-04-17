@@ -44,6 +44,12 @@ TOOL_AUTO_NAMES = { _genToolAutoName(x) for x in ToolchainVars.allLangs() }
 DONT_STORE_TASK_PARAMS = ('$bconf', )
 EXPORTING_PARAMS_TOHANDLE = [x for x in EXPORTING_TASK_PARAMS if x != 'config-results']
 
+_EXPORT_PATH_HANDLERS = {
+    'includes' : lambda exportVal, sdir: exportVal.relpaths(sdir),
+    'libpath'  : lambda exportVal, _: exportVal.abspaths(),
+    'stlibpath': lambda exportVal, _: exportVal.abspaths(),
+}
+
 CONFLOG_HEADER_TEMPLATE = '''# Project %(prj)s configured on %(now)s by
 # ZenMake %(zmver)s, based on Waf %(wafver)s (abi %(wafabi)s)
 # python %(pyver)s on %(systype)s
@@ -82,92 +88,84 @@ class ConfigurationContext(WafConfContext):
 
     def _adjustTaskExportParams(self, taskParams):
 
-        # handle all export params in buildconf and bring to one form
-        export = taskParams.get('export', [])
-        exportCount = len(EXPORTING_TASK_PARAMS)
-        for param in EXPORTING_TASK_PARAMS:
-            exportName = 'export-%s' % param
-            exportParam = taskParams.get(exportName, bool(param in export))
-            taskParams[exportName] = exportParam
-            if not exportParam and self.cleanExportParams:
-                taskParams.pop(exportName, None)
-                exportCount -= 1
-
-        if not exportCount: # optimization
-            taskParams['$no-exports'] = True
-
-        # remove task param 'export'
-        taskParams.pop('export', None)
-
-    def _handleTaskExportParams(self, taskParams):
-
-        if taskParams.pop('$no-exports', False):
-            return
-
         startdir = taskParams['$bconf'].startdir
 
-        pathHandlers = {
-            'includes' : lambda val, sdir: val.relpaths(sdir),
-            'libpath'  : lambda val, _: val.abspaths(),
-            'stlibpath': lambda val, _: val.abspaths(),
-        }
+        exportList = taskParams.pop('export', [])
+        exportsMeta = []
 
-        # gather values for export
-        export = []
-        for param in EXPORTING_PARAMS_TOHANDLE:
+        for param in EXPORTING_TASK_PARAMS:
             exportName = 'export-%s' % param
+            exportVal = taskParams.pop(exportName, bool(param in exportList))
 
-            exportVal = taskParams.get(exportName, False)
+            if param == 'config-results':
+                # it is handled in another place
+                taskParams[exportName] = exportVal
+                continue
+
+            # gather meta for export
             if isinstance(exportVal, bool):
                 exportVal = taskParams.get(param) if exportVal else None
 
             if not exportVal:
-                if self.cleanExportParams:
-                    taskParams.pop(exportName, None)
                 continue
 
-            withPaths = param in pathHandlers
+            withPaths = param in _EXPORT_PATH_HANDLERS
             if withPaths and not isinstance(exportVal, PathsParam):
                 exportVal = PathsParam(exportVal, startdir)
 
-            export.append((param, exportVal))
+            exportsMeta.append((param, exportVal))
 
-        if not export:
-            return
+        if exportsMeta:
+            taskParams['$exports-meta'] = exportsMeta
 
-        # apply gathered values to all task where they are needed
-        def applyExports(rdeps, export):
+    def _handleTaskExportParams(self, taskParams):
 
-            for name in rdeps:
+        startdir = taskParams['$bconf'].startdir
+
+        # apply gathered values to all tasks where they are needed
+        def applyExports(taskParams, deps):
+
+            for name in deps:
                 depTaskParams = self.allTasks.get(name)
                 if not depTaskParams:
                     continue
 
-                depStartdir = depTaskParams['$bconf'].startdir
-
+                export = depTaskParams.get('$exports-meta', [])
                 for param, exportVal in export:
-                    func = pathHandlers.get(param)
+                    func = _EXPORT_PATH_HANDLERS.get(param)
                     if func:
-                        exportVal = func(exportVal, depStartdir)
-                    depTaskParams.setdefault(param, [])
-                    depTaskParams[param][0:0] = exportVal
+                        exportVal = func(exportVal, startdir)
+                    taskParams.setdefault(param, [])
+                    taskParams[param][0:0] = exportVal
 
-                applyExports(depTaskParams.get('$ruse', []), export)
+                applyExports(taskParams, depTaskParams.get('use', []))
 
-        applyExports(taskParams.get('$ruse', []), export)
+        applyExports(taskParams, taskParams.get('use', []))
 
-        if self.cleanExportParams:
-            for param, _ in export:
-                # they are not needed anymore
-                exportName = 'export-%s' % param
-                taskParams.pop(exportName, None)
-        else:
-            # for tests
-            for param, exportVal in export:
-                exportName = 'export-%s' % param
-                if isinstance(exportVal, PathsParam):
-                    exportVal = exportVal.relpaths(startdir)
-                taskParams[exportName] = exportVal
+    def _handleTaskExports(self):
+
+        exportsUsed = False
+        for taskParams in self.allOrderedTasks:
+            self._adjustTaskExportParams(taskParams)
+            if not exportsUsed and '$exports-meta' in taskParams:
+                exportsUsed = True
+
+        if not exportsUsed:
+            return
+
+        for taskParams in reversed(self.allOrderedTasks):
+            self._handleTaskExportParams(taskParams)
+
+        # cleanup
+        for taskParams in self.allOrderedTasks:
+            export = taskParams.pop('$exports-meta', [])
+            if export and not self.cleanExportParams:
+                # for tests
+                startdir = taskParams['$bconf'].startdir
+                for param, exportVal in export:
+                    if isinstance(exportVal, PathsParam):
+                        exportVal = exportVal.relpaths(startdir)
+                    taskParams['export-%s' % param] = exportVal
 
     def _applySubstVars(self, taskParams):
 
@@ -719,9 +717,6 @@ class ConfigurationContext(WafConfContext):
         for taskParams in self.allOrderedTasks:
             bconf = taskParams['$bconf']
 
-            # should be called before handling of 'casual' params
-            self._adjustTaskExportParams(taskParams)
-
             self._applySubstVars(taskParams)
 
             assist.handleTaskIncludesParam(taskParams, bconf.startdir)
@@ -732,9 +727,8 @@ class ConfigurationContext(WafConfContext):
             #counter for the object file extension
             taskParams['objfile-index'] = self._calcObjectsIndex(bconf, taskParams)
 
-        for taskParams in self.allOrderedTasks:
-            # should be called after handling of 'casual' params
-            self._handleTaskExportParams(taskParams)
+        # should be called after handling of 'casual' params
+        self._handleTaskExports()
 
     def _setupTaskTarget(self, taskParams, taskEnv, btypeDir):
 
