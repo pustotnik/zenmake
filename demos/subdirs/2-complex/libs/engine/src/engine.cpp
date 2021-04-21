@@ -20,6 +20,16 @@
     no define HAVE_VECTOR
 #endif
 
+#ifndef MYVAR
+    // compiler error
+    no define MYVAR
+#endif
+
+#ifndef EXTRAVAR
+    // compiler error
+    no define EXTRAVAR
+#endif
+
 int calcSomething()
 {
 

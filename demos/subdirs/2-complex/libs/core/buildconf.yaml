@@ -5,7 +5,11 @@ tasks:
   corelib :
     features : cshlib
     source   : '**/*.c'
-    export   : includes
+    # substvars only for testing
+    substvars:
+      VAR_A_NAME: MYVAR
+      VAR_B_NAME: NOTMYVAR
+    export   : includes substvars
     ver-num : 0.4.0
     configure :
       - do: check-headers

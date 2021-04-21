@@ -663,6 +663,8 @@ substvars
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
+    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
+
 .. _buildconf-taskparams-export:
 
 export-<param> / export
@@ -679,7 +681,7 @@ export-<param> / export
     exports nothing.
 
     Supported names:  ``includes``, ``defines``, ``config-results``,
-    ``libpath``, ``stlibpath`` and all ``*flags``.
+    ``libpath``, ``stlibpath``, ``substvars`` and all ``*flags``.
 
     The parameter with ``config-results`` can not be used to export specific values.
     It always must be True/False only.

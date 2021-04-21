@@ -25,7 +25,8 @@ then ``param`` from above example will be resolved as ``myvalue/some-string``.
 Such variables can be set in the
 :ref:`root substvars<buildconf-substvars>` or in the
 :ref:`task substvars<buildconf-taskparams-substvars>`. Root ``substvars`` are
-visible in any build task while task ``substvars`` only in selected task.
+visible in any build task while task ``substvars`` only in selected task (but
+they can be :ref:`exported<buildconf-taskparams-export>`).
 If some name exists in the both ``substvars`` then value from task ``substvars``
 will be used.
 

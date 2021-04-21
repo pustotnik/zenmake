@@ -167,8 +167,8 @@ _PATHS_SCHEME = {
 }
 
 _SUBST_VARS_SCHEME = {
-    'type': 'dict',
-    'vars' : {
+    'type': ('dict',),
+    'dict' : {
         ANYAMOUNTSTRS_KEY : { 'type': 'str' },
     },
 }
@@ -307,7 +307,7 @@ def _applyExportAndSelectedTaskParams():
 
     #---------- export params
     exportingParams = [
-        'includes', 'defines', 'config-results',
+        'includes', 'defines', 'config-results', 'substvars',
         'libpath', 'stlibpath', 'linkflags', 'ldflags',
     ]
     selectableParams.extend(['export-%s' % x for x in exportingParams])

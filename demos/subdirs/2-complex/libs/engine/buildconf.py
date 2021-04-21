@@ -23,6 +23,8 @@ tasks = {
             dict(do = 'check-headers', names = 'iostream'), # for test only
             dict(do = 'write-config-header'),
         ],
+        'substvars': { 'VAR_B_NAME': 'EXTRAVAR' }, # for test only
+        'export'   : 'substvars', # for test only
     },
     'engine' : {
         'features' : 'cxxshlib',
@@ -51,6 +53,7 @@ tasks = {
             dict( do = 'check-headers', names = 'string vector' ),
         ],
         'export' : 'includes config-results',
+        'defines'  : '${VAR_A_NAME}="test" ${VAR_B_NAME}="check"', # for test only
     },
     'extra-test' : {
         'features' : 'cxxprogram test',

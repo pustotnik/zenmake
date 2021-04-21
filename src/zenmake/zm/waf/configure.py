@@ -22,7 +22,7 @@ from waflib.ConfigSet import ConfigSet
 from waflib.Configure import ConfigurationContext as WafConfContext
 from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFIG_LOG
 from zm.constants import TASK_TARGET_KINDS
-from zm.pyutils import stringtype
+from zm.pyutils import stringtype, maptype
 from zm.pathutils import PathsParam, substPathsConf
 from zm import utils, log, toolchains, error, db, version, cli, edeps
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
@@ -134,6 +134,10 @@ class ConfigurationContext(WafConfContext):
                         depTaskParams[param] = PathsParam.makeFrom(exportVal)
                     else:
                         paramVal.insertFrom(0, exportVal)
+                elif isinstance(exportVal, maptype):
+                    paramVal = exportVal.copy()
+                    paramVal.update(depTaskParams.get(param, {}))
+                    depTaskParams[param] = paramVal
                 else:
                     depTaskParams.setdefault(param, [])
                     depTaskParams[param][0:0] = exportVal
