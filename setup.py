@@ -51,7 +51,7 @@ License :: OSI Approved :: BSD License
 Environment :: Console
 Intended Audience :: Developers
 Programming Language :: Python
-Programming Language :: Python :: 3
+Programming Language :: Python :: 3 :: Only
 Programming Language :: Python :: 3.5
 Programming Language :: Python :: 3.6
 Programming Language :: Python :: 3.7
@@ -77,8 +77,9 @@ CMD_OPTS = dict(
     sdist = dict( dist_dir = DIST_DIR),
     bdist = dict( dist_dir = DIST_DIR),
     build = dict( build_base = os.path.join(DEST_DIR, 'build')),
-    # for python 2 and 3
-    bdist_wheel = dict( universal = 1),
+    # this is for pure python project which natively supports both python 2 and 3
+    # but python 2 was dropped
+    #bdist_wheel = dict( universal = 1),
 )
 
 class egg_info(_egg_info):
