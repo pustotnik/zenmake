@@ -107,7 +107,7 @@ def make(destDir, verbose = 0):
     zipFullBaseName = os.path.join(tempDir, APPNAME)
     zipFile = shutil.make_archive(zipFullBaseName, 'zip', tempDest, logger = logger)
 
-    interpreter = '/usr/bin/env python'
+    interpreter = '/usr/bin/env python3'
     interpreter = interpreter.encode(SHEBANG_ENC)
     # Python 'zipapp' exists only in python >= 3.5 but it's not a big problem
     with io.open(zipAppFileName, 'wb') as appFile:

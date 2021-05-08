@@ -14,7 +14,7 @@ import shlex
 
 from waflib.TaskGen import feature, after
 from waflib import Task
-from zm.constants import PLATFORM, EXE_FILE_EXTS
+from zm.constants import PLATFORM, EXE_FILE_EXTS, PYTHON_EXE
 from zm.pyutils import maptype
 from zm import log, error
 from zm.utils import cmdHasShellSymbols
@@ -29,10 +29,10 @@ else:
 _RE_WITH_TARGET = re.compile(r'\$\{*TARGET')
 
 RUNBY_FILE_EXT = {
-    '.py'  : 'python',
-    '.pl'  : 'perl',
-    '.lua' : 'lua',
-    '.rb'  : 'ruby',
+    '.py'  : ['python3', 'python'],
+    '.pl'  : ['perl'],
+    '.lua' : ['lua'],
+    '.rb'  : ['ruby'],
 }
 
 def _processCmdLine(conf, taskParams, cwd, cmdArgs):
@@ -50,8 +50,7 @@ def _processCmdLine(conf, taskParams, cwd, cmdArgs):
     if not cmdline:
         return cmdline, shell
 
-    if not shell:
-        shell = cmdHasShellSymbols(cmdline)
+    shell = cmdHasShellSymbols(cmdline) if not shell else shell
 
     posixMode = os.name == 'posix'
     try:
@@ -84,13 +83,20 @@ def _processCmdLine(conf, taskParams, cwd, cmdArgs):
     if partsCount == 1 and cmdExt:
         cmdExt = cmdExt.strip("'").strip('"')
         # try to detect interpreter for some cases
-        for ext, launcher in RUNBY_FILE_EXT.items():
-            if cmdExt != ext:
-                continue
-            result = conf.find_program(launcher, **fkw)
-            if result:
-                launcher = result[0]
-                cmdline = '%s %s' % (launcher, cmdline)
+        launchers = RUNBY_FILE_EXT.get(cmdExt)
+        if launchers:
+            launcherPath = None
+            for launcher in launchers:
+                result = conf.find_program(launcher, **fkw)
+                if result:
+                    launcherPath = result[0]
+                    break
+
+            if not launcherPath and cmdExt == '.py':
+                launcherPath = PYTHON_EXE
+            if launcherPath:
+                cmdline = '%s %s' % (launcherPath, cmdline)
+
     elif partsCount > 1 and not shell and not _RE_WITH_TARGET.search(launcher):
         # Waf raises exception in verbose mode with 'shell' == False if it
         # cannot find full path to executable and on windows cmdline

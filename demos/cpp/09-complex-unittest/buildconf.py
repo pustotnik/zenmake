@@ -93,7 +93,7 @@ tasks = {
             'shell' : False,
         },
         'use'       : 'shlibmain',
-        'configure' : [ dict(do = 'find-program', names = 'python'), ],
+        'configure' : [ dict(do = 'find-program', names = 'python python3'), ],
         'target' : '',
     },
     'altscript' : {
@@ -113,13 +113,13 @@ tasks = {
     'test from script' : {
         'features' : 'test',
         'run'      : {
-            'cmd'   : 'python tests/test.py',
+            'cmd'   : 'tests/test.py',
             #'cmd'   : '${PYTHON} tests/test.py',
             'cwd'   : '.',
             'shell' : False,
         },
         'use' : 'complex',
-        'configure' : [ dict(do = 'find-program', names = 'python'), ]
+        'configure' : [ dict(do = 'find-program', names = 'python python3'), ]
     },
     'testcmn' : {
         'features' : 'cxxshlib test',

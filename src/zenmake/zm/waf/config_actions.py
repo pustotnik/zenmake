@@ -71,7 +71,7 @@ def cfgmandatory(func):
 def find_program(self, filename, **kwargs):
     """
     It's replacement for waflib.Configure.find_program to provide some
-    additional abiliies.
+    additional abilities.
     """
     # pylint: disable = invalid-name
 
