@@ -1,0 +1,51 @@
+.git
+.github
+#docs
+logo
+
+# Byte-compiled
+**/__pycache__
+**/*.py[cod]
+
+# Distribution / packaging
+.Python
+dist
+
+# Sphinx documentation
+docs/_build
+docs/_themes
+
+# Environments
+.env
+.venv
+env
+venv
+ENV
+env.bak
+venv.bak
+
+# mypy
+.mypy_cache
+
+##################
+**/c4che
+**/*.[oa]
+**/*.so
+**/*.dll
+**/*.obj
+**/*.log
+**/*.png
+**/*~
+demos/**/build
+demos/**/_build
+demos/**/_build_
+
+.vscode
+.pytest_cache
+.coverage*
+htmlcov
+*.code-workspace
+*.geany
+zenmake.zip
+zenmake.pyz
+.not.in.repo

@@ -1,8 +1,6 @@
 #!/bin/bash
 
-# detect current directory
-BASEDIR=`realpath "$0"`
-BASEDIR=`dirname "$BASEDIR"`
-cd $BASEDIR
+# detect right directory and go into it
+cd "$( dirname "$(realpath ${BASH_SOURCE[0]:-$0})" )"
 
-python -m pytest tests -svv --maxfail=1
+python3 -m pytest tests -svv --maxfail=1

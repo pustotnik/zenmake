@@ -19,11 +19,11 @@ from zm.buildconf import loader as bconfloader
 
 @pytest.fixture(scope = "session", autouse = True)
 def beforeAllTests(request):
-    # Additional check for travis ci
+    # Additional check for pyenv
     if 'PYENV_VERSION' in os.environ:
         realVersion = _platform.python_version()
         envVersion = os.environ['PYENV_VERSION']
-        assert realVersion == envVersion
+        assert envVersion in (realVersion, 'system')
 
 @pytest.fixture
 def unsetEnviron(monkeypatch):
