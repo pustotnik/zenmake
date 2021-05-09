@@ -8,7 +8,7 @@
 
 ARG DMD_VER="2.096.1"
 ARG DMD_VERNAME="dmd-$DMD_VER"
-ARG PYENV_VERS="3.5.9 3.6.10 3.7.9 3.8.8 3.9.2"
+#ARG PYENV_VERS="3.5.9 3.6.10 3.7.9 3.8.8 3.9.2"
 
 ARG BASE_IMAGE=debian:10
 FROM $BASE_IMAGE AS base
@@ -133,9 +133,9 @@ ARG PYENV_VERS
 # finish setup of pyenv and install zenmake python deps for tests on pyenv pythons
 USER $USERNAME
 RUN true \
-    #&& echo "eval \"\$(pyenv init -)\"" >> ~/.bashrc \
-    && eval "$(pyenv init -)" \
-    && for ver in "$PYENV_VERS"; do \
+    #&& echo "eval \"\$(pyenv init --path)\"" >> ~/.bashrc \
+    #&& eval "$(pyenv init --path)" \
+    && PATH="$PYENV_ROOT/shims:$PATH"; for ver in "$PYENV_VERS"; do \
            pyenv global $ver; \
            pip3 install --no-cache-dir -r requirements.txt; \
        done \
