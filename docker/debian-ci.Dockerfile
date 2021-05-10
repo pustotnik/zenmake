@@ -8,7 +8,6 @@
 
 ARG DMD_VER="2.096.1"
 ARG DMD_VERNAME="dmd-$DMD_VER"
-#ARG PYENV_VERS="3.5.9 3.6.10 3.7.9 3.8.8 3.9.2"
 
 ARG BASE_IMAGE=debian:10
 FROM $BASE_IMAGE AS base
@@ -93,8 +92,6 @@ RUN apt-get -y update \
 FROM base AS full-package
 
 WORKDIR /home/$USERNAME/
-COPY --from=pyenv-pythons --chown=$USERNAME:$USERNAME $PYENV_ROOT $PYENV_ROOT
-COPY --from=dmd --chown=$USERNAME:$USERNAME $DMD_PATH $DMD_PATH
 COPY ./tests/deb-deps.txt .
 
 # install zenmake deps for tests on system python and toolchain system packages
@@ -127,6 +124,10 @@ RUN apt-get -y update \
 COPY ./tests/requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
+### complete pyenv setup
+
+COPY --from=pyenv-pythons --chown=$USERNAME:$USERNAME $PYENV_ROOT $PYENV_ROOT
+
 # global var
 ARG PYENV_VERS
 
@@ -144,7 +145,9 @@ RUN true \
 
 USER root
 
-# apply DMD paths
+### complete DMD setup
+
+COPY --from=dmd --chown=$USERNAME:$USERNAME $DMD_PATH $DMD_PATH
 
 # global var
 ARG DMD_VERNAME
