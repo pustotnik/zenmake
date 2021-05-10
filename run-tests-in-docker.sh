@@ -4,6 +4,8 @@
 cd "$( dirname "$(realpath ${BASH_SOURCE[0]:-$0})" )/docker"
 
 #./run-tests.sh ubuntu
-./run-tests.sh debian
 #./run-tests.sh debian "system 3.5"
+
+args=("$@")
+./run-tests.sh debian "${args[*]}"
 
