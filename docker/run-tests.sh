@@ -64,17 +64,19 @@ PYENV_VERS="${PYENV_VERS[@]}"
 PROJECT_ROOT=".."
 CI_IMAGE_TAG="zenmake/${DIST}-ci:latest"
 
-#docker build --target full-package \
+# a value greater or less than the default of 1024 to increase or reduce the container’s weight
+# this is a soft limit
+#BUILD_CPU_SHARES=${BUILD_CPU_SHARES:-1024}
+BUILD_CPU_SHARES=${BUILD_CPU_SHARES:-500}
+
+#docker build --cpu-shares=$BUILD_CPU_SHARES --target full-package \
 #            -f ./"${BASE_DIST_NAME}-ci.Dockerfile" \
 #            --build-arg USERNAME="${USERNAME}" \
 #            --build-arg BASE_IMAGE="${BASE_IMAGE}" \
 #            --build-arg PYENV_VERS="${PYENV_VERS}" \
 #            -t $CI_IMAGE_TAG $PROJECT_ROOT
 
-# a value greater or less than the default of 1024 to increase or reduce the container’s weight
-#CPU_SHARES=1024
-CPU_SHARES=900
-docker build --cpu-shares=$CPU_SHARES \
+docker build --cpu-shares=$BUILD_CPU_SHARES \
             -f ./"${BASE_DIST_NAME}-ci.Dockerfile" \
             --build-arg USERNAME="${USERNAME}" \
             --build-arg BASE_IMAGE="${BASE_IMAGE}" \
@@ -88,6 +90,10 @@ fi
 
 # https://github.com/fabric8io/docker-maven-plugin/issues/501
 docker image prune -f
+
+# a value greater or less than the default of 1024 to increase or reduce the container’s weight
+# this is a soft limit
+RUN_CPU_SHARES=${RUN_CPU_SHARES:-500}
 
 for ver in ${PY_TO_TEST[@]}; do
     if [[ "$ver" == "$SYSTEM_PY_VER" ]]; then
@@ -103,6 +109,7 @@ for ver in ${PY_TO_TEST[@]}; do
     fi
     
     docker run -it --rm \
+        --cpu-shares=$RUN_CPU_SHARES \
         --env PYENV_VERSION=$actualver \
         $CI_IMAGE_TAG docker/run-tests-from-inside.sh
 done
