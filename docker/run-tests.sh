@@ -37,14 +37,15 @@ PY_TO_TEST=($PY_TO_TEST)
 case $DIST in
     debian)
         BASE_DIST_NAME="debian"
-        #BASE_IMAGE="debian:buster"
-        BASE_IMAGE="debian:buster-slim"
+        #BASE_IMAGE="debian:buster-slim"
+        BASE_IMAGE="debian:buster-20210511-slim"
         # debian buster has system python 3.7
         SYSTEM_PY_VER="3.7"
     ;;
     ubuntu)
         BASE_DIST_NAME="debian"
-        BASE_IMAGE="ubuntu:20.04"
+        #BASE_IMAGE="ubuntu:20.04"
+        BASE_IMAGE="ubuntu:focal-20210416"
         # ubuntu:20.04 has system python 3.8
         SYSTEM_PY_VER="3.8"
     ;;
