@@ -163,8 +163,12 @@ def _runCheckBuild(self, checkArgs):
     # this function can not be called from conf.multicheck
     assert getattr(self, 'multicheck_task', None) is None
 
-    checkHash = checkArgs['$conf-test-hash']
-    checkCache = cfgCtx.getConfCache()['config-actions'][checkHash]
+    # default fake cache for calls from the inside of Waf
+    checkCache = { 'retval' : None, 'id' : 'waf' }
+    checkHash = checkArgs.get('$conf-test-hash')
+    if checkHash is not None:
+        # it's called from ZenMake
+        checkCache = cfgCtx.getConfCache()['config-actions'][checkHash]
 
     retval = checkCache['retval']
     if retval is not None:
@@ -622,7 +626,7 @@ def _calcConfCheckHexHash(checkArgs, params):
     envStr = ''
     for k in sorted(env.keys()):
         if k not in CONFTEST_HASH_USED_ENV_KEYS:
-            # these keys are not significant for hash but can make cache misses
+            # these keys are not significant for hash but can cause cache misses
             continue
         val = env[k]
         envStr += '%r %r ' % (k, val)

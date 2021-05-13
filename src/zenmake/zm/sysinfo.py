@@ -143,9 +143,12 @@ def gatherSysInfo(progress = False):
         else:
             _bin = cfgCtx.findProgram(compiler.bin)
             if _bin:
-                ver = subprocess.check_output([_bin] + compiler.verargs,
+                try:
+                    ver = subprocess.check_output([_bin] + compiler.verargs,
                                               universal_newlines = True)
-                ver = ver.split('\n')[0]
+                    ver = ver.split('\n')[0]
+                except subprocess.SubprocessError:
+                    ver = 'not recognized'
             else:
                 ver = 'not recognized'
         info.append('%s: %s' % (compiler.header, ver))
