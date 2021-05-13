@@ -20,7 +20,7 @@ import platform as _platform
 from collections import defaultdict
 from copy import copy, deepcopy
 
-from waflib import Context
+#from waflib import Context
 from waflib.ConfigSet import ConfigSet
 from zm import starter
 from zm import utils, zipapp, db
@@ -108,6 +108,13 @@ def printOutputs(testSuit):
         if BUILDOUTNAME:
             path = joinpath(path, BUILDOUTNAME)
         return joinpath(path, WAF_CONFIG_LOG)
+
+    printConfigLog = os.environ.get('ZENMAKE_TESTING_PRINT_CONFIG_LOG', True)
+    if printConfigLog:
+        printConfigLog = utils.envValToBool(printConfigLog)
+
+    if not printConfigLog:
+        return
 
     configLog = makeConfigLogPath('build')
     if not isfile(configLog):
