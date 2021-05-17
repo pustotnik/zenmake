@@ -2,7 +2,8 @@
 
 ######################################
 # One of the simplest way to use remote docker server over ssh is to use it:
-# export DOCKER_HOST=ssh://user@remote-host 
+# export DOCKER_HOST=ssh://user@remote-host
+# Also see PYTEST_ARGS env var
 
 usage()
 {
@@ -48,6 +49,12 @@ case $DIST in
         BASE_IMAGE="ubuntu:focal-20210416"
         # ubuntu:20.04 has system python 3.8
         SYSTEM_PY_VER="3.8"
+    ;;
+    centos)
+        BASE_DIST_NAME="centos"
+        BASE_IMAGE="centos:centos8.3.2011"
+        # centos 8 has system python 3.6
+        SYSTEM_PY_VER="3.6"
     ;;
 
     *)
@@ -96,6 +103,9 @@ docker image prune -f
 # this is a soft limit
 RUN_CPU_SHARES=${RUN_CPU_SHARES:-500}
 
+#PYTEST_ARGS=${PYTEST_ARGS:-"tests -v --maxfail=1 -k "codegen""}
+PYTEST_ARGS=${PYTEST_ARGS:-"tests -v --maxfail=1"}
+
 for ver in ${PY_TO_TEST[@]}; do
     if [[ "$ver" == "$SYSTEM_PY_VER" ]]; then
         ver="system"
@@ -108,9 +118,10 @@ for ver in ${PY_TO_TEST[@]}; do
             exit
         fi
     fi
-    
+
     docker run -it --rm \
         --cpu-shares=$RUN_CPU_SHARES \
         --env PYENV_VERSION=$actualver \
-        $CI_IMAGE_TAG docker/run-tests-from-inside.sh
+        --env PYTEST_ARGS="${PYTEST_ARGS}" \
+        $CI_IMAGE_TAG # docker/run-tests-from-inside.sh
 done

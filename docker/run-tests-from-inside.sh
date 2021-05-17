@@ -13,4 +13,7 @@ if [[ "$PYENV_VERSION" != "system" ]]; then
     export PATH="$PYENV_ROOT/shims:$PATH"
 fi
 
-pytest tests -v --maxfail=1
+export ZENMAKE_TESTING_PRINT_CONFIG_LOG=0
+
+#set -ex
+pytest ${PYTEST_ARGS:-"tests -v --maxfail=10"}
