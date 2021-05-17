@@ -54,25 +54,30 @@ def _generateParams():
     isTravisCI = isCI and os.environ.get('TRAVIS', None) == 'true'
     #isGitHubCI = isCI and os.environ.get('GITHUB_ACTIONS', None) == 'true'
 
-    disableGDC = False
+    disableTests = os.environ.get('ZENMAKE_TESTING_DISABLE_TOOL', '')
+    disableTests = set(disableTests.split())
 
-    # Due to bug with packages ldc + gdc:
-    # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=827211
-    if PLATFORM == 'linux':
-        if isTravisCI:
-            disableGDC = os.environ.get('TRAVIS_DIST', '') == 'xenial'
-        else:
-            info = _gatherDistInfo()
-            nameId = info.get('ID')
-            if nameId in ('debian', 'ubuntu'):
-                codeName = info.get('VERSION_CODENAME')
-                # do we need the debian codename ?
-                disableGDC = codeName in ('xenial', )
+    if 'gdc' not in disableTests:
+        disableGDC = False
+        # Due to bug with packages ldc + gdc:
+        # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=827211
+        if PLATFORM == 'linux':
+            if isTravisCI:
+                disableGDC = os.environ.get('TRAVIS_DIST', '') == 'xenial'
+            else:
+                info = _gatherDistInfo()
+                nameId = info.get('ID')
+                if nameId in ('debian', 'ubuntu'):
+                    codeName = info.get('VERSION_CODENAME')
+                    # do we need the debian codename ?
+                    disableGDC = codeName in ('xenial', )
+        if disableGDC:
+            disableTests.add('gdc')
 
     for item, condition in PARAMS_CONFIG.items():
         condition = condition['ci'] if isCI else condition['default']
         if PLATFORM in condition:
-            if item[0] == 'gdc' and disableGDC:
+            if item[0] in disableTests:
                 continue
             params.append(item)
 
