@@ -5,6 +5,8 @@
 # export DOCKER_HOST=ssh://user@remote-host
 # Also see PYTEST_ARGS env var
 
+set -e
+
 usage()
 {
 	echo "Usage: run-tests.sh <LINUX DISTRIBUTIVE NAME> [\"list of python versions\"]"
@@ -13,7 +15,7 @@ usage()
 	echo "   run-tests.sh debian \"3.5 3.7\""
 }
 
-if test $# = 0; then
+if (( $# == 0 )); then
 	usage
 	exit
 fi
@@ -58,8 +60,8 @@ case $DIST in
     ;;
 
     *)
-    echo -n "Unknown/unsupported linux name \"$DIST\""
-    exit
+    echo "Unknown/unsupported linux name \"$DIST\""
+    exit 1
     ;;
 esac
 
@@ -91,10 +93,10 @@ docker build --cpu-shares=$BUILD_CPU_SHARES \
             --build-arg PYENV_VERS="${PYENV_VERS}" \
             -t $CI_IMAGE_TAG $PROJECT_ROOT
 
-if [[ $? -ne 0 ]]; then
-    echo "docker build failed or interrupted"
-    exit
-fi
+#if (( $? != 0 )); then
+#    echo "docker build failed or interrupted"
+#    exit
+#fi
 
 # https://github.com/fabric8io/docker-maven-plugin/issues/501
 docker image prune -f
@@ -107,11 +109,11 @@ RUN_CPU_SHARES=${RUN_CPU_SHARES:-500}
 PYTEST_ARGS=${PYTEST_ARGS:-"tests -v --maxfail=1"}
 
 for ver in ${PY_TO_TEST[@]}; do
-    if [[ "$ver" == "$SYSTEM_PY_VER" ]]; then
+    if [[ $ver == $SYSTEM_PY_VER ]]; then
         ver="system"
     fi
     actualver="system"
-    if [[ "$ver" != "system" ]]; then
+    if [[ $ver != "system" ]]; then
         actualver=${PYVERS_MAP["$ver"]}
         if [[ -z "$actualver" ]]; then
             echo "Unknown/unsupported python version \"$ver\""

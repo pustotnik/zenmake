@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # detect right directory and go into it
 cd "$( dirname "$(realpath ${BASH_SOURCE[0]:-$0})" )/docker"
 
@@ -10,4 +12,3 @@ DISTRO=${DISTRO:-debian}
 
 args=("$@")
 ./run-tests.sh "${DISTRO}" "${args[*]}"
-

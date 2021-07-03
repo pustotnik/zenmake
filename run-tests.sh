@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # detect right directory and go into it
 cd "$( dirname "$(realpath ${BASH_SOURCE[0]:-$0})" )"
 

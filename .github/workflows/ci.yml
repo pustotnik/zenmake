@@ -7,6 +7,7 @@ on:
   #pull_request:
   #  branches:
   #    - master
+  workflow_dispatch: # manual trigger
 
   schedule:
     - cron: '3 2 8 * *'
@@ -73,12 +74,12 @@ jobs:
     - name: Install dependency packages
       #if: startsWith(matrix.os,'ubuntu')
       run: |
-        if [[ "$RUNNER_OS" == "Linux" ]]; then
+        if [[ $RUNNER_OS == "Linux" ]]; then
           sudo apt-get update
           sudo ACCEPT_EULA=Y DEBIAN_FRONTEND=noninteractive apt-get upgrade --no-install-recommends --yes
           PKGS=`cat tests/deb-deps.txt`
           sudo apt-get -y --no-install-recommends install $PKGS
-        elif [[ "$RUNNER_OS" == "macOS" ]]; then
+        elif [[ $RUNNER_OS == "macOS" ]]; then
           export HOMEBREW_NO_INSTALL_CLEANUP=1
           export HOMEBREW_NO_AUTO_UPDATE=1
           brew install boost
@@ -86,7 +87,7 @@ jobs:
           #brew install boost-python
           brew install dmd
           brew install ldc
-        elif [[ "$RUNNER_OS" == "Windows" ]]; then
+        elif [[ $RUNNER_OS == "Windows" ]]; then
           #choco install python --version "3.7.4"
           choco install boost-msvc-14.1 --version=1.67.0
           #choco install mingw
@@ -102,7 +103,7 @@ jobs:
         python -m pip install -r tests/requirements.txt
         python -m pip install coveralls
 
-        if [[ "$RUNNER_OS" == "Linux" ]] && [[ "$PYTHON_VER" == '3.8' ]]; then
+        if [[ $RUNNER_OS == "Linux" && $PYTHON_VER == '3.8' ]]; then
           python -m pip install pyyaml
         fi
       shell: bash
@@ -121,7 +122,7 @@ jobs:
       run: |
         python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=2
         RESULT=$?
-        if [[ $RESULT -eq 0 ]]; then
+        if (( $RESULT == 0 )); then
           python -m pytest tests -v -k "zipapp" --maxfail=2
         else
           exit $RESULT
