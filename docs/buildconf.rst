@@ -170,10 +170,7 @@ features
                 format by using python module ``msgpack``. Using of this format can
                 decrease ZenMake overhead in building of some big projects because
                 it has best performance among all supported formats.
-                It can be set only for python 3.x because the extension module
-                in msgpack was dropped for python 2.x and using of pure python
-                implementation has no sense. If it is set for python 2.x or
-                if package ``msgpack`` doesn't exist in the current system then
+                If package ``msgpack`` doesn't exist in the current system then
                 it will be replaced by value ``pickle``.
                 Note: ZenMake doesn't try to install package ``msgpack``.
                 This package must be installed in some other way.

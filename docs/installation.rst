@@ -12,9 +12,9 @@ Installation
   for Python building. Python >= 3.7 always has threading.
 * `PyYAML <https://pyyaml.org/>`_ It's optional and needed only
   if you use yaml :ref:`buildconf<buildconf>`. ZenMake can be used with yaml
-  buildconf file even though there is no PyYAML in a operation system because
+  buildconf file even though if there is no PyYAML in an operation system because
   ZenMake has an internal copy of PyYAML python library. This copy is used only
-  if there is no PyYAML installed in a operation system.
+  if there is no PyYAML installed in an operation system.
 
 
 There are different ways to install/use ZenMake:
