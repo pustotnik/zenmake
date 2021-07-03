@@ -14,7 +14,7 @@ from zm.utils import platform as _platform
 APPNAME = 'zenmake'
 CAP_APPNAME = 'ZenMake'
 AUTHOR = 'Alexander Magola'
-COPYRIGHT_ONE_LINE = '2019, 2020 %s' % AUTHOR
+COPYRIGHT_ONE_LINE = '2019 - present %s' % AUTHOR
 
 PYTHON_EXE = sys.executable if sys.executable else 'python3'
 
