@@ -1,0 +1,21 @@
+
+tasks:
+    simple:
+        features : cxxprogram
+        source :  
+            incl: '**/*.cpp'
+            excl: '**/test*'
+        rpath : .
+    
+    simple.tests:
+        features : cxxprogram test
+        source :
+            incl: '**/*.cpp'
+            excl: 'main.cpp'
+        rpath : .
+
+buildtypes:
+    debug:
+        toolchain: auto-c++
+    default : debug
+

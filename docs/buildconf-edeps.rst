@@ -64,6 +64,22 @@ targets
         If parameter ``type`` is equal to ``file`` the value of this parameter
         is always equal to value of parameter ``name`` by default.
 
+    Example in YAML format for non-ZenMake dependency:
+
+    .. code-block:: yaml
+
+        targets:
+            # 'shared-lib' and 'static-lib' are target reference names
+            shared-lib:
+                dir : ../foo-lib/_build_/debug
+                type: shlib
+                name: fooutil
+
+            static-lib:
+                dir : ../foo-lib/_build_/debug
+                type: stlib
+                name: fooutil
+
     Example in Python format for non-ZenMake dependency:
 
     .. code-block:: python
@@ -141,6 +157,21 @@ rules
             a dict like for config task parameter
             :ref:`source<buildconf-taskparams-source>`.
 
+            Examples in YAML format:
+
+            .. code-block:: yaml
+
+                trigger:
+                    paths-exist: /etc/fstab
+
+                trigger:
+                    paths-exist: [ /etc/fstab, /tmp/somefile ]
+
+                trigger:
+                    paths-exist:
+                        startdir: '../foo-lib'
+                        incl: '**/*.label'
+
             Examples in Python format:
 
             .. code-block:: python
@@ -197,11 +228,11 @@ rules
             For any non-ZenMake dependency there are following
             default triggers for rules:
 
-            configure: { 'always' : True }
+            configure: { always: true }
 
-            build: { 'no-targets' : True }
+            build: { no-targets: true }
 
-            Any other rule: { 'always' : False }
+            Any other rule: { always: false }
 
         .. note::
             You can use command line option ``-E``/``--force-edeps`` to run
@@ -225,6 +256,14 @@ buildtypes-map
     ``debug`` and ``release`` but project from dependency can have
     buildtypes ``dbg`` and ``rls``. In this case
     you can use this parameter to set up the map of these buildtype names.
+
+    Example in YAML format:
+
+    .. code-block:: yaml
+
+        buildtypes-map:
+            debug   : dbg
+            release : rls
 
     Example in Python format:
 

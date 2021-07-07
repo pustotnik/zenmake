@@ -18,10 +18,60 @@ Let's consider an example with this structure::
         ├── util.cpp
         └── util.h
 
-For this project ``buildconf.py`` can be like that:
+For this project ``buildconf.yaml`` can be like that:
+
+.. code-block:: yaml
+    :linenos:
+
+    tasks:
+      util :
+        features : cxxshlib
+        source   : 'shlib/**/*.cpp'
+        includes : '.'
+      program :
+        features : cxxprogram
+        source   : 'prog/**/*.cpp'
+        includes : '.'
+        use      : util
+
+    buildtypes:
+      debug :
+        toolchain : clang++
+        cxxflags  : -O0 -g
+      release :
+        toolchain : g++
+        cxxflags  : -O2
+      default : debug
+
+=====  =======================================================================
+Lines  Description
+=====  =======================================================================
+1      Section with build tasks
+2,6    Names of build tasks. By default they are used as target names.
+       Resulting target names will be adjusted depending on a platform.
+       For example, on Windows 'program' will result to 'program.exe'.
+3      Mark build task as a C++ shared library.
+4      Specify all \*.cpp files in the directory 'shlib' recursively.
+5,9    Specify the path for C/C++ headers relative to the project root directory.
+       In this example, this parameter is optional as ZenMake adds the
+       project root directory itself. But it's an example.
+7      Mark build task as a C++ executable.
+8      Specify all \*.cpp files in the directory 'prog' recursively.
+10     Specify task 'util' as dependency to task 'program'.
+12     Section with build types.
+13,16  Names of build types. They can be almost any.
+14     Specify Clang C++ compiler for debug.
+15     Specify C++ compiler flags for debug.
+17     Specify g++ compiler (from GCC) for release.
+18     Specify C++ compiler flags for release.
+19     Special case: specify default build type that is used when no build
+       type was specified for ZenMake command.
+=====  =======================================================================
+
+In case of using python the file ``buildconf.py`` with the same values as above
+would look like this:
 
 .. code-block:: python
-   :linenos:
 
     tasks = {
         'util' : {
@@ -49,55 +99,6 @@ For this project ``buildconf.py`` can be like that:
         'default' : 'debug',
     }
 
-=====  =======================================================================
-Lines  Description
-=====  =======================================================================
-1      Section with build tasks
-2,7    Names of build tasks. By default they are used as target names.
-       Resulting target names will be adjusted depending on a platform.
-       For example, on Windows 'program' will result to 'program.exe'.
-3      Mark build task as a C++ shared library.
-4      Specify all \*.cpp files in the directory 'shlib' recursively.
-5,10   Specify the path for C/C++ headers relative to the project root directory.
-       In this example, this parameter is optional as ZenMake adds the
-       project root directory itself. But it's an example.
-8      Mark build task as a C++ executable.
-9      Specify all \*.cpp files in the directory 'prog' recursively.
-11     Specify task 'util' as dependency to task 'program'.
-15     Section with build types.
-16,19  Names of build types. They can be almost any.
-17     Specify Clang C++ compiler for debug.
-18     Specify C++ compiler flags for debug.
-21     Specify g++ compiler (from gcc) for release.
-22     Specify C++ compiler flags for release.
-24     Special case: specify default build type that is used when no build
-       type was specified for ZenMake command.
-=====  =======================================================================
-
-In case of using YAML the file ``buildconf.yaml`` with the same values as above
-would look like this:
-
-.. code-block:: yaml
-
-    tasks:
-      util :
-        features : cxxshlib
-        source   : 'shlib/**/*.cpp'
-        includes : '.'
-      program :
-        features : cxxprogram
-        source   : 'prog/**/*.cpp'
-        includes : '.'
-        use      : util
-
-    buildtypes:
-      debug :
-        toolchain : clang++
-        cxxflags  : -O0 -g
-      release :
-        toolchain : g++
-        cxxflags  : -O2
-      default : debug
 
 Once you have the config, run ``zenmake`` in the root of the project and
 ZenMake does the build:

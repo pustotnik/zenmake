@@ -61,7 +61,16 @@ features
     \*stlib/\*shlib/\*program features in most cases.
     Features ``runcmd`` and ``test`` can be mixed with any feature.
 
-    Examples:
+    Examples in YAML format:
+
+    .. code-block:: yaml
+
+        features : cprogram
+        features : cxxshlib
+        features : cxxprogram runcmd
+        features : cxxprogram test
+
+    Examples in Python format:
 
     .. code-block:: python
 
@@ -136,8 +145,63 @@ source
     Any path or pattern should be relative to the :ref:`startdir<buildconf-startdir>`.
     But for pattern (in dict) can be used custom ``startdir`` parameter.
 
-    If paths contain spaces and all these paths are listed
-    in one string then each such a path must be in quotes.
+    .. note::
+
+        If paths contain spaces and all these paths are listed
+        in one string then each such a path must be in quotes.
+
+        *YAML*: You can write a string without quotes (as a plain scalar) in many
+        cases but there are some special symbols which can not be used at the
+        beginning without quotes, for example ``*`` and ``?<space>``.
+        So a value like ``**/*.cpp`` must be always in qoutes (``'`` or ``"``).
+
+        See details here: https://www.yaml.info/learn/quote.html.
+
+    Examples in YAML format:
+
+    .. code-block:: yaml
+
+        # just one file
+        source : test.cpp
+
+        # list of two files
+        source : main.c about.c
+        # or
+        source : [main.c, about.c]
+
+        # get all *.cpp files in the 'startdir' recursively
+        source : { incl: '**/*.cpp' }
+        # or
+        source :
+            incl: '**/*.cpp'
+        # or (shortest record with the same result)
+        source : '**/*.cpp'
+
+        # get all *.c and *.cpp files in the 'startdir' recursively
+        source :  { incl: '**/*.c **/*.cpp' }
+        # or (shorter record with the same result)
+        source : '**/*.c **/*.cpp'
+
+        # get all *.cpp files in the 'startdir'/mylib recursively
+        source :  mylib/**/*.cpp
+
+        # get all *.cpp files in the 'startdir'/src recursively
+        # but don't include files according pattern 'src/extra*'
+        source :
+            incl: src/**/*.cpp
+            excl: src/extra*
+
+        # get all *.c files in the 'src' and in '../others' recursively
+        source :
+            - 'src/**/*.c'
+            - incl: '**/*.c'
+              startdir: ../others
+
+        # pattern with space, it's necessary to use both types of quotes here:
+        source : '"my prog/**/*.c"'
+
+        # two file paths with spaces
+        source : '"my shlib/my util.c" "my shlib/my util2.c"'
 
     Examples in python format:
 
@@ -167,30 +231,19 @@ source
 
         # get all *.cpp files in the 'startdir'/src recursively
         # but don't include files according pattern 'src/extra*'
-        'source' :  dict( incl = 'src/**/*.cpp', excl = 'src/extra*' ),
+        'source' :  dict( incl = 'src/**/*.cpp', excl = 'src/extra*' )
 
         # get all *.c files in the 'src' and in '../others' recursively
         'source'   : [
             'src/**/*.c',
             { 'incl': '**/*.c', 'startdir' : '../others' },
-        ],
+        ]
 
-    Examples in YAML format:
+        # pattern with space:
+        'source' : '"my prog/**/*.c"'
 
-    .. code-block:: yaml
-
-        # list of two files
-        source : main.c about.c
-        # or
-        source : [main.c, about.c]
-
-        # get all *.cpp files in the 'startdir'/mylib recursively
-        source: { incl: 'mylib/**/*.cpp' }
-        # or
-        source:
-            incl: 'mylib/**/*.cpp'
-        # or (shortest record with the same result)
-        source: 'mylib/**/*.cpp'
+        # two file paths with spaces
+        'source' : '"my shlib/my util.c" "my shlib/my util2.c"'
 
     You can use :ref:`substitution<buildconf-substitutions>`
     variables in string values for this parameter.
@@ -347,13 +400,29 @@ defines
 """""""""""""""""""""
     One or more defines for C/C++/Assembler/Fortran.
 
-    Examples:
+    Examples in YAML format:
+
+    .. code-block:: yaml
+
+        defines : MYDEFINE
+
+        defines : [ ABC=1, DOIT ]
+
+        defines :
+            - ABC=1
+            - DOIT
+
+        defines : 'ABC=1 DOIT AAA="some long string"'
+
+    Examples in Python format:
 
     .. code-block:: python
 
-        'defines'  : 'MYDEFINE'
-        'defines'  : ['ABC=1', 'DOIT']
-        'defines'  : 'ABC=1 DOIT AAA="some long string"'
+        'defines' : 'MYDEFINE'
+
+        'defines' : ['ABC=1', 'DOIT']
+
+        'defines' : 'ABC=1 DOIT AAA="some long string"'
 
     You can use :ref:`substitution<buildconf-substitutions>`
     variables for this parameter.
@@ -379,7 +448,18 @@ use
     If a task name contain spaces and all these names are listed in one
     string then each such a name must be in quotes.
 
-    Examples:
+    Examples in YAML format:
+
+    .. code-block:: yaml
+
+        use : util
+        use : util mylib
+        use : [util, mylib]
+        use : 'util "my lib"'
+        use : ['util', 'my lib']
+        use : util mylib someproject:somelib
+
+    Examples in Python format:
 
     .. code-block:: python
 
@@ -411,7 +491,13 @@ libs
     ``LD_LIBRARY_PATH`` or changing of /etc/ld.so.conf file. But usually last
     method is not recommended.
 
-    Example:
+    Example in YAML format:
+
+    .. code-block:: yaml
+
+        libs : m rt
+
+    Example in Python format:
 
     .. code-block:: python
 
@@ -432,12 +518,19 @@ libpath
 
     Paths should be absolute or relative to :ref:`startdir<buildconf-startdir>`.
 
-    Example:
+    Examples in YAML format:
+
+    .. code-block:: yaml
+
+        libpath : /local/lib
+        libpath : '/local/lib "my path"' # in case of spaces in a path
+
+    Examples in Python format:
 
     .. code-block:: python
 
         'libpath' : '/local/lib'
-        'libpath' : '/local/lib "my path"'
+        'libpath' : '/local/lib "my path"' # in case of spaces in a path
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
@@ -594,7 +687,41 @@ run
     file you can set task parameter
     :ref:`target<buildconf-taskparams-target>` to an empty string.
 
-    Examples in python format:
+    Examples in YAML format:
+
+    .. code-block:: yaml
+
+        echo:
+            run: "echo 'say hello'"
+            target: ''
+
+        test.py:
+            run:
+                cmd   : python tests/test.py
+                cwd   : .
+                env   : { JUST_ENV_VAR: qwerty }
+                shell : false
+            target: ''
+            configure :
+                - do: find-program
+                  names: python
+
+        shlib-test:
+            features : cxxprogram test
+            # ...
+            run:
+                cmd     : '${TARGET} a b c'
+                env     : { ENV_VAR1: '111', ENV_VAR2: 'false' }
+                repeat  : 2
+                timeout : 10 # in seconds
+                shell   : false
+
+        foo.luac:
+            source : foo.lua
+            configure : [ { do: find-program, names: luac } ]
+            run: '${LUAC} -s -o ${TGT} ${SRC}'
+
+    Examples in Python format:
 
     .. code-block:: python
 
@@ -754,9 +881,11 @@ install-path
     including ``${PREFIX}``, ``${BINDIR}`` and ``${LIBDIR}`` here
     like this:
 
-    .. code-block:: python
+    Example in YAML format:
 
-        'install-path' : '${PREFIX}/exe'
+    .. code-block:: yaml
+
+        install-path : '${PREFIX}/exe'
 
     By default this parameter is false for standalone runcmd tasks.
 

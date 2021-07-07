@@ -79,25 +79,41 @@ the :ref:`export-includes<buildconf-edep-params-export-includes>` (if it's neces
 and then specify this dependency in :ref:`use<buildconf-taskparams-use>`, using existing
 task names from dependency buildconf.
 
+Example in YAML format:
+
+.. code-block:: yaml
+
+    edeps:
+        zmdep:
+            rootdir: ../zmdep
+            export-includes: ../zmdep
+
+    tasks:
+        myutil:
+            features : cxxshlib
+            source   : 'shlib/**/*.cpp'
+            # Names 'calclib' and 'printlib' are existing tasks in 'zmdep' project
+            use: zmdep:calclib zmdep:printlib
+
 Example in Python format:
 
-    .. code-block:: python
+.. code-block:: python
 
-        edeps = {
-            'zmdep' : {
-                'rootdir': '../zmdep',
-                'export-includes' : '../zmdep',
-            },
-        }
+    edeps = {
+        'zmdep' : {
+            'rootdir': '../zmdep',
+            'export-includes' : '../zmdep',
+        },
+    }
 
-        tasks = {
-            'myutil' : {
-                'features' : 'cxxshlib',
-                'source'   : 'shlib/**/*.cpp',
-                # Names 'calclib' and 'printlib' are existing tasks in 'zmdep' project
-                'use' : 'zmdep:calclib zmdep:printlib',
-            },
-        }
+    tasks = {
+        'myutil' : {
+            'features' : 'cxxshlib',
+            'source'   : 'shlib/**/*.cpp',
+            # Names 'calclib' and 'printlib' are existing tasks in 'zmdep' project
+            'use' : 'zmdep:calclib zmdep:printlib',
+        },
+    }
 
 Additionally, in some cases, the parameter
 :ref:`buildtypes-map<buildconf-edep-params-buildtypes-map>` can be useful.
@@ -130,55 +146,55 @@ ZenMake project.
 
 Example in Python format:
 
-    .. code-block:: python
+.. code-block:: python
 
-        foolibdir = '../foo-lib'
+    foolibdir = '../foo-lib'
 
-        edeps = {
-            'foo-lib-d' : {
-                'rootdir': foolibdir,
-                'export-includes' : foolibdir,
-                'targets': {
-                    'shared-lib' : {
-                        'dir' : foolibdir + '/_build_/debug',
-                        'type': 'shlib',
-                        'name': 'fooutil',
-                    },
-                },
-                'rules' : {
-                    'build' : 'make debug',
+    edeps = {
+        'foo-lib-d' : {
+            'rootdir': foolibdir,
+            'export-includes' : foolibdir,
+            'targets': {
+                'shared-lib' : {
+                    'dir' : foolibdir + '/_build_/debug',
+                    'type': 'shlib',
+                    'name': 'fooutil',
                 },
             },
-            'foo-lib-r' : {
-                'rootdir': foolibdir,
-                'export-includes' : foolibdir,
-                'targets': {
-                    'shared-lib' : {
-                        'dir' : foolibdir + '/_build_/release',
-                        'type': 'shlib',
-                        'name': 'fooutil',
-                    },
-                },
-                'rules' : {
-                    'build' : 'make release',
+            'rules' : {
+                'build' : 'make debug',
+            },
+        },
+        'foo-lib-r' : {
+            'rootdir': foolibdir,
+            'export-includes' : foolibdir,
+            'targets': {
+                'shared-lib' : {
+                    'dir' : foolibdir + '/_build_/release',
+                    'type': 'shlib',
+                    'name': 'fooutil',
                 },
             },
-        }
+            'rules' : {
+                'build' : 'make release',
+            },
+        },
+    }
 
-        tasks = {
-            'util' : {
-                'features' : 'cxxshlib',
-                'source'   : 'shlib/**/*.cpp',
+    tasks = {
+        'util' : {
+            'features' : 'cxxshlib',
+            'source'   : 'shlib/**/*.cpp',
+        },
+        'program' : {
+            'features' : 'cxxprogram',
+            'source'   : 'prog/**/*.cpp',
+            'use.select' : {
+                'debug'   : 'util foo-lib-d:shared-lib',
+                'release' : 'util foo-lib-r:shared-lib',
             },
-            'program' : {
-                'features' : 'cxxprogram',
-                'source'   : 'prog/**/*.cpp',
-                'use.select' : {
-                    'debug'   : 'util foo-lib-d:shared-lib',
-                    'release' : 'util foo-lib-r:shared-lib',
-                },
-            },
-        }
+        },
+    }
 
 Common notes
 """""""""""""""""""""

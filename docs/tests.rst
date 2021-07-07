@@ -29,50 +29,91 @@ Order of buiding and running test tasks is controlled by their depedencies
 as for just build tasks. So it's possible to use task parameter ``use`` to
 control order of running of tests.
 
-    Example of test tasks in python format:
+Example of test tasks in YAML format:
 
-    .. code-block:: python
+.. code-block:: yaml
 
-        'stlib-test' : {
-            'features' : 'cxxprogram test',
-            'source'   : 'tests/test_stlib.cpp',
-            # testcmn here is some library with common code for tests
-            'use'      : 'stlib testcmn',
-        },
+    stlib-test:
+        features : cxxprogram test'
+        source   : tests/test_stlib.cpp
+        # testcmn here is some library with common code for tests
+        use      : stlib testcmn
 
-        'test from script' : {
-            'features' : 'test',
-            'run'      : {
-                'cmd'     : 'python tests/test.py',
-                'cwd'     : '.',
-                'shell'   : False,
-            },
-            'use'       : 'complex',
-            'configure' : [ dict(do = 'find-program', names = 'python'), ]
+    test from script:
+        features: test
+        run:
+            cmd  : python tests/test.py
+            cwd  : .
+            shell: false
+        use: complex
+        configure: [ { do: find-program, names: python } ]
+
+    # testcmn is a library with common code for tests only
+    testcmn:
+        features: cxxshlib test
+        source  : tests/common.cpp
+        includes: .
+
+    shlib-test:
+        features: cxxprogram test
+        source  : tests/test_shlib.cpp
+        use     : shlib testcmn
+        run:
+            cmd     : '${PROGRAM} a b c'
+            env     : { AZ : '111', BROKEN_TEST : 'false' }
+            repeat  : 2
+            timeout : 10 # in seconds
+            shell   : false
+
+    shlibmain-test:
+        features: cxxprogram test
+        source  : tests/test_shlibmain.cpp
+        use     : shlibmain testcmn
+
+Example of test tasks in python format:
+
+.. code-block:: python
+
+    'stlib-test' : {
+        'features' : 'cxxprogram test',
+        'source'   : 'tests/test_stlib.cpp',
+        # testcmn here is some library with common code for tests
+        'use'      : 'stlib testcmn',
+    },
+
+    'test from script' : {
+        'features' : 'test',
+        'run'      : {
+            'cmd'     : 'python tests/test.py',
+            'cwd'     : '.',
+            'shell'   : False,
         },
-        # testcmn is a library with common code for tests only
-        'testcmn' : {
-            'features' : 'cxxshlib test',
-            'source'   :  'tests/common.cpp',
-            'includes' : '.',
+        'use'       : 'complex',
+        'configure' : [ dict(do = 'find-program', names = 'python'), ]
+    },
+    # testcmn is a library with common code for tests only
+    'testcmn' : {
+        'features' : 'cxxshlib test',
+        'source'   :  'tests/common.cpp',
+        'includes' : '.',
+    },
+    'shlib-test' : {
+        'features'    : 'cxxprogram test',
+        'source'      : 'tests/test_shlib.cpp',
+        'use'         : 'shlib testcmn',
+        'run'      : {
+            'cmd'     : '${PROGRAM} a b c',
+            'env'     : { 'AZ' : '111', 'BROKEN_TEST' : 'false'},
+            'repeat'  : 2,
+            'timeout' : 10, # in seconds
+            'shell'   : False,
         },
-        'shlib-test' : {
-            'features'    : 'cxxprogram test',
-            'source'      : 'tests/test_shlib.cpp',
-            'use'         : 'shlib testcmn',
-            'run'      : {
-                'cmd'     : '${PROGRAM} a b c',
-                'env'     : { 'AZ' : '111', 'BROKEN_TEST' : 'false'},
-                'repeat'  : 2,
-                'timeout' : 10, # in seconds, Python 3 only
-                'shell'   : False,
-            },
-        },
-        'shlibmain-test' : {
-            'features'    : 'cxxprogram test',
-            'source'      : 'tests/test_shlibmain.cpp',
-            'use'         : 'shlibmain testcmn',
-        },
+    },
+    'shlibmain-test' : {
+        'features'    : 'cxxprogram test',
+        'source'      : 'tests/test_shlibmain.cpp',
+        'use'         : 'shlibmain testcmn',
+    },
 
 Use can build and/or run tests with command ``test``. You can do it with
 command ``build`` as well but ``build`` doesn't do it by default, only if some

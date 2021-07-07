@@ -1,0 +1,20 @@
+
+# Based on demos/dbus from Waf
+
+tasks:
+  test:    
+    target: test.h
+    source: test.xml
+
+    configure: 
+      - { do: find-program, names: dbus-binding-tool, var: DBUS_BINDING_TOOL }
+    
+    run:
+      cmd : "${DBUS_BINDING_TOOL} --prefix=test_prefix --mode=glib-server --output=${TGT} ${SRC}"
+      shell : true
+     
+  hello:
+    features: cprogram
+    source: '*.c'
+    #includes : /usr/include/glib-2.0 /usr/lib/glib-2.0/include /usr/include/dbus-1.0
+    use: test

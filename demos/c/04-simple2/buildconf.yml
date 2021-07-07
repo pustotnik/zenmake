@@ -3,7 +3,7 @@ tasks :
   test :
     features : cprogram
     source   : test.c util.c
-    includes : '.'
+    includes : .
     configure:
       - do: check-headers
         names: stdio.h

@@ -12,9 +12,6 @@ It uses meta build system Waf_ as a framework.
 
 Some reasons to create this project can be found :ref:`here<why>`.
 
-It uses declarative configuration files with ability to use the real
-programming language (python).
-
 Main features
 -------------
     - Build config as python (.py) or as yaml file.

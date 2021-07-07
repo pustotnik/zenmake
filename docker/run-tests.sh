@@ -105,8 +105,9 @@ docker image prune -f
 # this is a soft limit
 RUN_CPU_SHARES=${RUN_CPU_SHARES:-500}
 
+PYTEST_ARGS_EXTRA=${PYTEST_ARGS_EXTRA:-""}
 #PYTEST_ARGS=${PYTEST_ARGS:-"tests -v --maxfail=1 -k "codegen""}
-PYTEST_ARGS=${PYTEST_ARGS:-"tests -v --maxfail=1"}
+PYTEST_ARGS=${PYTEST_ARGS:-"tests -v --maxfail=1 $PYTEST_ARGS_EXTRA"}
 
 for ver in ${PY_TO_TEST[@]}; do
     if [[ $ver == $SYSTEM_PY_VER ]]; then

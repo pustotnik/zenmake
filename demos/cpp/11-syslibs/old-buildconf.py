@@ -1,3 +1,4 @@
+# It's just alternative not used buildconf in python
 
 # This is an example of a project which uses boost libraries with g++/clang++ on
 # POSIX platform(Linux/MacOS) and msvc on MS Windows.

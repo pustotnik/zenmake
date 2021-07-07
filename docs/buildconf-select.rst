@@ -14,7 +14,26 @@ implementation is different.
 It can be used for selecting different source files, includes, compiler flags
 and others on different platforms, different toolchains, etc.
 
-Example:
+Example in YAML format:
+
+.. code-block:: yaml
+
+    tasks:
+        # ...
+
+    conditions:
+        windows-msvc:
+            platform: windows
+            toolchain: msvc
+
+    buildtypes:
+        debug: {}
+        release:
+            cxxflags.select:
+                windows-msvc: /O2
+                default: -O2
+
+Example in Python format:
 
 .. code-block:: python
 
@@ -45,6 +64,18 @@ if toolchain 'msvc' is used on MS Windows and set '-02' for all other cases.
 
 This method can be used for any parameter in :ref:`task params<buildconf-taskparams>`
 excluding :ref:`features<buildconf-taskparams-features>` in the form:
+
+YAML format:
+
+.. code-block:: yaml
+
+    <parameter name>.select:
+        <condition name1>: <value>
+        <condition name2>: <value>
+        ...
+        default: <value>
+
+Python format:
 
 .. code-block:: python
 
@@ -108,7 +139,18 @@ one or more such parameters:
 
     :env:
         Check system environment variables. It's a dict of pairs <variable> : <value>.
-        Example:
+
+        Example in YAML format:
+
+        .. code-block:: yaml
+
+            conditions:
+                my-env:
+                    env:
+                        TEST: 'true' # use 'true' as a string
+                        CXX: gcc
+
+        Example in Python format:
 
         .. code-block:: python
 
@@ -139,16 +181,35 @@ variables you can do it by making different conditions in
 Only one record from ``*.select`` for each parameter can be selected for each task
 during configuring but condition name in ``*.select`` can be string with more than
 one name from ``conditions``. Such names must be
-just separated by spaces in the string. In this case it is considered like:
+just separated by spaces in the string. In this case it is considered like
+(it's not real example):
 
-.. code-block:: python
+.. code-block:: yaml
 
-    '<parameter name>.select' : {
-        '<name1 AND name2>' : <value>,
+    <parameter name>.select:
+        <name1 AND name2>: <value>
         ...
-    }
 
-Example:
+Example in YAML format:
+
+.. code-block:: yaml
+
+    conditions:
+        linux:
+            platform: linux
+        g++:
+            toolchain: g++
+
+    buildtypes:
+        debug: {}
+        release:
+            cxxflags.select:
+                # will be selected only on linux with selected/detected toolchain g++
+                linux g++: -Ofast
+                # will be selected in all other cases
+                default: -O2
+
+Example in Python format:
 
 .. code-block:: python
 
@@ -177,6 +238,23 @@ Example:
 For convenience there are ready to use internal conditions for known platforms and
 supported toolchains. So in example above variable ``conditions`` is not needed
 at all because conditions with names ``linux`` and ``g++`` already exist:
+
+in YAML format:
+
+.. code-block:: yaml
+
+    # no declaration of conditions
+
+    buildtypes:
+        debug: {}
+        release:
+            cxxflags.select:
+                # will be selected only on linux with selected/detected toolchain g++
+                linux g++: -Ofast
+                # will be selected in all other cases
+                default: -O2
+
+in Python format:
 
 .. code-block:: python
 

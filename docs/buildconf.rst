@@ -6,8 +6,8 @@ Build config
 ============
 
 ZenMake uses build configuration file with name ``buildconf.py`` or
-``buildconf.yaml``. First variant is a regular python file and second is
-a YAML file. ZenMake doesn't use both files in one directory at the same time.
+``buildconf.yaml``/``buildconf.yml``. First variant is a regular python file and second one is
+an YAML file. ZenMake doesn't use both files in one directory at the same time.
 If both files exist in one directory then only ``buildconf.py`` will be used.
 Common name ``buildconf`` is used in this manual.
 

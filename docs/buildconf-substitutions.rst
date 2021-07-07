@@ -8,11 +8,28 @@ Build config: substitutions
 In some places you can use substitution to configure values. It looks like
 substitution in bash and uses following syntax:
 
+    in YAML format:
+
+    .. code-block:: yaml
+
+        param: '${VAR}/some-string'
+
+    in Python format:
+
     .. code-block:: python
 
         'param' : '${VAR}/some-string'
 
 where ``VAR`` is a name of substitution. If you set this var to some value like this:
+
+    in YAML format:
+
+    .. code-block:: yaml
+
+        substvars:
+            VAR: 'myvalue'
+
+    in Python format:
 
     .. code-block:: python
 

@@ -122,6 +122,18 @@ These configuration actions in ``dict`` format:
         trying to find the program. Also this name can be used in parameter
         :ref:`run <buildconf-taskparams-run>` like this:
 
+        in YAML format:
+
+        .. code-block:: yaml
+
+            foo.luac:
+                source : foo.lua
+                configure : [ { do: find-program, names: luac } ]
+                # var 'LUAC' will be set in 'find-program' if 'luac' is found.
+                run: '${LUAC} -s -o ${TGT} ${SRC}'
+
+        in Python format:
+
         .. code-block:: python
 
             'foo.luac' : {
@@ -208,6 +220,32 @@ These configuration actions in ``dict`` format:
         Parameter ``tool-atleast-version`` can be used to check minimum version
         of selected tool (pkg-config).
 
+        Examples in YAML format:
+
+        .. code-block:: yaml
+
+            # ZenMake will check package 'gtk+-3.0' and set define 'HAVE_GTK_3_0=1'
+            configure:
+                - do: pkgconfig
+                  packages: gtk+-3.0
+
+            # ZenMake will check packages 'gtk+-3.0' and 'pango' and
+            # will check 'gtk+-3.0' version > 1 and <= 100.
+            # Before checking of packages ZenMake will check that 'pkg-config' version
+            # is greater than 0.1.
+            # Also it will set defines 'WE_HAVE_GTK3=1', 'HAVE_PANGO=1',
+            # GTK3_VER="gtk3-ver" and LIBPANGO_VER="pango-ver" where 'gtk3-ver'
+            # and 'pango-ver' are values of current versions of
+            # 'gtk+-3.0' and 'pango'.
+            configure:
+                - do: pkgconfig
+                  packages: 'gtk+-3.0 > 1 pango gtk+-3.0 <= 100'
+                  tool-atleast-version: '0.1'
+                  pkg-version: true
+                  defnames:
+                      gtk+-3.0: { have: WE_HAVE_GTK3, version: GTK3_VER }
+                      pango: { version: LIBPANGO_VER }
+
         Examples in Python format:
 
         .. code-block:: python
@@ -284,6 +322,22 @@ These configuration actions in ``dict`` format:
         By default it is not defined.
 
         Parameter ``msg`` can be used to set custom message for this action.
+
+        Examples in YAML format:
+
+        .. code-block:: yaml
+
+            configure:
+                # ZenMake will get compiler/linker options for SDL2 and set define 'HAVE_SDL2=1'
+                - do: toolconfig
+                  toolname: sdl2-config
+                # ZenMake will get SDL2 version and set it in the define 'SDL2_VERSION'
+                - do: toolconfig
+                  toolname: sdl2-config
+                  msg: Getting SDL2 version
+                  args: --version
+                  parse-as: entire
+                  defname: SDL2_VERSION
 
         Examples in Python format:
 
