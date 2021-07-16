@@ -110,12 +110,12 @@ ZenMake does the build:
     * Build type: 'debug'
     Setting top to                           : /tmp/testproject
     Setting out to                           : /tmp/testproject/build
-    Checking for 'g++'                       : /usr/bin/g++
+    Checking for 'clang++'                   : /usr/lib/llvm/11/bin/clang++
     [1/4] Compiling shlib/util.cpp
     [2/4] Compiling prog/test.cpp
     [3/4] Linking build/debug/libutil.so
     [4/4] Linking build/debug/program
-    'build' finished successfully (0.433s)
+    'build' finished successfully (0.531s)
 
 Running ZenMake without any parameters in a directory with ``buildconf.py`` or
 ``buildconf.yaml`` is the same as running ``zenmake build``. Otherwise it's
@@ -136,13 +136,12 @@ be used:
     * Build type: 'release'
     Setting top to                           : /tmp/testproject
     Setting out to                           : /tmp/testproject/build
-    Checking for program 'g++, c++'          : /usr/bin/g++
-    Checking for program 'ar'                : /usr/bin/ar
+    Checking for 'g++'                       : /usr/bin/g++
     [1/4] Compiling shlib/util.cpp
     [2/4] Compiling prog/test.cpp
     [3/4] Linking build/release/libutil.so
     [4/4] Linking build/release/program
-    'build' finished successfully (0.449s)
+    'build' finished successfully (0.498s)
 
 One of the effective and simple ways to learn something is to use
 real examples.

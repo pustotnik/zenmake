@@ -8,7 +8,7 @@ platforms with different toolchains, libraries, etc. Also they demonstrate
 use of ZenMake and can be used as examples.
 
 These projects have many dependencies due to use of many different things.
-Full list of actual dependencies which are used for regular testing on travis-ci
+Full list of actual dependencies which are used for regular testing in CI
 can be obtained from file 'ci.yml' in the repository directory '.github/workflows'.
 Different demo projects have different dependencies and you need to have all of these
 dependencies only if you want to run all these examples.
