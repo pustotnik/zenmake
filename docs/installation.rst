@@ -45,7 +45,7 @@ In this way pip will install PyYAML if it's not installed already.
 .. note::
     You need to have ``pip`` installed. Most of the modern Linux distributions
     have pip in their packages. On Windows you can use, for example,
-    `chocolatey <https://chocolatey.org/>`_.
+    `chocolatey <https://chocolatey.org/>`_ to install pip.
     Common instructions to install pip can be found
     `here <https://pip.pypa.io/en/stable/installing/>`_.
 
