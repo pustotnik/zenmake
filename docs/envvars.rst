@@ -134,19 +134,24 @@ DESTDIR
 
 PREFIX
     Default installation prefix when ``--prefix`` is not provided on the
-    command line. Example::
+    command line. This path is always considered as an absolute path or
+    as a relative path to DESTDIR. Example::
 
         PREFIX=/usr/local/ zenmake install
 
 BINDIR
     Default installation bin directory when ``--bindir`` is not provided on the
-    command line. It ignores value of ``PREFIX`` if set. Example::
+    command line. This path is always considered as an absolute path or
+    as a relative path to DESTDIR.
+    It ignores value of ``PREFIX`` if set. Example::
 
         BINDIR=/usr/local/bin zenmake install
 
 LIBDIR
     Default installation lib directory when ``--libdir`` is not provided on the
-    command line. It ignores value of ``PREFIX`` if set. Example::
+    command line. This path is always considered as an absolute path or
+    as a relative path to DESTDIR.
+    It ignores value of ``PREFIX`` if set. Example::
 
         LIBDIR=/usr/local/lib64 zenmake install
 

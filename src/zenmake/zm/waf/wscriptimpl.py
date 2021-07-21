@@ -152,6 +152,7 @@ def build(bld):
 
     isInstallUninstall = bld.cmd in ('install', 'uninstall')
     if isInstallUninstall:
+        # I think it's not necessery here but it doesn't make any problems
         assist.applyInstallPaths(bld.env, cli.selected)
     elif bld.cmd == 'clean':
         _setupClean(bld, rootbconf.confPaths)
@@ -190,6 +191,11 @@ def build(bld):
         # task env variables are stored in separative env
         # so it's needed to switch in
         bld.variant = taskParams.get('$task.variant')
+
+        if isInstallUninstall:
+            # env of a build task doesn't have parents and we need to apply
+            # install path vars to each task env
+            assist.applyInstallPaths(bld.env, cli.selected)
 
         assist.convertTaskParamNamesForWaf(taskParams)
 

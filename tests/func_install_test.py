@@ -66,9 +66,46 @@ def getInstallFixtureParams():
 
     fixtures.append(AutoDict(id = len(fixtures) + 1, **params))
 
+    #### 4
+    params = AutoDict(
+        prefix = '/usr/my',
+        bindir = 'bb-aa',
+        libdir = 'll_dd',
+    )
+
+    params.installArgs = [
+        '--prefix', params.prefix,
+        '--bindir', params.bindir,
+        '--libdir', params.libdir
+    ]
+
+    fixtures.append(AutoDict(id = len(fixtures) + 1, **params))
+
+    #### 5
+    params = AutoDict(
+        prefix = 'usr2/my',
+        bindir = 'usr2/my/bin',
+        libdir = 'mylib',
+    )
+
+    params.installArgs = [
+        '--prefix', params.prefix,
+        '--libdir', params.libdir
+    ]
+
+    fixtures.append(AutoDict(id = len(fixtures) + 1, **params))
+
+    ### store ids
     for item in fixtures:
         item['id'] = str(item['id'])
-    return fixtures
+
+    pairs = []
+    for i, _ in enumerate(fixtures):
+        cur = fixtures[i]
+        nex = fixtures[i+1] if i+1 < len(fixtures) else fixtures[0]
+        pairs.append([cur, nex])
+
+    return pairs
 
 INSTALL_FIXTURE_PARAMS = getInstallFixtureParams()
 
@@ -137,6 +174,9 @@ class TestInstall(object):
                 installPath = os.path.normpath(utils.substVars(installPath, env))
                 targetdir = installPath
 
+            if not os.path.isabs(targetdir):
+                targetdir = joinpath(check.prefix, targetdir)
+
             if check.destdir:
                 targetdir = joinpath(check.destdir,
                                       os.path.splitdrive(targetdir)[1].lstrip(os.sep))
@@ -174,34 +214,38 @@ class TestInstall(object):
                 path = joinpath(root, name)
                 assert path in targets
 
-    @pytest.fixture(params = INSTALL_FIXTURE_PARAMS, ids = lambda x: x['id'])
-    def installFextures(self, request, tmpdir):
+    @pytest.fixture(params = INSTALL_FIXTURE_PARAMS, ids = lambda x: x[0]['id'])
+    def installFixtures(self, request, tmpdir):
 
-        fixtures = request.param.copy()
         testdir = str(tmpdir.realpath())
-        fixtures['destdir'] = joinpath(testdir, 'inst')
+        fixturesList = request.param.copy()
+        for fixtures in fixturesList:
+            fixtures['destdir'] = joinpath(testdir, 'inst')
 
-        return fixtures
+        return fixturesList
 
-    def test(self, allZmExe, project, installFextures):
+    def test(self, allZmExe, project, installFixtures):
 
-        destdir = installFextures.destdir
+        for fixtures in installFixtures:
+            destdir = fixtures.destdir
 
-        cmdLine = ['install', '--destdir', destdir]
-        cmdLine.extend(installFextures.installArgs)
-        exitcode, _, _ = runZm(self, cmdLine)
-        assert exitcode == 0
+            cmdLine = ['install', '--destdir', destdir]
+            cmdLine.extend(fixtures.installArgs)
+            exitcode, _, _ = runZm(self, cmdLine)
+            assert exitcode == 0
 
-        check = installFextures.copy()
-        for name in ('prefix', 'bindir', 'libdir'):
-            check[name] = check[name].replace('/', os.sep)
+            check = fixtures.copy()
+            for name in ('prefix', 'bindir', 'libdir'):
+                if not os.path.isabs(check[name]):
+                    check[name] = '/' + check[name]
+                check[name] = check[name].replace('/', os.sep)
 
-        self._checkInstallResults(cmdLine, check)
+            self._checkInstallResults(cmdLine, check)
 
-        cmdLine[0] = 'uninstall'
-        exitcode, _, _ = runZm(self, cmdLine)
-        assert exitcode == 0
-        assert not os.path.exists(destdir)
+            cmdLine[0] = 'uninstall'
+            exitcode, _, _ = runZm(self, cmdLine)
+            assert exitcode == 0
+            assert not os.path.exists(destdir)
 
 #############################################################################
 #############################################################################
@@ -226,14 +270,14 @@ class TestInstallFiles(object):
         request.addfinalizer(teardown)
         setupTest(self, request, tmpdir)
 
-    @pytest.fixture(params = INSTALL_FIXTURE_PARAMS, ids = lambda x: x['id'])
-    def installFextures(self, request, tmpdir):
+    def _prepareFixtures(self, fixtures, testdir):
 
-        fixtures = request.param.copy()
-        testdir = str(tmpdir.realpath())
         fixtures['destdir'] = joinpath(testdir, 'inst')
 
-        prefix = fixtures['prefix'].replace('/', os.sep)
+        prefix = fixtures['prefix']
+        if not os.path.isabs(prefix):
+            prefix = '/' + prefix
+        prefix = prefix.replace('/', os.sep)
         prefix2 = os.path.splitdrive(prefix)[1].lstrip(os.sep)
         prjName = self.outputPrjDirName
 
@@ -274,31 +318,42 @@ class TestInstallFiles(object):
             item['path'] = item['path'].replace('/', os.sep)
 
         fixtures['files'] = files
-        return fixtures
 
-    def test(self, allZmExe, project, installFextures):
+    @pytest.fixture(params = INSTALL_FIXTURE_PARAMS, ids = lambda x: x[0]['id'])
+    def installFixtures(self, request, tmpdir):
 
-        destdir = installFextures.destdir
+        testdir = str(tmpdir.realpath())
+        fixturesList = request.param.copy()
+        for fixtures in fixturesList:
+            self._prepareFixtures(fixtures, testdir)
 
-        cmdLine = ['install', '--destdir', destdir]
-        cmdLine.extend(installFextures.installArgs)
-        exitcode, _, _ = runZm(self, cmdLine)
-        assert exitcode == 0
+        return fixturesList
 
-        for item in installFextures['files']:
-            filepath = joinpath(destdir, item['path'])
-            if 'linkto' in item:
-                linkto = item['linkto']
-                assert islink(filepath)
-                assert linkto == os.readlink(filepath)
-            else:
-                assert isfile(filepath)
-                if PLATFORM != 'windows':
-                    chmodExpected = oct(item.get('chmod', 0o644))[-3:]
-                    chmodReal = oct(os.stat(filepath).st_mode)[-3:]
-                    assert chmodReal == chmodExpected
+    def test(self, allZmExe, project, installFixtures):
 
-        cmdLine[0] = 'uninstall'
-        exitcode, _, _ = runZm(self, cmdLine)
-        assert exitcode == 0
-        assert not os.path.exists(destdir)
+        for fixtures in installFixtures:
+
+            destdir = fixtures.destdir
+
+            cmdLine = ['install', '--destdir', destdir]
+            cmdLine.extend(fixtures.installArgs)
+            exitcode, _, _ = runZm(self, cmdLine)
+            assert exitcode == 0
+
+            for item in fixtures['files']:
+                filepath = joinpath(destdir, item['path'])
+                if 'linkto' in item:
+                    linkto = item['linkto']
+                    assert islink(filepath)
+                    assert linkto == os.readlink(filepath)
+                else:
+                    assert isfile(filepath)
+                    if PLATFORM != 'windows':
+                        chmodExpected = oct(item.get('chmod', 0o644))[-3:]
+                        chmodReal = oct(os.stat(filepath).st_mode)[-3:]
+                        assert chmodReal == chmodExpected
+
+            cmdLine[0] = 'uninstall'
+            exitcode, _, _ = runZm(self, cmdLine)
+            assert exitcode == 0
+            assert not os.path.exists(destdir)

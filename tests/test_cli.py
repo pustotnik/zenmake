@@ -2,7 +2,7 @@
 #
 
 # pylint: disable = wildcard-import, unused-wildcard-import, unused-import
-# pylint: disable = missing-docstring, invalid-name
+# pylint: disable = missing-docstring, invalid-name, wrong-import-order
 # pylint: disable = no-member, attribute-defined-outside-init
 
 """
@@ -539,13 +539,13 @@ class TestSuite(object):
             ),
             dict(
                 args = [CMDNAME, '--bindir', 'somedir'],
-                expectedArgsUpdate = {'bindir' : joinpath(CWD, 'somedir') },
-                wafArgs = [CMDNAME, '--bindir=' + joinpath(CWD, 'somedir')] + CMNOPTS,
+                expectedArgsUpdate = {'bindir' : 'somedir' },
+                wafArgs = [CMDNAME, '--bindir=' + 'somedir'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--libdir', 'somedir'],
-                expectedArgsUpdate = {'libdir' : joinpath(CWD, 'somedir') },
-                wafArgs = [CMDNAME, '--libdir=' + joinpath(CWD, 'somedir')] + CMNOPTS,
+                expectedArgsUpdate = {'libdir' : 'somedir' },
+                wafArgs = [CMDNAME, '--libdir=' + 'somedir'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--verbose'],

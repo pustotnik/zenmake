@@ -475,10 +475,9 @@ class CmdLineParser(object):
 
     def _postProcess(self):
         args = self._command.args
-        for name in ('prefix', 'bindir', 'libdir', 'destdir'):
-            path = args.get(name)
-            if path:
-                args[name] = unfoldPath(CWD, path)
+        path = args.get('destdir')
+        if path:
+            args['destdir'] = unfoldPath(CWD, path)
 
     def _fillWafCmdLine(self):
         if self._command is None:

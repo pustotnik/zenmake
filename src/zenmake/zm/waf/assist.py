@@ -230,6 +230,13 @@ def applyInstallPaths(env, clicmd):
     if libdir:
         env.LIBDIR = libdir
 
+    for var in ('PREFIX', 'BINDIR', 'LIBDIR'):
+        if var not in env:
+            continue
+        val = env[var]
+        if not isabs(val):
+            env[var] = '/' + val
+
 def setTaskEnvVars(env, taskParams, toolchainSettings):
     """
     Set up some env vars for build task such as compiler flags
