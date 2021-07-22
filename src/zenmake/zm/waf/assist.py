@@ -498,7 +498,10 @@ def fullclean(bconfPaths, verbose = 1):
     for path in paths:
         if os.path.isdir(path) and not os.path.islink(path):
             loginfo("Removing directory '%s'" % path)
-            shutil.rmtree(path, ignore_errors = True)
+            try:
+                shutil.rmtree(path)
+            except OSError as ex:
+                raise ZenMakeError('Could not remove %r: %s' % (path, str(ex))) from ex
 
         if os.path.islink(path):
             loginfo("Removing symlink '%s'" % path)

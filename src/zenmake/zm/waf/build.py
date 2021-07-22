@@ -128,6 +128,8 @@ def _executeBuild(self):
 
     try:
         self.compile()
+    except OSError as ex:
+        raise error.ZenMakeError(str(ex)) from ex
     finally:
         if self.progress_bar == 1 and sys.stderr.isatty():
             colors = log.colors
