@@ -150,7 +150,9 @@ class inst(WafInstallTask):
         isInstall = self.generator.bld.is_install == INSTALL
         try:
             if isInstall:
-                os.makedirs(dirpath)
+                os.makedirs(dirpath, exist_ok = True)
+        except PermissionError as ex:
+            raise error.ZenMakeError('Permission denied: ' + dirpath) from None
         except OSError as ex:
             # It can't be checked before call of os.makedirs because
             # tasks work in parallel.
