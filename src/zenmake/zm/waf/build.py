@@ -22,7 +22,7 @@ joinpath = os.path.join
 BuildContext = WafBuildContext
 
 # WafBuildContext is used for many other waf commands as the base class
-# and so to insert new methods into this class the decorator @asmethod is used.
+# and therefore the decorator @asmethod is used to insert new methods into this class.
 
 @asmethod(WafBuildContext, '__init__', wrap = True, callOrigFirst = True)
 def _ctxInit(self, **kwargs):

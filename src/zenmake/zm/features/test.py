@@ -200,7 +200,7 @@ def postBuild(bld):
         runTests = _shared.testsBuilt and runTests
 
     if not runTests:
-        # Prevent running of command 'test' after the current command by
+        # Prevent running of the 'test' command after the current command by
         # removing of all values 'test' from the list of the current commands.
         from waflib import Options
         Options.commands = [ x for x in Options.commands if x != 'test' ]

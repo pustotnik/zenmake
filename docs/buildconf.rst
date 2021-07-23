@@ -203,10 +203,11 @@ cliopts
 """"""""
     A `dict <buildconf-dict-def_>`_ array with default values for command
     line options. It can be any existing command line option that ZenMake has.
-    If you want to set option for selected commands then you can set in format
-    of a `dict <buildconf-dict-def_>`_ where key is a name of command or
-    special value 'any' which means any command. If some command doesn't have
-    selected option then it will be ignored.
+    If you want to set an option for selected commands then you can set it in
+    the format of a `dict <buildconf-dict-def_>`_ where key is a name of
+    specific command or special value 'any' which means any command.
+    If some command doesn't have selected option then it will be ignored.
+
     Example in YAML format:
 
     .. code-block:: yaml
@@ -220,9 +221,9 @@ cliopts
 
     .. note::
         Selected command here is a command that is used on command line.
-        It means if you set some option for command ``build`` and zenmake calls
-        the command ``configure`` before this command itself then this option will
-        be applied for both ``configure`` and ``build``. In other words it's
+        It means if you set an option for the ``build`` command and zenmake calls
+        the ``configure`` command before this command by itself then this option will
+        be applied for both ``configure`` and ``build`` commands. In other words it's
         like you run this command with this option on command line.
 
 .. _buildconf-substvars:
@@ -232,7 +233,7 @@ substvars
     A `dict <buildconf-dict-def_>`_ with substitution variables which can be
     used, for example, in :ref:`parameter 'run'<buildconf-taskparams-run>`.
 
-    It is root dict with variables which are visible in any build task.
+    It is root dict with variables which are visible in all build tasks of a project.
 
     See details :ref:`here<buildconf-substitutions>`.
 
