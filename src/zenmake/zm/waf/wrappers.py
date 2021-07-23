@@ -138,6 +138,7 @@ def wrapUtilsGetProcess(_):
         if Utils.process_pool:
             return Utils.process_pool.pop()
 
+        # pylint: disable = consider-using-with
         cmd = [PYTHON_EXE, '-c', code]
         return subprocess.Popen(cmd, stdout = subprocess.PIPE,
                                 stdin = subprocess.PIPE, bufsize = 0)

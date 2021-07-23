@@ -59,6 +59,7 @@ class TestSuite(object):
                 assert parsercmd == cmd
                 assert cmd.name == cmdname
                 assert cmd.args == expectedArgs
+                # pylint: disable = cell-var-from-loop
                 if 'wafArgs' in check:
                     assert sorted(check['wafArgs']) == sorted(wafcmdline)
 
