@@ -139,9 +139,9 @@ USER $USERNAME
 RUN true \
     #&& echo "eval \"\$(pyenv init --path)\"" >> ~/.bashrc \
     #&& eval "$(pyenv init --path)" \
-    && PATH="$PYENV_ROOT/shims:$PATH"; for ver in "$PYENV_VERS"; do \
+    && PATH="$PYENV_ROOT/shims:$PATH"; for ver in $PYENV_VERS; do \
            pyenv global $ver; \
-           pip3 install --no-cache-dir -r requirements.txt; \
+           python -m pip install --no-cache-dir -r requirements.txt; \
        done \
     && pyenv global system \
     && true
