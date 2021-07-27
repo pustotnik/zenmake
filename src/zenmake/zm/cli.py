@@ -299,7 +299,7 @@ def _getReadyOptDefaults():
 class CmdLineParser(object):
     """
     CLI for ZenMake.
-    WAF has own CLI and I could use it but I wanted to have a different CLI.
+    WAF has own CLI and it could be used but I wanted to have a different CLI.
     """
 
     __slots__ = (
@@ -488,7 +488,7 @@ class CmdLineParser(object):
         cmdline = [self._command.name]
 
         # self._command.args is AutoDict and it means that it'll create
-        # nonexistent keys in it, so we need to make a copy
+        # nonexistent keys inside, so we need to make a copy
         options = _AutoDict(self._command.args)
 
         if self._command.name == 'test':
