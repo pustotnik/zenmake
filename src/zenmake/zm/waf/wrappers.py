@@ -108,10 +108,13 @@ def wrapBldCtxAutoConf(method):
             runConfigAndCommand(ctx)
             return
 
+        from zm import cli
+
         rootdir = bconfPaths.rootdir
         zmcachedir = bconfPaths.zmcachedir
         buildtype = bconf.selectedBuildType
-        if assist.needToConfigure(zmMeta, rootdir, zmcachedir, buildtype):
+        cliargs = cli.selected.args
+        if assist.needToConfigure(zmMeta, rootdir, zmcachedir, buildtype, cliargs):
             runConfigAndCommand(ctx)
             return
 

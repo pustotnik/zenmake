@@ -194,8 +194,14 @@ def _detectZenMakeProjectRules(depConf, buildtype):
 
         depRootDir = depBConfPaths.rootdir
         depZmCacheDir = depBConfPaths.zmcachedir
+
+        # It will be no problem with empty cliargs unless you don't use
+        # monitored cli args in cmdArgs
+        assert not any(x in cmdArgs for x in assist.getMonitoredCliArgNames())
+        cliargs = {}
+
         return assist.needToConfigure(zmMetaConf, depRootDir,
-                                      depZmCacheDir, buildtype)
+                                      depZmCacheDir, buildtype, cliargs)
 
     baseRule = {
         'cwd' : depRootDir,

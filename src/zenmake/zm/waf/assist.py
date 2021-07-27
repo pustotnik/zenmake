@@ -31,6 +31,8 @@ isabs     = os.path.isabs
 toList       = utils.toList
 toListSimple = utils.toListSimple
 
+_getenv = os.environ.get
+
 # These keys are not removed from waf task gen on 'build' step
 # Such keys as '*flags' and 'defines' are set in task envs, so they
 # don't need to be protected from removing from waf task gen.
@@ -52,16 +54,21 @@ def getUsedWafTaskKeys():
     ''' Get used Waf task keys '''
     return _usedWafTaskKeys
 
-def getAllToolchainEnvVarNames():
-    ''' Get all significant env vars for supported toolchains '''
+def getMonitoredEnvVarNames():
+    ''' Get all monitored env vars to reconfigure on their change '''
 
     envVarNames = ToolchainVars.allSysFlagVars()
     envVarNames += ToolchainVars.allSysVarsToSetToolchain()
-    envVarNames += ('BUILDROOT',)
+    envVarNames += ('BUILDROOT', 'DESTDIR', 'PREFIX', 'BINDIR', 'LIBDIR')
 
     return envVarNames
 
-def writeZenMakeMetaFile(filePath, monitfiles, attrs):
+def getMonitoredCliArgNames():
+    ''' Get all monitored CLI args to reconfigure on their change '''
+
+    return ('prefix', 'bindir', 'libdir')
+
+def writeZenMakeMetaFile(filePath, monitfiles, attrs, buildtype, cliargs, prevZmMeta):
     """
     Write ZenMake meta file with some things like files
     monitored for changes.
@@ -75,15 +82,26 @@ def writeZenMakeMetaFile(filePath, monitfiles, attrs):
     zmMeta.monitfiles = sorted(set(monitfiles))
     zmMeta.monithash  = utils.hashFiles(zmMeta.monitfiles)
 
-    zmMeta.toolenvs = {}
-    envVarNames = getAllToolchainEnvVarNames()
-    for name in envVarNames:
-        zmMeta.toolenvs[name] = os.environ.get(name, '')
-
     from waflib import Context
     zmMeta.rundir = Context.run_dir
     zmMeta.topdir = Context.top_dir
     zmMeta.outdir = Context.out_dir
+
+    zmMeta.eparams = {}
+    if prevZmMeta is not None:
+        zmMeta.eparams.update(prevZmMeta.eparams)
+    eparams = zmMeta.eparams[buildtype] = { 'envs' : {}, 'cliargs': {} }
+
+    envVarNames = getMonitoredEnvVarNames()
+    for name in envVarNames:
+        val = _getenv(name)
+        if val is not None:
+            eparams['envs'][name] = val
+
+    for name in getMonitoredCliArgNames():
+        val = cliargs.get(name)
+        if val is not None:
+            eparams['cliargs'][name] = val
 
     dbfile = db.PyDBFile(filePath, extension = '')
     dbfile.save(zmMeta)
@@ -555,17 +573,24 @@ def areMonitoredFilesChanged(zmMetaConf):
 
     return _hash != zmMetaConf.monithash
 
-def areToolchainEnvVarsAreChanged(zmMetaConf):
+def areExternalParamsChanged(zmMetaConf, buildtype, cliargs):
     """
-    Detect that current toolchain env vars are changed.
+    Detect that monitored env vars or CLI args are changed.
     """
 
-    lastEnvVars = zmMetaConf.toolenvs
-    envVarNames = getAllToolchainEnvVarNames()
-    for name in envVarNames:
-        if name not in lastEnvVars:
+    if 'eparams' not in zmMetaConf:
+        eparams = {}
+    else:
+        eparams = zmMetaConf.eparams.get(buildtype, {})
+
+    prevEnvVars = eparams.get('envs', {})
+    for name in getMonitoredEnvVarNames():
+        if prevEnvVars.get(name) != _getenv(name):
             return True
-        if lastEnvVars[name] != os.environ.get(name, ''):
+
+    prevCliArgs = eparams.get('cliargs', {})
+    for name in getMonitoredCliArgNames():
+        if prevCliArgs.get(name) != cliargs.get(name):
             return True
 
     return False
@@ -581,7 +606,7 @@ def isBuildTypeConfigured(zmcachedir, buildtype):
 
     return True
 
-def needToConfigure(zmMetaConf, rootdir, zmcachedir, buildtype):
+def needToConfigure(zmMetaConf, rootdir, zmcachedir, buildtype, cliargs):
     """
     Detect if it's needed to run 'configure' command
     """
@@ -595,7 +620,7 @@ def needToConfigure(zmMetaConf, rootdir, zmcachedir, buildtype):
     if areMonitoredFilesChanged(zmMetaConf):
         return True
 
-    if areToolchainEnvVarsAreChanged(zmMetaConf):
+    if areExternalParamsChanged(zmMetaConf, buildtype, cliargs):
         return True
 
     if not isBuildTypeConfigured(zmcachedir, buildtype):

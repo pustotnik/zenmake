@@ -49,13 +49,14 @@ _shared = _AutoDict(
 
 def _wrapNeedToConfigure(_needToConfigure):
 
-    def execute(zmMetaConf, rootdir, zmcachedir, buildtype):
+    def execute(*args, **kwargs):
 
-        if _needToConfigure(zmMetaConf, rootdir, zmcachedir, buildtype):
+        if _needToConfigure(*args, **kwargs):
             return True
         if not _shared.withTests:
             return False
 
+        zmMetaConf = kwargs.get('zmMetaConf', args[0])
         testsConfigured = zmMetaConf.attrs.get('tests-configured', False)
         return not testsConfigured
 

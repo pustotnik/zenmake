@@ -17,15 +17,13 @@ import shutil
 
 import pytest
 from zm import pyutils, version
-from zm.features import ToolchainVars
+from zm.waf.assist import getMonitoredEnvVarNames
 
 import tests.common as cmn
 from tests.func_utils import *
 
 @pytest.mark.usefixtures("unsetEnviron")
 class TestAutoconfig(object):
-
-    tvars = ToolchainVars
 
     @pytest.fixture(params = getZmExecutables())
     def allZmExe(self, request):
@@ -47,7 +45,7 @@ class TestAutoconfig(object):
 
         self.testdir = os.path.abspath(joinpath(self.cwd, os.pardir))
 
-    @pytest.fixture(params = tvars.allSysFlagVars() + tvars.allSysVarsToSetToolchain())
+    @pytest.fixture(params = getMonitoredEnvVarNames())
     def toolEnvVar(self, request):
         self.toolEnvVar = request.param
 

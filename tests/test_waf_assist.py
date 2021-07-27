@@ -3,7 +3,7 @@
 
 # pylint: disable = wildcard-import, unused-wildcard-import
 # pylint: disable = missing-docstring, invalid-name
-# pylint: disable = too-many-statements
+# pylint: disable = too-many-statements, unused-argument
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
@@ -28,7 +28,7 @@ normpath = os.path.normpath
 relpath = os.path.relpath
 isfile = os.path.isfile
 
-def testWriteZenMakeMetaFile(tmpdir):
+def testWriteZenMakeMetaFile(tmpdir, monkeypatch):
     buildconffile = tmpdir.join("buildconf.py")
     buildconffile.write("buildconf")
     dir1 = tmpdir.mkdir("dir1")
@@ -51,7 +51,21 @@ def testWriteZenMakeMetaFile(tmpdir):
 
     assert not isfile(fakeConfPaths.zmmetafile)
     attrs = {'var': 1, 'd': 'zxc'}
-    assist.writeZenMakeMetaFile(fakeConfPaths.zmmetafile, monitFiles, attrs)
+
+    prevZmMeta = AutoDict()
+    prevbuildtype = 'rls'
+    prevZmMeta.eparams[prevbuildtype] = {
+        'envs' : {'DESTDIR': '/sss', 'PREFIX': '/aaaa/xxxx' },
+        'cliargs': { 'bindir': '/bb' },
+    }
+
+    buildtype = 'dbg'
+    cliargs = { 'prefix': '/dd/aa', 'unknown': 'xx' }
+    monkeypatch.setenv('LIBDIR', '/llib')
+    monkeypatch.setenv('LIBDIRRR', '/allib')
+
+    assist.writeZenMakeMetaFile(fakeConfPaths.zmmetafile, monitFiles, attrs,
+                                buildtype, cliargs, prevZmMeta)
     assert isfile(fakeConfPaths.zmmetafile)
 
     dbfile = db.PyDBFile(fakeConfPaths.zmmetafile, extension = '')
@@ -68,11 +82,14 @@ def testWriteZenMakeMetaFile(tmpdir):
     _hash = utils.hashFiles(cfgenv.monitfiles)
     assert cfgenv.monithash == _hash
 
-    assert 'toolenvs' in cfgenv
-    tvars = ToolchainVars
-    envVarNames = tvars.allSysFlagVars() + tvars.allSysVarsToSetToolchain()
-    for name in envVarNames:
-        assert name in cfgenv.toolenvs
+    assert 'eparams' in cfgenv
+    assert cfgenv.eparams[prevbuildtype] == prevZmMeta.eparams[prevbuildtype]
+
+    curParams = {
+        'envs' : {'LIBDIR': '/llib'},
+        'cliargs': { 'prefix': '/dd/aa' },
+    }
+    assert cfgenv.eparams[buildtype] == curParams
 
 def testMakeTasksCachePath():
     buildtype, zmcachedir = ('somename', 'somedir')
@@ -185,6 +202,7 @@ def testHandleTaskIncludesParam():
 
     _paths = [(x, y) for x in pathsIncludes for y in pathsExportIncludes]
     for paramStartDir in startDirs:
+        # pylint: disable = unused-variable
         for incPaths, expPaths in _paths:
             taskParams = {
                 'includes': PathsParam(incPaths, paramStartDir, kind = 'paths'),
@@ -237,7 +255,6 @@ def testHandleTaskSourceParam(tmpdir, mocker):
     srcroot.join('some', '2', "main.cpp").write("content", ensure = True)
     srcroot.join('some', '2', "test.cpp").write("content", ensure = True)
     srcroot.join('some', '1', "Test.cpp").write("content", ensure = True)
-
 
     ctx = Context.Context(run_dir = str(cwd)) # ctx.path = Node(run_dir)
 
