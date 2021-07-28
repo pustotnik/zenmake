@@ -38,7 +38,7 @@ clean
     Remove build files for selected ``buildtype`` of a project.
     It doesn't touch other build files.
 
-distclean
+cleanall
     Remove a build directory of a project with everything in it.
 
 install

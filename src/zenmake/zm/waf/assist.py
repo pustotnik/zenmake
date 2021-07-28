@@ -488,7 +488,7 @@ def checkWafTasksForFeatures(taskParams):
             msg += " Maybe you didn't set correct toolchain for this task."
             raise ZenMakeError(msg)
 
-def fullclean(bconfPaths, verbose = 1):
+def doTotalCleanup(bconfPaths, verbose = 1):
     """
     It does almost the same thing as distclean from waf. But distclean can
     not remove directory with file wscript or symlink to it if distclean
@@ -542,7 +542,7 @@ def distclean(bconfPaths):
     if cmd:
         verbose = cmd.args.verbose
 
-    fullclean(bconfPaths, verbose)
+    doTotalCleanup(bconfPaths, verbose)
 
 def printZenMakeHeader(bconfManager):
     """

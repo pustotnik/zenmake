@@ -263,6 +263,8 @@ def distclean(ctx):
     bconfPaths = ctx.bconfManager.root.confPaths
     assist.distclean(bconfPaths)
 
+cleanall = distclean
+
 def shutdown(_):
     """
     Implementation of wscript.shutdown

@@ -60,7 +60,7 @@ def _loadTasksDataForClean(self, bconf, cachePath):
     if lastDbFormat == 'pickle' and lastPyVer != curPyVer:
         msg = "ZenMake does not support using of python 2 and 3"
         msg += " at the same time on the same projects."
-        msg += " Run 'distclean' or 'configure'"
+        msg += " Run 'cleanall' or 'configure'"
         raise error.ZenMakeError(msg)
 
     tasksDb = db.factory(cachePath, lastDbFormat)

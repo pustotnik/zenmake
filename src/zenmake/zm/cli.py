@@ -70,9 +70,14 @@ config.commands = [
         description = 'clean project',
     ),
     Command(
+        name = 'cleanall',
+        aliases = ['C'],
+        description = 'removes the build directory with everything in it',
+    ),
+    Command(
         name = 'distclean',
         aliases = ['dc'],
-        description = 'removes the build directory with everything in it',
+        description = 'the same as the "cleanall" command',
     ),
     Command(
         name = 'install',
@@ -179,6 +184,12 @@ config.options = [
         runcmd = 'clean',
     ),
     Option(
+        names = ['-a', '--clean-all'],
+        dest = 'cleanAll',
+        commands = ['configure', 'build', 'test', 'install'],
+        runcmd = 'cleanall',
+    ),
+    Option(
         names = ['-d', '--distclean'],
         commands = ['configure', 'build', 'test', 'install'],
         runcmd = 'distclean',
@@ -197,7 +208,7 @@ config.options = [
     ),
     Option(
         names = ['-o', '--buildroot'],
-        commands = ['configure', 'build', 'test', 'clean',
+        commands = ['configure', 'build', 'test', 'clean', 'cleanall',
                     'distclean', 'install', 'uninstall'],
         help = "build directory for the project",
     ),
@@ -441,6 +452,11 @@ class CmdLineParser(object):
 
         for opt in options:
             kwargs = _AutoDict()
+            for k, v in opt.items():
+                if v is None or k in Option.NOTARGPARSE_FIELDS:
+                    continue
+                kwargs[k] = v
+
             if 'runcmd' in opt:
                 kwargs.action = "store_true"
                 if 'help' in opt:
@@ -449,10 +465,6 @@ class CmdLineParser(object):
                     kwargs.help = "run command '%s' before command '%s'" \
                                   % (opt.runcmd, cmd.name)
             else:
-                for k, v in opt.items():
-                    if v is None or k in Option.NOTARGPARSE_FIELDS:
-                        continue
-                    kwargs[k] = v
                 default = self._getOptionDefault(opt, cmd)
                 if default is not None:
                     kwargs['default'] = default
@@ -483,7 +495,7 @@ class CmdLineParser(object):
         if self._command is None:
             raise ZenMakeLogicError("Programming error: _command is None") # pragma: no cover
 
-        # NOTE: The option/command 'distclean' is handled in special way
+        # NOTE: The option/command 'distclean'/'cleanall' is handled in special way
 
         cmdline = [self._command.name]
 
@@ -503,6 +515,8 @@ class CmdLineParser(object):
             cmdline.insert(0, 'configure')
         if options.clean:
             cmdline.insert(0, 'clean')
+        if options.cleanAll:
+            cmdline.insert(0, 'cleanall')
         if options.distclean:
             cmdline.insert(0, 'distclean')
         if options.progress:
