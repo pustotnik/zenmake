@@ -23,10 +23,6 @@ import tests.common as cmn
 from tests.func_utils import *
 
 CUSTOM_TOOLCHAIN_PRJDIR = joinpath('cpp', '05-custom-toolchain')
-FORINSTALL_PRJDIRS = [
-    joinpath('cpp', '09-complex-unittest'),
-    joinpath('subdirs', '2-complex'),
-]
 
 BY_REGEXPS = tuple('byregexps') # for ability to have non string dict key
 RE_ALL_D     = '^d/'
@@ -56,7 +52,7 @@ TEST_CONDITIONS = {
     ],
 }
 
-def collectProjectDirs():
+def collectAllProjectDirs():
     for path in TEST_CONDITIONS:
         if path == BY_REGEXPS:
             continue
@@ -104,6 +100,19 @@ def collectProjectDirs():
     result.sort()
     return result
 
+ALL_PROJECTS = collectAllProjectDirs()
+
+def filterBaseProjectDirs():
+    basePrjTypes = ('c', 'cpp', 'mixed', 'external-deps', 'fortran')
+    result = []
+    for path in ALL_PROJECTS:
+        for ptype in basePrjTypes:
+            if path.startswith(ptype + os.path.sep):
+                result.append(path)
+    return result
+
+BASE_PROJECTS = filterBaseProjectDirs()
+
 @pytest.mark.usefixtures("unsetEnviron")
 class TestBase(object):
 
@@ -114,8 +123,17 @@ class TestBase(object):
     def allZmExe(self, request):
         self.zmExe = zmExes[request.param]
 
-    @pytest.fixture(params = collectProjectDirs())
+    @pytest.fixture(params = ALL_PROJECTS)
     def allprojects(self, request, tmpdir):
+
+        def teardown():
+            printErrorOnFailed(self, request)
+
+        request.addfinalizer(teardown)
+        setupTest(self, request, tmpdir)
+
+    @pytest.fixture(params = BASE_PROJECTS)
+    def baseprojects(self, request, tmpdir):
 
         def teardown():
             printErrorOnFailed(self, request)
@@ -157,7 +175,7 @@ class TestBase(object):
         assert self._runZm(cmdLine)[0] == 0
         checkBuildResults(self, cmdLine, True)
 
-    def testBuildAndClean(self, allprojects):
+    def testBuildAndClean(self, baseprojects):
 
         # simple build
         cmdLine = ['build']
@@ -173,16 +191,16 @@ class TestBase(object):
         assert isfile(self.confPaths.zmmetafile)
         checkBuildResults(self, cmdLine, False)
 
-    def testBuildAndDistclean(self, allprojects):
+    def testBuildAndCleanAll(self, baseprojects):
 
         # simple build
         cmdLine = ['build']
         assert self._runZm(cmdLine)[0] == 0
         checkBuildResults(self, cmdLine, True)
 
-        # distclean
+        # cleanall
         assert isdir(self.confPaths.buildroot)
-        cmdLine = ['distclean']
+        cmdLine = ['cleanall']
         assert self._runZm(cmdLine)[0] == 0
         assert not os.path.exists(self.confPaths.buildroot)
 
