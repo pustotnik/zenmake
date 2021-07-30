@@ -18,5 +18,5 @@ fi
 export ZENMAKE_TESTING_PRINT_CONFIG_LOG=0
 
 #set -x
-python -m pytest ${PYTEST_ARGS:-"tests -v --maxfail=10"}
+python3 -m pytest ${PYTEST_ARGS:-"tests -v --maxfail=10"}
 #pytest ${PYTEST_ARGS:-"tests -v --maxfail=10"}
