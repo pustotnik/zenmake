@@ -1,4 +1,6 @@
 
+# This config is mostly for testing than for demonstration
+
 import os
 import sys
 import getpass

@@ -1,4 +1,6 @@
 
+# This config is mostly for testing than for demonstration
+
 buildtypes = {
     # -fPIC is necessary to compile static lib
     'debug-gcc' : { 'cxxflags' : '-fPIC -O0 -g' },

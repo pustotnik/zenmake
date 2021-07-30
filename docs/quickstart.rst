@@ -11,7 +11,7 @@ To use ZenMake you need :ref:`ZenMake<installation>` and
 Let's consider an example with this structure::
 
     testproject
-    ├── buildconf.py
+    ├── buildconf.yaml
     ├── prog
     │   └── test.cpp
     └── shlib
@@ -68,7 +68,7 @@ Lines  Description
        type was specified for ZenMake command.
 =====  =======================================================================
 
-In case of using python the file ``buildconf.py`` with the same values as above
+In case of using python config the file ``buildconf.py`` with the same values as above
 would look like this:
 
 .. code-block:: python

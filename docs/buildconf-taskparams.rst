@@ -262,6 +262,14 @@ includes
     If paths contain spaces and all these paths are listed
     in one string then each such a path must be in quotes.
 
+    Examples in YAML format:
+
+    .. code-block:: yaml
+
+        includes : myinclude
+        includes : include myinclude
+        includes : [ include, myinclude ]
+
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 

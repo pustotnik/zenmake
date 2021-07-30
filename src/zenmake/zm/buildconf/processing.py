@@ -296,7 +296,6 @@ class Config(object):
 
             for paramName, paramVal in taskParams.items():
 
-                taskParams[paramName] = paramVal
                 convertTaskParamValue(taskParams, paramName)
 
                 if paramName != 'source':
@@ -544,6 +543,67 @@ class Config(object):
             raise ZenMakeConfError(errmsg, confpath = self.path)
 
         self._meta.buildtypes.default = buildtype
+
+    def _handleFilterTasks(self, buildtype, tasks):
+
+        knownPlatforms = set(KNOWN_PLATFORMS)
+        allTaskNames = self.taskNames
+        destPlatform = PLATFORM
+
+        def getFilterCondition(entry, name):
+            condition = entry.get(name, None)
+            result = { 'condition' : condition }
+
+            if condition is None:
+                if name == 'for':
+                    result['tasks'] = allTaskNames
+                else: # if name == 'not-for'
+                    assert name == 'not-for'
+                    result['tasks'] = set()
+                return result
+
+            buildtypes = set(toList(condition.get('buildtype', [])))
+            platforms = set(toListSimple(condition.get('platform', [])))
+            tasks = set(toList(condition.get('task', [])))
+
+            if not platforms:
+                platforms = knownPlatforms
+            if not buildtypes:
+                buildtypes = self.supportedBuildTypes
+
+            if destPlatform in platforms and buildtype in buildtypes:
+                if not tasks:
+                    tasks = set(allTaskNames)
+                tasks &= allTaskNames # use tasks from current config only
+                result['tasks'] = tasks
+            else:
+                result['tasks'] = set()
+
+            return result
+
+        # make consistency of task params
+
+        for entry in self._conf.byfilter:
+
+            enabled = getFilterCondition(entry, 'for')
+            disabled = getFilterCondition(entry, 'not-for')
+
+            if enabled['condition'] is None and disabled['condition'] is None:
+                log.warn("WARN: buildconf.byfilter has an item without 'for' and 'not-for'. "
+                         "It's probably a mistake.")
+
+            enabledTasks = tuple(enabled['tasks'])
+            disabledTasks = disabled['tasks']
+
+            paramsSet = entry.get('set', {})
+            for taskName in enabledTasks:
+                if taskName in disabledTasks:
+                    continue
+
+                task = tasks[taskName]
+
+                task.update(paramsSet)
+                task.pop('default-buildtype', None)
 
     def _checkBuildTypeIsSet(self):
         if self._meta.buildtypes.selected is None:
@@ -813,13 +873,9 @@ class Config(object):
         if tasks is not None:
             return tasks
 
-        knownPlatforms = set(KNOWN_PLATFORMS)
-        allTaskNames = self.taskNames
-        destPlatform = PLATFORM
-
         tasks = {}
 
-        for taskName in tuple(allTaskNames):
+        for taskName in tuple(self.taskNames):
 
             task = tasks.setdefault(taskName, {})
             # 1. Copy existing params from origin task
@@ -827,58 +883,7 @@ class Config(object):
             # 2. Copy/replace exising params of selected buildtype from 'buildtypes'
             task.update(self._conf.buildtypes.get(buildtype, {}))
 
-        def getFilterCondition(entry, name):
-            condition = entry.get(name, None)
-            result = { 'condition' : condition }
-
-            if condition is None:
-                if name == 'for':
-                    result['tasks'] = allTaskNames
-                else: # if name == 'not-for'
-                    assert name == 'not-for'
-                    result['tasks'] = set()
-                return result
-
-            buildtypes = set(toList(condition.get('buildtype', [])))
-            platforms = set(toListSimple(condition.get('platform', [])))
-            tasks = set(toList(condition.get('task', [])))
-
-            if not platforms:
-                platforms = knownPlatforms
-            if not buildtypes:
-                buildtypes = self.supportedBuildTypes
-
-            if destPlatform in platforms and buildtype in buildtypes:
-                if not tasks:
-                    tasks = set(allTaskNames)
-                tasks &= allTaskNames # use tasks from current config only
-                result['tasks'] = tasks
-            else:
-                result['tasks'] = set()
-
-            return result
-
-        for entry in self._conf.byfilter:
-
-            enabled = getFilterCondition(entry, 'for')
-            disabled = getFilterCondition(entry, 'not-for')
-
-            if enabled['condition'] is None and disabled['condition'] is None:
-                log.warn("WARN: buildconf.byfilter has an item without 'for' and 'not-for'. "
-                         "It's probably a mistake.")
-
-            enabledTasks = tuple(enabled['tasks'])
-            disabledTasks = disabled['tasks']
-            params = entry.get('set', {})
-
-            for taskName in enabledTasks:
-                if taskName in disabledTasks:
-                    continue
-
-                task = tasks[taskName]
-                task.update(params)
-                task.pop('default-buildtype', None)
-
+        self._handleFilterTasks(buildtype, tasks)
         self._postprocessTaskParams(tasks)
 
         self._meta.tasks[buildtype] = tasks

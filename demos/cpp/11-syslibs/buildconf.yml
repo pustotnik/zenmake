@@ -13,18 +13,17 @@ tasks:
     util:
         features : cxxshlib
         source   : 'shlib/**/*.cpp'
+        libs     : boost_timer
+
         includes.select:
             windows : C:\local\boost_1_67_0
-        
         libpath.select :
             windows : C:\local\boost_1_67_0\lib64-msvc-14.1
-       
-        libs : boost_timer
-        
+
         configure:
             - { do: check-headers, names: cmath iostream }
             - { do: check-libs }
-       
+
     program:
         features : cxxprogram
         source   : 'prog/**/*.cpp'
@@ -42,7 +41,7 @@ buildtypes:
             msvc   : /Od /EHsc
         libs.select:
             util-on-windows : boost_timer-vc141-mt-gd-x64-1_67
-            
+
     release:
         cxxflags.select:
             default: -fPIC -O2 # g++/clang++
