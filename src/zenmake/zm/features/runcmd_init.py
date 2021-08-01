@@ -54,14 +54,14 @@ def getBuildConfTaskParamHooks():
 
     return [('run', handleParam)]
 
-def detectFeatures(bconf):
+def detectFeatures(tasks):
     """
     Function to detect features in buildconfig.
     It's used by zm.features.loadFeatures.
     It should return a list of detected features.
     """
 
-    for taskParams in bconf.tasks.values():
+    for taskParams in tasks.values():
         if 'runcmd' in taskParams['features']:
             return ['runcmd']
         if 'run' in taskParams:

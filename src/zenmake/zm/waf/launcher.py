@@ -52,22 +52,25 @@ def _prepareAndLoadFeatures(bconfManager):
 
     from zm.features import loadFeatures
 
+    tasksList = [bconf.tasks for bconf in bconfManager.configs]
+
     try:
         # process all actual features from buildconf(s)
-        for bconf in bconfManager.configs:
-            for taskParams in bconf.tasks.values():
+        for i, tasks in enumerate(tasksList):
+            for taskParams in tasks.values():
                 assist.detectTaskFeatures(taskParams)
                 assist.validateTaskFeatures(taskParams)
     except ZenMakeConfError as ex:
         if not ex.confpath:
             origMsg = ex.msg
+            bconf = bconfManager.configs[i]
             ex.msg = "Error in the file %r:" % bconf.path
             for line in origMsg.splitlines():
                 ex.msg += "\n  %s" % line
         raise ex
 
     # load modules for all actual features from buildconf(s)
-    loadFeatures(bconfManager)
+    loadFeatures(tasksList)
 
 def setWscriptVars(module, bconf):
     """

@@ -496,7 +496,8 @@ def testParam(cfgctx, monkeypatch, paramfixture):
     setattr(ctx, 'bconfManager', bconfManager)
 
     assist.initBuildType(bconfManager, None)
-    features.loadFeatures(bconfManager)
+    tasksList = [bconf.tasks for bconf in bconfManager.configs]
+    features.loadFeatures(tasksList)
 
     ctx.execute()
 

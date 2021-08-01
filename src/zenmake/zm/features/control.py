@@ -263,7 +263,7 @@ def postcmd(cmdMethod, before = None, after = None):
 #######################################################################
 ## Others
 
-def loadFeatures(bconfManager):
+def loadFeatures(tasksList):
     """
     Load modules for selected features. Not existing modules are ignored.
     """
@@ -283,12 +283,11 @@ def loadFeatures(bconfManager):
 
     # gather unique features
     features = set()
-    for bconf in bconfManager.configs:
-        tasks = bconf.tasks
+    for tasks in tasksList:
         for taskParams in tasks.values():
             features.update(taskParams['features'])
         for func in detectFeaturesFuncs:
-            features.update(func(bconf))
+            features.update(func(tasks))
 
     # ignore not existing modules
     features &= allModuleNames
