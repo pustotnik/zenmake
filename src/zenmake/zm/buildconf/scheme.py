@@ -169,7 +169,9 @@ _PATHS_SCHEME = {
 _SUBST_VARS_SCHEME = {
     'type': ('dict',),
     'dict' : {
-        ANYAMOUNTSTRS_KEY : { 'type': 'str' },
+        'vars' : {
+            ANYAMOUNTSTRS_KEY : { 'type': 'str' },
+        },
     },
 }
 
@@ -518,7 +520,7 @@ confscheme = {
         'dict-vars' : {
             'for' : {
                 'type': ('dict', 'str'),
-                'dict' : {
+                'dict-vars' : {
                     'task' : { 'type': ('str', 'list-of-strs') },
                     'buildtype' : { 'type': ('str', 'list-of-strs') },
                     'platform' : { 'type': ('str', 'list-of-strs') },

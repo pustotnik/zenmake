@@ -104,14 +104,23 @@ class TestSuite(object):
         if not validVals:
             confnode[param] = { cmn.randomstr() : cmn.randomint() }
             validator.validate(buildconf)
-        else:
-            for k, v in validVals.items():
-                _type = v['type']
-                methodName = ''.join([x.capitalize() for x in _type.split('-')])
-                methodName = '_validate%sValues' % methodName
-                validateValues = getattr(self, methodName)
-                confnode[param] = {}
-                validateValues(buildconf, confnode[param], k)
+            return
+
+        for k, v in validVals.items():
+            if not v:
+                # don't check
+                continue
+            _type = v['type']
+            methodName = ''.join([x.capitalize() for x in _type.split('-')])
+            methodName = '_validate%sValues' % methodName
+            validateValues = getattr(self, methodName)
+            confnode[param] = {}
+            validateValues(buildconf, confnode[param], k)
+
+        confnode[param] = { cmn.randomstr() : cmn.randomint() }
+        with pytest.raises(ZenMakeConfError):
+            validator.validate(buildconf)
+        confnode[param] = {}
 
     def _validateFuncValues(self, buildconf, confnode, param, validVals = None):
         if not validVals:
@@ -278,9 +287,10 @@ class TestSuite(object):
                     with pytest.raises(ZenMakeConfTypeError):
                         validator.validate(buildconf)
             for t in validTypes:
-                for val in typeValues[t]['valid']:
-                    confnode[param] = val
-                    validator.validate(buildconf)
+                if not validTypesAndVals[t]:
+                    for val in typeValues[t]['valid']:
+                        confnode[param] = val
+                        validator.validate(buildconf)
                 if 'invalid' not in typeValues[t]:
                     continue
                 for val in typeValues[t]['invalid']:
@@ -519,13 +529,36 @@ class TestSuite(object):
         setattr(buildconf, 'byfilter', [])
         buildconf.byfilter = [ {} ]
         validator.validate(buildconf)
-        # FIXME: it's better to improve and use self._checkParamsAs
-        #self._checkParamAsDict(buildconf, buildconf.byfilter[0], 'for')
+
+        validTypesAndVals = {
+            'str' : ['all'],
+            'dict' : {
+                'task'     : None,
+                'buildtype': None,
+                'platform' : None,
+            }
+        }
+        self._checkParamsAs(buildconf, buildconf.byfilter[0], ['for'], validTypesAndVals)
+        validTypesAndVals = {
+            'dict' : {
+                'task'     : None,
+                'buildtype': None,
+                'platform' : None,
+            }
+        }
+        self._checkParamsAs(buildconf, buildconf.byfilter[0], ['not-for'], validTypesAndVals)
+
+        buildconf.byfilter = [
+            { 'for' : {}, },
+            { 'not-for' : {}, },
+        ]
+        self._checkParamsAsStrOrListOfStrs(buildconf, buildconf.byfilter[0]['for'],
+                               ['task', 'buildtype', 'platform'])
+        self._checkParamsAsStrOrListOfStrs(buildconf, buildconf.byfilter[1]['not-for'],
+                               ['task', 'buildtype', 'platform'])
+
         self._checkParamAsDict(buildconf, buildconf.byfilter[0], 'set')
 
         buildconf.byfilter = [ { 'for' : {}, }, { 'for' : {}, 'set' : {} } ]
         validator.validate(buildconf)
-        # FIXME: it's better to improve and use self._checkParamsAs
-        #self._checkParamsAsStrOrListOfStrs(buildconf, buildconf.byfilter[1]['for'],
-        #                       ['task', 'buildtype', 'platform'])
         self._checkTaskScheme(buildconf, buildconf.byfilter[1]['set'])

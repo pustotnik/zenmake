@@ -142,6 +142,8 @@ class Validator(object):
         if not isinstance(confnode, (list, tuple)):
             raiseInvalidTypeErr(confnode)
 
+        schemeAttrs = schemeAttrs.get('list', schemeAttrs)
+
         _getAttrValue = Validator._getAttrValue
         allowed = _getAttrValue(schemeAttrs, 'allowed', 'list', default = None)
         varsType = _getAttrValue(schemeAttrs, 'vars-type', 'list', default = None)
@@ -199,6 +201,8 @@ class Validator(object):
         if not isinstance(confnode, maptype):
             msg = "Param %r should be dict or another map type." % fullkey
             raise ZenMakeConfTypeError(msg)
+
+        schemeAttrs = schemeAttrs.get('dict', schemeAttrs)
 
         _getAttrValue = Validator._getAttrValue
         subscheme = _getAttrValue(schemeAttrs, 'vars', 'dict', default = None)
