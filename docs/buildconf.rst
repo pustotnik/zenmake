@@ -160,8 +160,8 @@ features
     :db-format: Set format for internal ZenMake db/cache files.
                 Use one of possible values: ``py``, ``pickle``, ``msgpack``.
 
-                The value ``py`` means text file with python syntax. It's not fastest
-                format but it's human readable one.
+                The value ``py`` means text file with python syntax. It is not fastest
+                format but it is human readable one.
 
                 The value ``pickle`` means python pickle binary format. It has
                 good performance and python always supports this format.
@@ -169,9 +169,9 @@ features
                 The value ``msgpack`` means msgpack binary
                 format by using python module ``msgpack``. Using of this format can
                 decrease ZenMake overhead in building of some big projects because
-                it has best performance among all supported formats.
-                If package ``msgpack`` doesn't exist in the current system then
-                it will be replaced by value ``pickle``.
+                it has the best performance among all supported formats.
+                If the package ``msgpack`` doesn't exist in the current system then
+                the ``pickle`` value will be used.
                 Note: ZenMake doesn't try to install package ``msgpack``.
                 This package must be installed in some other way.
 

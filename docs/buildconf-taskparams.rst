@@ -642,7 +642,7 @@ run
         with curly braces because this syntax is used for internal substitutions.
 
         For python variant of buildconf it can be python function as well.
-        It this case such a function gets one argument as a python dict
+        In this case such a function gets one argument as a python dict
         with parameters:
 
         :taskname:
