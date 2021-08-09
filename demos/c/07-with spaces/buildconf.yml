@@ -1,6 +1,9 @@
 
 # For testing of values with spaces
 
+substvars:
+  MY_SHLIB_DIR: 'my shlib'
+
 tasks:
   my util:
     features  : cshlib
@@ -10,7 +13,7 @@ tasks:
     configure :
       - do: check-headers
         names : stdio.h
-        
+
   my test:
     features  : cprogram
     source    : '"my prog/**/*.c"'
@@ -18,17 +21,18 @@ tasks:
     configure :
       - do: check-headers
         names : stdio.h
-        
+
   #######
   my util alt:
     features  : cshlib
-    source    : '"my shlib/my util.c" "my shlib/my util2.c"'
+    #source    : '"my shlib/my util.c" "my shlib/my util2.c"'
+    source    : '"${MY_SHLIB_DIR}/my util.c" "${MY_SHLIB_DIR}/my util2.c"'
     includes  : '"my includes"'
     export    : includes
     configure :
       - do: check-headers
         names : stdio.h
-        
+
   my test alt:
     features  : cprogram
     source    : '"my prog/my test.c"'
@@ -36,7 +40,7 @@ tasks:
     configure :
       - do: check-headers
         names : stdio.h
-        
+
   ########
   alt script:
     run:

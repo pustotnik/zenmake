@@ -115,7 +115,7 @@ These configuration actions in ``dict`` format:
         is used on MS Windows if the program is not found.
 
         Parameter ``var`` can be used to set
-        :ref:`substitution<buildconf-substitutions>` variable name.
+        :ref:`dynamic substitution<buildconf-substitutions-dynamic>` variable name.
         By default it's a first name from the ``names`` in upper case and without
         symbols '-' and '.'.
         If this name is found in environment variables, ZenMake will use it instead of
@@ -159,7 +159,7 @@ These configuration actions in ``dict`` format:
         By default it's '.' which means :ref:`startdir<buildconf-startdir>`.
 
         Parameter ``var`` can be used to set
-        :ref:`substitution<buildconf-substitutions>` variable name.
+        :ref:`dynamic substitution<buildconf-substitutions-dynamic>` variable name.
         By default it's a first name from the ``names`` in upper case and without
         symbols '-' and '.'.
 
@@ -317,7 +317,7 @@ These configuration actions in ``dict`` format:
         but you can set some custom define name.
 
         Parameter ``var`` can be used to set
-        :ref:`substitution<buildconf-substitutions>` variable name. This parameter
+        :ref:`dynamic substitution<buildconf-substitutions-dynamic>` variable name. This parameter
         is ignored if value of ``parse-as`` is not 'entire'.
         By default it is not defined.
 

@@ -22,11 +22,11 @@ from waflib.ConfigSet import ConfigSet
 from waflib.Configure import ConfigurationContext as WafConfContext
 from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFIG_LOG
 from zm.constants import TASK_TARGET_KINDS
-from zm.pyutils import stringtype, maptype
+from zm.pyutils import maptype
 from zm.pathutils import PathsParam, substPathsConf
 from zm import utils, log, toolchains, error, db, version, cli, edeps
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
-from zm.buildconf.scheme import EXPORTING_TASK_PARAMS
+from zm.buildconf.scheme import taskscheme, EXPORTING_TASK_PARAMS
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
 from zm.features import ToolchainVars
 from zm.waf import assist, context, config_actions as configActions
@@ -43,12 +43,34 @@ def _genToolAutoName(lang):
 TOOL_AUTO_NAMES = { _genToolAutoName(x) for x in ToolchainVars.allLangs() }
 _DONT_STORE_TASK_PARAMS = ('$bconf', )
 _EXPORT_PATH_PARAMS = frozenset(['includes', 'libpath', 'stlibpath'])
+_TASKPARAMS_WITH_SUBSTVARS = set()
 
 CONFLOG_HEADER_TEMPLATE = '''# Project %(prj)s configured on %(now)s by
 # ZenMake %(zmver)s, based on Waf %(wafver)s (abi %(wafabi)s)
 # python %(pyver)s on %(systype)s
 # using %(args)s
 #'''
+
+def _getTaskParamNamesWithSubstVars():
+
+    if not _TASKPARAMS_WITH_SUBSTVARS:
+
+        # 'run' is handled in another place
+        skipNames = ('substvars', 'features', 'toolchain', 'name', 'configure',
+                    'install-path', 'install-files', 'run')
+
+        def _allowed(name, scheme):
+            if name.endswith('.select') or name in skipNames:
+                return False
+            types = scheme['type']
+            return 'str' in types or 'list-of-strs' in types
+
+        names = [x for x, y in taskscheme.items() if _allowed(x, y) ]
+        names.append('source')
+
+        _TASKPARAMS_WITH_SUBSTVARS.update(names)
+
+    return _TASKPARAMS_WITH_SUBSTVARS
 
 class ConfigurationContext(WafConfContext):
     """ Context for command 'configure' """
@@ -153,23 +175,15 @@ class ConfigurationContext(WafConfContext):
             substEnv = substEnv.derive()
             substEnv.update(substvars)
 
-        def apply(val, env):
-            if isinstance(val, stringtype):
-                return utils.substVars(val, env)
-            if isinstance(val, (list, tuple)):
-                return [utils.substVars(x, env) for x in val]
-            return val
-
-        paramNames = ('target', 'source', 'defines', 'export-defines')
-        for name in paramNames:
-            param = taskParams.get(name)
-            if not param:
+        paramNames = _getTaskParamNamesWithSubstVars()
+        for name, paramVal in taskParams.items():
+            if name not in paramNames:
                 continue
 
             if name == 'source':
-                substPathsConf(param, substEnv)
+                substPathsConf(paramVal, substEnv)
             else:
-                taskParams[name] = apply(param, substEnv)
+                taskParams[name] = utils.substVarsInParam(paramVal, substEnv)
 
     def _handleMonitLibs(self, taskParams):
 
@@ -659,8 +673,7 @@ class ConfigurationContext(WafConfContext):
     def mergeTasks(self):
         """
         Merge all tasks from all buildconf files.
-        It makes self.allTasks as a dict and self.allOrderedTasks as a list of
-        tasks ordered by local deps.
+        It makes self.allTasks as a dict with all tasks.
         """
 
         tasks = {}
@@ -818,25 +831,28 @@ class ConfigurationContext(WafConfContext):
 
         rootEnv = self.all_envs['']
 
-        # set/fix vars PREFIX, BINDIR, LIBDIR
-        assist.applyInstallPaths(rootEnv, cli.selected)
+        # See also constants.PROTECTED_DYN_SUBSTVARS
 
-        rootbconf = self.bconfManager.root
-        rootEnv.PROJECT_NAME = rootbconf.projectName
-        rootEnv.TOP_DIR = rootbconf.rootdir
-        rootEnv.BUILDROOT_DIR = rootbconf.confPaths.buildroot
-        rootEnv.BUILDTYPE_DIR = rootbconf.selectedBuildTypeDir
+        # set/fix vars PREFIX, BINDIR, LIBDIR
+        utils.adjustInstallDirPaths(rootEnv, cli.selected)
 
         from waflib.Options import options
         rootEnv.DESTDIR = options.destdir
 
+        rootbconf = self.bconfManager.root
+        rootEnv.PROJECT_NAME  = rootbconf.projectName
+        rootEnv.TOP_DIR       = rootbconf.rootdir
+        rootEnv.BUILDROOT_DIR = rootbconf.confPaths.buildroot
+        rootEnv.BUILDTYPE_DIR = rootbconf.selectedBuildTypeDir
+
     def preconfigure(self):
         """
-        Pre configure. It's called by 'execute' before call of actual 'configure'.
+        Preconfigure. It's called by 'execute' before the actual 'configure'.
         """
 
-        configs = self.bconfManager.configs
+        self._preconfigureRootEnv()
 
+        configs = self.bconfManager.configs
         for bconf in configs:
 
             # set context path
@@ -861,8 +877,6 @@ class ConfigurationContext(WafConfContext):
         # to avoid potential name conflicts and to free mem
         for toolchain in toolchainEnvs:
             self.all_envs.pop(toolchain, None)
-
-        self._preconfigureRootEnv()
 
         self._preconfigureTasks()
 

@@ -24,7 +24,7 @@ import os
 from waflib.Build import BuildContext
 from zm.constants import WAF_CACHE_DIRNAME, WAF_CFG_FILES_ENV_KEY
 from zm.constants import WAF_CONFIG_LOG, CONFTEST_DIR_PREFIX
-from zm import cli, error, log
+from zm import utils, cli, error, log
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
 from zm.waf import assist
 
@@ -153,7 +153,7 @@ def build(bld):
     isInstallUninstall = bld.cmd in ('install', 'uninstall')
     if isInstallUninstall:
         # I think it's not necessery here but it doesn't make any problems
-        assist.applyInstallPaths(bld.env, cli.selected)
+        utils.adjustInstallDirPaths(bld.env, cli.selected)
     elif bld.cmd == 'clean':
         _setupClean(bld, rootbconf.confPaths)
         # no need to make build tasks
@@ -195,7 +195,7 @@ def build(bld):
         if isInstallUninstall:
             # env of a build task doesn't have parents and we need to apply
             # install path vars to each task env
-            assist.applyInstallPaths(bld.env, cli.selected)
+            utils.adjustInstallDirPaths(bld.env, cli.selected)
 
         assist.convertTaskParamNamesForWaf(taskParams)
 

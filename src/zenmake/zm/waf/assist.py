@@ -26,7 +26,6 @@ joinpath  = os.path.join
 splitpath = os.path.split
 normpath  = os.path.normpath
 relpath   = os.path.relpath
-isabs     = os.path.isabs
 
 toList       = utils.toList
 toListSimple = utils.toListSimple
@@ -225,35 +224,6 @@ def initBuildType(bconfManager, cliBuildType):
         _bconf.applyBuildType(buildtype)
 
     return bconf.selectedBuildType
-
-def applyInstallPaths(env, clicmd):
-    """
-    Apply installation path vars PREFIX, BINDIR, LIBDIR
-    """
-
-    opts = clicmd.args
-    prefix = opts.get('prefix')
-    bindir = opts.get('bindir')
-    libdir = opts.get('libdir')
-
-    if prefix and prefix != env.PREFIX:
-        env.PREFIX = prefix
-        if not bindir:
-            env.BINDIR = '%s/bin' % prefix
-        if not libdir:
-            env.LIBDIR = '%s/lib%s' % (prefix, utils.libDirPostfix())
-
-    if bindir:
-        env.BINDIR = bindir
-    if libdir:
-        env.LIBDIR = libdir
-
-    for var in ('PREFIX', 'BINDIR', 'LIBDIR'):
-        if var not in env:
-            continue
-        val = env[var]
-        if not isabs(val):
-            env[var] = '/' + val
 
 def setTaskEnvVars(env, taskParams, toolchainSettings):
     """

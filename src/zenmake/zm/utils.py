@@ -34,8 +34,11 @@ WINDOWS_RESERVED_FILENAMES = frozenset((
     'LPT6', 'LPT7', 'LPT8', 'LPT9'
 ))
 
+_USABLE_WHITESPACE = ' \t\n\r\v'
+
 _RE_UNSAFE_FILENAME_CHARS = re.compile(r'[^-\w.]', re.UNICODE)
 _RE_TOLIST = re.compile(r"""((?:[^\s"']|"[^"]*"|'[^']*')+)""")
+_RE_SUBST = re.compile(r"\$\{([^}{]+)\}")
 
 def platform():
     """
@@ -114,18 +117,68 @@ libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
 subprocess         = wafutils.subprocess
 
-def hasSubstVar(value):
-    """ Return True if value has substitution variable """
-    return '${' in value
-
-def substVars(value, svars):
+def hasSubstVar(strval):
     """
-	Replaces ${VAR} with the value of VAR taken from a dict or a config set
+    Return True if the strval MAY have substitution variable.
+    Return False if the strval has no substitution variable.
+    """
+    return '${' in strval
+
+def substVars(strval, svars, check = True):
+    """
+	Return string with ${VAR} replaced by the value of VAR taken from a dict or a ConfigSet
     """
 
-    if not hasSubstVar(value): # optimization
-        return value
-    return wafutils.subst_vars(value, svars)
+    if check and not hasSubstVar(strval): # optimization
+        return strval
+
+    def replaceVar(match):
+        foundName = match.group(1)
+        foundVal = None
+        try:
+            # ConfigSet instances may contain lists
+            foundVal = svars.get_flat(foundName)
+        except AttributeError:
+            foundVal = svars.get(foundName)
+
+        if not foundVal:
+            # restore original value
+            foundVal = match.group(0)
+
+        return foundVal
+
+    return _RE_SUBST.sub(replaceVar, strval)
+
+def substVarsInParam(val, svars):
+    """
+    Return value with handled substitutions suitable for param of 'str' or
+    'list-of-str' types.
+    """
+
+    if not val:
+        return val
+
+    if isinstance(val, (list, tuple)):
+        if not isinstance(val[0], stringtype):
+            return val
+
+        result = []
+        for item in val:
+            if not hasSubstVar(item):
+                result.append(item)
+                continue
+
+            newVal = substVars(item, svars, check = False)
+            if not any(c in item for c in _USABLE_WHITESPACE):
+                result.extend(toList(newVal))
+            else:
+                result.append(newVal)
+        return result
+
+    if isinstance(val, stringtype):
+        return substVars(val, svars)
+
+    return val
 
 def setDefaultHashAlgo(algo):
     """
@@ -379,6 +432,35 @@ def configSetToDict(configSet):
     result = configSet.get_merged_dict()
     result.pop('undo_stack', None)
     return result
+
+def adjustInstallDirPaths(env, clicmd):
+    """
+    Adjust installation path vars PREFIX, BINDIR, LIBDIR
+    """
+
+    opts = clicmd.args
+    prefix = opts.get('prefix')
+    bindir = opts.get('bindir')
+    libdir = opts.get('libdir')
+
+    if prefix and prefix != env.PREFIX:
+        env.PREFIX = prefix
+        if not bindir:
+            env.BINDIR = '%s/bin' % prefix
+        if not libdir:
+            env.LIBDIR = '%s/lib%s' % (prefix, libDirPostfix())
+
+    if bindir:
+        env.BINDIR = bindir
+    if libdir:
+        env.LIBDIR = libdir
+
+    for var in ('PREFIX', 'BINDIR', 'LIBDIR'):
+        if var not in env:
+            continue
+        val = env[var]
+        if not os.path.isabs(val):
+            env[var] = '/' + val
 
 def mksymlink(src, dst, force = True):
     """

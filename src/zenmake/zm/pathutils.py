@@ -11,7 +11,7 @@ import os
 from waflib.Node import exclude_regs as DEFAULT_PATH_EXCLUDES
 from waflib import Utils as wafutils
 from zm.pyutils import maptype, stringtype
-from zm.utils import toList, toListSimple, substVars
+from zm.utils import toList, toListSimple, substVarsInParam
 from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
 
 DEFAULT_PATH_EXCLUDES = toListSimple(DEFAULT_PATH_EXCLUDES)
@@ -361,11 +361,7 @@ def substPathsConf(param, substEnv):
 
     for item in param:
         for k in item:
-            val = item[k]
-            if isinstance(val, (list, tuple)):
-                item[k] = [substVars(x, substEnv) for x in val]
-            elif isinstance(val, stringtype):
-                item[k] = substVars(val, substEnv)
+            item[k] = substVarsInParam(item[k], substEnv)
 
 def _getNodesFromPathPatterns(ctx, param, startNode, withDirs,
                               excludeExtraPaths, cache):

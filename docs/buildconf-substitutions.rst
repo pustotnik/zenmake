@@ -5,8 +5,10 @@
 Build config: substitutions
 ===================================
 
-In some places you can use substitution to configure values. It looks like
-substitution in bash and uses following syntax:
+.. _buildconf-substitutions-dynamic:
+
+In some places you can use dynamic substitutions to configure values. It looks like
+substitutions in bash and uses following syntax:
 
     in YAML format:
 
@@ -39,16 +41,21 @@ where ``VAR`` is a name of substitution. If you set this var to some value like 
 
 then ``param`` from above example will be resolved as ``myvalue/some-string``.
 
-Such variables can be set in the
+.. note::
+
+    See a particular parameter in documentaion to check out if it supports
+    substitutions.
+
+Such substitution variables can be set in the
 :ref:`root substvars<buildconf-substvars>` or in the
-:ref:`task substvars<buildconf-taskparams-substvars>`. Root ``substvars`` are
-visible in any build task while task ``substvars`` only in selected task (but
-they can be :ref:`exported<buildconf-taskparams-export>`).
+:ref:`task substvars<buildconf-taskparams-substvars>`. Values from root
+``substvars`` are visible in any build task while values from task ``substvars``
+are visible only in selected task (but they can be :ref:`exported<buildconf-taskparams-export>`).
 If some name exists in the both ``substvars`` then value from task ``substvars``
 will be used.
 
 Also such variables can be set by some :ref:`configuration actions<config-actions>`.
-See ``var`` in configuration action ``find-program``.
+For example see ``var`` in configuration action ``find-program``.
 
 There are some variables which ZenMake sets always:
 
@@ -82,3 +89,7 @@ There are some variables which ZenMake sets always:
 In some cases some extra variables are provided. For example,
 variables ``SRC`` and ``TGT`` are provided
 for the ``cmd`` in the task parameter :ref:`run<buildconf-taskparams-run>`.
+
+.. note::
+
+    You can not redefine internal variables.

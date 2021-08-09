@@ -68,7 +68,7 @@ def applyDefaults(buildconf, isTopLevel, projectDir):
     # dict params
     dictParams = (
         'cliopts', 'conditions', 'edeps', 'toolchains',
-        'platforms', 'buildtypes', 'tasks'
+        'platforms', 'buildtypes', 'tasks', 'substvars',
     )
     for param in dictParams:
         if not hasattr(buildconf, param):

@@ -35,8 +35,8 @@ toList        = utils.toList
 toListSimple  = utils.toListSimple
 
 TOOLCHAIN_PATH_ENVVARS = frozenset(ToolchainVars.allSysVarsToSetToolchain())
-_RE_LIB_VER = re.compile(r"^\d+(?:\.\d+)*")
 
+_RE_LIB_VER = re.compile(r"^\d+(?:\.\d+)*")
 _TASKPARAMS_TOLIST_MAP = {}
 
 #def _isDevVersion():
@@ -81,8 +81,8 @@ def _genTaskParamsToListMap(result):
 
 def convertTaskParamValue(taskParams, paramName):
     """
-    Convert task param value to list or to dict with correct structure
-    where it's necessary.
+    Convert task param value to a list or to a dict (for 'source' only) with
+    correct structure where it's necessary.
     """
 
     paramVal = taskParams[paramName]
@@ -267,13 +267,21 @@ class Config(object):
         # taskparams
         self._prepareTaskParams()
 
+    def _handleSubstVars(self, taskParams):
+
+        rootSubstVars = self._conf.substvars
+
+        substVars = rootSubstVars.copy()
+        substVars.update(taskParams.get('substvars', {}))
+
+        if substVars:
+            taskParams['substvars'] = substVars
+
     def _postprocessTaskParams(self, tasks):
 
         # they are absolute paths
         rootdir = self.rootdir
         startdir = self.startdir
-
-        rootSubstVars = getattr(self._conf, 'substvars', {})
 
         # make 'startdir' for task and specific params as
         # the paths relative to the 'rootdir'
@@ -294,6 +302,8 @@ class Config(object):
             taskParams['$startdir'] = taskStartDir
             taskParams['$bconf'] = self
 
+            self._handleSubstVars(taskParams)
+
             for paramName, paramVal in taskParams.items():
 
                 convertTaskParamValue(taskParams, paramName)
@@ -312,11 +322,6 @@ class Config(object):
                         item['startdir'] = taskStartDir
                     elif isabs(paramStartDir):
                         item['startdir'] = relpath(paramStartDir, rootdir)
-
-            substVars = rootSubstVars.copy()
-            substVars.update(taskParams.get('substvars', {}))
-            if substVars:
-                taskParams['substvars'] = substVars
 
         tasknames = self._meta.tasknames
         for name in disabled:
@@ -630,7 +635,7 @@ class Config(object):
             raise ZenMakeError(msg)
 
         self._meta.buildtypes.selected = buildtype
-        self._meta.buildtype.dir = joinpath(self._confpaths.buildout, buildtype)
+        self._meta.buildtypedir = joinpath(self._confpaths.buildout, buildtype)
 
     def getattr(self, name, **kwargs):
         """
@@ -780,7 +785,7 @@ class Config(object):
         """ Get selected build type directory """
 
         self._checkBuildTypeIsSet()
-        return self._meta.buildtype.dir
+        return self._meta.buildtypedir
 
     @property
     def features(self):

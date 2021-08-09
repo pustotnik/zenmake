@@ -9,7 +9,7 @@
 from copy import deepcopy
 import re
 
-from zm.constants import KNOWN_PLATFORMS, TASK_TARGET_KINDS
+from zm.constants import KNOWN_PLATFORMS, TASK_TARGET_KINDS, PROTECTED_DYN_SUBSTVARS
 from zm.pyutils import stringtype
 from zm.error import ZenMakeConfValueError
 from zm.cli import config as cliConfig
@@ -169,6 +169,7 @@ _PATHS_SCHEME = {
 _SUBST_VARS_SCHEME = {
     'type': ('dict',),
     'dict' : {
+        'disallowed-keys' : PROTECTED_DYN_SUBSTVARS,
         'vars' : {
             ANYAMOUNTSTRS_KEY : { 'type': 'str' },
         },

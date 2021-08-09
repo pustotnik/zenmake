@@ -230,12 +230,12 @@ cliopts
 
 substvars
 """""""""""
-    A `dict <buildconf-dict-def_>`_ with substitution variables which can be
+    A `dict <buildconf-dict-def_>`_ with dynamic substitution variables which can be
     used, for example, in :ref:`parameter 'run'<buildconf-taskparams-run>`.
 
     It is root dict with variables which are visible in all build tasks of a project.
 
-    See details :ref:`here<buildconf-substitutions>`.
+    See details :ref:`here<buildconf-substitutions-dynamic>`.
 
 .. _buildconf-conditions:
 
