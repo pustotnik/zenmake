@@ -1,6 +1,6 @@
 
 tasks:
-    shlib: 
+    shlib:
         features : cxxshlib
         source   : 'shlib/**/*.cpp'
         configure:
@@ -33,17 +33,17 @@ toolchains:
 
 buildtypes:
     # -fPIC is necessary to compile static lib
-    
+
     debug-gcc:
         toolchain : custom-g++
         cxxflags : -fPIC -O0 -g
         linkflags : -Wl,--as-needed
-        
+
     release-gcc:
         toolchain : custom-g++
         cxxflags : -fPIC -O2
         linkflags : -Wl,--as-needed
-    
+
     debug-clang:
         toolchain : custom-clang++
         cxxflags : -fPIC -O0 -g
@@ -66,11 +66,11 @@ platforms:
     linux:
         valid   : [ debug-gcc, debug-clang, release-gcc, release-clang ]
         default : debug-gcc
-        
+
     darwin: # Mac OS
         valid   : [ debug-clang, release-clang ]
         default : debug-clang
-    
+
     windows:
         valid   : [ debug-msvc, release-msvc ]
         default : debug-msvc

@@ -1,9 +1,12 @@
 
-# use YAML anchors and aliases to emulate variables
+# You can use static substitutions
 
-code1: &fragment1 |
+fragment1: |
     program Empty
     end program Empty
+---
+
+# Or you can use YAML anchors and aliases to emulate variables
 
 code2: &fragment2 |
     program HelloWorld
@@ -14,7 +17,7 @@ tasks:
     hello:
         features : fcprogram
         source   : src/hello.f90
- 
+
     sharedlib:
         features : fcshlib
         source   : src/funcs.f90
@@ -33,7 +36,7 @@ tasks:
             - do: parallel
               actions:
                 - do: check-code
-                  text: *fragment1
+                  text: $fragment1
                   label: fragment1
                 - do: check-code
                   text: *fragment2
@@ -48,7 +51,7 @@ buildtypes:
         fcflags.select:
             'windows ifort': /O2
             default: -O2
-        
+
         rpath : '.'
 
 toolchains:

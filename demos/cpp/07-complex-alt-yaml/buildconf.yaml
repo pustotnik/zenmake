@@ -1,17 +1,19 @@
 
 # This config is mostly for testing than for demonstration
 
-substvars:
-  # -fPIC is necessary to compile static lib
-  GCC_BASE_CXXFLAGS: -std=c++11 -fPIC
+# -fPIC is necessary to compile static lib
+GCC_BASE_CXXFLAGS: -std=c++11 -fPIC
+MSVC_BASE_CXXFLAGS: /EHsc
+
+---
 
 buildtypes:
-    debug-gcc    : { cxxflags: "${GCC_BASE_CXXFLAGS} -O0 -g" }
-    release-gcc  : { cxxflags: "${GCC_BASE_CXXFLAGS} -O2" }
-    debug-clang  : { cxxflags: "${GCC_BASE_CXXFLAGS} -O0 -g" }
-    release-clang: { cxxflags: "${GCC_BASE_CXXFLAGS} -O2" }
-    debug-msvc   : { cxxflags: /Od /EHsc }
-    release-msvc : { cxxflags: /O2 /EHsc }
+    debug-gcc    : { cxxflags: $GCC_BASE_CXXFLAGS -O0 -g }
+    release-gcc  : { cxxflags: $GCC_BASE_CXXFLAGS -O2 }
+    debug-clang  : { cxxflags: $GCC_BASE_CXXFLAGS -O0 -g }
+    release-clang: { cxxflags: $GCC_BASE_CXXFLAGS -O2 }
+    debug-msvc   : { cxxflags: $MSVC_BASE_CXXFLAGS /Od }
+    release-msvc : { cxxflags: $MSVC_BASE_CXXFLAGS /O2 }
     default: debug-gcc
 
 platforms:
@@ -53,7 +55,7 @@ byfilter:
     default-buildtype: release-gcc
 
 - for: { buildtype: release-gcc, platform: linux }
-  set: { cxxflags: -fPIC -O3 }
+  set: { cxxflags: $GCC_BASE_CXXFLAGS -O3 }
 
 - for: { buildtype: [debug-clang, release-clang], platform: linux darwin }
   set: { toolchain: clang++ }

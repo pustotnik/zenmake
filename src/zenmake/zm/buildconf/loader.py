@@ -14,13 +14,10 @@ __all__ = [
 
 import os
 import sys
-import io
-import types
 
 from zm import log
 from zm.constants import BUILDCONF_FILENAMES, DEFAULT_BUILDROOTNAME
 from zm.error import ZenMakeConfError
-from zm.pyutils import maptype
 from zm.utils import loadPyModule
 from zm.buildconf.validator import Validator as _Validator
 
@@ -92,33 +89,6 @@ def applyDefaults(buildconf, isTopLevel, projectDir):
     if not hasattr(buildconf, 'byfilter'):
         setattr(buildconf, 'byfilter', [])
 
-def _loadYaml(filepath):
-    try:
-        import yaml
-    except ImportError:
-        from auxiliary.pyyaml import yaml
-
-    try:
-        yamlLoader = yaml.CSafeLoader
-    except AttributeError:
-        yamlLoader = yaml.SafeLoader
-
-    buildconf = types.ModuleType('buildconf')
-    buildconf.__file__ = os.path.abspath(filepath)
-    data = {}
-    with io.open(filepath, 'rt', encoding = 'utf-8') as stream:
-        try:
-            data = yaml.load(stream, yamlLoader)
-        except yaml.YAMLError as ex:
-            raise ZenMakeConfError(ex = ex) from ex
-
-    if not isinstance(data, maptype):
-        raise ZenMakeConfError("File %r has invalid structure" % filepath)
-
-    for k, v in data.items():
-        setattr(buildconf, k, v)
-    return buildconf
-
 def findConfFile(dpath, fname = None):
     """
     Try to find buildconf file.
@@ -164,7 +134,8 @@ def load(dirpath = None, filename = None):
         module = loadPyModule(filename[:-3], dirpath = dirpath, withImport = False)
         sys.dont_write_bytecode = False # pragma: no cover
     elif found == 'yaml':
-        module = _loadYaml(joinpath(dirpath, filename))
+        from zm.buildconf import yaml
+        module = yaml.load(joinpath(dirpath, filename))
     else:
         module = loadPyModule('zm.buildconf.fakeconf')
 
