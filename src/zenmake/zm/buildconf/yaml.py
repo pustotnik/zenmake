@@ -156,7 +156,7 @@ def load(filepath):
                 substVars.update(osenv)
 
             # We should allow pyyaml to read stream from the beginning to have
-            # correct number of line and collumn in error messages
+            # correct number of line and column in error messages
             stream.seek(0)
 
             if substmode.startswith('yaml-tag'):
