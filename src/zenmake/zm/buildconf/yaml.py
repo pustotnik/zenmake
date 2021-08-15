@@ -77,6 +77,16 @@ def _constructSubst(loader, node):
 SubstYamlLoader.add_implicit_resolver('!subst', _RE_DETECT_SUBST_TAG, first = None)
 SubstYamlLoader.add_constructor('!subst', _constructSubst)
 
+class StringIO(io.StringIO):
+    """
+    Customized StringIO
+    """
+
+    def __init__(self, data, name = '<file>'):
+        super().__init__(data)
+        # it's used in pyyaml for error reports
+        self.name = name
+
 def _findConfDataPos(stream):
 
     dataPos = 0
@@ -109,6 +119,18 @@ def _findConfDataPos(stream):
     stream.seek(0)
     return dataPos if (nextDocIdx > 1) else 0
 
+def _validateSubstMode(substmode, filepath):
+    if not isinstance(substmode, stringtype):
+        msg = "File %r:\n" % filepath
+        msg += "  The 'substmode' parameter must be a string"
+        raise ZenMakeConfError(msg)
+
+    if substmode not in _VALID_SUBST_MODES:
+        msg = "File %r:\n" % filepath
+        msg += "  The value %r for the 'substmode' is invalid" % substmode
+        msg += ", must be one of: %s" % str(_VALID_SUBST_MODES)[1:-1]
+        raise ZenMakeConfError(msg)
+
 def load(filepath):
     """
     Load YAML buildconf
@@ -122,61 +144,52 @@ def load(filepath):
     substVars = {}
     substmode = 'yaml-tag'
 
-    def validateSubstMode(substmode):
-        if not isinstance(substmode, stringtype):
-            msg = "File %r:\n" % filepath
-            msg += "  The 'substmode' parameter must be a string"
-            raise ZenMakeConfError(msg)
+    # buildconf file should not be very big so it's loaded completely in memory
+    # to optimize its data rereading later
+    with io.open(filepath, 'rt', encoding = 'utf-8') as fstream:
+        stream = StringIO(fstream.read(), fstream.name)
 
-        if substmode not in _VALID_SUBST_MODES:
-            msg = "File %r:\n" % filepath
-            msg += "  The value %r for the 'substmode' is invalid" % substmode
-            msg += ", must be one of: %s" % str(_VALID_SUBST_MODES)[1:-1]
-            raise ZenMakeConfError(msg)
+    header = {}
+    dataPos = _findConfDataPos(stream)
 
-    with io.open(filepath, 'rt', encoding = 'utf-8') as stream:
+    try:
 
-        header = {}
-        dataPos = _findConfDataPos(stream)
+        if dataPos > 0:
+            # read header and shift file position to main config data
+            loader = YamlLoader(stream.read(dataPos))
+            # get header as a python object
+            header = loader.get_data()
+            loader = None # mark it as invalid to use and ready to free
 
-        try:
+            substmode = header.pop('substmode', substmode)
+            _validateSubstMode(substmode, filepath)
 
-            if dataPos > 0:
-                # read header and shift file position to main config data
-                loader = YamlLoader(stream.read(dataPos))
-                # get header as a python object
-                header = loader.get_data()
-                loader = None # mark it as invalid to use and ready to free
+        substVars.update(header)
+        if not substmode.endswith('-noenv'):
+            substVars.update(osenv)
 
-                substmode = header.pop('substmode', substmode)
-                validateSubstMode(substmode)
+        # We should allow pyyaml to read stream from the beginning to have
+        # correct number of line and column in error messages
+        stream.seek(0)
 
-            substVars.update(header)
-            if not substmode.endswith('-noenv'):
-                substVars.update(osenv)
+        if substmode.startswith('yaml-tag'):
+            loader = SubstYamlLoader(stream)
+            loader.substVars = substVars
+        else: # preparse/preparse-noenv
+            if substVars:
+                yamlData = _substitute(stream.read(), _RE_SUBST, substVars, True)
+                stream = StringIO(yamlData, stream.name)
+            loader = YamlLoader(stream)
 
-            # We should allow pyyaml to read stream from the beginning to have
-            # correct number of line and column in error messages
-            stream.seek(0)
+        if dataPos > 0:
+            # skip first document
+            loader.get_data()
 
-            if substmode.startswith('yaml-tag'):
-                loader = SubstYamlLoader(stream)
-                loader.substVars = substVars
-            else: # preparse/preparse-noenv
-                yamlData = stream
-                if substVars:
-                    yamlData = _substitute(stream.read(), _RE_SUBST, substVars, True)
-                loader = YamlLoader(yamlData)
+        # load main config data as a python map
+        data = loader.get_data()
 
-            if dataPos > 0:
-                # skip first document
-                loader.get_data()
-
-            # load main config data as a python map
-            data = loader.get_data()
-
-        except pyyaml.YAMLError as ex:
-            raise ZenMakeConfError(ex = ex) from ex
+    except pyyaml.YAMLError as ex:
+        raise ZenMakeConfError(ex = ex) from ex
 
     if data is None:
         raise ZenMakeConfError("File %r has no config data" % filepath)
@@ -185,6 +198,10 @@ def load(filepath):
         raise ZenMakeConfError("File %r has invalid structure" % filepath)
 
     for k, v in data.items():
+        if not isinstance(k, stringtype):
+            msg = "File %r:\n" % filepath
+            msg += "  The variable %r is not string" % k
+            raise ZenMakeConfError(msg)
         setattr(buildconf, k, v)
 
     return buildconf
