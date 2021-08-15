@@ -83,19 +83,16 @@ def _findConfDataPos(stream):
     stopIdx = 2
     nextDocIdx = 0
 
-    # The TextIOWrapper class disables the tell method while the iteration is
-    # in progress and doesn't enable it again if loop was interrupted with 'break'
-    while True:
-        line = stream.readline()
-        if not line:
-            break
+    readCharsCount = 0
+    for line in stream:
+        readCharsCount += len(line)
 
         #if line.startswith('---') and len(line) > 3 and line[3].isspace():
         if line.startswith('---') and len(line) > 3 \
                 and line[3] in '\0 \t\r\n\x85\u2028\u2029':
             nextDocIdx += 1
             if nextDocIdx == 2:
-                dataPos = stream.tell()
+                dataPos = readCharsCount
             continue
         if line == '...\n':
             break
