@@ -109,14 +109,6 @@ def _findConfDataPos(stream):
     stream.seek(0)
     return dataPos if (nextDocIdx > 1) else 0
 
-def _loadYamlDocSection(loader):
-    try:
-        if loader.check_data():
-            return loader.get_data()
-        return None
-    finally:
-        loader.dispose()
-
 def load(filepath):
     """
     Load YAML buildconf
@@ -153,7 +145,8 @@ def load(filepath):
                 # read header and shift file position to main config data
                 loader = YamlLoader(stream.read(dataPos))
                 # get header as a python object
-                header = _loadYamlDocSection(loader)
+                header = loader.get_data()
+                loader = None # mark it as invalid to use and ready to free
 
                 substmode = header.pop('substmode', substmode)
                 validateSubstMode(substmode)
@@ -161,6 +154,10 @@ def load(filepath):
             substVars.update(header)
             if not substmode.endswith('-noenv'):
                 substVars.update(osenv)
+
+            # We should allow pyyaml to read stream from the beginning to have
+            # correct number of line and collumn in error messages
+            stream.seek(0)
 
             if substmode.startswith('yaml-tag'):
                 loader = SubstYamlLoader(stream)
@@ -171,8 +168,12 @@ def load(filepath):
                     yamlData = _substitute(stream.read(), _RE_SUBST, substVars, True)
                 loader = YamlLoader(yamlData)
 
+            if dataPos > 0:
+                # skip first document
+                loader.get_data()
+
             # load main config data as a python map
-            data = _loadYamlDocSection(loader)
+            data = loader.get_data()
 
         except pyyaml.YAMLError as ex:
             raise ZenMakeConfError(ex = ex) from ex
