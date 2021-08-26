@@ -127,10 +127,10 @@ These configuration actions in ``dict`` format:
         .. code-block:: yaml
 
             foo.luac:
-                source : foo.lua
-                configure : [ { do: find-program, names: luac } ]
-                # var 'LUAC' will be set in 'find-program' if 'luac' is found.
-                run: '${LUAC} -s -o ${TGT} ${SRC}'
+              source : foo.lua
+              configure : [ { do: find-program, names: luac } ]
+              # var 'LUAC' will be set in 'find-program' if 'luac' is found.
+              run: '${LUAC} -s -o ${TGT} ${SRC}'
 
         in Python format:
 
@@ -224,6 +224,8 @@ These configuration actions in ``dict`` format:
 
         .. code-block:: yaml
 
+            # Elements like 'tasks' and other task params are skipped
+
             # ZenMake will check package 'gtk+-3.0' and set define 'HAVE_GTK_3_0=1'
             configure:
                 - do: pkgconfig
@@ -249,6 +251,8 @@ These configuration actions in ``dict`` format:
         Examples in Python format:
 
         .. code-block:: python
+
+            # Elements like 'tasks' and other task params are skipped
 
             # ZenMake will check package 'gtk+-3.0' and set define 'HAVE_GTK_3_0=1'
             'configure'  : [
@@ -327,36 +331,45 @@ These configuration actions in ``dict`` format:
 
         .. code-block:: yaml
 
-            configure:
-                # ZenMake will get compiler/linker options for SDL2 and set define 'HAVE_SDL2=1'
-                - do: toolconfig
-                  toolname: sdl2-config
-                # ZenMake will get SDL2 version and set it in the define 'SDL2_VERSION'
-                - do: toolconfig
-                  toolname: sdl2-config
-                  msg: Getting SDL2 version
-                  args: --version
-                  parse-as: entire
-                  defname: SDL2_VERSION
+            tasks:
+              myapp:
+                # other task params are skipped
+                configure:
+                  # ZenMake will get compiler/linker options for SDL2 and
+                  # set define to 'HAVE_SDL2=1'
+                  - do: toolconfig
+                    toolname: sdl2-config
+                    # ZenMake will get SDL2 version and put it in the define 'SDL2_VERSION'
+                  - do: toolconfig
+                    toolname: sdl2-config
+                    msg: Getting SDL2 version
+                    args: --version
+                    parse-as: entire
+                    defname: SDL2_VERSION
 
         Examples in Python format:
 
         .. code-block:: python
 
-            'configure'  : [
-                # ZenMake will get compiler/linker options for SDL2 and set define 'HAVE_SDL2=1'
-                { 'do' : 'toolconfig', 'toolname' : 'sdl2-config' },
-                # ZenMake will get SDL2 version and set it in the define 'SDL2_VERSION'
-                {
-                    'do' : 'toolconfig',
-                    'toolname' : 'sdl2-config',
-                    'msg' : 'Getting SDL2 version',
-                    'args' : '--version',
-                    'parse-as' : 'entire',
-                    'defname' : 'SDL2_VERSION',
+            tasks = {
+                'myapp' : {
+                    # other task params are skipped
+                    'configure'  : [
+                        # ZenMake will get compiler/linker options for SDL2 and
+                        # set define to 'HAVE_SDL2=1'
+                        { 'do' : 'toolconfig', 'toolname' : 'sdl2-config' },
+                        # ZenMake will get SDL2 version and put it in the define 'SDL2_VERSION'
+                        {
+                            'do' : 'toolconfig',
+                            'toolname' : 'sdl2-config',
+                            'msg' : 'Getting SDL2 version',
+                            'args' : '--version',
+                            'parse-as' : 'entire',
+                            'defname' : 'SDL2_VERSION',
+                        },
+                    ]
                 },
-            ]
-
+            }
 
     ``do`` = ``write-config-header``
         *Parameters*: ``file`` = '', ``guard`` = '',  ``remove-defines`` = True,
@@ -421,33 +434,35 @@ Example in python format:
         # some checking
         return True
 
-    'myapp' : {
-        'features'   : 'cxxshlib',
-        'libs'   : ['m', 'rt'],
-        # ...
-        'configure'  : [
-            # do checking in function 'check'
-            check,
-            # Check libs from param 'libs'
-            # { 'do' : 'check-libs' },
-            { 'do' : 'check-headers', 'names' : 'cstdio', 'mandatory' : True },
-            { 'do' : 'check-headers', 'names' : 'cstddef stdint.h', 'mandatory' : False },
-            # Each lib will have define 'HAVE_LIB_<LIBNAME>' if autodefine = True
-            { 'do' : 'check-libs', 'names' : 'pthread', 'autodefine' : True,
-                        'mandatory' : False },
-            { 'do' : 'find-program', 'names' = 'python' },
-            { 'do' : 'parallel',
-                'actions' : [
-                    { 'do' : 'check-libs', 'id' : 'syslibs' },
-                    { 'do' : 'check-headers', 'names' : 'stdlib.h iostream' },
-                    { 'do' : 'check-headers', 'names' : 'stdlibasd.h', 'mandatory' : False },
-                    { 'do' : 'check-headers', 'names' : 'string', 'after' : 'syslibs' },
-                ],
-                'mandatory' : False,
-                #'tryall' : True,
-            },
+    tasks = {
+        'myapp' : {
+            'features'   : 'cxxshlib',
+            'libs'   : ['m', 'rt'],
+            # ...
+            'configure'  : [
+                # do checking in function 'check'
+                check,
+                # Check libs from param 'libs'
+                # { 'do' : 'check-libs' },
+                { 'do' : 'check-headers', 'names' : 'cstdio', 'mandatory' : True },
+                { 'do' : 'check-headers', 'names' : 'cstddef stdint.h', 'mandatory' : False },
+                # Each lib will have define 'HAVE_LIB_<LIBNAME>' if autodefine = True
+                { 'do' : 'check-libs', 'names' : 'pthread', 'autodefine' : True,
+                            'mandatory' : False },
+                { 'do' : 'find-program', 'names' = 'python' },
+                { 'do' : 'parallel',
+                    'actions' : [
+                        { 'do' : 'check-libs', 'id' : 'syslibs' },
+                        { 'do' : 'check-headers', 'names' : 'stdlib.h iostream' },
+                        { 'do' : 'check-headers', 'names' : 'stdlibasd.h', 'mandatory' : False },
+                        { 'do' : 'check-headers', 'names' : 'string', 'after' : 'syslibs' },
+                    ],
+                    'mandatory' : False,
+                    #'tryall' : True,
+                },
 
-            #{ 'do' : 'write-config-header', 'file' : 'myapp_config.h' }
-            { 'do' : 'write-config-header' },
-        ],
+                #{ 'do' : 'write-config-header', 'file' : 'myapp_config.h' }
+                { 'do' : 'write-config-header' },
+            ],
+        },
     }
