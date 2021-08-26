@@ -8,6 +8,7 @@ Environment variables
 ZenMake supports some environment variables that can be used. Most of examples
 are for POSIX platforms (Linux/MacOS) with ``gcc`` and ``clang`` installed.
 Some of these variables just provided by Waf.
+Also see :ref:`static substitutions<buildconf-substitutions-static>`.
 
 AR
     Set archive-maintaining program.

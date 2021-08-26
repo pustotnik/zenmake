@@ -99,6 +99,8 @@ for the ``cmd`` in the task parameter :ref:`run<buildconf-taskparams-run>`.
 
     You cannot redefine internal variables.
 
+.. _buildconf-substitutions-static:
+
 Static substitutions
 ------------------------
 
