@@ -275,7 +275,7 @@ in Python format:
 
 Also you can use internal conditions for supported buildtypes. But if any name
 of supported buildtype is the same as one of known platforms or supported
-toolchains then such a buildtype can not be used as internal condition.
+toolchains then such a buildtype cannot be used as internal condition.
 For example, you can want to make/use buildtype 'linux' and it will be possible
 but for using in conditions you have to declare some different name in this case
 because 'linux' is one of known platforms.

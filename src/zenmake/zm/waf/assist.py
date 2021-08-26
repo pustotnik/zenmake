@@ -453,7 +453,7 @@ def checkWafTasksForFeatures(taskParams):
     features = tuple(TASK_TARGET_FEATURES & set(taskParams['features']))
     for feature in features:
         if feature not in Task.classes:
-            msg = "Feature %r can not be processed for task %r." % \
+            msg = "Feature %r cannot be processed for task %r." % \
                   (feature, taskParams['name'])
             msg += " Maybe you didn't set correct toolchain for this task."
             raise ZenMakeError(msg)

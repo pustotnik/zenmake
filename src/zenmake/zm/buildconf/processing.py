@@ -420,8 +420,8 @@ class Config(object):
             names.extend(_names)
         for name in names:
             if DEPNAME_DELIMITER in name:
-                msg = 'Name of task %r is invalid.' % name
-                msg += ' Name can not contain symbol %r' % DEPNAME_DELIMITER
+                msg = 'The %r name of a task is invalid.' % name
+                msg += 'The name cannot contain symbol %r' % DEPNAME_DELIMITER
                 raise ZenMakeConfError(msg, confpath = self.path)
         names = set(names)
         self._meta.tasknames = names

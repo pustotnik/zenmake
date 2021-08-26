@@ -160,7 +160,7 @@ def _runCheckBuild(self, checkArgs):
     # WARN:
     # Any method from cfgCtx that is used here must be thread safe
 
-    # this function can not be called from conf.multicheck
+    # this function cannot be called from conf.multicheck
     assert getattr(self, 'multicheck_task', None) is None
 
     # default fake cache for calls from the inside of Waf
@@ -1407,7 +1407,7 @@ def runActionsInParallel(actionArgs, params):
             if not actionName:
                 errMsg = "Parameter 'do' not found in parallel action '%r'" % action
             elif actionName not in supportedActions:
-                errMsg = "action %r can not be used inside the 'parallel'" % actionName
+                errMsg = "action %r cannot be used inside the 'parallel'" % actionName
                 errMsg += ", task: %r!" % taskName
         elif callable(action):
             pass

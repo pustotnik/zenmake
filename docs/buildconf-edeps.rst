@@ -205,7 +205,7 @@ rules
             If it is True this trigger returns True only if any of target files
             for current dependency doesn't exist. It can be useful to detect
             the need to run 'build' rule.
-            This trigger can not be used in ZenMake command 'configure'.
+            This trigger cannot be used in ZenMake command 'configure'.
 
         :func:
             This trigger is a custom python function that must return True or False.
@@ -222,7 +222,7 @@ rules
             It's better to use `**kwargs` in this function because some new
             parameters can be added in the future.
 
-            This trigger can not be used in YAML buildconf file.
+            This trigger cannot be used in YAML buildconf file.
 
         .. note::
             For any non-ZenMake dependency there are following

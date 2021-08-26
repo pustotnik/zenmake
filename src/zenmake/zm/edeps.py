@@ -563,7 +563,7 @@ def _checkTriggerNoTargets(ctx, rule):
         return False
 
     if ctx.cmd == 'configure':
-        msg = "Trigger 'no-targets' can not be used in command 'configure'"
+        msg = "Trigger 'no-targets' cannot be used in command 'configure'"
         raise error.ZenMakeConfError(msg)
 
     result = False

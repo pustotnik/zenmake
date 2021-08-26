@@ -148,7 +148,7 @@ def _postConf(bconf, bconfIndex):
 
         # Adding 'runcmd' in the features here forces feature 'runcmd' to
         # handle param 'run' in tasks with 'test'.
-        # Even a library can be marked as a test but it can not be executed
+        # Even a library can be marked as a test but it cannot be executed
         # and therefore here is selection of tasks to execute by some conditions.
         if _isSuitableForRunCmd(params):
             if 'runcmd' not in features:

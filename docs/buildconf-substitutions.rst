@@ -97,7 +97,7 @@ for the ``cmd`` in the task parameter :ref:`run<buildconf-taskparams-run>`.
 
 .. note::
 
-    You can not redefine internal variables.
+    You cannot redefine internal variables.
 
 Static substitutions
 ------------------------
@@ -107,7 +107,7 @@ but this type can be used only in some places, not everywhere. In python format
 the full power of the python language can be used to make any kind of substitution
 but YAML format has some constraints and does not support substitutions in specification.
 In some cases you can use YAML anchors and aliases but this method is a
-little verbose, not very obvious and can not be used as a substitution inside a string.
+little verbose, not very obvious and cannot be used as a substitution inside a string.
 
 ZenMake supports static substitution variables that has syntax similar to syntax
 of dynamic substitutions but are proccessed during parsing of YAML buildconf data
@@ -183,7 +183,7 @@ with ``---`` separator. For example:
     buildconf data or not used at all.
 
 There are some constraints due to YAML specification and such substitutions
-can be used inside quoted string as is:
+cannot be used inside quoted string as is:
 
 .. code-block:: yaml
 

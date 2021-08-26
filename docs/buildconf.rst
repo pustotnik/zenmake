@@ -42,7 +42,7 @@ languages it's called an associative array including YAML (Of course YAML is not
 programming language but it's markup language). For shortness it's called
 a ``dict`` here.
 
-Not all variables are required in the scheme above but buildconf can not be
+Not all variables are required in the scheme above but buildconf cannot be
 empty. All variables have reserved names and they all are described here.
 Other names in buildconf are just ignored by ZenMake if present and it means
 they can be used for some custom purposes.
@@ -87,7 +87,7 @@ buildroot
       build directory then ZenMake will not touch previous build directory.
       You can remove previous build directory manually or run
       command ``distclean`` before changing of ``buildroot``.
-      ZenMake can not do it because it stores all
+      ZenMake cannot do it because it stores all
       meta information in current build directory and if you change this
       directory it loses all this information.
 
@@ -270,7 +270,7 @@ tasks
         buildtypes_ and/or byfilter_.
 
     .. note::
-        Name of a task can not contain symbol ``:``. You can use
+        Name of a task cannot contain symbol ``:``. You can use
         parameter ``target`` if you want to have this symbol in
         resulting target file names.
 

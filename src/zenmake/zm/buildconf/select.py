@@ -110,7 +110,7 @@ def handleOneTaskParamSelect(bconf, taskParams, paramName):
             if paramName == 'toolchain':
                 msg = "Task %r: " % taskParams['name']
                 msg += "Condition %r in buildconf.conditions" % condName
-                msg += " can not be used to select toolchain because it"
+                msg += " cannot be used to select toolchain because it"
                 msg += " contains 'toolchain'"
                 raise ZenMakeConfError(msg, confpath = bconf.path)
 

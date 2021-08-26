@@ -149,7 +149,7 @@ source
         in one string then each such a path must be in quotes.
 
         *YAML*: You can write a string without quotes (as a plain scalar) in many
-        cases but there are some special symbols which can not be used at the
+        cases but there are some special symbols which cannot be used at the
         beginning without quotes, for example ``*`` and ``?<space>``.
         So a value like ``**/*.cpp`` must be always in qoutes (``'`` or ``"``).
 
@@ -834,12 +834,12 @@ export-<param> / export
     Supported names:  ``includes``, ``defines``, ``config-results``,
     ``libpath``, ``stlibpath``, ``substvars`` and all ``*flags``.
 
-    The parameter with ``config-results`` can not be used to export specific values.
+    The parameter with ``config-results`` cannot be used to export specific values.
     It always must be True/False only.
 
     In second form it must be string or list with the names of parameters to export.
     Second form is simplified form of the first form when all values are True.
-    This form can not be used to set specific value to export.
+    This form cannot be used to set specific value to export.
 
     .. note::
 
@@ -983,7 +983,7 @@ install-files
     :chmod:
         Change file mode bits. It's for POSIX platforms only
         and do nothing on MS Windows.
-        And it can not be used for ``do`` = ``symlink``.
+        And it cannot be used for ``do`` = ``symlink``.
 
         It must be integer or string. If it is integer it must be correct value
         for python function os.chmod. For example: 0o755.

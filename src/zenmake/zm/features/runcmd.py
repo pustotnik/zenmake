@@ -64,7 +64,7 @@ def _processCmdLine(conf, taskParams, cwd, cmdArgs):
         raise error.ZenMakeConfError(msg, confpath = bconf.path)
 
     if not shell:
-        # Waf can not work correctly with paths with whitespaces when
+        # Waf cannot work correctly with paths with whitespaces when
         # 'shell' is False.
         # TODO: try to make solution for 'shell' == False
         if any(' ' in s for s in cmdSplitted):

@@ -144,7 +144,7 @@ class Option(_AutoDict):
 
 # Declarative list of options in CLI
 # Special param 'runcmd' is used to declare option that runs another command
-# before current. There is no need to set 'action' in that case. And it can not
+# before current. There is no need to set 'action' in that case. And it cannot
 # be used for global options, of course.
 # See also *_init.py in zm.features for extra options
 config.options = [
