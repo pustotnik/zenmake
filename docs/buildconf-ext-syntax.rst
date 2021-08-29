@@ -1,16 +1,119 @@
 .. include:: global.rst.inc
 .. highlight:: python
+.. _buildconf-extended-syntax:
+
+Build config: extended syntax
+===================================
+
+For convenience, ZenMake supports some syntax extensions in buildconf files.
+
+.. _buildconf-syntactic-sugar:
+
+Syntactic sugar
+-----------------------------------
+
+There are some syntactic sugar constructions that can be used to make a buildconf
+a little shorter.
+
+configure
+""""""""""
+
+    It can be used as a replacement for :ref:`configure<buildconf-taskparams-configure>` task param.
+
+    For example you have (in YAML format):
+
+    .. code-block:: yaml
+
+        tasks:
+          util:
+            features : cshlib
+            source   : shlib/**/*.c
+            configure:
+              - do: check-headers
+                names : stdio.h
+
+          test:
+            features : cprogram
+            source   : prog/**/*.c
+            use      : util
+            configure:
+              - do: check-headers
+                names : stdio.h
+
+    So it can be converting into this:
+
+    .. code-block:: yaml
+
+        tasks:
+          util:
+            features : cshlib
+            source   : shlib/**/*.c
+
+          test:
+            features : cprogram
+            source   : prog/**/*.c
+            use      : util
+
+        configure:
+          - do: check-headers
+            names : stdio.h
+
+    The ``configure`` above is the same as following construction:
+
+    .. code-block:: yaml
+
+        byfilter:
+          - for: all
+            set:
+              configure:
+                - do: check-headers
+                  names : stdio.h
+
+    In addition to regular arguments for :ref:`configure<buildconf-taskparams-configure>`
+    task param you can use ``for`` and/or ``not-for`` in the same way as in
+    the :ref:`byfilter<buildconf-byfilter>`.
+
+    Example:
+
+    .. code-block:: yaml
+
+        tasks:
+          # .. skipped
+
+        configure:
+          - do: check-headers
+            names : stdio.h
+            not-for: { task: mytask }
+
+install
+""""""""""
+
+    Like as previous ``configure`` this can be used as a replacement for
+    :ref:`install-files<buildconf-taskparams-install-files>` task param.
+
+    Example:
+
+    .. code-block:: yaml
+
+        tasks:
+          # .. skipped
+
+        install:
+          - for: { task: gui }
+            src: 'some/src/path/ui.res'
+            dst: '${PREFIX}/share/${PROJECT_NAME}'
+
 .. _buildconf-substitutions:
 
-Build config: substitutions
-===================================
+Substitutions
+-----------------------------------
 
 There are two types of substitutions in ZenMake: static and dynamic substitutions.
 
 .. _buildconf-substitutions-dynamic:
 
 Dynamic substitutions
-------------------------
+"""""""""""""""""""""""
 
 In some places you can use dynamic substitutions to configure values. It looks like
 substitutions in bash and uses following syntax:
@@ -102,7 +205,7 @@ for the ``cmd`` in the task parameter :ref:`run<buildconf-taskparams-run>`.
 .. _buildconf-substitutions-static:
 
 Static substitutions
-------------------------
+"""""""""""""""""""""""
 
 Dynamic substitutions can be used both in YAML and python formats
 but this type can be used only in some places, not everywhere. In python format

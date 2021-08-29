@@ -14,13 +14,10 @@ tasks:
         ver-num  : '0.1.2'
         configure:
             - { do: pkgconfig, packages: gtk+-3.0 }
-        
+
         export: config-results
-        
+
         defines : 'PACKAGE_DATA_DIR="${PREFIX}/share/${PROJECT_NAME}"'
-        install-files:
-            - src: '${BUILDTYPE_DIR}/builder.ui'
-              dst: '${PREFIX}/share/${PROJECT_NAME}'
 
     gtk3demo:
         features : cprogram
@@ -33,3 +30,7 @@ buildtypes:
     release : { cflags: -O2 }
     default : debug
 
+install:
+    - for: { task: gui }
+      src: '${BUILDTYPE_DIR}/builder.ui'
+      dst: '${PREFIX}/share/${PROJECT_NAME}'

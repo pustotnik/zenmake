@@ -14,6 +14,7 @@ from zm.pyutils import stringtype
 from zm.error import ZenMakeConfValueError
 from zm.cli import config as cliConfig
 from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY, addSelectToParams
+from zm.buildconf.sugar import genSugarSchemes
 from zm.features import ConfValidation
 
 _RE_VER_NUM = re.compile(r"^(0|[1-9]\d*)(\.(0|[1-9]\d*)){0,2}?$")
@@ -36,7 +37,6 @@ def _genConfActionsScheme(confnode, fullkey):
     scheme = {
         'type': 'list',
         'vars-type' : ('dict', 'func'),
-        'dict-allow-unknown-keys' : False,
         'dict-vars' : _genConfActionsDictVarsScheme
     }
 
@@ -183,7 +183,6 @@ def _genInstallFilesScheme(confnode, fullkey):
     scheme = {
         'type': 'list',
         'vars-type' : ('dict', ),
-        'dict-allow-unknown-keys' : False,
         'dict-vars' : _genInstallFilesDictVarsScheme
     }
 
@@ -242,6 +241,60 @@ def _genInstallFilesDictVarsScheme(confnode, fullkey):
     schemeDictVars.update(_installTypeSpecVars[action])
 
     return schemeDictVars
+
+def _genCliOptionsVarsScheme(confnode, fullkey):
+
+    # pylint: disable = unused-argument
+
+    cmdNames = [ x.name for x in cliConfig.commands ]
+    optNames = [ x.names[-1].replace('-', '', 2) for x in cliConfig.options ]
+
+    optionsOptDictTypeScheme = _genSameSchemeDict(
+        cmdNames + ['any'],
+        { 'type' : ('bool', 'int', 'str'), }
+    )
+
+    scheme = _genSameSchemeDict(
+        optNames,
+        {
+            'type' : ('bool', 'int', 'str', 'dict'),
+            'allow-unknown-keys' : False,
+            'dict-vars' : optionsOptDictTypeScheme,
+        }
+    )
+
+    return scheme
+
+_DEP_RULE_SCHEME = {
+    'type': ('str', 'dict',),
+    'dict-vars' : {
+        'trigger' : {
+            'type': 'dict',
+            'vars' : {
+                'always' : { 'type': 'bool' },
+                'no-targets' : { 'type': 'bool' },
+                'paths-exist' : _PATHS_SCHEME,
+                'paths-dont-exist' : _PATHS_SCHEME,
+                'func' : { 'type': 'func' },
+                'env' : {
+                    'type': 'dict',
+                    'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
+                },
+            },
+        },
+        'cmd' : { 'type': 'str' },
+        'cwd' : { 'type': 'str' },
+        'env' : {
+            'type': 'dict',
+            'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
+        },
+        'timeout' : { 'type': 'int' },
+        'shell' : { 'type': 'bool' },
+        'zm-commands' : { 'type': ('str', 'list-of-strs') },
+    },
+}
+
+_ALLOWED_DEP_TARGET_TYPES = frozenset(list(TASK_TARGET_KINDS) + ['file'])
 
 taskscheme = {
     'target' :          { 'type': 'str' },
@@ -330,60 +383,6 @@ EXPORTING_TASK_PARAMS_S = frozenset(EXPORTING_TASK_PARAMS)
 
 ###################################
 
-def _genOptionsVarsScheme(confnode, fullkey):
-
-    # pylint: disable = unused-argument
-
-    cmdNames = [ x.name for x in cliConfig.commands ]
-    optNames = [ x.names[-1].replace('-', '', 2) for x in cliConfig.options ]
-
-    optionsOptDictTypeScheme = _genSameSchemeDict(
-        cmdNames + ['any'],
-        { 'type' : ('bool', 'int', 'str'), }
-    )
-
-    scheme = _genSameSchemeDict(
-        optNames,
-        {
-            'type' : ('bool', 'int', 'str', 'dict'),
-            'allow-unknown-keys' : False,
-            'dict-vars' : optionsOptDictTypeScheme,
-        }
-    )
-
-    return scheme
-
-_DEP_RULE_SCHEME = {
-    'type': ('str', 'dict',),
-    'dict-vars' : {
-        'trigger' : {
-            'type': 'dict',
-            'vars' : {
-                'always' : { 'type': 'bool' },
-                'no-targets' : { 'type': 'bool' },
-                'paths-exist' : _PATHS_SCHEME,
-                'paths-dont-exist' : _PATHS_SCHEME,
-                'func' : { 'type': 'func' },
-                'env' : {
-                    'type': 'dict',
-                    'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
-                },
-            },
-        },
-        'cmd' : { 'type': 'str' },
-        'cwd' : { 'type': 'str' },
-        'env' : {
-            'type': 'dict',
-            'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
-        },
-        'timeout' : { 'type': 'int' },
-        'shell' : { 'type': 'bool' },
-        'zm-commands' : { 'type': ('str', 'list-of-strs') },
-    },
-}
-
-_ALLOWED_DEP_TARGET_TYPES = frozenset(list(TASK_TARGET_KINDS) + ['file'])
-
 confscheme = {
     'startdir' : { 'type': 'str' },
     'buildroot' : { 'type': 'str' },
@@ -404,7 +403,7 @@ confscheme = {
     },
     'cliopts' : {
         'type' : 'dict',
-        'vars' : _genOptionsVarsScheme,
+        'vars' : _genCliOptionsVarsScheme,
     },
     'substvars' : _SUBST_VARS_SCHEME,
     'subdirs' : {
@@ -552,3 +551,7 @@ KNOWN_CONF_PARAM_NAMES = frozenset(confscheme.keys())
 KNOWN_CONDITION_PARAM_NAMES = \
     frozenset(confscheme['conditions']['vars'][ANYAMOUNTSTRS_KEY]['dict-vars'].keys())
 KNOWN_CONF_ACTIONS = frozenset(_actionToVars.keys())
+
+# Syntactic sugar constructions are not 'real' parameters because they
+# are converted into other buildconf constructions
+genSugarSchemes(confscheme)

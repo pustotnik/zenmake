@@ -896,6 +896,8 @@ export-<param> / export
     and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
     variables (in strings) to set this parameter.
 
+.. _buildconf-taskparams-install-path:
+
 install-path
 """""""""""""""""""""
     String representing the installation path for the output files.
@@ -918,6 +920,8 @@ install-path
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
+
+.. _buildconf-taskparams-install-files:
 
 install-files
 """""""""""""""""""""

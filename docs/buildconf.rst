@@ -34,6 +34,8 @@ Simplified scheme of buildconf is:
     :ref:`buildconf-subdirs` = []
     edeps_ = { ... }
 
+Also see :ref:`syntactic sugar<buildconf-syntactic-sugar>`.
+
 .. _buildconf-dict-def:
 
 Where symbols '{}' mean an associative array/dictionary and symbols '[]'

@@ -3,15 +3,9 @@ tasks:
     shlib:
         features : cxxshlib
         source   : 'shlib/**/*.cpp'
-        configure:
-            - do: check-headers
-              names: cstdio
     stlib:
         features : cxxstlib
         source   : 'stlib/**/*.cpp'
-        configure:
-            - do: check-headers
-              names: cstdio
     shlibmain:
         features : cxxshlib
         source   : 'shlibmain/**/*.cpp'
@@ -20,6 +14,11 @@ tasks:
         features : cxxprogram
         source   : 'prog/**/*.cpp'
         use      : shlibmain
+
+configure:
+  - do: check-headers
+    names : cstdio
+    for: { task: shlib stlib }
 
 toolchains:
     custom-g++:

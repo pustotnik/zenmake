@@ -21,6 +21,7 @@ from zm.pathutils import unfoldPath, getNativePath
 from zm.pathutils import PathsParam, makePathsConf
 from zm.buildconf import loader
 from zm.buildconf.scheme import taskscheme, KNOWN_CONF_PARAM_NAMES
+from zm.buildconf.sugar import applySyntacticSugar
 from zm.features import ToolchainVars, BUILDCONF_PREPARE_TASKPARAMS
 
 joinpath = os.path.join
@@ -132,6 +133,7 @@ class Config(object):
 
         # init/merge params including values from parent Config
         self._applyDefaults()
+        self._applySugar()
         self._postValidateConf()
         self._makeBuildDirParams(buildroot)
         self._prepareParams()
@@ -393,6 +395,10 @@ class Config(object):
 
         loader.applyDefaults(self._conf, not self._parent, self.rootdir)
 
+    def _applySugar(self):
+
+        applySyntacticSugar(self._conf)
+
     def _postValidateConf(self):
 
         # check buildtype names
@@ -432,7 +438,7 @@ class Config(object):
 
         def handleCondition(entry, name):
             condition = entry.get(name, {})
-            if isinstance(condition, stringtype):
+            if isinstance(condition, stringtype) and condition == 'all':
                 condition = entry[name] = {}
 
             buildtypes = toList(condition.get('buildtype', []))
@@ -559,7 +565,7 @@ class Config(object):
             condition = entry.get(name, None)
             result = { 'condition' : condition }
 
-            if condition is None:
+            if not condition:
                 if name == 'for':
                     result['tasks'] = allTaskNames
                 else: # if name == 'not-for'

@@ -29,14 +29,19 @@ tasks = {
         'source'   : 'src/calculator.f90 src/main.f90',
         'includes' : 'src/inc',
         'use'      : 'staticlib sharedlib',
-        'configure'  : [
-            dict( do = 'parallel', actions = [
-                dict(do = 'check-code', text = fragment1, label = 'fragment1'),
-                dict(do = 'check-code', text = fragment2, label = 'fragment2', execute = True)
-            ]),
-        ],
     },
 }
+
+configure = [
+    {
+        'do' : 'parallel',
+        'for' : { 'task': 'test' },
+        'actions' : [
+            { 'do': 'check-code', 'text': fragment1, 'label': 'fragment1' },
+            { 'do': 'check-code', 'text': fragment2, 'label': 'fragment2', 'execute': True},
+        ],
+    },
+]
 
 buildtypes = {
     'release' : {

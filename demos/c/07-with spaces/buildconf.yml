@@ -10,17 +10,11 @@ tasks:
     source    : '"my shlib/**/*.c"'
     includes  : '"my includes"'
     export    : includes
-    configure :
-      - do: check-headers
-        names : stdio.h
 
   my test:
     features  : cprogram
     source    : '"my prog/**/*.c"'
     use       : "'my util'"
-    configure :
-      - do: check-headers
-        names : stdio.h
 
   #######
   my util alt:
@@ -29,17 +23,11 @@ tasks:
     source    : '"${MY_SHLIB_DIR}/my util.c" "${MY_SHLIB_DIR}/my util2.c"'
     includes  : '"my includes"'
     export    : includes
-    configure :
-      - do: check-headers
-        names : stdio.h
 
   my test alt:
     features  : cprogram
     source    : '"my prog/my test.c"'
     use       : "'my util alt'"
-    configure :
-      - do: check-headers
-        names : stdio.h
 
   ########
   alt script:
@@ -47,6 +35,11 @@ tasks:
       cmd: '"alt script.py"'
       cwd: 'some scripts'
     target : ''
+
+configure:
+  - do: check-headers
+    names : stdio.h
+    not-for: { task: '"alt script"' }
 
 toolchains:
   my toolchain:

@@ -32,16 +32,18 @@ tasks:
         source   : src/calculator.f90 src/main.f90
         includes : src/inc
         use      : staticlib sharedlib
-        configure:
-            - do: parallel
-              actions:
-                - do: check-code
-                  text: $fragment1
-                  label: fragment1
-                - do: check-code
-                  text: *fragment2
-                  label: fragment2
-                  execute: true
+
+configure:
+  - do: parallel
+    for: { task: test }
+    actions:
+      - do: check-code
+        text: $fragment1
+        label: fragment1
+      - do: check-code
+        text: *fragment2
+        label: fragment2
+        execute: true
 
 buildtypes:
     release:
