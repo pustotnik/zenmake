@@ -42,24 +42,24 @@ features
         Means that result of the task is an executable file for the <lang> code.
         For example: ``cprogram``, ``cxxprogram``, etc.
     :runcmd:
-        Means that the task has parameter ``run`` and should run some
+        Means that the task has the ``run`` parameter and should run some
         command. It's optional because ZenMake detects this feature
         automatically by presence of the ``run`` in task parameters.
         You need to set it explicitly only if you want to try to run
         <lang>program task without parameter ``run``.
     :test:
         Means that the task is a test. More details about
-        tests :ref:`here<buildtests>`. It is not needed to add ``runcmd``
+        tests are :ref:`here<buildtests>`. It is not needed to add ``runcmd``
         to this feature because ZenMake adds ``runcmd`` itself if necessary.
 
     Some features can be mixed. For example ``cxxprogram`` can be mixed
     with ``cxx`` for C++ build tasks but it's not necessary because ZenMake
-    adds ``cxx`` for ``cxxprogram`` itself. Feature ``cxxshlib`` cannot be
-    mixed for example with ``cxxprogram`` in one build task because they
-    are different types of build task target file. Using of such features as
+    adds ``cxx`` for ``cxxprogram`` itself. The ``cxxshlib`` feature cannot be
+    mixed for example with the ``cxxprogram`` in one build task because they
+    are different types of build task targets. Using of such features as
     ``c`` or ``cxx`` doesn't make sense without
     \*stlib/\*shlib/\*program features in most cases.
-    Features ``runcmd`` and ``test`` can be mixed with any feature.
+    The ``runcmd`` and ``test`` features can be mixed with any feature.
 
     Examples in YAML format:
 
@@ -106,8 +106,8 @@ source
         - a :ref:`dict<buildconf-dict-def>`, description see below
         - a list of items where each item is a string with one or more paths or a dict
 
-    Type ``dict`` is used for Waf_ ``ant_glob`` function. Format of patterns
-    for ``ant_glob`` you can find on https://waf.io/book/.
+    The ``dict`` type is used for ``ant_glob`` Waf_ function. Format of patterns
+    for ``ant_glob`` can be found here https://waf.io/book/.
     Most significant details from there:
 
         - Patterns may contain wildcards such as \* or \?, but they are
@@ -899,8 +899,8 @@ export-<param> / export
 install-path
 """""""""""""""""""""
     String representing the installation path for the output files.
-    It's used in commands ``install`` and ``uninstall``.
-    To disable installation, set it to False or empty string.
+    It is used in the ``install`` and ``uninstall`` commands.
+    To disable installation, set it to False or to empty string.
     If it's absent then general values of ``PREFIX``, ``BINDIR``
     and ``LIBDIR`` will be used to detect path.
     Path must be absolute.
@@ -914,7 +914,7 @@ install-path
 
         install-path : '${PREFIX}/exe'
 
-    By default this parameter is false for standalone runcmd tasks.
+    This parameter is false for standalone runcmd tasks by default.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
@@ -926,12 +926,12 @@ install-files
     following parameters:
 
     :do:
-        It is what to do and can be ``copy``, ``copy-as`` or ``symlink``.
-        Value ``copy`` means copying specified files to a directory from ``dst``.
-        Value ``copy-as`` means copying one specified file to a path from ``dst``
-        so you use a difference file name.
-        Value ``symlink`` means creation of symlink. It's for POSIX platforms only
-        and do nothing on MS Windows.
+        It is what to do and it can be ``copy``, ``copy-as`` or ``symlink``.
+        The ``copy`` value means copying specified files to a directory from the ``dst``.
+        The ``copy-as`` value means copying one specified file to a path from the ``dst``
+        so you can use a difference file name.
+        The ``symlink`` value means creation of symlink. It's for POSIX platforms only
+        and does nothing on MS Windows.
 
         You may not set this parameter in some cases.
         If this parameter is absent:
@@ -939,23 +939,23 @@ install-files
         - It's ``symlink`` if parameter ``symlink`` exists in current dict.
         - It's ``copy`` in other cases.
     :src:
-        If ``do`` is ``copy`` then rules for this parameter the same as for
+        If ``do`` is ``copy`` then rules for this parameter are the same as for
         `source <buildconf-taskparams-source_>`_ but with one addition: you can
         specify one or more paths to directory if you don't use any ant pattern.
         In this case all files from specified directory will be copied
         recursively with directories hierarchy.
 
-        If ``do`` is ``copy-as``, it must one path to a file. It must be relative
+        If ``do`` is ``copy-as``, it must one path to a file. And it must be relative
         to the :ref:`startdir<buildconf-startdir>` or an absolute path.
 
         If ``do`` is ``symlink``, it must one path to a file. Created symbolic
-        link will point to this path. It must be relative
+        link will point to this path. Also it must be relative
         to the :ref:`startdir<buildconf-startdir>` or an absolute path.
 
         You can use any :ref:`dynamic substitution<buildconf-substitutions-dynamic>` variable
         here.
     :dst:
-        If ``do`` is ``copy`` then it must be path to a directory.
+        If ``do`` is ``copy`` then it must be a path to a directory.
         If ``do`` is ``copy-as``, it must one path to a file.
         If ``do`` is ``symlink``, this parameter cannot be used. See parameter ``symlink``.
 
@@ -982,13 +982,13 @@ install-files
 
     :chmod:
         Change file mode bits. It's for POSIX platforms only
-        and do nothing on MS Windows.
+        and does nothing on MS Windows.
         And it cannot be used for ``do`` = ``symlink``.
 
-        It must be integer or string. If it is integer it must be correct value
+        It must be integer or string. If it is an integer it must be correct value
         for python function os.chmod. For example: 0o755.
 
-        If it is string then value will be converted to integer as octal
+        If it is a string then value will be converted to integer as octal
         representation of an integer.
         For example, '755' will be converted to 493 (it's 755 in octal representation).
 
@@ -996,15 +996,15 @@ install-files
 
     :user:
         Change file owner. It's for POSIX platforms only
-        and do nothing on MS Windows.
-        It must be name of existing user.
-        It is not set by default and value from original file will be used.
+        and does nothing on MS Windows.
+        It must be a name of existing user.
+        It is not set by default and the value from original file will be used.
 
     :group:
         Change file user's group. It's for POSIX platforms only
-        and do nothing on MS Windows.
-        It must be name of existing user's group.
-        It is not set by default and value from original file will be used.
+        and does nothing on MS Windows.
+        It must be a name of existing user's group.
+        It is not set by default and the value from original file will be used.
 
     :follow-symlinks:
         Follow symlinks from ``src`` if ``do`` is ``copy`` or ``copy-as``.
