@@ -148,8 +148,8 @@ def wrapUtilsGetProcess(_):
 
     return execute
 
-def setup():
-    """ Setup some wrappers for Waf """
+def setUp():
+    """ Set up some wrappers for Waf """
 
     Utils.get_process = wrapUtilsGetProcess(Utils.get_process)
 
@@ -159,4 +159,4 @@ def setup():
     for ctxCls in (Build.CleanContext, Build.ListContext):
         ctxCls.execute = wrapBldCtxNoLockInTop(ctxCls.execute)
 
-setup()
+setUp()

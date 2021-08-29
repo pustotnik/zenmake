@@ -29,8 +29,8 @@ normpath = os.path.normpath
 relpath = os.path.relpath
 dirname = os.path.dirname
 isabspath = os.path.isabs
-pathexists  = os.path.exists
-pathlexists  = os.path.lexists
+pathexists = os.path.exists
+pathlexists = os.path.lexists
 isdir = os.path.isdir
 islink = os.path.islink
 
