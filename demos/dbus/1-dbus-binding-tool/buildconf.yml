@@ -2,17 +2,17 @@
 # Based on demos/dbus from Waf
 
 tasks:
-  test:    
+  test:
     target: test.h
     source: test.xml
 
-    configure: 
+    configure:
       - { do: find-program, names: dbus-binding-tool, var: DBUS_BINDING_TOOL }
-    
+
     run:
       cmd : "${DBUS_BINDING_TOOL} --prefix=test_prefix --mode=glib-server --output=${TGT} ${SRC}"
       shell : true
-     
+
   hello:
     features: cprogram
     source: '*.c'

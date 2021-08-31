@@ -15,18 +15,21 @@ import shlex
 from waflib.TaskGen import feature, after
 from waflib import Task
 from zm.constants import PLATFORM, EXE_FILE_EXTS, PYTHON_EXE
-from zm.pyutils import maptype
+from zm.pyutils import maptype, stringtype
 from zm import log, error
-from zm.utils import cmdHasShellSymbols
+from zm.utils import cmdHasShellSymbols, substVars
 from zm.pathutils import PathsParam
 from zm.features import postcmd
+
+_normpath = os.path.normpath
+_relpath = os.path.relpath
 
 if PLATFORM == 'windows':
     _CMDFILE_EXTS = EXE_FILE_EXTS + '.py,.pl'
 else:
     _CMDFILE_EXTS = EXE_FILE_EXTS
 
-_RE_WITH_TARGET = re.compile(r'\$\{*TARGET')
+_RE_STARTS_WITH_TARGET = re.compile(r'\s*\$\{TGT')
 
 RUNBY_FILE_EXT = {
     '.py'  : ['python3', 'python'],
@@ -97,7 +100,7 @@ def _processCmdLine(conf, taskParams, cwd, cmdArgs):
             if launcherPath:
                 cmdline = '%s %s' % (launcherPath, cmdline)
 
-    elif partsCount > 1 and not shell and not _RE_WITH_TARGET.search(launcher):
+    elif partsCount > 1 and not shell and not _RE_STARTS_WITH_TARGET.match(launcher):
         # Waf raises exception in verbose mode with 'shell' == False if it
         # cannot find full path to executable and on windows cmdline
         # like 'python file.py' doesn't work.
@@ -277,8 +280,6 @@ def _makeCmdRuleArgs(tgen):
     env = tgen.env.derive()
     environ = (env.env or os.environ).copy()
     environ.update(ruleArgs.pop('env', {}))
-    # add new var to use in 'rule'
-    env['TARGET'] = zmTaskParams['$real.target']
     env.update(zmTaskParams.get('substvars', {}))
     env.env = environ
 
@@ -297,7 +298,7 @@ def _makeCmdRuleArgs(tgen):
         ruleArgs['deep_inputs'] = True
 
     if not cmd and zmTaskParams['$runnable']:
-        cmd = env['TARGET']
+        cmd = zmTaskParams['$real.target']
 
     if not cmd:
         msg = 'Task %r has not runnable command: %r.' % (tgen.name, cmd)
@@ -321,12 +322,32 @@ def applyRunCmd(tgen):
     if not ruleArgs:
         return
 
+    # Waf substitutes TGT var from task.outputs but it cannot be used for a task
+    # that already has own outputs due to duplication. So it is better to substitute
+    # TGT and SRC vars right here.
+    cmdline = ruleArgs['rule']
+    if isinstance(cmdline, stringtype):
+        cwd = ruleArgs['cwd']
+
+        zmTaskParams = getattr(tgen, 'zm-task-params', {})
+        target = zmTaskParams.get('target', '')
+
+        source = zmTaskParams.get('source', [])
+        if source:
+            source = [ _normpath(_relpath(x.abspath(), cwd)) for x in source]
+
+        svars = { 'SRC' : ' '.join(source), 'TGT' : target}
+        ruleArgs['rule'] = substVars(cmdline, svars)
+
     repeat = ruleArgs.pop('repeat', 1)
 
     cmdTask = None
     if _isCmdStandalone(tgen):
         for k, v in ruleArgs.items():
             setattr(tgen, k, v)
+        if getattr(tgen, 'target', None):
+            # to avoid problems with spaces in paths
+            tgen.target = [tgen.target]
         tgen.process_rule()
         delattr(tgen, 'rule')
         cmdTask = tgen.tasks[0]

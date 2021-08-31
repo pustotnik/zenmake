@@ -5,10 +5,10 @@ tasks:
   program:
     features : cprogram
     source   : test.c util.c
-    configure: 
+    configure:
       - do: find-program
         names: strip
-    run: ${STRIP} ${TARGET}
+    run: ${STRIP} ${TGT}
 
 buildtypes:
   release:

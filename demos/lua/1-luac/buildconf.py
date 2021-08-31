@@ -15,6 +15,6 @@ tasks = {
     # one more alternative way to do the same thing but with different target file name
     'foo3.luac' : {
         'configure' : [ dict(do = 'find-program', names = 'luac'), ],
-        'run': { 'cmd' : '${LUAC} -s -o ${TARGET} foo.lua', 'cwd' : '.' },
+        'run': { 'cmd' : '${LUAC} -s -o ${TGT} foo.lua', 'cwd' : '.' },
     },
 }

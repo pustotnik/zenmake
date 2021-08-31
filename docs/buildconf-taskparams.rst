@@ -644,15 +644,10 @@ run
     :cmd:
         Command line to run. It can be any suitable command line.
         For convenience special :ref:`dynamic substitution<buildconf-substitutions-dynamic>`
-        variable ``TARGET`` can be
-        used here. This variable contains the absolute path to resulting
-        target file of the current task. There are also two additional
-        provided by Waf substitution variables that can be used: ``SRC`` and ``TGT``.
-        They represent the task input and output Waf nodes
-        (see description of node objects
-        here: https://waf.io/book/#_node_objects).
-        Actually ``SRC`` and ``TGT`` are not real variables and they cannot be
-        changed in a buildconf file.
+        variables ``SRC`` and ``TGT`` can be used here.
+        The ``TGT`` variable contains string with the absolute path to resulting
+        target file of the current task.
+        And the ``SRC`` contains string with all source files of the task.
 
         Environment variables also can be used here but you cannot use syntax
         with curly braces because this syntax is used for internal substitutions.
@@ -734,7 +729,7 @@ run
             features : cxxprogram test
             # ...
             run:
-                cmd     : '${TARGET} a b c'
+                cmd     : '${TGT} a b c'
                 env     : { ENV_VAR1: '111', ENV_VAR2: 'false' }
                 repeat  : 2
                 timeout : 10 # in seconds
@@ -769,7 +764,7 @@ run
             'features' : 'cxxprogram test',
             # ...
             'run'      : {
-                'cmd'     : '${TARGET} a b c',
+                'cmd'     : '${TGT} a b c',
                 'env'     : { 'ENV_VAR1' : '111', 'ENV_VAR2' : 'false'},
                 'repeat'  : 2,
                 'timeout' : 10, # in seconds, Python 3 only
