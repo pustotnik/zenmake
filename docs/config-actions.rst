@@ -6,22 +6,22 @@ Configuration actions
 =====================
 
 ZenMake supports some configuration actions. They can be used to check system
-libraries, headers, etc. To set configuration actions use the parameter ``configure``
-in :ref:`task params<buildconf-taskparams>`. The value of the parameter
-``configure`` must be a list of such actions. An item in the list
-can be a ``dict`` where ``do`` specifies what to do, some type of
+libraries, headers, etc. To set configuration actions use the ``configure`` parameter
+in :ref:`task params<buildconf-taskparams>`. The value of the ``configure`` parameter
+must be a list of such actions. An item in the list
+can be a ``dict`` where ``do`` specifies what to do, in other words it is some type of
 configuration action. It's like a function where ``do`` describes the name of
 a function and others parameters are parameters for the function.
 
-There is another possible value for such a item in python format of buildconf file
+There is another possible value for such an item in python format of buildconf file
 and it is a python function which must return True/False on Success/Failure.
 If such a function raises some exception then ZenMake interprets it
-as if the function returns False. A function can be without arguments or
-have arguments with names: ``taskname``, ``buildtype``.
+as if the function returns False. This function can be without arguments or
+with named arguments: ``taskname``, ``buildtype``.
 It's better to use `**kwargs` to have universal way to work with any input arguments.
 
 These actions can be run sequentially or in parallel (see ``do`` = ``parallel``).
-And they all are called on **configure** step (in command **configure**).
+And they all are called on the **configure** step (in command **configure**).
 
 Results of the same configuration actions are cached when it's possible
 but not between runnings of ZenMake.
@@ -34,22 +34,23 @@ These configuration actions in ``dict`` format:
 
         *Supported languages*: C, C++.
 
-        Check existence of C/C++ headers from list in the ``names``.
+        Check existence of C/C++ headers from the ``names`` list.
 
-        Parameter ``defname`` is a name of a define to set
-        for your code when the test is over. By default the name for each header
+        The ``defname`` parameter is a name of a define to set
+        for your code when the action is over. By default the name for each header
         is generated in the form 'HAVE_<HEADER NAME>=1'. For example, if you set
         'cstdio' in the ``names`` then the define 'HAVE_CSTDIO=1' will be generated.
         If you set 'stdio.h' in the ``names`` then the define 'HAVE_STDIO_H=1'
         will be generated.
 
-        Parameter ``defines`` can be used to set additional C/C++ defines
-        to use in compiling of the test.
-        These defines will not be set for your code, only for the test.
+        The ``defines`` parameter can be used to set additional C/C++ defines
+        to use in compiling of the action.
+        These defines will not be set for your code, only for the action.
 
-        Task parameters :ref:`toolchain<buildconf-taskparams-toolchain>`,
+        The :ref:`toolchain<buildconf-taskparams-toolchain>`,
         :ref:`includes<buildconf-taskparams-includes>`
-        and :ref:`libpath<buildconf-taskparams-libpath>` affect this type of action.
+        and :ref:`libpath<buildconf-taskparams-libpath>` task parameters
+        affect this type of action.
 
     ``do`` = ``check-libs``
         *Parameters*: ``names`` = [], ``fromtask`` = True, ``defines`` = [],
@@ -57,20 +58,21 @@ These configuration actions in ``dict`` format:
 
         *Supported languages*: C, C++.
 
-        Check existence of the shared libraries from task
-        parameter ``libs`` or/and from list in the ``names``.
-        If ``fromtask`` is set to False then names of libraries from task
-        parameter ``libs`` will not be used to check.
+        Check existence of the shared libraries from the ``libs`` task
+        parameter or/and from the ``names`` list.
+        If ``fromtask`` is set to False then names of libraries from the ``libs``
+        task parameter will not be used for checking.
         If ``autodefine`` is set to True it generates
         C/C++ define name like ``HAVE_LIB_LIBNAME=1``.
 
-        Parameter ``defines`` can be used to set additional C/C++ defines
-        to use in compiling of the test.
-        These defines will not be set for your code, only for the test.
+        The ``defines`` parameter can be used to set additional C/C++ defines
+        to use in compiling of the action.
+        These defines will not be set for your code, only for the action.
 
-        Task parameters :ref:`toolchain<buildconf-taskparams-toolchain>`,
+        The :ref:`toolchain<buildconf-taskparams-toolchain>`,
         :ref:`includes<buildconf-taskparams-includes>`
-        and :ref:`libpath<buildconf-taskparams-libpath>` affect this type of action.
+        and :ref:`libpath<buildconf-taskparams-libpath>` task parameters
+        affect this type of action.
 
     ``do`` = ``check-code``
         *Parameters*: ``text`` = '', ``file`` = '', ``label`` = '',
@@ -79,25 +81,26 @@ These configuration actions in ``dict`` format:
         *Supported languages*: C, C++, D, Fortran.
 
         Provide piece of code for the test. Code can be provided with
-        parameter ``text`` as a plane text or with parameter ``file`` as a path to
-        file with code. This path can be absolute or relative to
+        the ``text`` parameter as a plane text or with the ``file`` parameter
+        as a path to the file with a code. This path can be absolute or relative to
         the :ref:`startdir<buildconf-startdir>`. At least one of the
-        parameters ``text`` or ``file`` must be set.
+        ``text`` or ``file`` parameters must be set.
 
-        Parameter ``label`` can be used to mark message of the test.
-        If parameter ``execute`` is True it means that the resulting binary
-        will be executed and result will have effect on current configuration action.
+        The ``label`` parameter can be used to mark message of the test.
+        If the ``execute`` parameter is True it means that the resulting binary
+        will be executed and the result will have effect on the current configuration action.
 
-        Parameter ``defname`` is a name of C/C++/D/Fortran define to set
+        The ``defname`` parameter is a name of C/C++/D/Fortran define to set
         for your code when the test is over. There is no such a name by default.
 
-        Parameter ``defines`` can be used to set additional C/C++/D/Fortran defines
+        The ``defines`` parameter can be used to set additional C/C++/D/Fortran defines
         to use in compiling of the test.
         These defines will not be set for your code, only for the test.
 
-        Task parameters :ref:`toolchain<buildconf-taskparams-toolchain>`,
+        The :ref:`toolchain<buildconf-taskparams-toolchain>`,
         :ref:`includes<buildconf-taskparams-includes>`
-        and :ref:`libpath<buildconf-taskparams-libpath>` affect this type of action.
+        and :ref:`libpath<buildconf-taskparams-libpath>` task parameters
+        affect this type of action.
 
     ``do`` = ``find-program``
         *Parameters*: ``names``, ``paths``,  ``var`` = '', ``mandatory`` = True.
@@ -105,16 +108,16 @@ These configuration actions in ``dict`` format:
         *Supported languages*: all languages supported by ZenMake.
 
         Find a program.
-        Parameter ``names`` must be used to specify one or more possible file
+        The ``names`` parameter must be used to specify one or more possible file
         names for the program. Do not add an extension for portability.
         This action does nothing if ``names`` is empty.
 
-        Parameter ``paths`` can be used to set paths to find
+        The ``paths`` parameter can be used to set paths to find
         the program, but usually you don't need to use it because by default
-        system environment variable ``PATH`` is used. Also the Windows Registry
-        is used on MS Windows if the program is not found.
+        the ``PATH`` system environment variable is used. Also the Windows Registry
+        is used on MS Windows if the program was not found.
 
-        Parameter ``var`` can be used to set
+        The ``var`` parameter can be used to set
         :ref:`dynamic substitution<buildconf-substitutions-dynamic>` variable name.
         By default it's a first name from the ``names`` in upper case and without
         symbols '-' and '.'.
@@ -149,16 +152,16 @@ These configuration actions in ``dict`` format:
         *Supported languages*: all languages supported by ZenMake.
 
         Find a file on file system.
-        Parameter ``names`` must be used to specify one or more possible file
+        The ``names`` parameter must be used to specify one or more possible file
         names.
         This action does nothing if ``names`` is empty.
 
-        Parameter ``paths`` must be used to set paths to find
+        The ``paths`` parameter must be used to set paths to find
         the file. Each path can be absolute or relative to
         the :ref:`startdir<buildconf-startdir>`.
         By default it's '.' which means :ref:`startdir<buildconf-startdir>`.
 
-        Parameter ``var`` can be used to set
+        The ``var`` parameter can be used to set
         :ref:`dynamic substitution<buildconf-substitutions-dynamic>` variable name.
         By default it's a first name from the ``names`` in upper case and without
         symbols '-' and '.'.
@@ -169,8 +172,8 @@ These configuration actions in ``dict`` format:
         *Supported languages*: any but only in python format of buildconf file.
 
         Call a python function. It'a another way to use python
-        function as an action. In this way you can use parameter
-        ``mandatory``.
+        function as an action.
+        In this way you can use the ``mandatory`` parameter.
 
     ``do`` = ``pkgconfig``
         *Parameters*: ``toolname`` = 'pkg-config', ``toolpaths``,
@@ -181,15 +184,16 @@ These configuration actions in ``dict`` format:
         *Supported languages*: C, C++.
 
         Execute ``pkg-config`` or compatible tool (for example ``pkgconf``) and
-        use results. Parameter ``toolname`` can be used to set name of tool and
-        it's 'pkg-config' by default. Parameter ``toolpaths`` can be used to set
+        use results. The ``toolname`` parameter can be used to set name of the
+        tool and it is 'pkg-config' by default.
+        The ``toolpaths`` parameter can be used to set
         paths to find the tool, but usually you don't need to use it.
 
-        Parameter ``packages`` is required parameter to set one or more names of
+        The ``packages`` parameter is required parameter to set one or more names of
         packages in database of pkg-config. Each such a package name can be used
         with '>', '<', '=', '<=' or '>=' to check version of a package.
 
-        Parameters ``cflags`` (default: True), ``libs`` = (default: True),
+        The parameters named ``cflags`` (default: True), ``libs`` = (default: True),
         ``static`` (default: False) are used to set corresponding command line
         parameters ``--cflags``, ``--libs``, ``--static`` for 'pkg-config' to
         get compiler/linker options. If ``cflags`` or ``libs`` is True then
@@ -197,7 +201,7 @@ These configuration actions in ``dict`` format:
         Parameter ``static`` means forcing of static libraries and
         it is ignored if ``cflags`` and ``libs`` are False.
 
-        Parameter ``defnames`` is used to set C/C++ defines. It can be True/False
+        The ``defnames`` parameter is used to set C/C++ defines. It can be True/False
         or ``dict``. If it's True then default names for defines will be used.
         If it's False then no defines will be used. If it's ``dict`` then keys
         must be names of used packages and values must be dicts with keys ``have``
@@ -207,17 +211,17 @@ These configuration actions in ``dict`` format:
         But you can set custom defines. Name of 'PKGNAME_VERSION' is used only
         if ``pkg-version`` is True.
 
-        Parameter ``pkg-version`` can be used to get define with version of
-        a package. It can be True of False. If it's True then define will be set.
-        If it's False then define will not be set. It's False by default.
-        This parameter will not set define if ``defnames`` is False.
+        The ``pkg-version`` parameter can be used to get 'define' with version of
+        a package. It can be True of False. If it's True then 'define' will be set.
+        If it's False then corresponding 'define' will not be set. It's False by default.
+        This parameter will not set 'define' if ``defnames`` is False.
 
-        Parameter ``def-pkg-vars`` can be used to set custom values of variables
+        The ``def-pkg-vars`` parameter can be used to set custom values of variables
         for 'pkg-config'. It must be ``dict`` where keys and values are names and
-        values of these variables. ZenMake uses command line option ``--define-variable``
+        values of these variables. ZenMake uses the command line option ``--define-variable``
         for this parameter. It's empty by default.
 
-        Parameter ``tool-atleast-version`` can be used to check minimum version
+        The ``tool-atleast-version`` parameter can be used to check minimum version
         of selected tool (pkg-config).
 
         Examples in YAML format:
@@ -294,38 +298,38 @@ These configuration actions in ``dict`` format:
         ZenMake doesn't know which tool will be used and therefore this action
         can be used in any task including standalone runcmd task.
 
-        Parameter ``toolname`` must be used to set name of such a tool.
-        Parameter ``toolpaths`` can be used to set
+        The ``toolname`` parameter must be used to set name of such a tool.
+        The ``toolpaths`` parameter can be used to set
         paths to find the tool, but usually you don't need to use it.
 
-        Parameter ``args`` can be used to set command line arguments. By default
+        The ``args`` parameter can be used to set command line arguments. By default
         it is '\-\-cflags \-\-libs'.
 
-        Parameter ``static`` means forcing of static libraries and
+        The ``static`` parameter means forcing of static libraries and
         it is ignored if ``parse-as`` is not set to 'flags-libs'.
 
-        Parameter ``parse-as`` describes how to parse output. If it is 'none'
+        The ``parse-as`` parameter describes how to parse output. If it is 'none'
         then output will not be parsed. If it is 'flags-libs' then ZenMake will
         try to parse the output for compiler/linker options but ZenMake knows how
         to parse C/C++ compiler/linker options only, other languages are not
         supported for this value. And if it is 'entire'
         then output will not be parsed but value of output will be set to define
-        name from parameter ``defname`` and/or ``var`` if they were defined.
+        name from the ``defname`` and/or ``var`` if they are defined.
         By default ``parse-as`` is set to 'flags-libs'.
 
-        Parameter ``defname`` can be used to set C/C++ define. If ``parse-as``
+        The ``defname`` parameter can be used to set C/C++ define. If ``parse-as``
         is set to 'flags-libs' then ZenMake will try to set define name by using
-        value of ``toolname`` discarding '-config' part if it exists. For example
-        if ``toolname`` is 'sdl2-config' then 'HAVE_SDL2=1' will be used.
+        value of the ``toolname`` discarding '-config' part if it exists. For example
+        if the ``toolname`` is 'sdl2-config' then 'HAVE_SDL2=1' will be used.
         For other values of ``parse-as`` there is no default value for ``defname``
         but you can set some custom define name.
 
-        Parameter ``var`` can be used to set
+        The ``var`` parameter can be used to set
         :ref:`dynamic substitution<buildconf-substitutions-dynamic>` variable name. This parameter
         is ignored if value of ``parse-as`` is not 'entire'.
         By default it is not defined.
 
-        Parameter ``msg`` can be used to set custom message for this action.
+        The ``msg`` parameter can be used to set custom message for this action.
 
         Examples in YAML format:
 
@@ -380,8 +384,8 @@ These configuration actions in ``dict`` format:
         Write a configuration header in the build directory after some
         configuration actions.
         By default file name is ``<task name>_config.h``.
-        Parameter ``guard`` can be used to change C/C++ header guard.
-        Parameter ``remove-defines`` means removing the defines after they are
+        The ``guard`` parameter can be used to change C/C++ header guard.
+        The ``remove-defines`` parameter means removing the defines after they are
         added into configuration header file and it is True by default.
 
         In your C/C++ code you can just include this file like that:
@@ -390,14 +394,14 @@ These configuration actions in ``dict`` format:
 
             #include "yourconfig.h"
 
-        You can override file name by using parameter ``file``.
+        You can override file name by using the ``file`` parameter.
 
     ``do`` = ``parallel``
         *Parameters*: ``actions``, ``tryall`` = False,  ``mandatory`` = True.
 
         *Supported languages*: all languages supported by ZenMake.
 
-        Run configuration actions from the parameter ``actions``
+        Run configuration actions from the ``actions`` parameter
         in parallel. Not all types of actions are supported.
         Allowed actions are ``check-headers``, ``check-libs``,
         ``check-code`` and ``call-pyfunc``.
@@ -406,15 +410,15 @@ These configuration actions in ``dict`` format:
         python function must be thread safe. If you don't use any shared data
         in such a function you don't need to worry about concurrency.
 
-        If parameter ``tryall`` is True then all configuration actions
-        from the parameter ``actions`` will be executed despite of errors.
+        If the ``tryall`` parameter is True then all configuration actions
+        from the ``actions`` parameter will be executed despite of errors.
         By default the ``tryall`` is False.
 
-        You can control order of actions here by using parameters ``before``
-        and ``after`` with a parameter ``id``. For example, one action can have
+        You can control order of the actions by using the parameters ``before``
+        and ``after`` with the parameter ``id``. For example, one action can have
         ``id = 'base'`` and then another action can have ``after = 'base'``.
 
-Any configuration action has parameter ``mandatory`` which is True by default.
+Any configuration action has the ``mandatory`` parameter which is True by default.
 It also has effect for any action inside ``actions``
 for parallel actions and for the whole bundle of parallel actions as well.
 
