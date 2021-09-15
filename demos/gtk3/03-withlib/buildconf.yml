@@ -5,7 +5,7 @@ project:
 tasks:
     builder.ui:
         source: gui/builder.ui
-        run: cp ${SRC} ${TGT}
+        run: cp $(src) $(tgt)
 
     gui:
         features : cshlib
@@ -17,7 +17,7 @@ tasks:
 
         export: config-results
 
-        defines : 'PACKAGE_DATA_DIR="${PREFIX}/share/${PROJECT_NAME}"'
+        defines : 'PACKAGE_DATA_DIR="$(prefix)/share/$(prjname)"'
 
     gtk3demo:
         features : cprogram
@@ -32,5 +32,5 @@ buildtypes:
 
 install:
     - for: { task: gui }
-      src: '${BUILDTYPE_DIR}/builder.ui'
-      dst: '${PREFIX}/share/${PROJECT_NAME}'
+      src: '$(buildtypedir)/builder.ui'
+      dst: '$(prefix)/share/${prjname}'

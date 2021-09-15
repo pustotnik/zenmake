@@ -90,7 +90,7 @@ A <parameter name> here is a parameter from :ref:`task params<buildconf-taskpara
 Examples: 'toolchain.select', 'source.select', 'use.select', etc.
 
 Each condition name must refer to a key in :ref:`conditions<buildconf-conditions>`
-or to one of internal conditions (see below).
+or to one of built-in conditions (see below).
 There is also special optional key ``default`` wich means default value if none
 of the conditions has been selected. If the key ``default`` doen't exist then ZenMake
 tries to use the value of <parameter name> if it exists. If none of the
@@ -235,8 +235,8 @@ Example in Python format:
         },
     }
 
-For convenience there are ready to use internal conditions for known platforms and
-supported toolchains. So in example above variable ``conditions`` is not needed
+For convenience there are ready to use built-in conditions for known platforms and
+supported toolchains. So in example above the ``conditions`` variable is not needed
 at all because conditions with names ``linux`` and ``g++`` already exist:
 
 in YAML format:
@@ -273,19 +273,19 @@ in Python format:
         },
     }
 
-Also you can use internal conditions for supported buildtypes. But if any name
+Also you can use built-in conditions for supported buildtypes. But if any name
 of supported buildtype is the same as one of known platforms or supported
-toolchains then such a buildtype cannot be used as internal condition.
-For example, you can want to make/use buildtype 'linux' and it will be possible
-but for using in conditions you have to declare some different name in this case
-because 'linux' is one of known platforms.
+toolchains then such a buildtype cannot be used as a built-in condition.
+For example, you may want to make/use the buildtype 'linux' and it will be possible
+but you have to declare a different name to use it in conditions in this case
+because the 'linux' value is one of known platforms.
 
-There is one detail about internal conditions for toolchains - only toolchains
-supported for current build tasks exist. ZenMake detects them with all ``features``
-of all existing build tasks in current project during configuring. For example,
-if tasks exist for C language only then supported toolchains for all other languages
-don't exist in internal conditions.
+There is one detail about built-in conditions for toolchains - only toolchains
+supported for current build tasks can be used. ZenMake detects them from
+all ``features`` of all existing build tasks in current project during configuring.
+For example, if tasks exist for C language only then supported toolchains for
+all other languages cannot be used as a built-in condition.
 
 If you declare condition in :ref:`conditions<buildconf-conditions>` with the
-same name of some internal condition then your condition will be used instead
-of internal condition.
+same name of a built-in condition then your condition will be used instead
+of that built-in condition.

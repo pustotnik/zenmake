@@ -10,7 +10,7 @@ tasks:
       - { do: find-program, names: dbus-binding-tool, var: DBUS_BINDING_TOOL }
 
     run:
-      cmd : "${DBUS_BINDING_TOOL} --prefix=test_prefix --mode=glib-server --output=${TGT} ${SRC}"
+      cmd : "${DBUS_BINDING_TOOL} --prefix=test_prefix --mode=glib-server --output=$(tgt) $(src)"
       shell : true
 
   hello:

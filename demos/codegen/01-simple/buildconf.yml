@@ -1,26 +1,26 @@
 
 tasks:
   gen-code1:
-    configure: 
+    configure:
       - do: find-program
         names: python python3
-    run: '${PYTHON} ${TOP_DIR}/gencode.py ${BUILDTYPE_DIR}/generated'
+    run: '${PYTHON} $(topdir)/gencode.py $(buildtypedir)/generated'
     target: ''
     export: config-results
-    
+
   gen-code2:
-    run: '${PYTHON} ${TOP_DIR}/gencode.py ${BUILDTYPE_DIR}/generated step2'
+    run: '${PYTHON} $(topdir)/gencode.py $(buildtypedir)/generated step2'
     target: ''
     use: gen-code1
     group-dependent-tasks : true
-    
+
   app:
     features: cprogram
     source:
       - '*.c'
-      - { incl: '**/*.c', startdir: '${BUILDTYPE_DIR}/generated' }
-        # another way for the same result:
-        #{ incl: 'generated/**/*.c', startdir : '${BUILDTYPE_DIR}' }
+      - { incl: '**/*.c', startdir: '$(buildtypedir)/generated' }
+      # another way for the same result:
+      #- { incl: 'generated/**/*.c', startdir : '$(buildtypedir)' }
     use: gen-code2
 
 buildtypes:

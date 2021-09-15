@@ -11,7 +11,7 @@ import os
 from waflib.Node import exclude_regs as DEFAULT_PATH_EXCLUDES
 from waflib import Utils as wafutils
 from zm.pyutils import maptype, stringtype
-from zm.utils import toList, toListSimple, substVarsInParam
+from zm.utils import toList, toListSimple
 from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
 
 DEFAULT_PATH_EXCLUDES = toListSimple(DEFAULT_PATH_EXCLUDES)
@@ -317,7 +317,7 @@ def makePathsConf(param, startdir):
         param = [param]
     else:
         # avoid conversion of already processed param
-        if isinstance(param[0], maptype) and '$' in param[0]:
+        if isinstance(param[0], maptype) and '*ready*' in param[0]:
             return param
 
         items = []
@@ -350,18 +350,8 @@ def makePathsConf(param, startdir):
         # gather all paths in one item
         result.append({ 'startdir' : startdir, 'paths' : paths })
 
-    result[0]['$'] = 1 # marker about finished work
+    result[0]['*ready*'] = 1 # marker about finished work
     return result
-
-def substPathsConf(param, substEnv):
-    """
-    Do substitution in paths conf.
-    It must be called after function 'makePathsConf'
-    """
-
-    for item in param:
-        for k in item:
-            item[k] = substVarsInParam(item[k], substEnv)
 
 def _getNodesFromPathPatterns(ctx, param, startNode, withDirs,
                               excludeExtraPaths, cache):

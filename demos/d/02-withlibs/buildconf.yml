@@ -1,11 +1,13 @@
 
-# use YAML anchors and aliases to emulate variables
+# You can use substitutions
 
-code1: &fragment1 |
+fragment1: |
     int main()
     {
         return 0;
     }
+
+# Or you can use YAML anchors and aliases to emulate variables
 
 code2: &fragment2 |
     import core.stdc.stdio;
@@ -32,7 +34,7 @@ tasks:
         configure:
             - do: parallel
               actions:
-                - { do: check-code, text: *fragment1, label: fragment1 }
+                - { do: check-code, text: $fragment1, label: fragment1 }
                 - { do: check-code, text: *fragment2, label: fragment2, execute: true }
 
 buildtypes:

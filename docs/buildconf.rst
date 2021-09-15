@@ -24,7 +24,6 @@ Simplified scheme of buildconf is:
     project_ = { ... }
     :ref:`buildconf-features` = { ... }
     cliopts_ = { ... }
-    substvars_ = { ... }
     conditions_ = { ... }
     tasks_ = { name: :ref:`task parameters<buildconf-taskparams>` }
     buildtypes_ = { name: :ref:`task parameters<buildconf-taskparams>` }
@@ -46,7 +45,8 @@ a ``dict`` here.
 
 Not all variables are required in the scheme above but buildconf cannot be
 empty. All variables have reserved names and they all are described here.
-Other names in buildconf are just ignored by ZenMake if present and it means
+Other names in buildconf are just ignored by ZenMake
+(excluding :ref:`substitution variables<buildconf-substitutions>`) if present and it means
 they can be used for some custom purposes.
 
 .. note::
@@ -69,10 +69,10 @@ startdir
 """"""""
     A start path for all paths in a buildconf.
     It is ``.`` by default. The path can be absolute or relative to directory
-    where current buildconf file is located. It means by default all other
+    where current buildconf file is located. It means that by default all other
     relative paths in the current buildconf file are considered as the paths
     relative to directory with the current buildconf file.
-    But you can change this by setting different value to this variable.
+    But you can change this by setting a different value to this variable.
 
 .. _buildconf-buildroot:
 
@@ -91,7 +91,7 @@ buildroot
       command ``distclean`` before changing of ``buildroot``.
       ZenMake cannot do it because it stores all
       meta information in current build directory and if you change this
-      directory it loses all this information.
+      directory it will lose all such an information.
 
       This can be changed in the future by storing extra information in some
       other place like user home directory but now it is.
@@ -104,7 +104,7 @@ realbuildroot
     ``buildroot`` will be symlink to ``realbuildroot``. Using ``realbuildroot``
     has sense mostly on linux where '/tmp' is usually on tmpfs filesystem
     nowadays and it can used to make building in memory. Such a way can improve
-    speed of building. Note that on Windows OS process of ZenMake needs to be
+    speed of building. Note that on Windows OS the process of ZenMake needs to be
     started with enabled "Create symbolic links" privilege and usual user
     doesn't have a such privilege.
     Path can be absolute or relative to the startdir_.
@@ -227,17 +227,6 @@ cliopts
         the ``configure`` command before this command by itself then this option will
         be applied for both ``configure`` and ``build`` commands. In other words it's
         like you run this command with this option on command line.
-
-.. _buildconf-substvars:
-
-substvars
-"""""""""""
-    A `dict <buildconf-dict-def_>`_ with dynamic substitution variables which can be
-    used, for example, in :ref:`parameter 'run'<buildconf-taskparams-run>`.
-
-    It is root dict with variables which are visible in all build tasks of a project.
-
-    See details :ref:`here<buildconf-substitutions-dynamic>`.
 
 .. _buildconf-conditions:
 

@@ -2,3 +2,7 @@
 subdirs:
   - core
   - engine
+
+# for test only
+VAR_A_NAME: MYVAR
+VAR_B_NAME: EXTRAVAR

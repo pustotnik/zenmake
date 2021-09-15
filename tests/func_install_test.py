@@ -127,10 +127,11 @@ class TestInstall(object):
 
     def _checkInstallResults(self, cmdLine, check):
 
-        env = ConfigSet()
-        env.PREFIX = check.prefix
-        env.BINDIR = check.bindir
-        env.LIBDIR = check.libdir
+        svars = {
+            'prefix': check.prefix,
+            'bindir': check.bindir,
+            'libdir': check.libdir,
+        }
 
         assert isdir(check.destdir)
 
@@ -169,9 +170,7 @@ class TestInstall(object):
                 if not installPath:
                     continue
 
-                env = env.derive()
-                env.update(taskParams.get('substvars', {}))
-                installPath = os.path.normpath(utils.substVars(installPath, env))
+                installPath = os.path.normpath(utils.substBuiltInVars(installPath, svars))
                 targetdir = installPath
 
             if not os.path.isabs(targetdir):

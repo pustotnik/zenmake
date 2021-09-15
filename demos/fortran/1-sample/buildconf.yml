@@ -1,10 +1,9 @@
 
-# You can use static substitutions
+# You can use substitutions
 
 fragment1: |
     program Empty
     end program Empty
----
 
 # Or you can use YAML anchors and aliases to emulate variables
 

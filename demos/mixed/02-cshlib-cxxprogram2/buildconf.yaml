@@ -2,14 +2,17 @@
 project:
   version : 0.5.0
 
-# use YAML anchors and aliases to emulate variables
-code1: &fragment1 |
+# You can use substitutions
+
+fragment1: |
   #include <stdio.h>
   int main()
   {
     printf("test\n");
     return 0;
   }
+
+# Or you can use YAML anchors and aliases to emulate variables
 
 code2: &fragment2 |
   #include <iostream>
@@ -28,7 +31,7 @@ tasks:
         actions:
           - { do: check-headers, names: stdio.h }
           - { do: check-headers, names: stdlib.h, defname: WE_HAVE_STDLIB }
-      - { do: check-code, text: *fragment1 }
+      - { do: check-code, text: $fragment1 }
   testprg:
     features : cxxprogram
     source   : 'prog/**/*.cpp'
@@ -36,7 +39,7 @@ tasks:
       - do: parallel
         actions:
           - { do: check-headers, names: cstdio iostream }
-          - { do: check-code, text: *fragment1, label: fragment1 }
+          - { do: check-code, text: $fragment1, label: fragment1 }
           - { do: check-code, text: *fragment2, label: fragment2, execute: true }
           - { do: check-code, file: 'cfgtests/cfgtest3.cpp',
               label: fragment3, defname: MYDEFINE, defines: 'VAR1=1 VAR2=2' }

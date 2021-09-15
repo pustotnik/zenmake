@@ -1,8 +1,7 @@
 
 # For testing of values with spaces
 
-substvars:
-  MY_SHLIB_DIR: 'my shlib'
+MY_SHLIB_DIR: 'my shlib'
 
 tasks:
   my util:

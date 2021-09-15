@@ -5,22 +5,20 @@
 GCC_BASE_CXXFLAGS: -std=c++11 -fPIC
 MSVC_BASE_CXXFLAGS: /EHsc
 
----
-
 buildtypes:
-    debug-gcc    : { cxxflags: $GCC_BASE_CXXFLAGS -O0 -g }
-    release-gcc  : { cxxflags: $GCC_BASE_CXXFLAGS -O2 }
-    debug-clang  : { cxxflags: $GCC_BASE_CXXFLAGS -O0 -g }
-    release-clang: { cxxflags: $GCC_BASE_CXXFLAGS -O2 }
-    debug-msvc   : { cxxflags: $MSVC_BASE_CXXFLAGS /Od }
-    release-msvc : { cxxflags: $MSVC_BASE_CXXFLAGS /O2 }
-    default: debug-gcc
+  debug-gcc    : { cxxflags: $GCC_BASE_CXXFLAGS -O0 -g }
+  release-gcc  : { cxxflags: $GCC_BASE_CXXFLAGS -O2 }
+  debug-clang  : { cxxflags: $GCC_BASE_CXXFLAGS -O0 -g }
+  release-clang: { cxxflags: $GCC_BASE_CXXFLAGS -O2 }
+  debug-msvc   : { cxxflags: $MSVC_BASE_CXXFLAGS /Od }
+  release-msvc : { cxxflags: $MSVC_BASE_CXXFLAGS /O2 }
+  default: debug-gcc
 
 platforms:
-    #linux: { default: release-gcc }
-    # Mac OS
-    darwin: { default: debug-clang }
-    #windows: { default: debug-msvc }
+  #linux: { default: release-gcc }
+  # Mac OS
+  darwin: { default: debug-clang }
+  #windows: { default: debug-msvc }
 
 byfilter:
 - for: all

@@ -23,7 +23,8 @@ from waflib.Configure import ConfigurationContext as WafConfContext
 from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFIG_LOG
 from zm.constants import TASK_TARGET_KINDS
 from zm.pyutils import maptype
-from zm.pathutils import PathsParam, substPathsConf
+from zm.autodict import AutoDict
+from zm.pathutils import PathsParam
 from zm import utils, log, toolchains, error, db, version, cli, edeps
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
 from zm.buildconf.scheme import taskscheme, EXPORTING_TASK_PARAMS
@@ -56,11 +57,12 @@ def _getTaskParamNamesWithSubstVars():
     if not _TASKPARAMS_WITH_SUBSTVARS:
 
         # 'run' is handled in another place
-        skipNames = ('substvars', 'features', 'toolchain', 'name', 'configure',
+        skipNames = ('features', 'toolchain', 'name', 'configure',
+                    # next params are processed in another place
                     'install-path', 'install-files', 'run')
 
         def _allowed(name, scheme):
-            if name.endswith('.select') or name in skipNames:
+            if name.endswith('.select') or name.endswith('flags') or name in skipNames:
                 return False
             types = scheme['type']
             return 'str' in types or 'list-of-strs' in types
@@ -167,23 +169,25 @@ class ConfigurationContext(WafConfContext):
             # save exports for child tasks
             depTaskParams['$exports-meta'] = list(exportsMeta)
 
-    def _applySubstVars(self, taskParams):
+    def _applyBuiltInSubstVars(self, taskParams):
 
-        substEnv = self.all_envs[taskParams['$task.variant']]
-        substvars = taskParams.get('substvars')
-        if substvars:
-            substEnv = substEnv.derive()
-            substEnv.update(substvars)
-
+        rootEnv = self.all_envs['']
+        bvars = rootEnv['$builtin-vars']
         paramNames = _getTaskParamNamesWithSubstVars()
         for name, paramVal in taskParams.items():
             if name not in paramNames:
                 continue
 
-            if name == 'source':
-                substPathsConf(paramVal, substEnv)
-            else:
-                taskParams[name] = utils.substVarsInParam(paramVal, substEnv)
+            taskParams[name] = utils.substBuiltInVarsInParam(paramVal, bvars)
+
+    def _gatherMonitoredEnvVars(self):
+
+        names = set()
+        for bconf in self.bconfManager.configs:
+            names.update(bconf.usedEnvVars)
+
+        names.update(assist.getMonitoredEnvVarNames())
+        return tuple(names)
 
     def _handleMonitLibs(self, taskParams):
 
@@ -708,7 +712,7 @@ class ConfigurationContext(WafConfContext):
         for taskParams in self.allOrderedTasks:
             bconf = taskParams['$bconf']
 
-            self._applySubstVars(taskParams)
+            self._applyBuiltInSubstVars(taskParams)
 
             assist.handleTaskIncludesParam(taskParams, bconf.startdir)
             assist.handleTaskLibPathParams(taskParams)
@@ -830,20 +834,22 @@ class ConfigurationContext(WafConfContext):
     def _preconfigureRootEnv(self):
 
         rootEnv = self.all_envs['']
-
-        # See also constants.PROTECTED_DYN_SUBSTVARS
+        bvars = rootEnv['$builtin-vars'] = {}
 
         # set/fix vars PREFIX, BINDIR, LIBDIR
         utils.adjustInstallDirPaths(rootEnv, cli.selected)
 
+        for name in ('prefix', 'bindir', 'libdir'):
+            bvars[name] = rootEnv[name.upper()]
+
         from waflib.Options import options
-        rootEnv.DESTDIR = options.destdir
+        bvars['destdir'] = options.destdir
 
         rootbconf = self.bconfManager.root
-        rootEnv.PROJECT_NAME  = rootbconf.projectName
-        rootEnv.TOP_DIR       = rootbconf.rootdir
-        rootEnv.BUILDROOT_DIR = rootbconf.confPaths.buildroot
-        rootEnv.BUILDTYPE_DIR = rootbconf.selectedBuildTypeDir
+        bvars['prjname']      = rootbconf.projectName
+        bvars['topdir']       = rootbconf.rootdir
+        bvars['buildrootdir'] = rootbconf.confPaths.buildroot
+        bvars['buildtypedir'] = rootbconf.selectedBuildTypeDir
 
     def preconfigure(self):
         """
@@ -970,6 +976,13 @@ class ConfigurationContext(WafConfContext):
             'last-dbformat': db.getformat(),
         })
         zmMetaFilePath = bconfPaths.zmmetafile
-        assist.writeZenMakeMetaFile(zmMetaFilePath, self.monitFiles,
-                                    self.zmMetaConfAttrs, bconf.selectedBuildType,
-                                    cli.selected.args, self.zmMetaConf())
+
+        zmmeta = AutoDict(
+            monitfiles = self.monitFiles,
+            attrs = self.zmMetaConfAttrs,
+            buildtype = bconf.selectedBuildType,
+            cliargs = cli.selected.args,
+            envvars = self._gatherMonitoredEnvVars(),
+        )
+
+        assist.writeZenMakeMetaFile(zmMetaFilePath, zmmeta, self.zmMetaConf())

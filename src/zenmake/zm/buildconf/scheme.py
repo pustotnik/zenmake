@@ -9,7 +9,7 @@
 from copy import deepcopy
 import re
 
-from zm.constants import KNOWN_PLATFORMS, TASK_TARGET_KINDS, PROTECTED_DYN_SUBSTVARS
+from zm.constants import KNOWN_PLATFORMS, TASK_TARGET_KINDS
 from zm.pyutils import stringtype
 from zm.error import ZenMakeConfValueError
 from zm.cli import config as cliConfig
@@ -166,16 +166,6 @@ _PATHS_SCHEME = {
     },
 }
 
-_SUBST_VARS_SCHEME = {
-    'type': ('dict',),
-    'dict' : {
-        'disallowed-keys' : PROTECTED_DYN_SUBSTVARS,
-        'vars' : {
-            ANYAMOUNTSTRS_KEY : { 'type': 'str' },
-        },
-    },
-}
-
 def _genInstallFilesScheme(confnode, fullkey):
 
     # pylint: disable = unused-argument
@@ -314,7 +304,6 @@ taskscheme = {
     'linkflags' :       { 'type': ('str', 'list-of-strs') },
     'ldflags' :         { 'type': ('str', 'list-of-strs') },
     'defines' :         { 'type': ('str', 'list-of-strs') },
-    'substvars' :       _SUBST_VARS_SCHEME,
     'install-path' :    { 'type': ('bool', 'str') },
     'install-files' :   _genInstallFilesScheme,
     'configure' :       _genConfActionsScheme,
@@ -363,7 +352,7 @@ def _applyExportAndSelectedTaskParams():
 
     #---------- export params
     exportingParams = [
-        'includes', 'defines', 'config-results', 'substvars',
+        'includes', 'defines', 'config-results',
         'libpath', 'stlibpath', 'linkflags', 'ldflags',
     ]
     selectableParams.extend(['export-%s' % x for x in exportingParams])
@@ -405,7 +394,6 @@ confscheme = {
         'type' : 'dict',
         'vars' : _genCliOptionsVarsScheme,
     },
-    'substvars' : _SUBST_VARS_SCHEME,
     'subdirs' : {
         'type' : 'list-of-strs',
     },
@@ -555,3 +543,5 @@ KNOWN_CONF_ACTIONS = frozenset(_actionToVars.keys())
 # Syntactic sugar constructions are not 'real' parameters because they
 # are converted into other buildconf constructions
 genSugarSchemes(confscheme)
+
+KNOWN_CONF_SUGAR_NAMES = frozenset(confscheme.keys()) - KNOWN_CONF_PARAM_NAMES

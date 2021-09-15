@@ -20,7 +20,7 @@ from zm import utils, log
 from zm.pathutils import unfoldPath, getNativePath
 from zm.pathutils import PathsParam, makePathsConf
 from zm.buildconf import loader
-from zm.buildconf.scheme import taskscheme, KNOWN_CONF_PARAM_NAMES
+from zm.buildconf.scheme import taskscheme, KNOWN_CONF_PARAM_NAMES, KNOWN_CONF_SUGAR_NAMES
 from zm.buildconf.sugar import applySyntacticSugar
 from zm.features import ToolchainVars, BUILDCONF_PREPARE_TASKPARAMS
 
@@ -31,11 +31,14 @@ dirname  = os.path.dirname
 relpath  = os.path.relpath
 isabs    = os.path.isabs
 isdir    = os.path.isdir
+osenv    = os.environ
 
 toList        = utils.toList
 toListSimple  = utils.toListSimple
+substVars     = utils.substVars
 
-TOOLCHAIN_PATH_ENVVARS = frozenset(ToolchainVars.allSysVarsToSetToolchain())
+_TOOLCHAIN_PATH_ENVVARS = frozenset(ToolchainVars.allSysVarsToSetToolchain())
+_ALL_CONF_PARAM_NAMES = list(KNOWN_CONF_PARAM_NAMES | KNOWN_CONF_SUGAR_NAMES)
 
 _RE_LIB_VER = re.compile(r"^\d+(?:\.\d+)*")
 _TASKPARAMS_TOLIST_MAP = {}
@@ -103,6 +106,54 @@ def convertTaskParamValue(taskParams, paramName):
     if _toList is not None:
         taskParams[paramName] = _toList(paramVal)
 
+class _SubstVarsResolver(object):
+    """
+    Class to resolve substitution variables in a buildconf
+    """
+
+    __slots__ = '_bconf', '_cache', '_seen'
+
+    def __init__(self, bconf):
+
+        self._bconf = bconf
+        self._cache = {}
+        self._seen = set()
+
+    def get(self, name):
+        """
+        Get value by the name.
+        Returns None if not found
+        """
+
+        if name in self._cache:
+            return self._cache[name]
+
+        # pylint: disable = protected-access
+
+        foundEnvVars = set()
+        val = getattr(self._bconf._conf, name, None)
+        if val is None:
+            parentBConf = self._bconf.parent
+            if parentBConf is not None:
+                val = parentBConf._svarsResolver.get(name)
+
+        if val:
+            if not isinstance(val, stringtype):
+                msg = 'The %r variable has invalid type to use as' % name
+                msg += ' a substitution variable. Such a variable must be string.'
+                raise ZenMakeConfError(msg, confpath = self._bconf.path)
+
+            if id(val) in self._seen:
+                msg = 'A circular dependency found in the variable %r' % name
+                raise ZenMakeConfError(msg, confpath = self._bconf.path)
+
+            self._seen.add(id(val))
+            val = substVars(val, self.get, envVars = osenv, foundEnvVars = foundEnvVars)
+
+        self._bconf._meta.envvars.update(foundEnvVars)
+        self._cache[name] = val
+        return val
+
 class Config(object):
     """
     Class to get/process data from the certain buildconf module
@@ -110,7 +161,7 @@ class Config(object):
 
     # pylint: disable = too-many-public-methods
 
-    __slots__ = '_conf', '_meta', '_confpaths', '_parent'
+    __slots__ = '_conf', '_meta', '_confpaths', '_parent', '_svarsResolver'
 
     def __init__(self, buildconf, buildroot = None, parent = None):
         """
@@ -124,10 +175,15 @@ class Config(object):
 
         self._meta = AutoDict()
         self._meta.buildtypes.selected = None
+        self._meta.envvars = set()
 
-        # independent own dir paths
         self._meta.buildconffile = abspath(buildconf.__file__)
         self._meta.buildconfdir  = dirname(self._meta.buildconffile)
+
+        self._svarsResolver = _SubstVarsResolver(self)
+        self._substVarsInParams()
+
+        # it must be done after substitutions
         self._makeStartDirParam()
         self._meta.rootdir = parent.rootdir if parent else self._meta.startdir
 
@@ -142,6 +198,38 @@ class Config(object):
 
         from zm.buildconf.paths import ConfPaths
         self._confpaths = ConfPaths(self)
+
+    def _parentConf(self):
+        # pylint: disable = protected-access
+        return self._parent._conf if self._parent else None
+
+    def _substVarsInParams(self):
+
+        buildconf = self._conf
+        foundEnvVars = set()
+        svarGetter = self._svarsResolver.get
+
+        def apply(param):
+            if not param:
+                return param
+
+            if isinstance(param, stringtype):
+                return substVars(param, svarGetter,
+                                 envVars = osenv, foundEnvVars = foundEnvVars)
+
+            if isinstance(param, (list, tuple)):
+                return [apply(x) for x in param]
+            if isinstance(param, maptype):
+                return { k:apply(param[k]) for k in param }
+
+            return param
+
+        for name in _ALL_CONF_PARAM_NAMES:
+            param = getattr(buildconf, name, None)
+            if param:
+                setattr(buildconf, name, apply(param))
+
+        self._meta.envvars.update(foundEnvVars)
 
     def _makeStartDirParam(self):
         buildconf = self._conf
@@ -217,7 +305,7 @@ class Config(object):
         # 'toolchains'
         for params in buildconf.toolchains.values():
             for k, v in params.items():
-                if k not in TOOLCHAIN_PATH_ENVVARS:
+                if k not in _TOOLCHAIN_PATH_ENVVARS:
                     continue
                 params[k] = unfoldPath(startdir, getNativePath(v))
 
@@ -269,16 +357,6 @@ class Config(object):
         # taskparams
         self._prepareTaskParams()
 
-    def _handleSubstVars(self, taskParams):
-
-        rootSubstVars = self._conf.substvars
-
-        substVars = rootSubstVars.copy()
-        substVars.update(taskParams.get('substvars', {}))
-
-        if substVars:
-            taskParams['substvars'] = substVars
-
     def _postprocessTaskParams(self, tasks):
 
         # they are absolute paths
@@ -304,8 +382,6 @@ class Config(object):
             taskParams['$startdir'] = taskStartDir
             taskParams['$bconf'] = self
 
-            self._handleSubstVars(taskParams)
-
             for paramName, paramVal in taskParams.items():
 
                 convertTaskParamValue(taskParams, paramName)
@@ -317,7 +393,7 @@ class Config(object):
                 paramVal = taskParams[paramName]
                 for item in paramVal:
                     paramStartDir = item['startdir']
-                    if utils.hasSubstVar(paramStartDir):
+                    if utils.mayHaveSubstVar(paramStartDir):
                         # don't touch 'startdir' if it has subst var
                         continue
                     if paramStartDir == startdir:
@@ -332,15 +408,14 @@ class Config(object):
 
     def _merge(self):
 
-        # pylint: disable = protected-access
-
         mergedParams = set()
         currentConf = self._conf
-        parentConf = self._parent._conf if self._parent else None
+        parentConf = self._parentConf()
 
-        def mergeDict(param):
+        def mergeDictParam(currentConf, parentConf, param):
             if parentConf is None:
                 return
+
             _current = getattr(currentConf, param, {})
             _parent = getattr(parentConf, param, {})
             _new = _parent.copy()
@@ -365,9 +440,9 @@ class Config(object):
         # buildroot, realbuildroot - see _makeBuildDirParams
         mergedParams.update(('buildroot', 'realbuildroot'))
 
-        # substvars, conditions, edeps
-        for param in ('substvars', 'conditions', 'edeps'):
-            mergeDict(param)
+        # conditions, edeps
+        for param in ('conditions', 'edeps'):
+            mergeDictParam(currentConf, parentConf, param)
             mergedParams.add(param)
 
         # tasks - it's not merged
@@ -375,7 +450,7 @@ class Config(object):
 
         # buildtypes, toolchains, platforms
         for param in ('buildtypes', 'toolchains', 'platforms'):
-            mergeDict(param)
+            mergeDictParam(currentConf, parentConf, param)
             mergedParams.add(param)
 
         # byfilter
@@ -767,6 +842,11 @@ class Config(object):
         return self._meta.rootdir
 
     @property
+    def usedEnvVars(self):
+        """ Get list of used env vars in the buildconf """
+        return self._meta.envvars
+
+    @property
     def defaultBuildType(self):
         """ Get calculated default build type """
 
@@ -917,7 +997,7 @@ class Config(object):
             kind = _vars.pop('kind', None)
 
             for k, v in _vars.items():
-                if k in TOOLCHAIN_PATH_ENVVARS:
+                if k in _TOOLCHAIN_PATH_ENVVARS:
                     # try to identify path and do warning if not
                     path = unfoldPath(self.startdir, v)
                     if not os.path.exists(path):

@@ -41,7 +41,7 @@ tasks = {
         'features' : 'cxxshlib',
         'source'   : 'shlibmain/**/*.cpp',
         'use'      : 'shlib stlib',
-        'install-path' : '${PREFIX}/lbr',
+        'install-path' : '$(prefix)/lbr',
     },
     'main' : {
         'features' : 'cxxprogram',

@@ -23,7 +23,7 @@ except ImportError as pex:
 
 from waflib import Utils as wafutils
 from waflib.ConfigSet import ConfigSet
-from zm.pyutils import stringtype, _unicode, _encode
+from zm.pyutils import stringtype, maptype, _unicode, _encode
 from zm.error import ZenMakeError, ZenMakeProcessTimeoutExpired
 
 _joinpath = os.path.join
@@ -38,7 +38,8 @@ _USABLE_WHITESPACE = ' \t\n\r\v'
 
 _RE_UNSAFE_FILENAME_CHARS = re.compile(r'[^-\w.]', re.UNICODE)
 _RE_TOLIST = re.compile(r"""((?:[^\s"']|"[^"]*"|'[^']*')+)""")
-_RE_SUBST = re.compile(r"\$\{([^}{]+)\}")
+_RE_SUBST_VARS = re.compile(r"\${1,2}(\w+)|\${1,2}\{\s*(\w+)\s*\}", re.ASCII)
+_RE_SUBST_BUILTINVARS = re.compile(r"\$\((\s*(\w+)\s*)\)", re.ASCII)
 
 def platform():
     """
@@ -117,66 +118,92 @@ libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
 subprocess         = wafutils.subprocess
 
-def hasSubstVar(strval):
+def mayHaveSubstVar(strval):
     """
     Return True if the strval MAY have substitution variable.
     Return False if the strval has no substitution variable.
     """
-    return '${' in strval
+    return '$' in strval
 
-def substVars(strval, svars, check = True):
+def substVars(strval, svarGetter, envVars = None, foundEnvVars = None):
     """
-	Return string with ${VAR} replaced by the value of VAR taken from a dict or a ConfigSet
+	Return string with $VAR/${VAR} replaced by the value of VAR taken by svarGetter
     """
 
-    if check and not hasSubstVar(strval): # optimization
+    if not mayHaveSubstVar(strval): # optimization
+        return strval
+
+    if envVars is None:
+        envVars = {}
+
+    def replaceVar(match):
+        foundName = match.group(1,2)
+        foundName = [x for x in foundName if x][0]
+
+        origName = match.group(0)
+        foundVal = None
+        useEnv = origName[:2] != '$$'
+        if useEnv:
+            foundVal = envVars.get(foundName)
+            if foundEnvVars is not None:
+                foundEnvVars.add(foundName)
+
+        if foundVal is None:
+            foundVal = svarGetter(foundName)
+
+        if not foundVal:
+            # leave it for Waf if it doesn't start with $$
+            foundVal = "${%s}" % foundName if useEnv else ""
+
+        return foundVal
+
+    return _RE_SUBST_VARS.sub(replaceVar, strval)
+
+def substBuiltInVars(strval, svars, check = True):
+    """
+	Return string with $(VAR) replaced by the value of VAR taken from a dict
+    """
+
+    if check and not mayHaveSubstVar(strval): # optimization
         return strval
 
     def replaceVar(match):
         foundName = match.group(1)
-        foundVal = None
-        try:
-            # ConfigSet instances may contain lists
-            foundVal = svars.get_flat(foundName)
-        except AttributeError:
-            foundVal = svars.get(foundName)
+        return svars.get(foundName, '')
 
-        if not foundVal:
-            # restore original value
-            foundVal = match.group(0)
+    return _RE_SUBST_BUILTINVARS.sub(replaceVar, strval)
 
-        return foundVal
-
-    return _RE_SUBST.sub(replaceVar, strval)
-
-def substVarsInParam(val, svars):
+def substBuiltInVarsInParam(val, svars):
     """
-    Return value with handled substitutions suitable for param of 'str' or
-    'list-of-str' types.
+    Return value with handled substitutions from a param of 'str',
+    'list-of-str' types or from a param of 'dict' with params of such types.
     """
 
     if not val:
         return val
 
+    if isinstance(val, stringtype):
+        return substBuiltInVars(val, svars)
+
     if isinstance(val, (list, tuple)):
-        if not isinstance(val[0], stringtype):
-            return val
+        if any(not isinstance(x, stringtype) for x in val):
+            return [ substBuiltInVarsInParam(x, svars) for x in val ]
 
         result = []
         for item in val:
-            if not hasSubstVar(item):
+            if not mayHaveSubstVar(item):
                 result.append(item)
                 continue
 
-            newVal = substVars(item, svars, check = False)
+            newVal = substBuiltInVars(item, svars, check = False)
             if not any(c in item for c in _USABLE_WHITESPACE):
                 result.extend(toList(newVal))
             else:
                 result.append(newVal)
         return result
 
-    if isinstance(val, stringtype):
-        return substVars(val, svars)
+    if isinstance(val, maptype):
+        return { k:substBuiltInVarsInParam(val[k], svars) for k in val }
 
     return val
 

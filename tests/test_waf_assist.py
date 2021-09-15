@@ -64,8 +64,15 @@ def testWriteZenMakeMetaFile(tmpdir, monkeypatch):
     monkeypatch.setenv('LIBDIR', '/llib')
     monkeypatch.setenv('LIBDIRRR', '/allib')
 
-    assist.writeZenMakeMetaFile(fakeConfPaths.zmmetafile, monitFiles, attrs,
-                                buildtype, cliargs, prevZmMeta)
+    zmmeta = AutoDict(
+        monitfiles = monitFiles,
+        attrs = attrs,
+        buildtype = buildtype,
+        cliargs = cliargs,
+        envvars = ['LIBDIR', 'MYVAR'],
+    )
+
+    assist.writeZenMakeMetaFile(fakeConfPaths.zmmetafile, zmmeta, prevZmMeta)
     assert isfile(fakeConfPaths.zmmetafile)
 
     dbfile = db.PyDBFile(fakeConfPaths.zmmetafile, extension = '')
@@ -86,7 +93,7 @@ def testWriteZenMakeMetaFile(tmpdir, monkeypatch):
     assert cfgenv.eparams[prevbuildtype] == prevZmMeta.eparams[prevbuildtype]
 
     curParams = {
-        'envs' : {'LIBDIR': '/llib'},
+        'envs' : {'LIBDIR': '/llib', 'MYVAR' : ''},
         'cliargs': { 'prefix': '/dd/aa' },
     }
     assert cfgenv.eparams[buildtype] == curParams

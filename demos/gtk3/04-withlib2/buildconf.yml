@@ -11,14 +11,14 @@ tasks:
               args: '--variable=glib_compile_resources gio-2.0'
               parse-as: entire
               var: COMPILE_RES
-            
+
             # it's different and more simple way to find tool 'glib-compile-resources'
             # but it doesn't use pkg-config:
             #- { do: find-program, names: glib-compile-resources, var: COMPILE_RES }
 
         source : gui/gui.gresource.xml
         target : generated/resources.c
-        run: "${COMPILE_RES} ${SRC} --target=${TGT} --sourcedir=${TOP_DIR}/gui --generate-source"
+        run: "$COMPILE_RES $(src) --target=$(tgt) --sourcedir=$(topdir)/gui --generate-source"
 
     gui:
         features : cshlib

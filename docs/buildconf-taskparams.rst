@@ -92,8 +92,8 @@ target
     it is not needed to be set explicitly.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
+    to set this parameter.
 
 .. _buildconf-taskparams-source:
 
@@ -243,8 +243,8 @@ source
         # two file paths with spaces
         'source' : '"my shlib/my util.c" "my shlib/my util2.c"'
 
-    You can use :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables in string values for this parameter.
+    You can use :ref:`built-in substitutions<buildconf-substitutions-builtin>`
+    in string values for this parameter.
 
     And it's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
@@ -269,8 +269,8 @@ includes
         includes : [ include, myinclude ]
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
+    to set this parameter.
 
     This parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
@@ -316,8 +316,7 @@ cflags
     One or more compiler flags for C.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
@@ -326,8 +325,7 @@ cxxflags
     One or more compiler flags for C++.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
@@ -336,8 +334,7 @@ dflags
     One or more compiler flags for D.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
@@ -346,8 +343,7 @@ fcflags
     One or more compiler flags for Fortran.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
@@ -356,8 +352,7 @@ asflags
     One or more compiler flags for Assembler.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
@@ -366,8 +361,7 @@ cppflags
     One or more compiler flags added at the end of compilation commands for C/C++.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
@@ -376,8 +370,7 @@ linkflags
     One or more linker flags for C/C++/D/Fortran.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
@@ -386,8 +379,7 @@ ldflags
     One or more linker flags for C/C++/D/Fortran at the end of the link command.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
@@ -396,8 +388,7 @@ aslinkflags
     One or more linker flags for Assembler.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
@@ -406,8 +397,7 @@ arflags
     Flags to give the archive-maintaining program.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
@@ -442,8 +432,8 @@ defines
         'defines' : 'ABC=1 DOIT AAA="some long string"'
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
+    to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
@@ -486,8 +476,8 @@ use
         'use' : 'util mylib someproject:somelib'
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
+    to set this parameter.
 
 .. _buildconf-taskparams-libs:
 
@@ -520,8 +510,8 @@ libs
         'libs' : 'm rt'
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
+    to set this parameter.
 
 .. _buildconf-taskparams-libpath:
 
@@ -550,8 +540,8 @@ libpath
         'libpath' : '/local/lib "my path"' # in case of spaces in a path
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
+    to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
@@ -578,24 +568,24 @@ monitlibs
     ZenMake uses sha1/md5 hashes to check changes of every library file.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
+    to set this parameter.
 
 stlibs
 """""""""""""""""""""
     The same as ``libs`` but for static libraries.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
+    to set this parameter.
 
 stlibpath
 """""""""""""""""""""
     The same as ``libpath`` but for static libraries.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
+    to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
 
@@ -605,7 +595,7 @@ monitstlibs
     by parameter ``stlibs``.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
+    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
     variables to set this parameter.
 
 rpath
@@ -617,8 +607,8 @@ rpath
     in one string then each such a path must be in quotes.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
+    to set this parameter.
 
 .. _buildconf-taskparams-ver-num:
 
@@ -629,8 +619,8 @@ ver-num
     not support it.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables to set this parameter.
+    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
+    to set this parameter.
 
 .. _buildconf-taskparams-run:
 
@@ -643,14 +633,14 @@ run
 
     :cmd:
         Command line to run. It can be any suitable command line.
-        For convenience special :ref:`dynamic substitution<buildconf-substitutions-dynamic>`
-        variables ``SRC`` and ``TGT`` can be used here.
-        The ``TGT`` variable contains string with the absolute path to resulting
+        For convenience special :ref:`built-in substitution<buildconf-substitutions-builtin>`
+        variables ``src`` and ``tgt`` can be used here.
+        The ``tgt`` variable contains string with the absolute path to resulting
         target file of the current task.
-        And the ``SRC`` contains string with all source files of the task.
+        And the ``src`` contains string with all source files of the task.
 
-        Environment variables also can be used here but you cannot use syntax
-        with curly braces because this syntax is used for internal substitutions.
+        Environment variables also can be used here but see
+        :ref:`bash-like substitutions<buildconf-substitutions-vars>`.
 
         For python variant of buildconf it can be python function as well.
         In this case such a function gets one argument as a python dict
@@ -729,7 +719,7 @@ run
             features : cxxprogram test
             # ...
             run:
-                cmd     : '${TGT} a b c'
+                cmd     : '$(tgt) a b c'
                 env     : { ENV_VAR1: '111', ENV_VAR2: 'false' }
                 repeat  : 2
                 timeout : 10 # in seconds
@@ -738,7 +728,7 @@ run
         foo.luac:
             source : foo.lua
             configure : [ { do: find-program, names: luac } ]
-            run: '${LUAC} -s -o ${TGT} ${SRC}'
+            run: '${LUAC} -s -o $(tgt) $(src)'
 
     Examples in Python format:
 
@@ -764,7 +754,7 @@ run
             'features' : 'cxxprogram test',
             # ...
             'run'      : {
-                'cmd'     : '${TGT} a b c',
+                'cmd'     : '$(tgt) a b c',
                 'env'     : { 'ENV_VAR1' : '111', 'ENV_VAR2' : 'false'},
                 'repeat'  : 2,
                 'timeout' : 10, # in seconds, Python 3 only
@@ -775,7 +765,7 @@ run
         'foo.luac' : {
             'source' : 'foo.lua',
             'configure' : [ dict(do = 'find-program', names = 'luac'), ],
-            'run': '${LUAC} -s -o ${TGT} ${SRC}',
+            'run': '${LUAC} -s -o $(tgt) $(src)',
         },
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
@@ -795,22 +785,6 @@ configure
     Results of these configuration actions
     can be :ref:`exported<buildconf-taskparams-export>` with the name `config-results`.
 
-.. _buildconf-taskparams-substvars:
-
-substvars
-"""""""""""""""""""""
-    A :ref:`dict<buildconf-dict-def>` with substitution variables which can be
-    used, for example, in :ref:`parameter 'run'<buildconf-taskparams-run>`.
-
-    Current variables are visible in current task only.
-
-    See details :ref:`here<buildconf-substitutions-dynamic>`.
-
-    It's possible to use :ref:`selectable parameters<buildconf-select>`
-    to set this parameter.
-
-    Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
-
 .. _buildconf-taskparams-export:
 
 export-<param> / export
@@ -827,7 +801,7 @@ export-<param> / export
     exports nothing.
 
     Supported names:  ``includes``, ``defines``, ``config-results``,
-    ``libpath``, ``stlibpath``, ``substvars`` and all ``*flags``.
+    ``libpath``, ``stlibpath`` and all ``*flags``.
 
     The parameter with ``config-results`` cannot be used to export specific values.
     It always must be True/False only.
@@ -888,8 +862,8 @@ export-<param> / export
             ``export`` with ``config-results`` for that.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`dynamic substitutions<buildconf-substitutions-dynamic>`
-    variables (in strings) to set this parameter.
+    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
+    (in strings) to set this parameter.
 
 .. _buildconf-taskparams-install-path:
 
@@ -898,18 +872,18 @@ install-path
     String representing the installation path for the output files.
     It is used in the ``install`` and ``uninstall`` commands.
     To disable installation, set it to False or to empty string.
-    If it's absent then general values of ``PREFIX``, ``BINDIR``
-    and ``LIBDIR`` will be used to detect path.
+    If it's absent then built-in ``prefix``, ``bindir``
+    and ``libdir`` variables will be used to detect path.
     Path must be absolute.
-    You can use any :ref:`dynamic substitution<buildconf-substitutions-dynamic>` variable
-    including ``${PREFIX}``, ``${BINDIR}`` and ``${LIBDIR}`` here
+    You can use any :ref:`built-in substitution<buildconf-substitutions-builtin>` variable
+    including ``$(prefix)``, ``$(bindir)`` and ``$(libdir)`` here
     like this:
 
     Example in YAML format:
 
     .. code-block:: yaml
 
-        install-path : '${PREFIX}/exe'
+        install-path : '$(prefix)/exe'
 
     This parameter is false for standalone runcmd tasks by default.
 
@@ -951,7 +925,7 @@ install-files
         link will point to this path. Also it must be relative
         to the :ref:`startdir<buildconf-startdir>` or an absolute path.
 
-        You can use any :ref:`dynamic substitution<buildconf-substitutions-dynamic>` variable
+        You can use any :ref:`built-in substitution<buildconf-substitutions-builtin>` variable
         here.
     :dst:
         If ``do`` is ``copy`` then it must be a path to a directory.
@@ -961,7 +935,7 @@ install-files
         It must be relative to the :ref:`startdir<buildconf-startdir>` or
         an absolute path.
 
-        You can use any :ref:`dynamic substitution<buildconf-substitutions-dynamic>` variable
+        You can use any :ref:`built-in substitution<buildconf-substitutions-builtin>` variable
         here.
 
         Any path here will have value of ``destdir``
@@ -976,7 +950,7 @@ install-files
         It must be relative to the :ref:`startdir<buildconf-startdir>` or
         an absolute path.
 
-        You can use any :ref:`dynamic substitution<buildconf-substitutions-dynamic>` variable
+        You can use any :ref:`built-in substitution<buildconf-substitutions-builtin>` variable
         here.
 
     :chmod:

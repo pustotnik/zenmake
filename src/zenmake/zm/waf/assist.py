@@ -67,7 +67,7 @@ def getMonitoredCliArgNames():
 
     return ('prefix', 'bindir', 'libdir')
 
-def writeZenMakeMetaFile(filePath, monitfiles, attrs, buildtype, cliargs, prevZmMeta):
+def writeZenMakeMetaFile(filePath, meta, prevZmMeta):
     """
     Write ZenMake meta file with some things like files
     monitored for changes.
@@ -77,8 +77,8 @@ def writeZenMakeMetaFile(filePath, monitfiles, attrs, buildtype, cliargs, prevZm
     zmMeta.zmversion = version.current()
     zmMeta.platform = PLATFORM
 
-    zmMeta.attrs = attrs
-    zmMeta.monitfiles = sorted(set(monitfiles))
+    zmMeta.attrs = meta.attrs
+    zmMeta.monitfiles = sorted(set(meta.monitfiles))
     zmMeta.monithash  = utils.hashFiles(zmMeta.monitfiles)
 
     from waflib import Context
@@ -89,16 +89,13 @@ def writeZenMakeMetaFile(filePath, monitfiles, attrs, buildtype, cliargs, prevZm
     zmMeta.eparams = {}
     if prevZmMeta is not None:
         zmMeta.eparams.update(prevZmMeta.eparams)
-    eparams = zmMeta.eparams[buildtype] = { 'envs' : {}, 'cliargs': {} }
+    eparams = zmMeta.eparams[meta.buildtype] = { 'envs' : {}, 'cliargs': {} }
 
-    envVarNames = getMonitoredEnvVarNames()
-    for name in envVarNames:
-        val = _getenv(name)
-        if val is not None:
-            eparams['envs'][name] = val
+    for name in meta.envvars:
+        eparams['envs'][name] = _getenv(name, '')
 
     for name in getMonitoredCliArgNames():
-        val = cliargs.get(name)
+        val = meta.cliargs.get(name)
         if val is not None:
             eparams['cliargs'][name] = val
 
@@ -554,8 +551,8 @@ def areExternalParamsChanged(zmMetaConf, buildtype, cliargs):
         eparams = zmMetaConf.eparams.get(buildtype, {})
 
     prevEnvVars = eparams.get('envs', {})
-    for name in getMonitoredEnvVarNames():
-        if prevEnvVars.get(name) != _getenv(name):
+    for name, val in prevEnvVars.items():
+        if val != _getenv(name, ''):
             return True
 
     prevCliArgs = eparams.get('cliargs', {})

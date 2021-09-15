@@ -8,7 +8,7 @@ tasks:
     configure:
       - do: find-program
         names: strip
-    run: ${STRIP} ${TGT}
+    run: ${STRIP} $(tgt)
 
 buildtypes:
   release:

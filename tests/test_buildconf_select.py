@@ -61,7 +61,6 @@ PARAM_TEST_VALUES = {
     'export-includes'  : ['inc1', 'inc1 inc2', ['inc1', 'inc3']],
     'export'  : [ 'defines', 'defines includes', ['defines', 'includes'] ],
     'run' : [ {}, {'cmd': 'ls'}, {'cmd': 'ls -la'}],
-    'substvars' : [ {'VAR': 'ls'}, {'MYVAR': 'ls'}, {'MYVAR1': 'ls -la'}],
     'objfile-index' : [1, 2, 3],
 }
 

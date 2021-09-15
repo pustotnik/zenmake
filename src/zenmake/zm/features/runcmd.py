@@ -17,7 +17,7 @@ from waflib import Task
 from zm.constants import PLATFORM, EXE_FILE_EXTS, PYTHON_EXE
 from zm.pyutils import maptype, stringtype
 from zm import log, error
-from zm.utils import cmdHasShellSymbols, substVars
+from zm.utils import cmdHasShellSymbols, substVars, substBuiltInVars
 from zm.pathutils import PathsParam
 from zm.features import postcmd
 
@@ -29,7 +29,7 @@ if PLATFORM == 'windows':
 else:
     _CMDFILE_EXTS = EXE_FILE_EXTS
 
-_RE_STARTS_WITH_TARGET = re.compile(r'\s*\$\{TGT')
+_RE_STARTS_WITH_SUBST = re.compile(r'\s*\$[\{\(]', re.ASCII)
 
 RUNBY_FILE_EXT = {
     '.py'  : ['python3', 'python'],
@@ -100,7 +100,7 @@ def _processCmdLine(conf, taskParams, cwd, cmdArgs):
             if launcherPath:
                 cmdline = '%s %s' % (launcherPath, cmdline)
 
-    elif partsCount > 1 and not shell and not _RE_STARTS_WITH_TARGET.match(launcher):
+    elif partsCount > 1 and not shell and not _RE_STARTS_WITH_SUBST.match(launcher):
         # Waf raises exception in verbose mode with 'shell' == False if it
         # cannot find full path to executable and on windows cmdline
         # like 'python file.py' doesn't work.
@@ -280,7 +280,6 @@ def _makeCmdRuleArgs(tgen):
     env = tgen.env.derive()
     environ = (env.env or os.environ).copy()
     environ.update(ruleArgs.pop('env', {}))
-    env.update(zmTaskParams.get('substvars', {}))
     env.env = environ
 
     ruleArgs.update({
@@ -324,7 +323,7 @@ def applyRunCmd(tgen):
 
     # Waf substitutes TGT var from task.outputs but it cannot be used for a task
     # that already has own outputs due to duplication. So it is better to substitute
-    # TGT and SRC vars right here.
+    # TGT/tgt and SRC/src vars right here.
     cmdline = ruleArgs['rule']
     if isinstance(cmdline, stringtype):
         cwd = ruleArgs['cwd']
@@ -336,8 +335,12 @@ def applyRunCmd(tgen):
         if source:
             source = [ _normpath(_relpath(x.abspath(), cwd)) for x in source]
 
-        svars = { 'SRC' : ' '.join(source), 'TGT' : target}
-        ruleArgs['rule'] = substVars(cmdline, svars)
+        substvars = zmTaskParams.get('substvars', {})
+        cmdline = substVars(cmdline, substvars.get)
+
+        bvars = ruleArgs['env']['$builtin-vars']
+        bvars.update({ 'src': ' '.join(source), 'tgt': target })
+        ruleArgs['rule'] = substBuiltInVars(cmdline, bvars)
 
     repeat = ruleArgs.pop('repeat', 1)
 

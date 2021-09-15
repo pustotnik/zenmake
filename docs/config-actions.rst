@@ -118,7 +118,7 @@ These configuration actions in ``dict`` format:
         is used on MS Windows if the program was not found.
 
         The ``var`` parameter can be used to set
-        :ref:`dynamic substitution<buildconf-substitutions-dynamic>` variable name.
+        :ref:`substitution<buildconf-substitutions-vars>` variable name.
         By default it's a first name from the ``names`` in upper case and without
         symbols '-' and '.'.
         If this name is found in environment variables, ZenMake will use it instead of
@@ -133,7 +133,7 @@ These configuration actions in ``dict`` format:
               source : foo.lua
               configure : [ { do: find-program, names: luac } ]
               # var 'LUAC' will be set in 'find-program' if 'luac' is found.
-              run: '${LUAC} -s -o ${TGT} ${SRC}'
+              run: '${LUAC} -s -o $(tgt) $(src)'
 
         in Python format:
 
@@ -143,7 +143,7 @@ These configuration actions in ``dict`` format:
                 'source' : 'foo.lua',
                 'configure' : [ dict(do = 'find-program', names = 'luac'), ],
                 # var 'LUAC' will be set in 'find-program' if 'luac' is found.
-                'run': '${LUAC} -s -o ${TGT} ${SRC}',
+                'run': '${LUAC} -s -o $(tgt) $(src)',
             },
 
     ``do`` = ``find-file``
@@ -162,7 +162,7 @@ These configuration actions in ``dict`` format:
         By default it's '.' which means :ref:`startdir<buildconf-startdir>`.
 
         The ``var`` parameter can be used to set
-        :ref:`dynamic substitution<buildconf-substitutions-dynamic>` variable name.
+        :ref:`substitution<buildconf-substitutions-vars>` variable name.
         By default it's a first name from the ``names`` in upper case and without
         symbols '-' and '.'.
 
@@ -325,7 +325,7 @@ These configuration actions in ``dict`` format:
         but you can set some custom define name.
 
         The ``var`` parameter can be used to set
-        :ref:`dynamic substitution<buildconf-substitutions-dynamic>` variable name. This parameter
+        :ref:`substitution<buildconf-substitutions-vars>` variable name. This parameter
         is ignored if value of ``parse-as`` is not 'entire'.
         By default it is not defined.
 

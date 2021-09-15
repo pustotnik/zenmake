@@ -17,11 +17,10 @@ import os
 from waflib import Node, Options
 from waflib.Task import ASK_LATER as TASK_ASK_LATER, RUN_ME as TASK_RUN_ME
 from waflib.Build import INSTALL, UNINSTALL, inst as WafInstallTask
-from zm import error, log
+from zm import utils, error, log
 from zm.pyutils import stringtype
-from zm.pathutils import getNativePath, makePathsConf, substPathsConf, getNodesFromPathsConf
+from zm.pathutils import getNativePath, makePathsConf, getNodesFromPathsConf
 from zm.autodict import AutoDict
-from zm.utils import substVars, hashObj
 from zm.waf.build import BuildContext
 
 joinpath = os.path.join
@@ -108,7 +107,6 @@ class inst(WafInstallTask):
 
         self.zmTaskParams = getattr(self.generator, 'zm-task-params', {})
         self._actions = []
-        self._substEnv = None
         self._uid = None
         self._ctxnodes = None
 
@@ -162,33 +160,24 @@ class inst(WafInstallTask):
         if isdir(dirpath) and not os.access(dirpath, os.W_OK):
             raise error.ZenMakeError('Permission denied: ' + dirpath)
 
-    def _getSubstEnv(self):
-
-        if self._substEnv is not None:
-            return self._substEnv
-
-        env = self.env
-        substvars = self.zmTaskParams.get('substvars')
-        if substvars:
-            env = env.derive()
-            env.update(substvars)
-
-        self._substEnv = env
-        return env
+    def _getSubstBuiltInVars(self):
+        return self.env['$builtin-vars']
 
     def _getInstallPath(self, path = None, destdir = True):
 
         if path is None:
             path = self.install_to
 
-        env = self._getSubstEnv()
+        bvars = self._getSubstBuiltInVars()
         if isinstance(path, Node.Node):
             dest = path.abspath()
         else:
-            dest = normpath(substVars(getNativePath(path), env))
+            path = utils.substVars(path, self.env.get_flat)
+            path = utils.substBuiltInVars(path, bvars)
+            dest = normpath(getNativePath(path))
 
         if not isabspath(dest):
-            dest = joinpath(getNativePath(env.PREFIX), dest)
+            dest = joinpath(getNativePath(bvars['prefix']), dest)
 
         optdestdir = Options.options.destdir
         if destdir and optdestdir:
@@ -233,7 +222,7 @@ class inst(WafInstallTask):
             lst = [self.zmTaskParams['name']]
             lst.extend(self._actions)
             lst.append(self.generator.path.abspath())
-        self._uid = hashObj(lst)
+        self._uid = utils.hashObj(lst)
         return self._uid
 
     def runnable_status(self):
@@ -310,7 +299,7 @@ class inst(WafInstallTask):
         startdir = nodes.startdir.abspath()
 
         src = makePathsConf(src, startdir)
-        substPathsConf(src, self._getSubstEnv())
+        src = utils.substBuiltInVarsInParam(src, self._getSubstBuiltInVars())
         foundNodes = getNodesFromPathsConf(nodes.root.ctx, src, topdir)
 
         dstDirNode = nodes.root.make_node(dst)
@@ -343,7 +332,7 @@ class inst(WafInstallTask):
     def _handleCopyAs(self, info, operations):
 
         nodes = self._ctxnodes
-        src = substVars(info['src'], self._getSubstEnv())
+        src = utils.substBuiltInVars(info['src'], self._getSubstBuiltInVars())
         dst = info['dst']
 
         if isabspath(src):
