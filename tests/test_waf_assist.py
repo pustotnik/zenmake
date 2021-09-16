@@ -2,7 +2,7 @@
 #
 
 # pylint: disable = wildcard-import, unused-wildcard-import
-# pylint: disable = missing-docstring, invalid-name
+# pylint: disable = missing-docstring, invalid-name, no-member
 # pylint: disable = too-many-statements, unused-argument
 
 """
@@ -426,5 +426,5 @@ def testUsedWafTaskKeys():
     assert 'features' in keys
     assist.registerUsedWafTaskKeys(['t1', 't2'])
     assert assist.getUsedWafTaskKeys() - set(['t1', 't2']) == keys
-    assist._usedWafTaskKeys.remove('t1')
-    assist._usedWafTaskKeys.remove('t2')
+    assist.unregisterUsedWafTaskKeys(['t1', 't2'])
+    assert assist.getUsedWafTaskKeys() == keys

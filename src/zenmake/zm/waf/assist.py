@@ -49,6 +49,10 @@ def registerUsedWafTaskKeys(keys):
     ''' Register used Waf task keys '''
     _usedWafTaskKeys.update(keys)
 
+def unregisterUsedWafTaskKeys(keys):
+    ''' Unregister used Waf task keys '''
+    _usedWafTaskKeys.difference_update(keys)
+
 def getUsedWafTaskKeys():
     ''' Get used Waf task keys '''
     return _usedWafTaskKeys
