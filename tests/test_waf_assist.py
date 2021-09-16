@@ -426,3 +426,5 @@ def testUsedWafTaskKeys():
     assert 'features' in keys
     assist.registerUsedWafTaskKeys(['t1', 't2'])
     assert assist.getUsedWafTaskKeys() - set(['t1', 't2']) == keys
+    assist._usedWafTaskKeys.remove('t1')
+    assist._usedWafTaskKeys.remove('t2')
