@@ -376,7 +376,7 @@ confscheme = {
     'startdir' : { 'type': 'str' },
     'buildroot' : { 'type': 'str' },
     'realbuildroot' : { 'type': 'str' },
-    'features' : {
+    'general' : {
         'type' : 'dict',
         'vars' : {
             'autoconfig' : { 'type': 'bool' },

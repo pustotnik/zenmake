@@ -1,5 +1,5 @@
 
-features: {
+general: {
     #provide-edep-targets : true
 }
 
@@ -27,7 +27,7 @@ buildtypes:
         cxxflags.select:
             default: -fPIC -O0 -g # g++/clang++
             msvc   : /Od /EHsc
-            
+
     release:
         cxxflags.select:
             default: -fPIC -O2 # g++/clang++

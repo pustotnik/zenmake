@@ -200,7 +200,7 @@ def processConfManagerWithCLI(testSuit, cmdLine):
     assist.initBuildType(confManager, cmd.args.buildtype)
 
     testSuit.cmdLine = cmdLine
-    db.useformat(confManager.root.features['db-format'])
+    db.useformat(confManager.root.general['db-format'])
     return testSuit.confManager
 
 def getTaskEnv(testSuit, taskName):

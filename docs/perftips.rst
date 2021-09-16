@@ -18,4 +18,4 @@ difference in performance of ZenMake.
 
 It's recommended to check if it really has positive effect before using of md5.
 To change hash algorithm you can use parameter ``hash-algo`` in buildconf
-:ref:`features<buildconf-features>`.
+:ref:`general features<buildconf-general>`.

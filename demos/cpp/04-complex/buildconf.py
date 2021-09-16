@@ -8,7 +8,7 @@ cliopts = {
     'verbose-build' : 1,
 }
 
-features = {
+general = {
     'monitor-files' : 'buildconf_tools.py',
     'build-work-dir-name' : 'wrk',
 }

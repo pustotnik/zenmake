@@ -376,14 +376,14 @@ class TestSuite(object):
     def testValidateParamFeatures(self):
 
         buildconf = FakeBuildConf()
-        self._checkAttrAsDict(buildconf, 'features')
+        self._checkAttrAsDict(buildconf, 'general')
 
-        setattr(buildconf, 'features', { 'autoconfig' : 1 })
+        setattr(buildconf, 'general', { 'autoconfig' : 1 })
         with pytest.raises(ZenMakeConfTypeError):
             validator.validate(buildconf)
-        setattr(buildconf, 'features', { 'autoconfig' : False })
+        setattr(buildconf, 'general', { 'autoconfig' : False })
         validator.validate(buildconf)
-        setattr(buildconf, 'features', { 'autoconfig' : False, 'unknown': 1 })
+        setattr(buildconf, 'general', { 'autoconfig' : False, 'unknown': 1 })
         with pytest.raises(ZenMakeConfError):
             validator.validate(buildconf)
 

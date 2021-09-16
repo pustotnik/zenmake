@@ -328,9 +328,8 @@ class Config(object):
             else:
                 param.pop(name, None)
 
-        # features
-        confFeatures = self._conf.features
-        makePathParam(confFeatures, 'monitor-files', kind = 'paths')
+        # general features
+        makePathParam(self._conf.general, 'monitor-files', kind = 'paths')
 
         # external dependencies
         for dep in self._conf.edeps.values():
@@ -431,8 +430,8 @@ class Config(object):
         # startdir, subdirs - they are not merged
         mergedParams.update(('startdir', 'subdirs'))
 
-        # project, features, cliopts - they are not merged and always use parent values
-        for param in ('project', 'features', 'cliopts'):
+        # project, general, cliopts - they are not merged and always use parent values
+        for param in ('project', 'general', 'cliopts'):
             if parentConf is not None:
                 setattr(currentConf, param, getattr(parentConf, param))
             mergedParams.add(param)
@@ -874,9 +873,9 @@ class Config(object):
         return self._meta.buildtypedir
 
     @property
-    def features(self):
-        """ Get features """
-        return self._conf.features
+    def general(self):
+        """ Get general features """
+        return self._conf.general
 
     @property
     def conditions(self):

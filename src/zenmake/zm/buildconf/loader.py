@@ -53,11 +53,11 @@ def applyDefaults(buildconf, isTopLevel, projectDir):
 
     # Param 'realbuildroot' must not be set here
 
-    # features
-    if not hasattr(buildconf, 'features'):
-        setattr(buildconf, 'features', {})
+    # general features
+    if not hasattr(buildconf, 'general'):
+        setattr(buildconf, 'general', {})
     if isTopLevel:
-        params = buildconf.features
+        params = buildconf.general
         params['autoconfig'] = params.get('autoconfig', True)
         params['hash-algo'] = params.get('hash-algo', 'sha1')
         params['db-format'] = params.get('db-format', 'pickle')

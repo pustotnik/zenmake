@@ -1,5 +1,5 @@
 
-features = {
+general = {
     'db-format' : 'py',
     'provide-edep-targets' : True,
 }

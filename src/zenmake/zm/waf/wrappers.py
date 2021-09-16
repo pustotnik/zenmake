@@ -32,7 +32,7 @@ def _handleNoLockInTop(ctx, envGetter):
             return True
         from zm.error import ZenMakeError
         raise ZenMakeError('The project was not configured: run "configure" '
-                           'first or enable features.autoconfig in buildconf !')
+                           'first or enable general.autoconfig in buildconf !')
 
     Context.run_dir = env.rundir
     Context.top_dir = env.topdir
@@ -92,7 +92,7 @@ def wrapBldCtxAutoConf(method):
         if autoconfig:
             autoconfig = envValToBool(autoconfig)
         else:
-            autoconfig = bconf.features['autoconfig']
+            autoconfig = bconf.general['autoconfig']
 
         if not autoconfig:
             if not _handleNoLockInTop(ctx, ctx.zmMetaConf):

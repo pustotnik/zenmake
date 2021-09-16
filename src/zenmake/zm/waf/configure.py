@@ -663,14 +663,14 @@ class ConfigurationContext(WafConfContext):
         Add extra file paths to monitor for autoconfig feature
         """
 
-        files = bconf.features.get('monitor-files')
+        files = bconf.general.get('monitor-files')
         if not files:
             return
         for path in files.abspaths():
             if not os.path.isfile(path):
                 msg = "Error in the file %r:\n" % bconf.path
                 msg += "File path %r " % path
-                msg += "from the features.monitor-files doesn't exist"
+                msg += "from the general.monitor-files doesn't exist"
                 self.fatal(msg)
             self.monitFiles.append(path)
 

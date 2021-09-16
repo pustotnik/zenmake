@@ -1,5 +1,5 @@
 
-features = {
+general = {
     'provide-edep-targets' : True,
 }
 

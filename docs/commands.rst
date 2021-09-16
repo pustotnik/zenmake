@@ -19,7 +19,7 @@ configure
     This command processes most of values from :ref:`buildconf<buildconf>`
     of a project. Any change in :ref:`buildconf<buildconf>` leads to call
     of this command. You can change this behaviour with parameter ``autoconfig``
-    in buildconf :ref:`features<buildconf-features>`.
+    in buildconf :ref:`general features<buildconf-general>`.
 
 build
     Build a project in the current directory. It's the main command. To see all

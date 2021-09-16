@@ -30,7 +30,7 @@ def checkCommonDefaults(buildconf):
     assert hasattr(buildconf, 'cliopts')
     assert buildconf.cliopts == {}
 
-    assert hasattr(buildconf, 'features')
+    assert hasattr(buildconf, 'general')
 
     assert hasattr(buildconf, 'subdirs')
     assert buildconf.subdirs == []
@@ -59,7 +59,7 @@ def testInitDefaults():
     assert hasattr(buildconf, 'buildroot')
     assert buildconf.buildroot == DEFAULT_BUILDROOTNAME
 
-    assert buildconf.features == {
+    assert buildconf.general == {
         'autoconfig': True,
         'db-format': 'pickle',
         'hash-algo': 'sha1',
@@ -80,15 +80,15 @@ def testInitDefaults():
 
     checkCommonDefaults(buildconf)
 
-    assert buildconf.features == {}
+    assert buildconf.general == {}
     assert buildconf.project == {}
 
     ###################
 
     buildconf = FakeBuildConf()
-    setattr(buildconf, 'features', { 'autoconfig' : False })
+    setattr(buildconf, 'general', { 'autoconfig' : False })
     bconfloader.applyDefaults(buildconf, True, '')
-    assert buildconf.features == {
+    assert buildconf.general == {
         'autoconfig': False,
         'db-format': 'pickle',
         'hash-algo': 'sha1',

@@ -794,7 +794,7 @@ def produceExternalDeps(ctx):
             printLogo = False
         _runRule(ctx, rule)
 
-    bconfFeatures = ctx.bconfManager.root.features
+    bconfFeatures = ctx.bconfManager.root.general
     if cmd == 'build' and bconfFeatures.get('provide-edep-targets', False):
         _provideDepTargetFiles(ctx)
 

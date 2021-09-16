@@ -144,8 +144,8 @@ def run():
             cmd, wafCmdLine = handleCLI(sys.argv, noBuildConf, bconf.cliopts)
 
         from zm import utils, db
-        utils.setDefaultHashAlgo(bconf.features['hash-algo'])
-        db.useformat(bconf.features['db-format'])
+        utils.setDefaultHashAlgo(bconf.general['hash-algo'])
+        db.useformat(bconf.general['db-format'])
 
     except error.ZenMakeError as ex:
         verbose = 0

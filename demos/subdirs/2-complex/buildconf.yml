@@ -1,10 +1,10 @@
 
 buildroot: _build
 
-project: 
+project:
     version: '0.3.1-dev'
 
-features:
+general:
     db-format: msgpack
 
 subdirs: [

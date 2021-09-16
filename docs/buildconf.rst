@@ -22,7 +22,7 @@ Simplified scheme of buildconf is:
     buildroot_ = path
     realbuildroot_ = path
     project_ = { ... }
-    :ref:`buildconf-features` = { ... }
+    :ref:`buildconf-general` = { ... }
     cliopts_ = { ... }
     conditions_ = { ... }
     tasks_ = { name: :ref:`task parameters<buildconf-taskparams>` }
@@ -124,11 +124,11 @@ project
               It's used as default value for
               :ref:`ver-num<buildconf-taskparams-ver-num>` field if not empty.
 
-.. _buildconf-features:
+.. _buildconf-general:
 
-features
+general
 """"""""
-    A `dict <buildconf-dict-def_>`_ array with some features.
+    A `dict <buildconf-dict-def_>`_ array with some general features.
     Supported values:
 
     :autoconfig: Execute the command ``configure`` automatically in

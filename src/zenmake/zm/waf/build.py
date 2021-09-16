@@ -30,8 +30,8 @@ def _ctxInit(self, **kwargs):
 
     self.buildWorkDirName = DEFAULT_BUILDWORKNAME
     if self.bconfManager:
-        bconfFeatures = self.bconfManager.root.features
-        buildWorkDirName = bconfFeatures.get('build-work-dir-name')
+        bconfGenFeatures = self.bconfManager.root.general
+        buildWorkDirName = bconfGenFeatures.get('build-work-dir-name')
         if buildWorkDirName is not None:
             self.buildWorkDirName = buildWorkDirName
 
