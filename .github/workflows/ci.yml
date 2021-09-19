@@ -136,6 +136,7 @@ jobs:
         COVERALLS_FLAG_NAME: ${{ matrix.os }}-py-${{ matrix.python }}
       run: coveralls --service=github
       shell: bash
+      continue-on-error: true
 
   complete-coveralls:
     needs: test
@@ -149,3 +150,4 @@ jobs:
       run: |
         pip install --upgrade coveralls
         coveralls --finish
+      continue-on-error: true
