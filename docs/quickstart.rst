@@ -8,17 +8,19 @@ Quickstart guide
 To use ZenMake you need :ref:`ZenMake<installation>` and
 :ref:`buildconf<buildconf>` file in the root of your project.
 
-Let's consider an example with this structure::
+Let's consider an example with this structure:
+
+.. code-block:: shell
 
     testproject
-    ├── buildconf.yaml
+    ├── buildconf.yml
     ├── prog
     │   └── test.cpp
     └── shlib
         ├── util.cpp
         └── util.h
 
-For this project ``buildconf.yaml`` can be like that:
+For this project ``buildconf.yml`` can be like that:
 
 .. code-block:: yaml
     :linenos:
@@ -118,7 +120,7 @@ ZenMake does the build:
     'build' finished successfully (0.531s)
 
 Running ZenMake without any parameters in a directory with ``buildconf.py`` or
-``buildconf.yaml`` is the same as running ``zenmake build``. Otherwise it's
+``buildconf.yml`` is the same as running ``zenmake build``. Otherwise it's
 the same as ``zenmake help``.
 
 Get the list of all commands with a short description using
@@ -143,7 +145,38 @@ be used:
     [4/4] Linking build/release/program
     'build' finished successfully (0.498s)
 
+Here is some possible variant of extended version of the config from above:
+
+.. code-block:: yaml
+    :emphasize-lines: 6,22-25
+
+    tasks:
+      util :
+        features : cxxshlib
+        source   : 'shlib/**/*.cpp'
+        includes : '.'
+        libs     : boost_timer # <-- Add the boost timer library as dependency
+      program :
+        features : cxxprogram
+        source   : 'prog/**/*.cpp'
+        includes : '.'
+        use      : util
+
+    buildtypes:
+      debug :
+        toolchain : clang++
+        cxxflags  : -O0 -g
+      release :
+        toolchain : g++
+        cxxflags  : -O2
+      default : debug
+
+    configure:
+      - do: check-headers
+        names : cstdio iostream # <-- Check C++ 'cstdio' and 'iostream' headers
+      - do: check-libs          # <-- Check all libraries from the 'libs' parameter
+
 One of the effective and simple ways to learn something is to use
-real examples.
-Examples of projects can be found in the repository `here <repo_demo_projects_>`_.
+real examples. So it is recommended to look at examples in ``demos`` directory
+which can be found in the repository `here <repo_demo_projects_>`_.
 

@@ -794,27 +794,27 @@ export-<param> / export
 
     There two forms: ``export-<param>`` and ``export``.
 
-    In first form ``<param>`` is a name of task parameter that can be exported.
-    As value can be used True/False or specific value to export.
-    If value is True then ZenMake exports value of parameter from current task
+    In first form ``<param>`` is the name of the exported task parameter.
+    The boolean True/False value or specific valid value to the ``<param>``
+    can be used to export.
+    If value is True then ZenMake exports the value of the parameter from current task
     to all dependent build tasks. If value is False then ZenMake
     exports nothing.
 
     Supported names:  ``includes``, ``defines``, ``config-results``,
     ``libpath``, ``stlibpath`` and all ``*flags``.
 
-    The parameter with ``config-results`` cannot be used to export specific values.
-    It always must be True/False only.
+    But the parameter ``export-config-results`` accepts boolean True/False only value.
 
     In second form it must be string or list with the names of parameters to export.
     Second form is simplified form of the first form when all values are True.
-    This form cannot be used to set specific value to export.
+    And this form cannot be used to set specific value to export.
 
     .. note::
 
         By default ZenMake exports nothing (all values are False).
 
-    Exported values are inserted in the beginning of the current parameter values
+    Exporting values are inserted in the beginning of the current parameter values
     in dependent tasks. It was made to have ability to overwrite parent values.
     For example, task A has ``defines`` with value ``AAA=q`` and task B depends
     on task A and has ``defines`` with value ``BBB=v``. So if task A has
