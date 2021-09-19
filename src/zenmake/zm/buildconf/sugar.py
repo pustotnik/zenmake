@@ -6,6 +6,8 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+from zm.utils import hashObj
+
 def _genSchemeWithFilter(confscheme, fromTaskParam, sugarParam):
 
     byfilterDictVars = confscheme['byfilter']['dict-vars']
@@ -33,19 +35,30 @@ def _genConfigureScheme(confscheme):
 def _genInstallScheme(confscheme):
     _genSchemeWithFilter(confscheme, 'install-files', 'install')
 
-def _applyAttrByFilter(buildconf, attrName, toSet):
+def _applyAttrByFilter(buildconf, attrName, paramNameToSet):
 
     attr = getattr(buildconf, attrName, [])
 
     byfilter = []
+    indexes = {}
     for item in attr:
         _for = item.pop('for', 'all')
+        if not _for:
+            _for = 'all'
         _notfor = item.pop('not-for', {})
+        indKey = hashObj([_for, _notfor])
+
+        existing = indexes.get(indKey)
+        if existing is not None:
+            existing = byfilter[existing]
+            existing['set'][paramNameToSet].append(item)
+            continue
 
         byfilter.append({
             'for' : _for, 'not-for' : _notfor,
-            'set' : toSet(item),
+            'set' : { paramNameToSet: [item] },
         })
+        indexes[indKey] = len(byfilter) - 1
 
     # insert into beginning
     buildconf.byfilter[0:0] = byfilter
@@ -56,10 +69,10 @@ def _applyAttrByFilter(buildconf, attrName, toSet):
         pass
 
 def _applyConfigure(buildconf):
-    _applyAttrByFilter(buildconf, 'configure', lambda x: { 'configure': [x] } )
+    _applyAttrByFilter(buildconf, 'configure', 'configure' )
 
 def _applyInstall(buildconf):
-    _applyAttrByFilter(buildconf, 'install', lambda x: { 'install-files': [x] } )
+    _applyAttrByFilter(buildconf, 'install', 'install-files' )
 
 def genSugarSchemes(confscheme):
     """
