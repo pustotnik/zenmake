@@ -36,9 +36,9 @@ PYPI_USER = 'pustotnik'
 
 AUTHOR_EMAIL = 'pustotnik@gmail.com'
 
-REPO_URL   = 'https://gitlab.com/pustotnik/zenmake'
+REPO_URL   = 'https://github.com/pustotnik/zenmake'
 SRC_URL    = REPO_URL
-ISSUES_URL = 'https://gitlab.com/pustotnik/zenmake/issues'
+ISSUES_URL = 'https://github.com/pustotnik/zenmake/issues'
 DOCS_URL = 'https://zenmake.readthedocs.io'
 
 DESCRIPTION = '%s - build system based on the WAF' % CAP_APPNAME

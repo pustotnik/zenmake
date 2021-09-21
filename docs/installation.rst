@@ -73,7 +73,7 @@ run ZenMake. Example for Linux (``zmrepo`` is custom directory)::
 
     $ mkdir zmrepo
     $ cd zmrepo
-    $ git clone https://gitlab.com/pustotnik/zenmake.git .
+    $ git clone https://github.com/pustotnik/zenmake.git .
 
 Next step is optional. Switch to existing version, for example to 0.7.0::
 
