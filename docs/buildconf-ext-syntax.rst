@@ -170,6 +170,11 @@ Example in YAML format:
       release: { fcflags: $GCC_BASE_FLAGS -O2 }
       default: debug
 
+.. note::
+
+    These substitution variables inherit values from parent buildconf in
+    :ref:`subdirs<dependencies-subdirs>`.
+
 Also values for such variables can be set by some :ref:`configuration actions<config-actions>`.
 For example see ``var`` in configuration action ``find-program``. But in this case
 these values are not visible everywhere.
