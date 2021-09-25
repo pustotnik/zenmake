@@ -588,9 +588,6 @@ class Config(object):
         if PLATFORM in platforms:
             buildtype = platforms[PLATFORM].get('default', buildtype)
 
-        filterBuildTypes = self._getFilterBuildtypes()
-        buildtype = filterBuildTypes.get('default', buildtype)
-
         supportedBuildTypes = self.supportedBuildTypes
         if buildtype is None:
             if len(supportedBuildTypes) == 1:
@@ -600,9 +597,7 @@ class Config(object):
 
         if buildtype not in supportedBuildTypes:
             errmsg = "Default build type '%s'" % buildtype
-            if 'default' in filterBuildTypes:
-                errmsg += " from the config variable 'byfilter'"
-            elif PLATFORM in platforms and 'default' in platforms[PLATFORM]:
+            if PLATFORM in platforms and 'default' in platforms[PLATFORM]:
                 errmsg += " from the config variable 'platform'"
             else:
                 errmsg += " from the config variable 'buildtypes'"
