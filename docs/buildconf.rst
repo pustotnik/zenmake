@@ -392,8 +392,7 @@ byfilter
     :buildtype: Build type or list of build types.
                 It can be existing build type(s) from buildtypes_ or new.
 
-    The attribute ``set`` has value of the :ref:`task parameters<buildconf-taskparams>`
-    with additional attribute ``default-buildtype``.
+    The attribute ``set`` has value of the :ref:`task parameters<buildconf-taskparams>`.
 
     Other features:
 
@@ -429,7 +428,6 @@ byfilter
             set:
               toolchain: g++
               linkflags: -Wl,--as-needed
-              default-buildtype: release-gcc
 
           - for: { buildtype: release-gcc }
             not-for : { platform : windows }

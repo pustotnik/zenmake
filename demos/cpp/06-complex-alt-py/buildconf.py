@@ -13,10 +13,10 @@ buildtypes = {
 }
 
 platforms = {
-    #'linux' : { 'default' : 'release-gcc' },
+    'linux' : { 'default' : 'release-gcc' },
     # Mac OS
     'darwin' : { 'default' : 'debug-clang' },
-    #'windows' : { 'default' : 'debug-msvc' },
+    'windows' : { 'default' : 'debug-msvc' },
 }
 
 byfilter = [
@@ -62,8 +62,6 @@ byfilter = [
         'set' : {
             'toolchain' : 'g++',
             'linkflags' : '-Wl,--as-needed',
-            #'default-buildtype' : 'debug-gcc',
-            'default-buildtype' : 'release-gcc',
         }
     },
     {
@@ -80,7 +78,6 @@ byfilter = [
         'for' : { 'buildtype' : ['debug-msvc', 'release-msvc'], 'platform' : 'windows', },
         'set' : {
             'toolchain' : 'msvc',
-            'default-buildtype' : 'debug-msvc',
         },
     },
 ]

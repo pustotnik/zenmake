@@ -81,35 +81,6 @@ class TestSuite(object):
             bconf = BuildConfig(asRealConf(buildconf))
             bt = bconf.defaultBuildType
 
-        # CASE: global buildconf.byfilter[..].default-buildtype
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.byfilter = [
-            {
-                'for' : {}, 'set' : { 'default-buildtype' : 'abc' }
-            }
-        ]
-        bconf = BuildConfig(asRealConf(buildconf))
-        assert bconf.defaultBuildType == 'abc'
-
-        # CASE: platform buildconf.byfilter[..].default-buildtype
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.byfilter = [
-            {
-                'for' : { 'platform' : PLATFORM },
-                'set' : { 'default-buildtype' : 'abc' }
-            }
-        ]
-        bconf = BuildConfig(asRealConf(buildconf))
-        assert bconf.defaultBuildType == 'abc'
-        buildconf.byfilter = [
-            {
-                'for' : { 'platform' : PLATFORM + randomstr() },
-                'set' : { 'default-buildtype' : 'abc' }
-            }
-        ]
-        bconf = BuildConfig(asRealConf(buildconf))
-        assert bconf.defaultBuildType == 'mybuildtype'
-
     def testSelectedBuildType(self, testingBuildConf):
         buildconf = testingBuildConf
         buildconf.buildtypes.mybuildtype = {}
@@ -394,19 +365,6 @@ class TestSuite(object):
             't2': {'name' : 't2', 'param2': '2'}
         }
         self._checkTasks(buildconf, buildtype, expected)
-
-        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.byfilter
-        # No param 'default-buildtype' in resulting tasks
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.byfilter = baseByfilter + [
-            { 'for' : { 'task' : 't1' }, 'set' : { 'param1' : '1' } },
-            { 'for' : { 'task' : 't2' }, 'set' : { 'param2' : '2' } },
-            { 'for' : {}, 'set' : { 'default-buildtype' : 'mybt' } },
-        ]
-        self._checkTasks(buildconf, buildtype, {
-            't1': {'name' : 't1', 'param1': '1'},
-            't2': {'name' : 't2', 'param2': '2'}
-        })
 
         # CASE: no tasks in buildconf.tasks, some tasks in buildconf.byfilter
         # with non-empty selected buildtype

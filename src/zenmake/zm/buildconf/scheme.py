@@ -525,10 +525,7 @@ confscheme = {
             },
             'set' : {
                 'type' : 'dict',
-                'vars' : dict(
-                    { 'default-buildtype' : { 'type': 'str' } },
-                    **taskscheme
-                ),
+                'vars' : taskscheme,
             },
         },
     },

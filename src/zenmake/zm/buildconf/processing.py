@@ -526,21 +526,9 @@ class Config(object):
                 elif name == 'not-for' and destPlatform not in platforms:
                     filterBuildTypes[destPlatform].update(buildtypes)
 
-            return platforms
-
         for entry in self._conf.byfilter:
-
-            enabledPlatforms = handleCondition(entry, 'for')
-            disabledPlatforms = handleCondition(entry, 'not-for')
-
-            defaultBuildType = entry.get('set', {}).get('default-buildtype', None)
-            if defaultBuildType is not None:
-                if not enabledPlatforms:
-                    enabledPlatforms = KNOWN_PLATFORMS
-
-                enabledPlatforms = set(enabledPlatforms) - set(disabledPlatforms)
-                if destPlatform in enabledPlatforms:
-                    filterBuildTypes['default'] = defaultBuildType
+            handleCondition(entry, 'for')
+            handleCondition(entry, 'not-for')
 
         self._meta.byfilter.buildtypes = filterBuildTypes
 
