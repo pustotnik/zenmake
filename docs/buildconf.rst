@@ -56,7 +56,7 @@ they can be used for some custom purposes.
     You can use native paths but it's recommended to use wherever possible
     POSIX paths (Symbol ``/`` is used as a separator in a path).
     With POSIX paths you will ensure the same paths on
-    different platforms/operation systems. POSIX paths will be
+    different platforms/operating systems. POSIX paths will be
     converted into native paths automatically, but not vice versa.
     For example, path 'my/path' will be converted into 'my\\path' on Windows.
     Also it's recommended to use relative paths wherever possible.

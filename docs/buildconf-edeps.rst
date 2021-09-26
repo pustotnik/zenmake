@@ -49,7 +49,7 @@ targets
     :name:
         It is a base name of the target file which is used
         for detecting of resulting target file name depending on destination
-        operation system, selected toolchain, value of ``type``, etc.
+        operating system, selected toolchain, value of ``type``, etc.
 
         If it's not set the target reference name is used.
 
