@@ -70,6 +70,10 @@ class PathsParam(object):
         'startdir' will be 'rootdir' + 'startdir'.
         """
 
+        if isinstance(value, PathsParam):
+            self._makeFrom(value, startdir, rootdir, kind)
+            return
+
         if kind is None:
             if isinstance(value, (list, tuple)):
                 kind = 'paths'
@@ -101,13 +105,10 @@ class PathsParam(object):
             'relpaths' : value,
         }
 
-    @classmethod
-    def makeFrom(cls, pathsParam, startdir = None, rootdir = None, kind = None):
+    def _makeFrom(self, pathsParam, startdir = None, rootdir = None, kind = None):
         """ Make the new object as a copy of pathsParam """
 
         # pylint: disable = protected-access
-
-        self = cls.__new__(cls)
 
         otherKind     = pathsParam._kind
         otherStartdir = pathsParam._startdir
@@ -147,6 +148,13 @@ class PathsParam(object):
                 else:
                     self._cache['relpaths'] = list(otherRelPaths)
         return self
+
+    @classmethod
+    def makeFrom(cls, pathsParam, startdir = None, rootdir = None, kind = None):
+        """ Make the new object as a copy of pathsParam """
+
+        self = cls.__new__(cls)
+        return self._makeFrom(pathsParam, startdir, rootdir, kind)
 
     @property
     def startdir(self):
