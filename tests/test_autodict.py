@@ -8,6 +8,7 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+import pickle
 from copy import copy, deepcopy
 import tests.common as cmn
 from zm import autodict
@@ -74,3 +75,17 @@ def testGetByDots():
     assert d.getByDots('a.b') == 2
     assert d.getByDots('a.b.c') == None
     assert d.getByDots('a.b.c.d') == None
+
+def testPickleDump():
+    AutoDict = autodict.AutoDict
+
+    d = AutoDict()
+    d['test'] = 15
+    d[22] = "aaa"
+
+    dump = pickle.dumps(d)
+
+    # we get pure dict object after loading
+    restored = pickle.loads(dump)
+    assert restored['test'] == 15
+    assert restored[22] == 'aaa'

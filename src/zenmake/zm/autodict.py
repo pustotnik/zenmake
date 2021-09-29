@@ -33,6 +33,12 @@ class AutoDict(dict):
     def __setattr__(self, name, value):
         self[name] = value
 
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
     def __copy__(self):
         return self.copy()
 
