@@ -13,9 +13,8 @@ from copy import deepcopy
 from collections import defaultdict
 
 from zm.constants import DEPNAME_DELIMITER, SYSTEM_LIB_PATHS, PYTHON_EXE, PLATFORM
-from zm.pyutils import maptype
-from zm import error, log, db, cli
-from zm.utils import toListSimple, runCmd, uniqueListWithOrder, uniqueDictListWithOrder
+from zm.pyutils import maptype, stringtype
+from zm import error, log, db, cli, utils
 from zm.pathutils import PathsParam, getNodesFromPathsConf
 from zm.buildconf import loader as buildconfLoader
 from zm.buildconf.processing import Config as BuildConfig
@@ -28,6 +27,7 @@ pathlexists = os.path.lexists
 normpath    = os.path.normpath
 relpath     = os.path.relpath
 findConfFile = buildconfLoader.findConfFile
+hashRtObj = utils.hashOrdObj
 
 symlink = getattr(os, "symlink", None)
 symlink = None if not callable(symlink) else symlink
@@ -69,7 +69,7 @@ def _handleTasksWithDeps(bconf, allTasks):
 
         taskDeps = defaultdict(list)
 
-        foundItems = uniqueListWithOrder(foundItems)
+        foundItems = utils.uniqueListWithOrder(foundItems)
         for item in foundItems:
             depName, useName = item.split(DEPNAME_DELIMITER)
 
@@ -129,7 +129,7 @@ def _dispatchRules(rules):
             # by default rule is called in zm command with the same name
             cmds = [ruleParams['name']]
         else:
-            cmds = toListSimple(cmds)
+            cmds = utils.toListSimple(cmds)
 
         for cmd in cmds:
             cmdRules = producers.setdefault(cmd, [])
@@ -142,13 +142,13 @@ def _dispatchRules(rules):
         for ruleParams in cmdRules:
             reprKey = ruleParams.copy()
             reprKey.pop('$from-deps', None)
-            reprKey = repr(reprKey)
+            reprKey = hashRtObj(reprKey)
             seenRule = seen.get(reprKey)
             if seenRule is not None:
                 seenDeps = seenRule['$from-deps']
-                seenDepsIds = { id(x) for x in seenDeps }
+                seenDepsIds = { hashRtObj(x) for x in seenDeps }
                 for dep in ruleParams['$from-deps']:
-                    if id(dep) not in seenDepsIds:
+                    if hashRtObj(dep) not in seenDepsIds:
                         seenDeps.append(dep)
             else:
                 _rules.append(ruleParams)
@@ -212,7 +212,7 @@ def _detectZenMakeProjectRules(depConf, buildtype):
     rules = {
         'configure': dict(baseRule, **{
             'cmd' : '%s %s %s' % (ZM_RUN, 'configure', cmdArgs),
-            'trigger' : { 'func' : needToConfigure },
+            'trigger' : { 'func' : utils.BuildConfFunc(needToConfigure) },
             'zm-commands' : ['configure'],
         }),
         'build' : dict(baseRule, **{
@@ -442,7 +442,7 @@ def _setupTaskDeps(ctx, bconf, taskParams):
         for targetRefName in useNames:
             targetConf = targetConfs.get(targetRefName)
             if targetConf is None:
-                msg = 'Task %r: target %r in dependency %r is not found.' % \
+                msg = 'Task %r: target %r in dependency %r was not found.' % \
                         (taskParams['name'], targetRefName, depName)
                 raise error.ZenMakeConfError(msg, confpath = bconf.path)
 
@@ -506,14 +506,14 @@ def finishExternalDepsConfig(cfgCtx):
     seenRules = set()
     for rules in zmdepconfs.values():
         for rule in rules:
-            if id(rule) in seenRules:
+            if hashRtObj(rule) in seenRules:
                 continue
             rule['targets'] = []
             fromDeps = rule.pop('$from-deps')
             for depConf in fromDeps:
-                _depRules = depConfToRules.setdefault(id(depConf), [depConf, []])
+                _depRules = depConfToRules.setdefault(hashRtObj(depConf), [depConf, []])
                 _depRules[1].append(rule)
-            seenRules.add(id(rule))
+            seenRules.add(hashRtObj(rule))
 
     for depConf, rules in depConfToRules.values():
         targets = _makeDepTargetsForDb(depConf, rootdir)
@@ -526,7 +526,7 @@ def finishExternalDepsConfig(cfgCtx):
     ### make list of all dep targets
 
     # uniqify all dep targets
-    depTargets = uniqueDictListWithOrder(depTargets)
+    depTargets = utils.uniqueDictListWithOrder(depTargets)
 
     zmdepconfs['$all-dep-targets'] = depTargets
 
@@ -620,10 +620,14 @@ def _checkTriggerFunc(ctx, rule):
     if not func:
         return False
 
-    if not callable(func):
-        bconfDirPath, funcName = func
+    if isinstance(func, stringtype):
+        bconfFilePath, funcName, _ = func.split(':')
+        bconfDirPath = os.path.split(bconfFilePath)[0]
         bconf = ctx.bconfManager.config(bconfDirPath)
         func = bconf.getattr(funcName)[0]
+    else:
+        # must be utils.BuildConfFunc
+        func = func.func
 
     kwargs = {
         'zmcmd' : ctx.cmd,
@@ -698,7 +702,7 @@ def _runRule(ctx, rule):
         stream.flush()
 
     kwargs['outCallback'] = printLine
-    exitcode = runCmd(cmd, **kwargs)
+    exitcode = utils.runCmd(cmd, **kwargs)
     if exitcode != 0:
         raise error.ZenMakeProcessFailed(cmd, exitcode)
 

@@ -11,6 +11,7 @@ import sys
 import signal
 import re
 import shlex
+import inspect
 from copy import deepcopy
 from hashlib import sha1
 from importlib import import_module as importModule
@@ -109,7 +110,6 @@ def asmethod(cls, methodName = None, wrap = False, **kwargs):
     return decorator
 
 md5                = wafutils.md5
-HashAlgo           = sha1
 readFile           = wafutils.readf
 hashOrdObj         = wafutils.h_list
 hexOfStr           = wafutils.to_hex
@@ -206,17 +206,26 @@ def substBuiltInVarsInParam(val, svars):
 
     return val
 
+_HashAlgo = sha1
+
 def setDefaultHashAlgo(algo):
     """
     Set default hash algo. Can be 'sha1' or 'md5'.
     """
 
     # pylint: disable = global-statement
-    global HashAlgo
+    global _HashAlgo
     if algo == 'md5':
-        HashAlgo = wafutils.md5 = md5
+        _HashAlgo = wafutils.md5 = md5
     else:
-        HashAlgo = wafutils.md5 = sha1
+        _HashAlgo = wafutils.md5 = sha1
+
+def defaultHashAlgo():
+    """
+    Get default hash algo. Can be 'sha1' or 'md5'.
+    """
+
+    return _HashAlgo
 
 # Since python 3.4 non-inheritable file handles are provided by default
 if hasattr(os, 'O_NOINHERIT') and sys.hexversion < 0x3040000:
@@ -245,7 +254,7 @@ else:
 
 def hashFile(path):
     """ Hash file by using sha1/md5 """
-    _hash = HashAlgo()
+    _hash = _HashAlgo()
     return _hashFile(_hash, path).digest()
 
 def hashFiles(paths):
@@ -260,10 +269,34 @@ def hashFiles(paths):
     #    _hash = hashOrdObj((_hash, readFile(path, 'rb')))
     #return _hash
 
-    _hash = HashAlgo()
+    _hash = _HashAlgo()
     for path in paths:
         _hashFile(_hash, path)
     return _hash.digest()
+
+class BuildConfFunc(object):
+    """
+    Class to store a func from buildconf
+    """
+
+    __slots__ = ('func', 'name', 'filepath', 'startLN')
+
+    def __init__(self, func, filepath = None):
+        self.func = func
+        self.name = func.__name__
+
+        if not filepath:
+            # the inspect.getabsfile exists but not documented
+            filepath = inspect.getsourcefile(func) or inspect.getfile(func)
+
+        if not os.path.isabs(filepath):
+            filepath = os.path.abspath(filepath)
+        self.filepath = filepath
+        self.startLN = inspect.getsourcelines(func)[1]
+
+    def __repr__(self):
+        _repr = "%s:%s:%d" % (self.filepath, self.name, self.startLN)
+        return _repr
 
 if PLATFORM == 'windows':
     def lchown(path, user = -1, group = -1):

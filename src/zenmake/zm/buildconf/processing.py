@@ -351,7 +351,7 @@ class Config(object):
                 _makePathParamWithPattern(triggers, 'paths-dont-exist')
                 func = triggers.get('func')
                 if func:
-                    triggers['func'] = (self.confdir, func.__name__)
+                    triggers['func'] = utils.BuildConfFunc(func)
 
         # taskparams
         self._prepareTaskParams()
