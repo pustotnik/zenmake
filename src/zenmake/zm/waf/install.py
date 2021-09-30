@@ -222,7 +222,7 @@ class inst(WafInstallTask):
             lst = [self.zmTaskParams['name']]
             lst.extend(self._actions)
             lst.append(self.generator.path.abspath())
-        self._uid = utils.hashObj(lst)
+        self._uid = utils.hashOrdObj(lst)
         return self._uid
 
     def runnable_status(self):

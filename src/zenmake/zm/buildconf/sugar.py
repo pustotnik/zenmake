@@ -6,7 +6,7 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-from zm.utils import hashObj
+from zm.utils import hashOrdObj
 
 def _genSchemeWithFilter(confscheme, fromTaskParam, sugarParam):
 
@@ -46,7 +46,7 @@ def _applyAttrByFilter(buildconf, attrName, paramNameToSet):
         if not _for:
             _for = 'all'
         _notfor = item.pop('not-for', {})
-        indKey = hashObj([_for, _notfor])
+        indKey = hashOrdObj([_for, _notfor])
 
         existing = indexes.get(indKey)
         if existing is not None:

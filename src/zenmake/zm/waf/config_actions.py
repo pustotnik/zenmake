@@ -632,7 +632,7 @@ def _calcConfCheckHexHash(checkArgs, params):
         envStr += '%r %r ' % (k, val)
     buff.append('%s: %s' % ('env', envStr))
 
-    return utils.hexOfStr(utils.hashObj(buff))
+    return utils.hexOfStr(utils.hashOrdObj(buff))
 
 def _checkWithBuild(checkArgs, params):
     """

@@ -111,8 +111,7 @@ def asmethod(cls, methodName = None, wrap = False, **kwargs):
 md5                = wafutils.md5
 HashAlgo           = sha1
 readFile           = wafutils.readf
-hashObj            = wafutils.h_list
-hashFunc           = wafutils.h_fun
+hashOrdObj         = wafutils.h_list
 hexOfStr           = wafutils.to_hex
 libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
@@ -258,7 +257,7 @@ def hashFiles(paths):
     # Old implementation (slower and less accurate):
     #_hash = 0
     #for path in paths:
-    #    _hash = hashObj((_hash, readFile(path, 'rb')))
+    #    _hash = hashOrdObj((_hash, readFile(path, 'rb')))
     #return _hash
 
     _hash = HashAlgo()
