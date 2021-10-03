@@ -10,6 +10,8 @@ for a build task. This collection is used in :ref:`tasks<buildconf-tasks>`,
 :ref:`buildtypes<buildconf-buildtypes>` and :ref:`byfilter<buildconf-byfilter>`.
 And it's core buildconf element.
 
+Also see :ref:`substitutions<buildconf-substitutions>` for string/text values.
+
 .. _buildconf-taskparams-features:
 
 features
@@ -92,7 +94,6 @@ target
     it is not needed to be set explicitly.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
     to set this parameter.
 
 .. _buildconf-taskparams-source:
@@ -243,10 +244,7 @@ source
         # two file paths with spaces
         'source' : '"my shlib/my util.c" "my shlib/my util2.c"'
 
-    You can use :ref:`built-in substitutions<buildconf-substitutions-builtin>`
-    in string values for this parameter.
-
-    And it's possible to use :ref:`selectable parameters<buildconf-select>`
+    It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
 .. _buildconf-taskparams-includes:
@@ -269,7 +267,6 @@ includes
         includes : [ include, myinclude ]
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
     to set this parameter.
 
     This parameter can be :ref:`exported<buildconf-taskparams-export>`.
@@ -432,7 +429,6 @@ defines
         'defines' : 'ABC=1 DOIT AAA="some long string"'
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
     to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
@@ -476,7 +472,6 @@ use
         'use' : 'util mylib someproject:somelib'
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
     to set this parameter.
 
 .. _buildconf-taskparams-libs:
@@ -510,7 +505,6 @@ libs
         'libs' : 'm rt'
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
     to set this parameter.
 
 .. _buildconf-taskparams-libpath:
@@ -540,7 +534,6 @@ libpath
         'libpath' : '/local/lib "my path"' # in case of spaces in a path
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
     to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
@@ -568,7 +561,6 @@ monitlibs
     ZenMake uses sha1/md5 hashes to check changes of every library file.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
     to set this parameter.
 
 stlibs
@@ -576,7 +568,6 @@ stlibs
     The same as ``libs`` but for static libraries.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
     to set this parameter.
 
 stlibpath
@@ -584,7 +575,6 @@ stlibpath
     The same as ``libpath`` but for static libraries.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
     to set this parameter.
 
     Also this parameter can be :ref:`exported<buildconf-taskparams-export>`.
@@ -595,7 +585,6 @@ monitstlibs
     by parameter ``stlibs``.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
     variables to set this parameter.
 
 rpath
@@ -607,7 +596,6 @@ rpath
     in one string then each such a path must be in quotes.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
     to set this parameter.
 
 .. _buildconf-taskparams-ver-num:
@@ -619,7 +607,6 @@ ver-num
     not support it.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
     to set this parameter.
 
 .. _buildconf-taskparams-run:
@@ -862,7 +849,6 @@ export-<param> / export
             ``export`` with ``config-results`` for that.
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
-    and/or :ref:`built-in substitutions<buildconf-substitutions-builtin>`
     (in strings) to set this parameter.
 
 .. _buildconf-taskparams-install-path:
@@ -918,25 +904,20 @@ install-files
         In this case all files from specified directory will be copied
         recursively with directories hierarchy.
 
-        If ``do`` is ``copy-as``, it must one path to a file. And it must be relative
+        If ``do`` is ``copy-as``, it must be one path to a file. And it must be relative
         to the :ref:`startdir<buildconf-startdir>` or an absolute path.
 
-        If ``do`` is ``symlink``, it must one path to a file. Created symbolic
+        If ``do`` is ``symlink``, it must be one path to a file. Created symbolic
         link will point to this path. Also it must be relative
         to the :ref:`startdir<buildconf-startdir>` or an absolute path.
 
-        You can use any :ref:`built-in substitution<buildconf-substitutions-builtin>` variable
-        here.
     :dst:
         If ``do`` is ``copy`` then it must be a path to a directory.
-        If ``do`` is ``copy-as``, it must one path to a file.
+        If ``do`` is ``copy-as``, it must be one path to a file.
         If ``do`` is ``symlink``, this parameter cannot be used. See parameter ``symlink``.
 
         It must be relative to the :ref:`startdir<buildconf-startdir>` or
         an absolute path.
-
-        You can use any :ref:`built-in substitution<buildconf-substitutions-builtin>` variable
-        here.
 
         Any path here will have value of ``destdir``
         at the beginning if this ``destdir`` is set to non-empty value.
@@ -949,9 +930,6 @@ install-files
 
         It must be relative to the :ref:`startdir<buildconf-startdir>` or
         an absolute path.
-
-        You can use any :ref:`built-in substitution<buildconf-substitutions-builtin>` variable
-        here.
 
     :chmod:
         Change file mode bits. It's for POSIX platforms only

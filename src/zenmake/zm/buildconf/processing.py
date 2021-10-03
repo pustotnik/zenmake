@@ -14,15 +14,15 @@ from copy import deepcopy
 from zm.constants import PLATFORM, KNOWN_PLATFORMS, DEPNAME_DELIMITER
 from zm.constants import CWD, INVALID_BUILDTYPES, CONFTEST_DIR_PREFIX
 from zm.autodict import AutoDict
-from zm.error import ZenMakeError, ZenMakeLogicError, ZenMakeConfError
+from zm.error import ZenMakeError, ZenMakeConfError
 from zm.pyutils import stringtype, maptype
 from zm import utils, log
-from zm.pathutils import unfoldPath, getNativePath
-from zm.pathutils import PathsParam, makePathsConf
+from zm.pathutils import unfoldPath, getNativePath, makePathsConf
 from zm.buildconf import loader
 from zm.buildconf.scheme import taskscheme, KNOWN_CONF_PARAM_NAMES, KNOWN_CONF_SUGAR_NAMES
 from zm.buildconf.sugar import applySyntacticSugar
-from zm.features import ToolchainVars, BUILDCONF_PREPARE_TASKPARAMS
+from zm.buildconf.paths import ConfPaths
+from zm.features import ToolchainVars
 
 joinpath = os.path.join
 abspath  = os.path.abspath
@@ -39,6 +39,9 @@ substVars     = utils.substVars
 
 _TOOLCHAIN_PATH_ENVVARS = frozenset(ToolchainVars.allSysVarsToSetToolchain())
 _ALL_CONF_PARAM_NAMES = list(KNOWN_CONF_PARAM_NAMES | KNOWN_CONF_SUGAR_NAMES)
+_BUILTIN_IGNORED_CONF_PARAM_NAMES = frozenset([
+    'startdir', 'buildroot', 'realbuildroot', 'platforms'
+])
 
 _RE_LIB_VER = re.compile(r"^\d+(?:\.\d+)*")
 _TASKPARAMS_TOLIST_MAP = {}
@@ -49,17 +52,6 @@ _TASKPARAMS_TOLIST_MAP = {}
 #    """
 #    from zm import version
 #    return version.isDev()
-
-def _applyStartDirToParam(bconf, param):
-    if isinstance(param, bool):
-        return param
-    return PathsParam(param, bconf.startdir, kind = 'paths')
-
-_PREPARE_TASKPARAMS_HOOKS = [(x, _applyStartDirToParam)
-                             for x in ('includes', 'export-includes', 'libpath', 'stlibpath')]
-
-_PREPARE_TASKPARAMS_HOOKS = tuple(_PREPARE_TASKPARAMS_HOOKS) + \
-                            BUILDCONF_PREPARE_TASKPARAMS
 
 def _genTaskParamsToListMap(result):
 
@@ -163,19 +155,23 @@ class Config(object):
 
     __slots__ = '_conf', '_meta', '_confpaths', '_parent', '_svarsResolver'
 
-    def __init__(self, buildconf, buildroot = None, parent = None):
+    def __init__(self, buildconf, clivars = None, parent = None):
         """
         buildconf - module of a buildconf file
-        buildroot - forced buildroot (from cmdline)
+        clivars   - actual command line args/options like destdir, prefix, etc
         parent    - parent Config object
         """
 
         self._parent = parent
         self._conf = buildconf
 
+        if clivars is None:
+            clivars = parent._meta.clivars if parent else {}
+
         self._meta = AutoDict()
         self._meta.buildtypes.selected = None
         self._meta.envvars = set()
+        self._meta.clivars = clivars
 
         self._meta.buildconffile = abspath(buildconf.__file__)
         self._meta.buildconfdir  = dirname(self._meta.buildconffile)
@@ -188,16 +184,20 @@ class Config(object):
         self._meta.rootdir = parent.rootdir if parent else self._meta.startdir
 
         # init/merge params including values from parent Config
+
         self._applyDefaults()
         self._applySugar()
-        self._postValidateConf()
-        self._makeBuildDirParams(buildroot)
-        self._prepareParams()
+        self._makeBuildDirParams(clivars.get('buildroot'))
+        self._postValidateBuildtypeNames()
+
+        self._confpaths = ConfPaths(self)
+
+        self._applyBuildType()
+        self._setUpBuiltInVars()
+        self._handleBuiltInVars()
+
         self._handleTaskNames() # must be called before merging
         self._merge()
-
-        from zm.buildconf.paths import ConfPaths
-        self._confpaths = ConfPaths(self)
 
     def _parentConf(self):
         # pylint: disable = protected-access
@@ -268,94 +268,6 @@ class Config(object):
         else:
             mergeBuildRoot('realbuildroot')
 
-    def _prepareTaskParams(self):
-
-        buildconf = self._conf
-        startdir = self.startdir
-
-        def prepareTaskParams(hooks, taskparams):
-
-            for hookInfo in hooks:
-                paramName = hookInfo[0]
-                handler   = hookInfo[1]
-                param = taskparams.get(paramName)
-                if param is not None:
-                    taskparams[paramName] = handler(self, param)
-
-                paramName += '.select'
-                param = taskparams.get(paramName, {})
-                for condition in param:
-                    param[condition] = handler(self, param[condition])
-
-        # tasks, buildtypes
-        for varName in ('tasks', 'buildtypes'):
-            confVar = getattr(buildconf, varName)
-            for taskparams in confVar.values():
-                if not isinstance(taskparams, maptype):
-                    # buildtypes has special key 'default'
-                    continue
-                prepareTaskParams(_PREPARE_TASKPARAMS_HOOKS, taskparams)
-
-        # byfilter
-        for entry in buildconf.byfilter:
-            taskparams = entry.get('set')
-            if taskparams:
-                prepareTaskParams(_PREPARE_TASKPARAMS_HOOKS, taskparams)
-
-        # 'toolchains'
-        for params in buildconf.toolchains.values():
-            for k, v in params.items():
-                if k not in _TOOLCHAIN_PATH_ENVVARS:
-                    continue
-                params[k] = unfoldPath(startdir, getNativePath(v))
-
-    def _prepareParams(self):
-
-        startdir = self.startdir
-        relStartDir = relpath(startdir, self.rootdir)
-
-        def makePathParam(param, name, kind):
-            value = param.get(name)
-            if value:
-                param[name] = PathsParam(value, startdir, kind)
-            else:
-                param.pop(name, None)
-
-        def _makePathParamWithPattern(param, name):
-            value = param.get(name)
-            if value:
-                param[name] = makePathsConf(value, relStartDir)
-            else:
-                param.pop(name, None)
-
-        # general features
-        makePathParam(self._conf.general, 'monitor-files', kind = 'paths')
-
-        # external dependencies
-        for dep in self._conf.edeps.values():
-            makePathParam(dep, 'rootdir', kind = 'path')
-            makePathParam(dep, 'export-includes', kind = 'paths')
-
-            targets = dep.get('targets', {})
-            for params in targets.values():
-                makePathParam(params, 'dir', kind = 'path')
-
-            rules = dep.get('rules', {})
-            for params in rules.values():
-                if not isinstance(params, maptype):
-                    continue
-                makePathParam(params, 'cwd', kind = 'path')
-
-                triggers = params.get('trigger', {})
-                _makePathParamWithPattern(triggers, 'paths-exist')
-                _makePathParamWithPattern(triggers, 'paths-dont-exist')
-                func = triggers.get('func')
-                if func:
-                    triggers['func'] = utils.BuildConfFunc(func)
-
-        # taskparams
-        self._prepareTaskParams()
-
     def _postprocessTaskParams(self, tasks):
 
         # they are absolute paths
@@ -367,7 +279,6 @@ class Config(object):
         taskStartDir = relpath(startdir, rootdir)
 
         disabled = []
-
         for taskName, taskParams in tasks.items():
 
             if not taskParams.get('enabled', True):
@@ -380,25 +291,6 @@ class Config(object):
             # set startdir and bconf in task params
             taskParams['$startdir'] = taskStartDir
             taskParams['$bconf'] = self
-
-            for paramName, paramVal in taskParams.items():
-
-                convertTaskParamValue(taskParams, paramName)
-
-                if paramName != 'source':
-                    continue
-
-                # set relative startdir, just to reduce size of build cache
-                paramVal = taskParams[paramName]
-                for item in paramVal:
-                    paramStartDir = item['startdir']
-                    if utils.mayHaveSubstVar(paramStartDir):
-                        # don't touch 'startdir' if it has subst var
-                        continue
-                    if paramStartDir == startdir:
-                        item['startdir'] = taskStartDir
-                    elif isabs(paramStartDir):
-                        item['startdir'] = relpath(paramStartDir, rootdir)
 
         tasknames = self._meta.tasknames
         for name in disabled:
@@ -473,7 +365,7 @@ class Config(object):
 
         applySyntacticSugar(self._conf)
 
-    def _postValidateConf(self):
+    def _postValidateBuildtypeNames(self):
 
         # check buildtype names
 
@@ -669,19 +561,60 @@ class Config(object):
                     continue
 
                 task = tasks[taskName]
-
                 task.update(paramsSet)
-                task.pop('default-buildtype', None)
 
-    def _checkBuildTypeIsSet(self):
-        if self._meta.buildtypes.selected is None:
-            raise ZenMakeLogicError("Command line buildtype wasn't applied yet. "
-                                    "You should call method applyBuildType.")
+    def _setUpBuiltInVars(self):
 
-    def applyBuildType(self, buildtype):
+        if self._parent:
+            builtinvars = self._parent.builtInVars
+        else:
+            clivars = self._meta.clivars
+            builtinvars = {}
+            for name in ('destdir', 'prefix', 'bindir', 'libdir'):
+                builtinvars[name] = clivars.get(name, '')
+
+            builtinvars['prjname']      = self.projectName
+            builtinvars['topdir']       = self.rootdir
+            builtinvars['buildrootdir'] = self.confPaths.buildroot
+            builtinvars['buildtypedir'] = self.selectedBuildTypeDir
+
+        self._meta.builtinvars = builtinvars
+
+    def _handleBuiltInVars(self):
+
+        buildconf = self._conf
+        bvars = self._meta.builtinvars
+
+        apply = utils.substBuiltInVarsInParam
+        splitListOfStrs = False
+        paramNames = KNOWN_CONF_PARAM_NAMES - _BUILTIN_IGNORED_CONF_PARAM_NAMES
+        paramNames = list(paramNames)
+        for name in paramNames:
+            param = getattr(buildconf, name, None)
+            if param:
+                setattr(buildconf, name, apply(param, bvars, splitListOfStrs))
+
+    def _applyBuildType(self):
         """
-        Apply buildtype from command line
+        Apply buildtype for the buildconf.
         """
+
+        if self._meta.buildtypes.selected is not None:
+            return
+
+        parent = self._parent
+        if parent:
+            # pylint: disable = protected-access
+            parent._applyBuildType()
+            self._meta.buildtypes.selected = parent.selectedBuildType
+            self._meta.buildtypedir = parent.selectedBuildTypeDir
+            return
+
+        buildtype = self._meta.clivars.get('buildtype')
+        if buildtype is None:
+            buildtype = self.defaultBuildType
+        if not buildtype:
+            buildtype = ''
 
         supportedBuildTypes = self.supportedBuildTypes
         isNotValidType = not isinstance(buildtype, stringtype)
@@ -845,15 +778,19 @@ class Config(object):
     def selectedBuildType(self):
         """ Get selected build type """
 
-        self._checkBuildTypeIsSet()
         return self._meta.buildtypes.selected
 
     @property
     def selectedBuildTypeDir(self):
         """ Get selected build type directory """
 
-        self._checkBuildTypeIsSet()
         return self._meta.buildtypedir
+
+    @property
+    def builtInVars(self):
+        """ Get built-in vars """
+
+        return self._meta.builtinvars
 
     @property
     def general(self):
@@ -939,8 +876,6 @@ class Config(object):
         Get all build tasks
         """
 
-        self._checkBuildTypeIsSet()
-
         buildtype = self.selectedBuildType
         tasks = self._meta.tasks.get(buildtype)
         if tasks is not None:
@@ -981,7 +916,7 @@ class Config(object):
             for k, v in _vars.items():
                 if k in _TOOLCHAIN_PATH_ENVVARS:
                     # try to identify path and do warning if not
-                    path = unfoldPath(self.startdir, v)
+                    path = unfoldPath(self.startdir, getNativePath(v))
                     if not os.path.exists(path):
                         log.warn("Path to toolchain '%s' doesn't exist" % path)
                     v = path
@@ -998,14 +933,14 @@ class ConfManager(object):
     Class to manage Config instances
     """
 
-    __slots__ = '_buildroot', '_configs', '_virtConfigs', '_orderedConfigs'
+    __slots__ = '_clivars', '_configs', '_virtConfigs', '_orderedConfigs'
 
-    def __init__(self, topdir, buildroot):
+    def __init__(self, topdir, clivars):
         """
-        buildroot - forced buildroot (from cmdline)
+        clivars - actual command line args/options like destdir, prefix, etc
         """
 
-        self._buildroot = buildroot
+        self._clivars = clivars
         self._orderedConfigs = []
         self._configs = {}
         self._virtConfigs = {}
@@ -1033,14 +968,14 @@ class ConfManager(object):
         buildconf = loader.load(dirpath, filename)
 
         #TODO: optimize to validate only if buildconf files were changed
-        #if assist.isBuildConfChanged(buildconf, buildroot) or _isDevVersion():
+        #if assist.isBuildConfChanged(buildconf, clivars) or _isDevVersion():
         #    loader.validate(buildconf)
         loader.validate(buildconf)
 
         index = len(self._orderedConfigs)
         self._configs[dirpath] = index
 
-        bconf = Config(buildconf, self._buildroot, parent)
+        bconf = Config(buildconf, self._clivars, parent)
         self._orderedConfigs.append(bconf)
         startdir = bconf.startdir
         if startdir != dirpath:

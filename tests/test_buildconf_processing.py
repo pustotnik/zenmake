@@ -18,7 +18,7 @@ from zm.autodict import AutoDict
 from zm.error import *
 from zm.constants import *
 from zm.pathutils import unfoldPath
-from zm.buildconf.processing import convertTaskParamValue, Config as BuildConfig
+from zm.buildconf.processing import Config as BuildConfig
 from tests.common import asRealConf, randomstr
 
 joinpath = os.path.join
@@ -30,8 +30,7 @@ class TestSuite(object):
         buildconf = testingBuildConf
         conf = asRealConf(buildconf)
         bconf = BuildConfig(conf)
-        with pytest.raises(ZenMakeError):
-            btype = bconf.selectedBuildType
+        assert bconf.selectedBuildType == ''
         assert bconf._conf == conf
         assert bconf.projectName == buildconf.project.name
         assert bconf.projectVersion == buildconf.project.version
@@ -87,12 +86,11 @@ class TestSuite(object):
         buildconf.buildtypes.default = 'mybuildtype'
 
         bconf = BuildConfig(asRealConf(buildconf))
-        with pytest.raises(ZenMakeLogicError):
-            bt = bconf.selectedBuildType
+        assert bconf.selectedBuildType == 'mybuildtype'
 
-        buildtype = 'mybuildtype'
-        bconf.applyBuildType(buildtype)
-        assert bconf.selectedBuildType == buildtype
+        clivars = { 'buildtype': 'mybtype' }
+        bconf = BuildConfig(asRealConf(buildconf), clivars)
+        assert bconf.selectedBuildType == 'mybtype'
 
     def _checkSupportedBuildTypes(self, buildconf, expected):
         bconf = BuildConfig(asRealConf(buildconf))
@@ -238,29 +236,8 @@ class TestSuite(object):
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2' ])
 
-
-    def testApplyBuildType(self, testingBuildConf):
-
-        buildtype = 'mybuildtype'
-
-        buildconf = testingBuildConf
-        buildconf.buildtypes.mybuildtype = {}
-        buildconf.buildtypes.default = 'mybuildtype'
-
-        bconf = BuildConfig(asRealConf(buildconf))
-        with pytest.raises(ZenMakeLogicError):
-            bt = bconf.selectedBuildType
-
-        with pytest.raises(ZenMakeError):
-            bconf.applyBuildType(None)
-
-        bconf.applyBuildType(buildtype)
-        # Hm, all other results of this method is checked in testSupportedBuildTypes
-        assert bconf.selectedBuildType
-
     def _checkTasks(self, buildconf, buildtype, expected):
-        bconf = BuildConfig(asRealConf(buildconf))
-        bconf.applyBuildType(buildtype)
+        bconf = BuildConfig(asRealConf(buildconf), clivars = {'buildtype': buildtype})
 
         expected = expected.copy()
         for task in expected:
@@ -269,7 +246,7 @@ class TestSuite(object):
             taskParams['$bconf'] = bconf
             for name, value in taskParams.items():
                 taskParams[name] = value
-                convertTaskParamValue(taskParams, name)
+
         assert bconf.tasks == expected
         # to force covering of cache
         assert bconf.tasks == expected
@@ -279,8 +256,8 @@ class TestSuite(object):
 
         # CASE: invalid use
         bconf = BuildConfig(asRealConf(buildconf))
-        with pytest.raises(ZenMakeLogicError):
-            empty = bconf.tasks
+        empty = bconf.tasks
+        assert empty is not None and not empty
 
         buildconf.buildtypes.default = 'mybuildtype'
         buildconf.buildtypes.mybuildtype = {}
@@ -289,8 +266,7 @@ class TestSuite(object):
 
         # CASE: just empty buildconf.tasks
         buildconf = deepcopy(testingBuildConf)
-        bconf = BuildConfig(asRealConf(buildconf))
-        bconf.applyBuildType(buildtype)
+        bconf = BuildConfig(asRealConf(buildconf), clivars = {'buildtype': buildtype})
         assert bconf.tasks == {}
         # this assert just for in case
         assert bconf.selectedBuildType == 'mybuildtype'

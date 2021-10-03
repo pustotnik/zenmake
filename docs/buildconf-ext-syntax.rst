@@ -109,7 +109,7 @@ Substitutions
 -----------------------------------
 
 There are two types of substitutions in ZenMake: bash-like variables
-with ability to use system environment variables and built-in dynamic variables.
+with ability to use system environment variables and built-in variables.
 
 .. _buildconf-substitutions-vars:
 
@@ -195,10 +195,8 @@ For YAML format there are some constraints with ${VAR} form due to YAML specific
 Built-in variables
 """""""""""""""""""""""
 
-In some places (see descriptions of particular `task params<buildconf-taskparams>`)
-you can use dynamic built-in substitutions to configure values. These variables are
-resolved during the ``configure`` command. To avoid conflicts with environment and
-bash-like variables the syntax is different a little bit:
+ZenMake has some built-in substitutions. To avoid conflicts with environment and
+bash-like variables the syntax is a little bit different:
 
 in YAML format:
 
@@ -244,6 +242,15 @@ List of built-in variables:
 In some cases some extra variables are provided. For example,
 variables ``src`` and ``tgt`` are provided
 for the ``cmd`` in the task parameter :ref:`run<buildconf-taskparams-run>`.
+
+Built-in variables cannot be used in buildconf parameters which are used to
+determine values of that built-in variables. These parameters are:
+
+  - :ref:`startdir<buildconf-startdir>`, :ref:`buildroot<buildconf-buildroot>`,
+    :ref:`realbuildroot<buildconf-realbuildroot>`
+  - the ``default`` in the :ref:`buildtypes<buildconf-buildtypes>`
+  - the ``buildtypes``, ``platform`` and  ``task`` in the :ref:`byfilter<buildconf-byfilter>`
+  - any parameter in the :ref:`platforms<buildconf-platforms>`.
 
 .. note::
 

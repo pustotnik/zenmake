@@ -12,7 +12,7 @@ import os
 import re
 
 from zm.constants import PLATFORM
-from zm.pyutils import stringtype, _unicode, _encode
+from zm.pyutils import _unicode, _encode
 from zm.autodict import AutoDict as _AutoDict
 from zm.pathutils import getNodesFromPathsConf
 from zm.error import ZenMakeError, ZenMakeConfError
@@ -206,25 +206,6 @@ def orderTasksByLocalDeps(tasks):
     # So $weight can be poped.
     tasksList.sort(key = lambda x: x.pop('$weight'))
     return tasksList
-
-def initBuildType(bconfManager, cliBuildType):
-    """
-    Init correct buildtype according CLI and buildconf.
-    Returns resulting buildtype
-    """
-
-    bconf = bconfManager.root
-
-    buildtype = cliBuildType
-    if buildtype is None:
-        buildtype = bconf.defaultBuildType
-    if not buildtype and not isinstance(buildtype, stringtype):
-        buildtype = ''
-
-    for _bconf in bconfManager.configs:
-        _bconf.applyBuildType(buildtype)
-
-    return bconf.selectedBuildType
 
 def setTaskEnvVars(env, taskParams, toolchainSettings):
     """

@@ -337,8 +337,7 @@ def testRunConfigActionsUnknown(mocker, cfgctx):
         ctx.runConfigActions()
 
 def _checkToolchainNames(ctx, buildconf, buildtype, expected):
-    bconf = BuildConfig(asRealConf(buildconf))
-    bconf.applyBuildType(buildtype)
+    bconf = BuildConfig(asRealConf(buildconf), clivars = {'buildtype': buildtype})
     assert sorted(ctx.handleToolchains(bconf)) == sorted(expected)
 
 def testToolchainNames(testingBuildConf, cfgctx, monkeypatch):
@@ -346,12 +345,6 @@ def testToolchainNames(testingBuildConf, cfgctx, monkeypatch):
     ctx = cfgctx
 
     buildconf = testingBuildConf
-
-    # CASE: invalid use
-    bconf = BuildConfig(asRealConf(buildconf))
-    with pytest.raises(ZenMakeLogicError):
-        _ = ctx.handleToolchains(bconf)
-
     buildconf.buildtypes['debug-gxx'] = {}
     buildconf.buildtypes.default = 'debug-gxx'
     buildtype = 'debug-gxx'
@@ -360,8 +353,7 @@ def testToolchainNames(testingBuildConf, cfgctx, monkeypatch):
     buildconf = deepcopy(testingBuildConf)
     buildconf.tasks.test1.param1 = '111'
     buildconf.tasks.test2.param2 = '222'
-    bconf = BuildConfig(asRealConf(buildconf))
-    bconf.applyBuildType(buildtype)
+    bconf = BuildConfig(asRealConf(buildconf), clivars = {'buildtype': buildtype})
     # it returns tuple but it can return list so we check by len
     assert len(ctx.handleToolchains(bconf)) == 0
 
@@ -396,8 +388,7 @@ def testToolchainNames(testingBuildConf, cfgctx, monkeypatch):
             'set' : { 'param1' : '11', 'param2' : '22' }
         },
     ]
-    bconf = BuildConfig(asRealConf(buildconf))
-    bconf.applyBuildType(buildtype)
+    bconf = BuildConfig(asRealConf(buildconf), clivars = {'buildtype': buildtype})
     # it returns tuple but it can return list so we check by len
     assert len(ctx.handleToolchains(bconf)) == 0
 

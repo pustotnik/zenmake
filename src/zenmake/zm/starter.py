@@ -14,6 +14,7 @@ if sys.hexversion < 0x3050000:
 
 #pylint: disable=wrong-import-position
 from zm.constants import CWD
+from zm import utils
 
 joinpath = path.join
 
@@ -34,18 +35,38 @@ def handleCLI(args, noBuildConf, options):
     cli.selected = cmd
     return cmd, wafCmdLine
 
+def adjustCliDirPaths(cwd, cliargs):
+    """
+    Adjust path CLI vars buildroot, prefix, bindir, libdir
+    """
+
+    cliBuildRoot = cliargs.get('buildroot', None)
+    if cliBuildRoot and not path.isabs(cliBuildRoot):
+        cliBuildRoot = joinpath(cwd, cliBuildRoot)
+        cliargs['buildroot'] = cliBuildRoot
+
+    prefix = cliargs.get('prefix')
+    if prefix:
+        if not cliargs.get('bindir'):
+            cliargs['bindir'] = '%s/bin' % prefix
+        if not cliargs.get('libdir'):
+            cliargs['libdir'] = '%s/lib%s' % (prefix, utils.libDirPostfix())
+
+    for name in ('prefix', 'bindir', 'libdir'):
+        val = cliargs.get(name)
+        if val and not os.path.isabs(val):
+            cliargs[name] = '/' + val
+
 def runIndyCmd(cmd):
     """
     Run independent command that doesn't use buildconf and Waf.
     """
 
-    from zm.utils import loadPyModule
-
     if cmd.name not in _indyCmd:
         raise NotImplementedError('Unknown command')
 
     moduleName = _indyCmd[cmd.name]
-    module = loadPyModule(moduleName, withImport = True)
+    module = utils.loadPyModule(moduleName, withImport = True)
     return module.Command().run(cmd.args)
 
 def findTopLevelBuildConfDir(startdir):
@@ -132,18 +153,16 @@ def run():
                       'exists in the project directory.')
             return 1
 
-        cliBuildRoot = cmd.args.get('buildroot', None)
-        if cliBuildRoot and not path.isabs(cliBuildRoot):
-            cliBuildRoot = joinpath(cwd, cliBuildRoot)
+        adjustCliDirPaths(cwd, cmd.args)
 
-        bconfManager = BuildConfManager(bconfDir, cliBuildRoot)
+        bconfManager = BuildConfManager(bconfDir, cmd.args)
         bconf = bconfManager.root
 
         if bconf.cliopts:
             # Do parsing of CLI again to apply defaults from buildconf
             cmd, wafCmdLine = handleCLI(sys.argv, noBuildConf, bconf.cliopts)
 
-        from zm import utils, db
+        from zm import db
         utils.setDefaultHashAlgo(bconf.general['hash-algo'])
         db.useformat(bconf.general['db-format'])
 

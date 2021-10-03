@@ -96,6 +96,8 @@ buildroot
       This can be changed in the future by storing extra information in some
       other place like user home directory but now it is.
 
+.. _buildconf-realbuildroot:
+
 realbuildroot
 """""""""""""
     A path to the real root of a project build directory and by default it is
@@ -333,6 +335,8 @@ toolchains
             AR   : custom-toolchain/clangemu/llvm-ar
           g++:
             LINKFLAGS : -Wl,--as-needed
+
+.. _buildconf-platforms:
 
 platforms
 """""""""

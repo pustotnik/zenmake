@@ -193,7 +193,6 @@ def run(cwd, cmd, wafCmdLine, bconfManager):
     try:
 
         if 'buildtype' in cliArgs:
-            assist.initBuildType(bconfManager, cliArgs.buildtype)
             _prepareAndLoadFeatures(bconfManager)
 
         setupAndRunCommands(wafCmdLine, bconfManager)

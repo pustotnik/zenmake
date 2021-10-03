@@ -189,15 +189,15 @@ def processConfManagerWithCLI(testSuit, cmdLine):
         pass
 
     cmd, _ = starter.handleCLI(cmdLine, True, None)
-    cliBuildRoot = cmd.args.get('buildroot', None)
+
+    starter.adjustCliDirPaths(testSuit.cwd, cmd.args)
 
     bconfDir = testSuit.cwd
-    confManager = BuildConfManager(bconfDir, cliBuildRoot)
+    confManager = BuildConfManager(bconfDir, cmd.args)
     testSuit.confManager = confManager
     testSuit.confPaths = confManager.root.confPaths
 
     cmd, _ = starter.handleCLI(cmdLine, False, confManager.root.cliopts)
-    assist.initBuildType(confManager, cmd.args.buildtype)
 
     testSuit.cmdLine = cmdLine
     db.useformat(confManager.root.general['db-format'])

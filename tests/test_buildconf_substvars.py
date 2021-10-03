@@ -92,17 +92,15 @@ LAST_SUBDIRS_YAML = CONF_BODY_YML
 
 def checkVars(bconf, dbgValidVals, relValidVals):
 
+    buildtypes = bconf.getattr('buildtypes')[0]
+
     for idx in range(1, 7):
         buildtype = 'debug%d' % idx
-        bconf.applyBuildType(buildtype)
-        assert bconf.tasks['prog']['cxxflags'] == dbgValidVals[idx-1].split()
-        assert bconf.tasks['util']['cxxflags'] == dbgValidVals[idx-1].split()
+        assert buildtypes[buildtype]['cxxflags'] == dbgValidVals[idx-1]
 
     for idx in range(1, 4):
         buildtype = 'release%d' % idx
-        bconf.applyBuildType(buildtype)
-        assert bconf.tasks['prog']['cxxflags'] == relValidVals[idx-1].split()
-        assert bconf.tasks['util']['cxxflags'] == relValidVals[idx-1].split()
+        assert buildtypes[buildtype]['cxxflags'] == relValidVals[idx-1]
 
 def checkConfigNoEnv(bconf):
 
@@ -148,11 +146,13 @@ def checkConfigWithEnv(bconf):
 @pytest.mark.usefixtures("unsetEnviron")
 def testBasic(tmpdir, monkeypatch):
 
+    clivars = { 'buildtype': 'debug1' }
+
     rootDir = tmpdir.mkdir("test")
     confFile = rootDir.join("buildconf.yml")
     confFile.write(ROOT_CONF_YML)
 
-    bconfManager = ConfManager(str(rootDir.realpath()), buildroot = None)
+    bconfManager = ConfManager(str(rootDir.realpath()), clivars = clivars)
     bconf = bconfManager.root
 
     checkConfigNoEnv(bconf)
@@ -162,13 +162,15 @@ def testBasic(tmpdir, monkeypatch):
     monkeypatch.setenv('MYFLAGS', '-O3 -Wall')
     monkeypatch.setenv('MYFLAGS3', '-O1 -Wall -Wextra')
 
-    bconfManager = ConfManager(str(rootDir.realpath()), buildroot = None)
+    bconfManager = ConfManager(str(rootDir.realpath()), clivars = clivars)
     bconf = bconfManager.root
 
     checkConfigWithEnv(bconf)
 
 @pytest.mark.usefixtures("unsetEnviron")
 def testSubdirs(tmpdir, monkeypatch):
+
+    clivars = { 'buildtype': 'debug1' }
 
     rootDir = tmpdir.mkdir("test")
     confFile1 = rootDir.join("buildconf.yml")
@@ -182,7 +184,7 @@ def testSubdirs(tmpdir, monkeypatch):
     confFile3 = lvl2Dir.join("buildconf.yml")
     confFile3.write(LAST_SUBDIRS_YAML)
 
-    bconfManager = ConfManager(str(rootDir.realpath()), buildroot = None)
+    bconfManager = ConfManager(str(rootDir.realpath()), clivars = clivars)
     bconf = bconfManager.configs[-1]
 
     checkConfigNoEnv(bconf)
@@ -192,7 +194,7 @@ def testSubdirs(tmpdir, monkeypatch):
     monkeypatch.setenv('MYFLAGS', '-O3 -Wall')
     monkeypatch.setenv('MYFLAGS3', '-O1 -Wall -Wextra')
 
-    bconfManager = ConfManager(str(rootDir.realpath()), buildroot = None)
+    bconfManager = ConfManager(str(rootDir.realpath()), clivars = clivars)
     bconf = bconfManager.configs[-1]
 
     checkConfigWithEnv(bconf)

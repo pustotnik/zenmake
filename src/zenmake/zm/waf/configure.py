@@ -24,27 +24,21 @@ from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFI
 from zm.constants import TASK_TARGET_KINDS
 from zm.pyutils import maptype
 from zm.autodict import AutoDict
-from zm.pathutils import PathsParam
+from zm.pathutils import PathsParam, makePathsConf
 from zm import utils, log, toolchains, error, db, version, cli, edeps
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
-from zm.buildconf.scheme import taskscheme, EXPORTING_TASK_PARAMS
+from zm.buildconf.scheme import EXPORTING_TASK_PARAMS
+from zm.buildconf.processing import convertTaskParamValue
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
-from zm.features import ToolchainVars
+from zm.features import BUILDCONF_PREPARE_TASKPARAMS, ToolchainVars
 from zm.waf import assist, context, config_actions as configActions
 
 joinpath = os.path.join
 normpath = os.path.normpath
+relpath  = os.path.relpath
 
 toList       = utils.toList
 toListSimple = utils.toListSimple
-
-def _genToolAutoName(lang):
-    return 'auto-%s' % lang.replace('xx', '++')
-
-TOOL_AUTO_NAMES = { _genToolAutoName(x) for x in ToolchainVars.allLangs() }
-_DONT_STORE_TASK_PARAMS = ('$bconf', )
-_EXPORT_PATH_PARAMS = frozenset(['includes', 'libpath', 'stlibpath'])
-_TASKPARAMS_WITH_SUBSTVARS = set()
 
 CONFLOG_HEADER_TEMPLATE = '''# Project %(prj)s configured on %(now)s by
 # ZenMake %(zmver)s, based on Waf %(wafver)s (abi %(wafabi)s)
@@ -52,27 +46,23 @@ CONFLOG_HEADER_TEMPLATE = '''# Project %(prj)s configured on %(now)s by
 # using %(args)s
 #'''
 
-def _getTaskParamNamesWithSubstVars():
+def _genToolAutoName(lang):
+    return 'auto-%s' % lang.replace('xx', '++')
 
-    if not _TASKPARAMS_WITH_SUBSTVARS:
+TOOL_AUTO_NAMES = { _genToolAutoName(x) for x in ToolchainVars.allLangs() }
+_DONT_STORE_TASK_PARAMS = ('$bconf', )
+_EXPORT_PATH_PARAMS = frozenset(['includes', 'libpath', 'stlibpath'])
 
-        # 'run' is handled in another place
-        skipNames = ('features', 'toolchain', 'name', 'configure',
-                    # next params are processed in another place
-                    'install-path', 'install-files', 'run')
+def _applyStartDirToParam(bconf, param):
+    if isinstance(param, bool):
+        return param
+    return PathsParam(param, bconf.startdir, kind = 'paths')
 
-        def _allowed(name, scheme):
-            if name.endswith('.select') or name.endswith('flags') or name in skipNames:
-                return False
-            types = scheme['type']
-            return 'str' in types or 'list-of-strs' in types
+_PREPARE_TASKPARAMS_HOOKS = [(x, _applyStartDirToParam)
+                             for x in ('includes', 'export-includes', 'libpath', 'stlibpath')]
 
-        names = [x for x, y in taskscheme.items() if _allowed(x, y) ]
-        names.append('source')
-
-        _TASKPARAMS_WITH_SUBSTVARS.update(names)
-
-    return _TASKPARAMS_WITH_SUBSTVARS
+_PREPARE_TASKPARAMS_HOOKS = tuple(_PREPARE_TASKPARAMS_HOOKS) + \
+                            BUILDCONF_PREPARE_TASKPARAMS
 
 class ConfigurationContext(WafConfContext):
     """ Context for command 'configure' """
@@ -168,17 +158,6 @@ class ConfigurationContext(WafConfContext):
 
             # save exports for child tasks
             depTaskParams['$exports-meta'] = list(exportsMeta)
-
-    def _applyBuiltInSubstVars(self, taskParams):
-
-        rootEnv = self.all_envs['']
-        bvars = rootEnv['$builtin-vars']
-        paramNames = _getTaskParamNamesWithSubstVars()
-        for name, paramVal in taskParams.items():
-            if name not in paramNames:
-                continue
-
-            taskParams[name] = utils.substBuiltInVarsInParam(paramVal, bvars)
 
     def _gatherMonitoredEnvVars(self):
 
@@ -712,8 +691,6 @@ class ConfigurationContext(WafConfContext):
         for taskParams in self.allOrderedTasks:
             bconf = taskParams['$bconf']
 
-            self._applyBuiltInSubstVars(taskParams)
-
             assist.handleTaskIncludesParam(taskParams, bconf.startdir)
             assist.handleTaskLibPathParams(taskParams)
 
@@ -724,6 +701,94 @@ class ConfigurationContext(WafConfContext):
 
             # should be called after handling of 'casual' params
             self._handleTaskExportParams(taskParams)
+
+    def _prepareBConfParams(self, bconf):
+
+        relStartDir = relpath(bconf.startdir, bconf.rootdir)
+
+        def makePathParam(param, name, kind):
+            value = param.get(name)
+            if value:
+                if not isinstance(value, PathsParam):
+                    param[name] = PathsParam(value, bconf.startdir, kind)
+            else:
+                param.pop(name, None)
+
+        def _makePathParamWithPattern(param, name):
+            value = param.get(name)
+            if value:
+                param[name] = makePathsConf(value, relStartDir)
+            else:
+                param.pop(name, None)
+
+        # general features
+        makePathParam(bconf.general, 'monitor-files', kind = 'paths')
+
+        # external dependencies
+        for dep in bconf.edeps.values():
+            makePathParam(dep, 'rootdir', kind = 'path')
+            makePathParam(dep, 'export-includes', kind = 'paths')
+
+            targets = dep.get('targets', {})
+            for params in targets.values():
+                makePathParam(params, 'dir', kind = 'path')
+
+            rules = dep.get('rules', {})
+            for params in rules.values():
+                if not isinstance(params, maptype):
+                    continue
+                makePathParam(params, 'cwd', kind = 'path')
+
+                triggers = params.get('trigger', {})
+                _makePathParamWithPattern(triggers, 'paths-exist')
+                _makePathParamWithPattern(triggers, 'paths-dont-exist')
+                func = triggers.get('func')
+                if func:
+                    triggers['func'] = utils.BuildConfFunc(func)
+
+        def prepareTaskParams(hooks, taskparams):
+
+            for hookInfo in hooks:
+                paramName = hookInfo[0]
+                handler   = hookInfo[1]
+                param = taskparams.get(paramName)
+                if param is not None:
+                    taskparams[paramName] = handler(bconf, param)
+
+                paramName += '.select'
+                param = taskparams.get(paramName, {})
+                for condition in param:
+                    param[condition] = handler(bconf, param[condition])
+
+        for taskParams in bconf.tasks.values():
+
+            taskStartDir = taskParams['$startdir']
+
+            prepareTaskParams(_PREPARE_TASKPARAMS_HOOKS, taskParams)
+
+            for paramName, paramVal in taskParams.items():
+
+                convertTaskParamValue(taskParams, paramName)
+                if paramName != 'source':
+                    continue
+
+                # set relative startdir, just to reduce size of build cache
+                paramVal = taskParams[paramName]
+                for item in paramVal:
+                    paramStartDir = item['startdir']
+                    if utils.mayHaveSubstVar(paramStartDir):
+                        # don't touch 'startdir' if it has subst var
+                        continue
+                    if paramStartDir == bconf.startdir:
+                        item['startdir'] = taskStartDir
+                    elif os.path.isabs(paramStartDir):
+                        item['startdir'] = relpath(paramStartDir, bconf.rootdir)
+
+    def _prepareBConfs(self):
+
+        configs = self.bconfManager.configs
+        for bconf in configs:
+            self._prepareBConfParams(bconf)
 
     def _setupTaskTarget(self, taskParams, taskEnv, btypeDir):
 
@@ -834,22 +899,10 @@ class ConfigurationContext(WafConfContext):
     def _preconfigureRootEnv(self):
 
         rootEnv = self.all_envs['']
-        bvars = rootEnv['$builtin-vars'] = {}
+        rootEnv['$builtin-vars'] = self.bconfManager.root.builtInVars
 
         # set/fix vars PREFIX, BINDIR, LIBDIR
-        utils.adjustInstallDirPaths(rootEnv, cli.selected)
-
-        for name in ('prefix', 'bindir', 'libdir'):
-            bvars[name] = rootEnv[name.upper()]
-
-        from waflib.Options import options
-        bvars['destdir'] = options.destdir
-
-        rootbconf = self.bconfManager.root
-        bvars['prjname']      = rootbconf.projectName
-        bvars['topdir']       = rootbconf.rootdir
-        bvars['buildrootdir'] = rootbconf.confPaths.buildroot
-        bvars['buildtypedir'] = rootbconf.selectedBuildTypeDir
+        utils.setEnvInstallDirPaths(rootEnv, rootEnv['$builtin-vars'])
 
     def preconfigure(self):
         """
@@ -891,6 +944,8 @@ class ConfigurationContext(WafConfContext):
 
     # override
     def execute(self):
+
+        self._prepareBConfs()
 
         bconf = self.bconfManager.root
         bconfPaths = bconf.confPaths

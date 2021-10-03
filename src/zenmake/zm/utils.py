@@ -19,8 +19,8 @@ from types import ModuleType
 
 try:
     import threading
-except ImportError as pex:
-    raise ImportError('Python must have threading support') from pex
+except ImportError as _pex:
+    raise ImportError('Python must have threading support') from _pex
 
 from waflib import Utils as wafutils
 from waflib.ConfigSet import ConfigSet
@@ -38,7 +38,7 @@ WINDOWS_RESERVED_FILENAMES = frozenset((
 _USABLE_WHITESPACE = ' \t\n\r\v'
 
 _RE_UNSAFE_FILENAME_CHARS = re.compile(r'[^-\w.]', re.UNICODE)
-_RE_TOLIST = re.compile(r"""((?:[^\s"']|"[^"]*"|'[^']*')+)""")
+_RE_TOLIST = re.compile(r"""((?:[^\s"']|"[^"]*"|'[^']*')+)""", re.ASCII)
 _RE_SUBST_VARS = re.compile(r"\${1,2}(\w+)|\${1,2}\{\s*(\w+)\s*\}", re.ASCII)
 _RE_SUBST_BUILTINVARS = re.compile(r"\$\((\s*(\w+)\s*)\)", re.ASCII)
 
@@ -168,14 +168,14 @@ def substBuiltInVars(strval, svars, check = True):
 
     def replaceVar(match):
         foundName = match.group(1)
-        return svars.get(foundName, '')
+        return svars.get(foundName, match.group(0))
 
     return _RE_SUBST_BUILTINVARS.sub(replaceVar, strval)
 
-def substBuiltInVarsInParam(val, svars):
+def substBuiltInVarsInParam(val, svars, splitListOfStrs = True):
     """
     Return value with handled substitutions from a param of 'str',
-    'list-of-str' types or from a param of 'dict' with params of such types.
+    'list-of-strs' types or from a param of 'dict' with params of such types.
     """
 
     if not val:
@@ -184,26 +184,38 @@ def substBuiltInVarsInParam(val, svars):
     if isinstance(val, stringtype):
         return substBuiltInVars(val, svars)
 
-    if isinstance(val, (list, tuple)):
-        if any(not isinstance(x, stringtype) for x in val):
-            return [ substBuiltInVarsInParam(x, svars) for x in val ]
+    # This method should not create allocate new memory for existing containers
+    # in val if it can be avoided.
 
-        result = []
-        for item in val:
-            if not mayHaveSubstVar(item):
-                result.append(item)
-                continue
+    if isinstance(val, list):
 
-            newVal = substBuiltInVars(item, svars, check = False)
-            if not any(c in item for c in _USABLE_WHITESPACE):
-                result.extend(toList(newVal))
-            else:
-                result.append(newVal)
-        return result
+        if not splitListOfStrs or any(not isinstance(x, stringtype) for x in val):
+            result = [substBuiltInVarsInParam(x, svars, splitListOfStrs) for x in val]
+        else:
+            # all items are strings
+            result = []
+            for item in val:
+                if not mayHaveSubstVar(item):
+                    result.append(item)
+                    continue
+
+                newVal = substBuiltInVars(item, svars, check = False)
+                if not any(c in item for c in _USABLE_WHITESPACE):
+                    result.extend(toList(newVal))
+                else:
+                    result.append(newVal)
+
+        # use existing list and drop the new created one
+        val[:] = result
+        return val
 
     if isinstance(val, maptype):
-        return { k:substBuiltInVarsInParam(val[k], svars) for k in val }
+        for k, v in val.items():
+            val[k] = substBuiltInVarsInParam(v, svars, splitListOfStrs)
+        return val
 
+    # buildconf should not use tuples for public elements
+    assert not isinstance(val, tuple)
     return val
 
 _HashAlgo = sha1
@@ -389,7 +401,7 @@ def toListSimple(val):
 def toList(val):
     """
     Converts a string argument to a list by splitting it by spaces.
-    This version supports preserving quoted substrings with spaces by works
+    This version supports preserving quoted substrings with spaces but it works
     slower than toListSimple does.
     Returns the object if not a string
     """
@@ -492,34 +504,15 @@ def configSetToDict(configSet):
     result.pop('undo_stack', None)
     return result
 
-def adjustInstallDirPaths(env, clicmd):
+def setEnvInstallDirPaths(env, clivars):
     """
-    Adjust installation path vars PREFIX, BINDIR, LIBDIR
+    Set installation path vars PREFIX, BINDIR, LIBDIR in env
     """
 
-    opts = clicmd.args
-    prefix = opts.get('prefix')
-    bindir = opts.get('bindir')
-    libdir = opts.get('libdir')
-
-    if prefix and prefix != env.PREFIX:
-        env.PREFIX = prefix
-        if not bindir:
-            env.BINDIR = '%s/bin' % prefix
-        if not libdir:
-            env.LIBDIR = '%s/lib%s' % (prefix, libDirPostfix())
-
-    if bindir:
-        env.BINDIR = bindir
-    if libdir:
-        env.LIBDIR = libdir
-
-    for var in ('PREFIX', 'BINDIR', 'LIBDIR'):
-        if var not in env:
-            continue
-        val = env[var]
-        if not os.path.isabs(val):
-            env[var] = '/' + val
+    for name in ('prefix', 'bindir', 'libdir'):
+        val = clivars.get(name)
+        if val:
+            env[name.upper()] = val
 
 def mksymlink(src, dst, force = True):
     """

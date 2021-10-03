@@ -22,7 +22,6 @@ from zm.pyutils import maptype, stringtype
 from zm.pathutils import PathsParam
 from zm.autodict import AutoDict
 from zm import cli, utils
-from zm.waf import assist
 from zm.buildconf.processing import Config, ConfManager
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES, EXPORTING_TASK_PARAMS
 from zm.buildconf.select import clearLocalCache as clearSelectLocalCache
@@ -34,10 +33,10 @@ joinpath = os.path.join
 
 class BConfManager(ConfManager):
 
-    def __init__(self, topdir, buildroot, buildconf):
+    def __init__(self, topdir, clivars, buildconf):
         self._buildconfs = {}
         self.setBuildConf(topdir, buildconf)
-        super().__init__(topdir, buildroot)
+        super().__init__(topdir, clivars)
 
     def setBuildConf(self, dirpath, buildconf):
         self._buildconfs[dirpath] = buildconf
@@ -48,7 +47,7 @@ class BConfManager(ConfManager):
 
         index = len(self._orderedConfigs)
         self._configs[dirpath] = index
-        bconf = Config(buildconf, self._buildroot, parent)
+        bconf = Config(buildconf, self._clivars, parent)
         self._orderedConfigs.append(bconf)
 
         return super().makeConfig(dirpath, parent)
@@ -113,6 +112,8 @@ def cfgctx(monkeypatch, mocker, tmpdir):
     type(cfgCtx).env = mocker.PropertyMock(side_effect = envProp)
 
     def execute():
+        # pylint: disable = protected-access
+        cfgCtx._prepareBConfs()
         cfgCtx.mergeTasks()
         cfgCtx.preconfigure()
         cfgCtx.recurse([rundir])
@@ -489,12 +490,11 @@ def testParam(cfgctx, monkeypatch, paramfixture):
     monkeypatch.setattr(cli, 'selected', clicmd)
 
     bconfDir = ctx.path.abspath()
-    cliBuildRoot = None
+    clivars = None
     buildconf = asRealConf(buildconf, bconfDir)
-    bconfManager = BConfManager(bconfDir, cliBuildRoot, buildconf)
+    bconfManager = BConfManager(bconfDir, clivars, buildconf)
     setattr(ctx, 'bconfManager', bconfManager)
 
-    assist.initBuildType(bconfManager, None)
     tasksList = [bconf.tasks for bconf in bconfManager.configs]
     features.loadFeatures(tasksList)
 

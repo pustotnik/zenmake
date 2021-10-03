@@ -33,4 +33,4 @@ buildtypes:
 install:
     - for: { task: gui }
       src: '$(buildtypedir)/builder.ui'
-      dst: '$(prefix)/share/${prjname}'
+      dst: '$(prefix)/share/$(prjname)'
