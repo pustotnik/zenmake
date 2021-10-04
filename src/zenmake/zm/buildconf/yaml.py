@@ -22,7 +22,7 @@ try:
     import yaml as pyyaml
     _INTERNAL_PYYAML = False
 except ImportError:
-    from auxiliary.pyyaml import yaml as pyyaml
+    from thirdparty.pyyaml import yaml as pyyaml
     YamlLoader = pyyaml.SafeLoader
 
 if not _INTERNAL_PYYAML:

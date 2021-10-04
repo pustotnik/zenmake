@@ -11,7 +11,7 @@ import sys
 from collections import namedtuple, defaultdict
 
 # argparse from the https://pypi.org/project/argparse/ supports aliases
-from auxiliary.argparse import argparse
+from thirdparty.argparse import argparse
 from zm.constants import APPNAME, CAP_APPNAME, PLATFORM, CWD
 from zm.pyutils import maptype
 from zm.pathutils import unfoldPath
