@@ -248,9 +248,10 @@ determine values of that built-in variables. These parameters are:
 
   - :ref:`startdir<buildconf-startdir>`, :ref:`buildroot<buildconf-buildroot>`,
     :ref:`realbuildroot<buildconf-realbuildroot>`
-  - the ``default`` in the :ref:`buildtypes<buildconf-buildtypes>`
-  - the ``buildtypes``, ``platform`` and  ``task`` in the :ref:`byfilter<buildconf-byfilter>`
-  - any parameter in the :ref:`platforms<buildconf-platforms>`.
+  - **buildtypedir** only: the ``default`` in the :ref:`buildtypes<buildconf-buildtypes>`
+  - **buildtypedir** only: the ``buildtypes``, ``platform`` and  ``task`` in
+    the :ref:`byfilter<buildconf-byfilter>`
+  - **buildtypedir** only: any parameter in the :ref:`platforms<buildconf-platforms>`.
 
 .. note::
 

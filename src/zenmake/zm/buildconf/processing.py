@@ -39,9 +39,9 @@ substVars     = utils.substVars
 
 _TOOLCHAIN_PATH_ENVVARS = frozenset(ToolchainVars.allSysVarsToSetToolchain())
 _ALL_CONF_PARAM_NAMES = list(KNOWN_CONF_PARAM_NAMES | KNOWN_CONF_SUGAR_NAMES)
-_BUILTIN_IGNORED_CONF_PARAM_NAMES = frozenset([
-    'startdir', 'buildroot', 'realbuildroot', 'platforms'
-])
+_CONF_PARAM_NAMES_FOR_BUILTIN = list(KNOWN_CONF_PARAM_NAMES - set([
+    'startdir', 'buildroot', 'realbuildroot'
+]))
 
 _RE_LIB_VER = re.compile(r"^\d+(?:\.\d+)*")
 _TASKPARAMS_TOLIST_MAP = {}
@@ -188,13 +188,13 @@ class Config(object):
         self._applyDefaults()
         self._applySugar()
         self._makeBuildDirParams(clivars.get('buildroot'))
-        self._postValidateBuildtypeNames()
 
         self._confpaths = ConfPaths(self)
+        notHandled = self._handlePrimaryBuiltInVars()
 
+        self._postValidateBuildtypeNames()
         self._applyBuildType()
-        self._setUpBuiltInVars()
-        self._handleBuiltInVars()
+        self._handleBuiltInVarsAfterBuildtype(notHandled)
 
         self._handleTaskNames() # must be called before merging
         self._merge()
@@ -563,7 +563,7 @@ class Config(object):
                 task = tasks[taskName]
                 task.update(paramsSet)
 
-    def _setUpBuiltInVars(self):
+    def _handlePrimaryBuiltInVars(self):
 
         if self._parent:
             builtinvars = self._parent.builtInVars
@@ -576,23 +576,41 @@ class Config(object):
             builtinvars['prjname']      = self.projectName
             builtinvars['topdir']       = self.rootdir
             builtinvars['buildrootdir'] = self.confPaths.buildroot
-            builtinvars['buildtypedir'] = self.selectedBuildTypeDir
 
         self._meta.builtinvars = builtinvars
 
-    def _handleBuiltInVars(self):
-
         buildconf = self._conf
-        bvars = self._meta.builtinvars
 
         apply = utils.substBuiltInVarsInParam
         splitListOfStrs = False
-        paramNames = KNOWN_CONF_PARAM_NAMES - _BUILTIN_IGNORED_CONF_PARAM_NAMES
-        paramNames = list(paramNames)
-        for name in paramNames:
+        notHandled = set()
+        for name in _CONF_PARAM_NAMES_FOR_BUILTIN:
             param = getattr(buildconf, name, None)
             if param:
-                setattr(buildconf, name, apply(param, bvars, splitListOfStrs))
+                setattr(buildconf, name, apply(param, builtinvars,
+                                            splitListOfStrs, notHandled))
+        return notHandled
+
+    def _handleBuiltInVarsAfterBuildtype(self, notHandled):
+
+        builtinvars = self._meta.builtinvars
+        if not self._parent:
+            builtinvars['buildtypedir'] = self.selectedBuildTypeDir
+
+        if 'buildtypedir' not in notHandled:
+            return
+
+        # It definitely not the fastest way to handle 'buildtypedir' via
+        # traversing all parameters in buildconf again but it just works and has
+        # satisfactory performance at the moment.
+
+        buildconf = self._conf
+        apply = utils.substBuiltInVarsInParam
+        splitListOfStrs = False
+        for name in _CONF_PARAM_NAMES_FOR_BUILTIN:
+            param = getattr(buildconf, name, None)
+            if param:
+                setattr(buildconf, name, apply(param, builtinvars, splitListOfStrs))
 
     def _applyBuildType(self):
         """

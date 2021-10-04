@@ -158,7 +158,7 @@ def substVars(strval, svarGetter, envVars = None, foundEnvVars = None):
 
     return _RE_SUBST_VARS.sub(replaceVar, strval)
 
-def substBuiltInVars(strval, svars, check = True):
+def substBuiltInVars(strval, svars, check = True, notHandled = None):
     """
 	Return string with $(VAR) replaced by the value of VAR taken from a dict
     """
@@ -168,11 +168,19 @@ def substBuiltInVars(strval, svars, check = True):
 
     def replaceVar(match):
         foundName = match.group(1)
+
+        if notHandled is not None:
+            result = svars.get(foundName)
+            if result is None:
+                notHandled.add(foundName)
+                return match.group(0)
+            return result
+
         return svars.get(foundName, match.group(0))
 
     return _RE_SUBST_BUILTINVARS.sub(replaceVar, strval)
 
-def substBuiltInVarsInParam(val, svars, splitListOfStrs = True):
+def substBuiltInVarsInParam(val, svars, splitListOfStrs = True, notHandled = None):
     """
     Return value with handled substitutions from a param of 'str',
     'list-of-strs' types or from a param of 'dict' with params of such types.
@@ -182,15 +190,21 @@ def substBuiltInVarsInParam(val, svars, splitListOfStrs = True):
         return val
 
     if isinstance(val, stringtype):
-        return substBuiltInVars(val, svars)
+        return substBuiltInVars(val, svars, notHandled = notHandled)
 
     # This method should not create allocate new memory for existing containers
     # in val if it can be avoided.
 
+    extraArgs = {
+        'svars': svars,
+        'splitListOfStrs': splitListOfStrs,
+        'notHandled': notHandled,
+    }
+
     if isinstance(val, list):
 
         if not splitListOfStrs or any(not isinstance(x, stringtype) for x in val):
-            result = [substBuiltInVarsInParam(x, svars, splitListOfStrs) for x in val]
+            result = [substBuiltInVarsInParam(x, **extraArgs) for x in val]
         else:
             # all items are strings
             result = []
@@ -199,7 +213,8 @@ def substBuiltInVarsInParam(val, svars, splitListOfStrs = True):
                     result.append(item)
                     continue
 
-                newVal = substBuiltInVars(item, svars, check = False)
+                newVal = substBuiltInVars(item, svars, check = False,
+                                            notHandled = notHandled)
                 if not any(c in item for c in _USABLE_WHITESPACE):
                     result.extend(toList(newVal))
                 else:
@@ -211,7 +226,7 @@ def substBuiltInVarsInParam(val, svars, splitListOfStrs = True):
 
     if isinstance(val, maptype):
         for k, v in val.items():
-            val[k] = substBuiltInVarsInParam(v, svars, splitListOfStrs)
+            val[k] = substBuiltInVarsInParam(v, **extraArgs)
         return val
 
     # buildconf should not use tuples for public elements
