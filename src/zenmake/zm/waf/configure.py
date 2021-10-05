@@ -21,7 +21,7 @@ from waflib import Errors as waferror, Context as WafContext
 from waflib.ConfigSet import ConfigSet
 from waflib.Configure import ConfigurationContext as WafConfContext
 from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFIG_LOG
-from zm.constants import TASK_TARGET_KINDS
+from zm.constants import TASK_TARGET_KINDS, PLATFORM
 from zm.pyutils import maptype
 from zm.autodict import AutoDict
 from zm.pathutils import PathsParam, makePathsConf
@@ -30,7 +30,7 @@ from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
 from zm.buildconf.scheme import EXPORTING_TASK_PARAMS
 from zm.buildconf.processing import convertTaskParamValue
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
-from zm.features import BUILDCONF_PREPARE_TASKPARAMS, ToolchainVars
+from zm.features import BUILDCONF_PREPARE_TASKPARAMS, ToolchainVars, getLoadedFeatures
 from zm.waf import assist, context, config_actions as configActions
 
 joinpath = os.path.join
@@ -77,13 +77,12 @@ class ConfigurationContext(WafConfContext):
 
         self._loadedTools = {}
         self._toolchainEnvs = {}
+        self._toolchainSettings = {}
         self._confCache = None
         self.allTasks = None
         self.allOrderedTasks = None
         self.monitFiles = []
         self.zmMetaConfAttrs = {}
-
-        self.validToolchainNames = assist.getValidPreDefinedToolchainNames()
 
     def _fixSysEnvVars(self):
         flagVars = ToolchainVars.allSysFlagVars()
@@ -274,19 +273,17 @@ class ConfigurationContext(WafConfContext):
 
     def _checkToolchainNames(self, bconf):
 
+        validToolchainNames = self.getStandardToolchainNames()
+
         # Each bconf has own customToolchains
-        customToolchains = bconf.customToolchains
-        if customToolchains:
-            validNames = self.validToolchainNames.union(customToolchains.keys())
-        else:
-            validNames = self.validToolchainNames
+        validToolchainNames |= bconf.customToolchains.keys()
 
         for taskName, taskParams in bconf.tasks.items():
             names = taskParams['toolchain']
             for name in names:
-                if name not in validNames:
+                if name not in validToolchainNames:
                     msg = 'Toolchain %r for the task %r is not valid.' % (name, taskName)
-                    msg += ' Valid toolchains: %r' % list(validNames)
+                    msg += ' Valid toolchains: %r' % list(validToolchainNames)
                     raise error.ZenMakeConfError(msg, confpath = bconf.path)
 
     def _loadDetectedToolchain(self, lang, toolId):
@@ -319,6 +316,16 @@ class ConfigurationContext(WafConfContext):
             self.fatal('could not configure a %s toolchain!' % displayedLang)
 
         return toolname, toolenv
+
+    def getStandardToolchainNames(self):
+        """
+        Return set of valid names of known toolchains without custom ones
+        """
+
+        langs = set(getLoadedFeatures()).intersection(ToolchainVars.allLangs())
+        validNames = {'auto-' + lang.replace('xx', '++') for lang in langs}
+        validNames.update(toolchains.getAllNames(platform = PLATFORM))
+        return validNames
 
     def loadCaches(self):
         """
@@ -364,6 +371,7 @@ class ConfigurationContext(WafConfContext):
 
         targetsData = {}
         envs = {}
+        notStored = {}
         for taskParams in tasks.values():
             taskVariant = taskParams['$task.variant']
 
@@ -384,6 +392,10 @@ class ConfigurationContext(WafConfContext):
             if 'ver-num' in taskParams:
                 targetsData[taskName]['ver-num'] = taskParams['ver-num']
 
+            # don't store some params
+            notStored[taskName] = [ (x, taskParams.pop(x, None)) \
+                                        for x in _DONT_STORE_TASK_PARAMS ]
+
         buildtype = rootbconf.selectedBuildType
 
         tasksData = {
@@ -396,6 +408,12 @@ class ConfigurationContext(WafConfContext):
 
         cachePath = assist.makeTasksCachePath(cachedir, buildtype)
         db.saveTo(cachePath, tasksData)
+
+        # restore not stored params
+        for taskParams in tasks.values():
+            notStoredParams = notStored[taskParams['name']]
+            for name, value in notStoredParams:
+                taskParams[name] = value
 
         # save targets info to use as external dependency in other projects
         allDepTargets = [] if not self.zmdepconfs else self.zmdepconfs['$all-dep-targets']
@@ -427,10 +445,6 @@ class ConfigurationContext(WafConfContext):
 
     # override
     def store(self):
-        for taskParams in self.allOrderedTasks:
-            # don't store some params
-            for name in _DONT_STORE_TASK_PARAMS:
-                taskParams.pop(name, None)
 
         self.saveCaches()
         super().store()
@@ -503,13 +517,16 @@ class ConfigurationContext(WafConfContext):
         sysEnvFlagVars = \
             { var:osenv[var].split() for var in flagVars if var in osenv}
 
+        toolchainSettings = self._toolchainSettings[bconf.path] = AutoDict()
+        toolchainSettings.update(customToolchains)
+
         for toolchain in tuple(actualToolchains):
             if toolchain in customToolchains and toolchain in TOOL_AUTO_NAMES:
                 msg = "%r is not valid name" % toolchain
                 msg += " in the variable 'toolchains'"
                 raise error.ZenMakeConfError(msg, confpath = bconf.path)
 
-            settings = customToolchains[toolchain]
+            settings = toolchainSettings[toolchain]
 
             # OS env vars
             settings.vars.update(sysEnvToolVars)
@@ -570,7 +587,7 @@ class ConfigurationContext(WafConfContext):
 
         toolchainsEnvs = self._toolchainEnvs
         oldEnvName = self.variant
-        customToolchains = bconf.customToolchains
+        toolchainSettings = self._toolchainSettings[bconf.path]
         detectedToolNames = {}
         emptyEnv = ConfigSet()
 
@@ -583,7 +600,7 @@ class ConfigurationContext(WafConfContext):
             self.setenv(toolchain, env = emptyEnv)
 
             toolId = ''
-            toolSettings  = customToolchains[toolchain]
+            toolSettings = toolchainSettings[toolchain]
 
             for var, val in toolSettings.vars.items():
                 lang = ToolchainVars.langBySysVarToSetToolchain(var)
@@ -636,6 +653,13 @@ class ConfigurationContext(WafConfContext):
         """
 
         return self._toolchainEnvs
+
+    def getToolchainSettings(self, bconfpath):
+        """
+        Get toolchain settings for loaded toolchains in specific bconf
+        """
+
+        return self._toolchainSettings[bconfpath]
 
     def addExtraMonitFiles(self, bconf):
         """

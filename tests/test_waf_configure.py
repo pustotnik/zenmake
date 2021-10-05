@@ -409,8 +409,12 @@ def testToolchainNames(testingBuildConf, cfgctx, monkeypatch):
     _checkToolchainNames(ctx, buildconf, buildtype, ['gxx', 'lgxx'])
 
 def _setToolchains(ctx, bconf, toolchainNames):
-    ctx.validToolchainNames = set(toolchainNames)
-    ctx.validToolchainNames.update(set(bconf.customToolchains.keys()))
+
+    def getStandardToolchainNames():
+        return set(toolchainNames)
+
+    ctx.getStandardToolchainNames = getStandardToolchainNames
+
     bconf.tasks = AutoDict()
     for i, name in enumerate(toolchainNames):
         bconf.tasks['task%d' % i].toolchain = name
@@ -421,6 +425,7 @@ def testLoadToolchains(cfgctx):
     ctx.variant = 'old'
 
     bconf = AutoDict()
+    bconf.path = "path"
 
     # load existing tools by name
     toolchainNames = ['gcc', 'g++', 'g++']
@@ -465,6 +470,7 @@ def testLoadToolchainsErrors(mocker, cfgctx):
 
     ctx = cfgctx
     bconf = AutoDict()
+    bconf.path = "path"
 
     ctx.loadTool = mocker.MagicMock(side_effect = WafError)
     bconf.customToolchains = AutoDict()

@@ -97,7 +97,8 @@ def configure(conf):
         # set task env variables
         # NOTICE: if these env vars (-O2, -shared, etc) are set before
         # running of conf tests then the vars will affect builds in the conf tests.
-        assist.setTaskEnvVars(taskEnv, taskParams, bconf.customToolchains)
+        toolchainSettings = conf.getToolchainSettings(bconf.path)
+        assist.setTaskEnvVars(taskEnv, taskParams, toolchainSettings)
 
     # switch current env to the root env
     conf.setenv('')

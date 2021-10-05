@@ -19,8 +19,8 @@ from zm.error import ZenMakeError, ZenMakeConfError
 from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
 from zm.features import SUPPORTED_TASK_FEATURES
-from zm.features import ToolchainVars, getLoadedFeatures
-from zm import utils, log, version, toolchains, db
+from zm.features import ToolchainVars
+from zm import utils, log, version, db
 
 joinpath  = os.path.join
 splitpath = os.path.split
@@ -264,16 +264,6 @@ def fixToolchainEnvVars(env, taskParams):
             # env var but I was lazy.
             taskParams[paramName] = taskParams.get(paramName, []) + envLibPath
             del env[envVar]
-
-def getValidPreDefinedToolchainNames():
-    """
-    Return set of valid names of predefined toolchains (without custom toolchains)
-    """
-
-    langs = set(getLoadedFeatures()).intersection(ToolchainVars.allLangs())
-    validNames = {'auto-' + lang.replace('xx', '++') for lang in langs}
-    validNames.update(toolchains.getAllNames(platform = PLATFORM))
-    return validNames
 
 def getTaskNamesWithDeps(tasks, names):
     """
