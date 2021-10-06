@@ -347,6 +347,7 @@ class TestSuite(object):
             'buildroot' : None,
             'forceExternalDeps' : False,
             'cacheCfgActionResults' : False,
+            'force' : False,
         }
 
         CMDNAME = 'configure'

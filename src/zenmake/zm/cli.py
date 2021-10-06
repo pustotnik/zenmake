@@ -207,6 +207,12 @@ config.options = [
         help = 'progress bar',
     ),
     Option(
+        names = ['-f', '--force'],
+        action = "store_true",
+        commands = ['configure', ],
+        help = 'force command',
+    ),
+    Option(
         names = ['-o', '--buildroot'],
         commands = ['configure', 'build', 'test', 'clean', 'cleanall',
                     'distclean', 'install', 'uninstall'],

@@ -11,9 +11,10 @@ import subprocess
 
 from waflib import Context, Configure, Utils
 from zm.constants import PYTHON_EXE
+from zm.autodict import AutoDict
 from zm.utils import envValToBool
 from zm.pypkg import PkgPath
-from zm.waf import assist, launcher
+from zm.waf import assist, launcher, configure
 
 joinpath = os.path.join
 
@@ -21,22 +22,24 @@ joinpath = os.path.join
 # It's just to rid of needless work and to save working time.
 Configure.autoconfig = False
 
-def _handleNoLockInTop(ctx, envGetter):
+_autoconfStates = {}
+
+def _handleNoLockInTop(ctx, zmMetaGetter):
 
     if Context.top_dir and Context.out_dir:
         return False
 
-    env = envGetter()
-    if not env:
+    zmMeta = zmMetaGetter()
+    if not zmMeta:
         if ctx.cmd != 'build':
             return True
         from zm.error import ZenMakeError
         raise ZenMakeError('The project was not configured: run "configure" '
                            'first or enable general.autoconfig in buildconf !')
 
-    Context.run_dir = env.rundir
-    Context.top_dir = env.topdir
-    Context.out_dir = env.outdir
+    Context.run_dir = zmMeta.rundir
+    Context.top_dir = zmMeta.topdir
+    Context.out_dir = zmMeta.outdir
 
     # It's needed to rerun command to apply changes in Context otherwise
     # Waf won't work correctly.
@@ -56,7 +59,7 @@ def wrapBldCtxNoLockInTop(method):
 
     return execute
 
-def wrapBldCtxAutoConf(method):
+def wrapCmdCtxAutoConf(method):
     """
     Decorator that enables context commands to run *configure* as needed.
     It handles also case with conf.env.NO_LOCK_IN_RUN = True and/or
@@ -64,28 +67,42 @@ def wrapBldCtxAutoConf(method):
     """
 
     def runConfigAndCommand(ctx):
-        launcher.runCommand(ctx.bconfManager, 'configure')
-        launcher.runCommand(ctx.bconfManager, ctx.cmd)
+        if ctx.cmd == 'configure':
+            method(ctx)
+        else:
+            launcher.runCommand(ctx.bconfManager, 'configure')
+            launcher.runCommand(ctx.bconfManager, ctx.cmd)
 
     def execute(ctx):
 
-        wrapBldCtxAutoConf.callCounter += 1
-        if wrapBldCtxAutoConf.callCounter > 10:
+        zmcmd = ctx.cmd
+
+        from zm import cli
+        cliargs = cli.selected.args
+        if zmcmd == 'configure' and cliargs.force:
+            method(ctx)
+            return
+
+        autoconfState = _autoconfStates.setdefault(zmcmd, AutoDict(
+            callCounter = 0,
+            onlyRunMethod = False
+        ))
+
+        autoconfState.callCounter += 1
+        if autoconfState.callCounter > 10:
             # I some cases due to programming error, user actions or system
             # problems we can get infinite call of current function. Maybe
             # later I'll think up better protection but in normal case
             # it shouldn't happen.
             raise Exception('Infinite recursion was detected')
 
-        if wrapBldCtxAutoConf.onlyRunMethod:
+        if autoconfState.onlyRunMethod:
             method(ctx)
             # reset flag
-            wrapBldCtxAutoConf.onlyRunMethod = False
+            autoconfState.onlyRunMethod = False
             return
 
-        bconfMngr = ctx.bconfManager
-        bconf = bconfMngr.root
-        bconfPaths = bconf.confPaths
+        bconf = ctx.bconfManager.root
 
         # Execute the configuration automatically
         autoconfig = os.environ.get('ZENMAKE_AUTOCONFIG', '')
@@ -95,37 +112,32 @@ def wrapBldCtxAutoConf(method):
             autoconfig = bconf.general['autoconfig']
 
         if not autoconfig:
-            if not _handleNoLockInTop(ctx, ctx.zmMetaConf):
+            if zmcmd == 'configure' or not _handleNoLockInTop(ctx, ctx.zmMetaConf):
                 method(ctx)
             return
 
         # mark for the next recursive call
         # FIXME: can be more stable solution?
-        wrapBldCtxAutoConf.onlyRunMethod = True
+        autoconfState.onlyRunMethod = True
 
         zmMeta = ctx.zmMetaConf()
         if not zmMeta:
             runConfigAndCommand(ctx)
             return
 
-        from zm import cli
-
-        rootdir = bconfPaths.rootdir
+        bconfPaths = bconf.confPaths
+        rootdir    = bconfPaths.rootdir
         zmcachedir = bconfPaths.zmcachedir
-        buildtype = bconf.selectedBuildType
-        cliargs = cli.selected.args
+        buildtype  = bconf.selectedBuildType
         if assist.needToConfigure(zmMeta, rootdir, zmcachedir, buildtype, cliargs):
             runConfigAndCommand(ctx)
             return
 
-        if not _handleNoLockInTop(ctx, lambda: zmMeta):
+        if zmcmd != 'configure' and not _handleNoLockInTop(ctx, lambda: zmMeta):
             method(ctx)
         return
 
     return execute
-
-wrapBldCtxAutoConf.callCounter = 0
-wrapBldCtxAutoConf.onlyRunMethod = False
 
 def wrapUtilsGetProcess(_):
     """
@@ -155,7 +167,8 @@ def setUp():
 
     from waflib import Build
 
-    Build.BuildContext.execute = wrapBldCtxAutoConf(Build.BuildContext.execute)
+    for ctxCls in (configure.ConfigurationContext, Build.BuildContext):
+        ctxCls.execute = wrapCmdCtxAutoConf(ctxCls.execute)
     for ctxCls in (Build.CleanContext, Build.ListContext):
         ctxCls.execute = wrapBldCtxNoLockInTop(ctxCls.execute)
 
