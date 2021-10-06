@@ -8,6 +8,7 @@
 
 import os
 import subprocess
+from collections import defaultdict
 
 from waflib import Context, Configure, Utils
 from zm.constants import PYTHON_EXE
@@ -21,8 +22,6 @@ joinpath = os.path.join
 # Force to turn off internal WAF autoconfigure decorator.
 # It's just to rid of needless work and to save working time.
 Configure.autoconfig = False
-
-_autoconfStates = {}
 
 def _handleNoLockInTop(ctx, zmMetaGetter):
 
@@ -59,6 +58,8 @@ def wrapBldCtxNoLockInTop(method):
 
     return execute
 
+_autoconfStates = defaultdict(lambda: AutoDict(callCounter = 0, onlyRunMethod = False))
+
 def wrapCmdCtxAutoConf(method):
     """
     Decorator that enables context commands to run *configure* as needed.
@@ -70,6 +71,7 @@ def wrapCmdCtxAutoConf(method):
         if ctx.cmd == 'configure':
             method(ctx)
         else:
+            _autoconfStates['configure'].onlyRunMethod = True
             launcher.runCommand(ctx.bconfManager, 'configure')
             launcher.runCommand(ctx.bconfManager, ctx.cmd)
 
@@ -83,10 +85,7 @@ def wrapCmdCtxAutoConf(method):
             method(ctx)
             return
 
-        autoconfState = _autoconfStates.setdefault(zmcmd, AutoDict(
-            callCounter = 0,
-            onlyRunMethod = False
-        ))
+        autoconfState = _autoconfStates[zmcmd]
 
         autoconfState.callCounter += 1
         if autoconfState.callCounter > 10:
