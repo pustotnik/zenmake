@@ -139,9 +139,16 @@ class PyDBFile(DBFile):
 
         data = {}
         for reIt in ConfigSet.re_imp.finditer(dump):
-            # pylint: disable = eval-used
             grp = reIt.group
-            data[grp(2)] = eval(grp(3))
+
+            # pylint: disable = eval-used
+            # Well, eval is not safe for untrusted input but I couldn't think
+            # up a real case when it can be a security problem
+            # for ZenMake at this place.
+            # Anyway it can be replaced here with the safe ast.literal_eval but
+            # it works a little bit slower.
+            data[grp(2)] = eval(grp(3), {'__builtins__':{}})
+
         return data
 
 _BINDB_FILEEXT_FORMAT = "." + PLATFORM + "%s"
