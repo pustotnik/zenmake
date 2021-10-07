@@ -112,7 +112,7 @@ class TestSuite(object):
         # CASE: buildtypes in buildconf.buildtypes and empty value of
         # buildconf.platforms[PLATFORM]
         buildconf = deepcopy(testingBuildConf)
-        buildconf.platforms[PLATFORM] = AutoDict()
+        buildconf.platforms[PLATFORM] = AutoDict(valid = [])
         with pytest.raises(ZenMakeError):
             bconf = BuildConfig(asRealConf(buildconf))
             empty = bconf.supportedBuildTypes

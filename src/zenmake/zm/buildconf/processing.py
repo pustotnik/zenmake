@@ -445,12 +445,13 @@ class Config(object):
 
         platformFound = False
         platforms = self._conf.platforms
+        regularBuildtypes = self._conf.buildtypes.keys()
         if destPlatform in platforms:
             platformFound = True
-            supported = platforms[destPlatform].get('valid', [])
+            supported = platforms[destPlatform].get('valid', regularBuildtypes)
             supported = toListSimple(supported)
         else:
-            supported = self._conf.buildtypes.keys()
+            supported = regularBuildtypes
         supported = set(supported)
 
         if destPlatform in filterBuildTypes:
@@ -509,6 +510,7 @@ class Config(object):
         knownPlatforms = set(KNOWN_PLATFORMS)
         allTaskNames = self.taskNames
         destPlatform = PLATFORM
+        supportedBuildTypes = self.supportedBuildTypes
 
         def getFilterCondition(entry, name):
             condition = entry.get(name, None)
@@ -529,7 +531,7 @@ class Config(object):
             if not platforms:
                 platforms = knownPlatforms
             if not buildtypes:
-                buildtypes = self.supportedBuildTypes
+                buildtypes = supportedBuildTypes
 
             if destPlatform in platforms and buildtype in buildtypes:
                 if not tasks:
