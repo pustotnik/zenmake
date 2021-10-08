@@ -114,7 +114,6 @@ def cfgctx(monkeypatch, mocker, tmpdir):
     def execute():
         # pylint: disable = protected-access
         cfgCtx._prepareBConfs()
-        cfgCtx.mergeTasks()
         cfgCtx.preconfigure()
         cfgCtx.recurse([rundir])
     cfgCtx.execute = execute

@@ -941,8 +941,10 @@ class ConfigurationContext(WafConfContext):
             # set context path
             self.path = self.getPathNode(bconf.confdir)
 
+            tasks = bconf.tasks
+
             # it's necessary to handle 'toolchain.select' before loading of toolchains
-            for taskParams in bconf.tasks.values():
+            for taskParams in tasks.values():
                 handleOneTaskParamSelect(bconf, taskParams, 'toolchain')
 
             # load all toolchains envs
@@ -950,6 +952,17 @@ class ConfigurationContext(WafConfContext):
 
             # Other '*.select' params must be handled after loading of toolchains
             handleTaskParamSelects(bconf)
+
+            # remove disabled tasks after processing '*.select' params
+            disabledTasks = [x['name'] for x in tasks.values() if not x.get('enabled', True)]
+            for name in disabledTasks:
+                tasks.pop(name)
+
+        self.mergeTasks()
+
+        if not self.allTasks:
+            msg = "There are no actual tasks to run. Nothing to do."
+            raise error.ZenMakeConfError(msg)
 
         # ordering must be after handling of 'use.select'
         self.allOrderedTasks = assist.orderTasksByLocalDeps(self.allTasks)
@@ -1018,7 +1031,6 @@ class ConfigurationContext(WafConfContext):
             if self.srcnode.is_child_of(self.path):
                 log.warn('Are you certain that you do not want to set top="." ?')
 
-        self.mergeTasks()
         self.loadCaches()
         self.preconfigure()
 

@@ -142,10 +142,14 @@ tasks = {
         'source'   : 'tests/test_shlibmain.cpp',
         'use'      : 'shlibmain testcmn',
     },
-    #### this tasks is always failed but it's disabled: check param 'enabled'
+    #### these tasks are always failed but they're disabled: it's to check the 'enabled' param
     'always-failed' : {
         'run': "asdfghjklzxcvb",
         'enabled' : False,
+    },
+    'always-failed2' : {
+        'run': "asdfghjklzxcvb2",
+        'enabled.select' : { 'default': False }
     },
 }
 
