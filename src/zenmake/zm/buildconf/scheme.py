@@ -478,7 +478,12 @@ confscheme = {
                 'type' : 'dict',
                 'vars' : taskscheme,
             },
-            'default' : { 'type': 'str' },
+            'default' : {
+                'type': ('dict', 'str'),
+                'dict-vars' : {
+                    k: { 'type': 'str' } for k in KNOWN_PLATFORMS + ('_', 'no-match')
+                },
+            },
         },
     },
     'toolchains' : {
@@ -489,16 +494,6 @@ confscheme = {
         'vars' : {
             'kind' : { 'type': 'str' },
             ANYAMOUNTSTRS_KEY : { 'type' : 'str' },
-        },
-    },
-    'platforms' : {
-        'type' : 'vars-in-dict',
-        'keys-kind' : 'bylist',
-        'keys-list' : KNOWN_PLATFORMS,
-        'vars-type' : 'dict',
-        'vars' : {
-            'valid' : { 'type': ('str', 'list-of-strs') },
-            'default' : { 'type': 'str' },
         },
     },
     'byfilter' : {

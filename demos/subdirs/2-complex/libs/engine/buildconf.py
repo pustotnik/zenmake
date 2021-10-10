@@ -62,7 +62,7 @@ tasks = {
 }
 
 buildtypes = {
-    'debug-gcc' : {
+    'debug' : {
         'cxxflags' : '-O1 -g',
     },
 }

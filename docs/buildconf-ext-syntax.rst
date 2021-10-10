@@ -251,7 +251,6 @@ determine values of that built-in variables. These parameters are:
   - **buildtypedir** only: the ``default`` in the :ref:`buildtypes<buildconf-buildtypes>`
   - **buildtypedir** only: the ``buildtypes``, ``platform`` and  ``task`` in
     the :ref:`byfilter<buildconf-byfilter>`
-  - **buildtypedir** only: any parameter in the :ref:`platforms<buildconf-platforms>`.
 
 .. note::
 

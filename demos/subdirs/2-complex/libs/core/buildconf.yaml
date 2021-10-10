@@ -12,16 +12,16 @@ tasks:
         names: stdio.h
 
 byfilter:
-  - for : { buildtype : [debug-gcc, release-gcc] }
+  - for: all
     set :
-      toolchain : gcc
-  - for : { buildtype : [debug-clang, release-clang] }
-    set :
-      toolchain : clang
-  - for : { buildtype : [debug-gcc, debug-clang] }
-    set :
-      cflags: -O0
-  - for : { buildtype : [release-gcc, release-clang] }
-    set :
-      cflags: -O3
-
+      toolchain.select:
+        default: gcc
+        darwin:  clang
+        windows: msvc
+      cflags.select:
+        debug gcc: -O0
+        debug clang: -O0
+        debug msvc: /Od
+        release gcc: -O3
+        release clang: -O3
+        release msvc: /O2

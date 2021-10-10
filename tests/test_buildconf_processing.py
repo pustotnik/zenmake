@@ -42,43 +42,41 @@ class TestSuite(object):
         assert bconf.defaultBuildType == ''
 
         buildconf.buildtypes.mybuildtype = {}
+
+        # CASE: buildconf.buildtypes.default is absent but one buildtype is defined
+        buildconf = deepcopy(testingBuildConf)
+        bconf = BuildConfig(asRealConf(buildconf))
+        assert bconf.defaultBuildType == 'mybuildtype'
+
+        # and second buildtype
         buildconf.buildtypes.abc = {}
+
+        # CASE: buildconf.buildtypes.default as a string
+        buildconf = deepcopy(testingBuildConf)
         buildconf.buildtypes.default = 'mybuildtype'
-
-        # CASE: buildconf.buildtypes.default
-        buildconf = deepcopy(testingBuildConf)
         bconf = BuildConfig(asRealConf(buildconf))
         assert bconf.defaultBuildType == 'mybuildtype'
 
-        # CASE: buildconf.buildtypes.default is not valid in
-        # buildconf.platforms
+        # CASE: buildconf.buildtypes.default as a dict
+        for name in ('_', 'no-match', PLATFORM):
+            buildconf = deepcopy(testingBuildConf)
+            buildconf.buildtypes.default = { name: 'mybuildtype' }
+            bconf = BuildConfig(asRealConf(buildconf))
+            assert bconf.defaultBuildType == 'mybuildtype'
+
+        # CASE: buildconf.buildtypes.default is not valid
         buildconf = deepcopy(testingBuildConf)
-        buildconf.platforms = AutoDict({
-            PLATFORM : AutoDict(valid = ['abc'], )
-        })
+        buildconf.buildtypes.default = 'mybuildtype2'
         with pytest.raises(ZenMakeError):
             bconf = BuildConfig(asRealConf(buildconf))
-            bt = bconf.defaultBuildType
-        buildconf.platforms = AutoDict({
-            PLATFORM : AutoDict(valid = ['mybuildtype'], )
-        })
-        bconf = BuildConfig(asRealConf(buildconf))
-        assert bconf.defaultBuildType == 'mybuildtype'
+            _ = bconf.defaultBuildType
 
-        # CASE: buildconf.platforms[..].default
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.platforms = AutoDict({
-            PLATFORM : AutoDict(valid = ['abc'], default = 'abc')
-        })
-        bconf = BuildConfig(asRealConf(buildconf))
-        assert bconf.defaultBuildType == 'abc'
-
-        # CASE: buildconf.platforms[..].default doesn't exist
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.platforms[PLATFORM].default = 'void'
-        with pytest.raises(ZenMakeError):
-            bconf = BuildConfig(asRealConf(buildconf))
-            bt = bconf.defaultBuildType
+        for name in ('_', 'no-match', PLATFORM):
+            buildconf = deepcopy(testingBuildConf)
+            buildconf.buildtypes.default = { name: 'mybuildtype2' }
+            with pytest.raises(ZenMakeError):
+                bconf = BuildConfig(asRealConf(buildconf))
+                _ = bconf.defaultBuildType
 
     def testSelectedBuildType(self, testingBuildConf):
         buildconf = testingBuildConf
@@ -107,42 +105,6 @@ class TestSuite(object):
         buildconf = deepcopy(testingBuildConf)
         self._checkSupportedBuildTypes(buildconf, [
             'mybuildtype', 'abcbt'
-        ])
-
-        # CASE: buildtypes in buildconf.buildtypes and empty value of
-        # buildconf.platforms[PLATFORM]
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.platforms[PLATFORM] = AutoDict(valid = [])
-        with pytest.raises(ZenMakeError):
-            bconf = BuildConfig(asRealConf(buildconf))
-            empty = bconf.supportedBuildTypes
-
-        # CASE: buildtypes in buildconf.buildtypes and non-empty value of
-        # buildconf.platforms[PLATFORM] with non-existent value.
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.buildtypes.extrabtype = {}
-        buildconf.platforms[PLATFORM].valid = [ 'mybuildtype', 'non-existent' ]
-        self._checkSupportedBuildTypes(buildconf, [
-            'mybuildtype', 'non-existent'
-        ])
-
-        # CASE: buildtypes in buildconf.buildtypes and non-empty value of
-        # buildconf.platforms[PLATFORM] with valid values.
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.buildtypes.extrabtype = {}
-        buildconf.platforms[PLATFORM].valid = [ 'mybuildtype', 'extrabtype' ]
-        self._checkSupportedBuildTypes(buildconf, [
-            'mybuildtype', 'extrabtype'
-        ])
-
-        # CASE: buildtypes in buildconf.buildtypes and non-empty value of
-        # buildconf.platforms[PLATFORM] with valid values and default build type.
-        buildconf = deepcopy(testingBuildConf)
-        buildconf.buildtypes.extrabtype = {}
-        buildconf.buildtypes.default = 'mybuildtype'
-        buildconf.platforms[PLATFORM].valid = [ 'mybuildtype', 'extrabtype' ]
-        self._checkSupportedBuildTypes(buildconf, [
-            'mybuildtype', 'extrabtype'
         ])
 
     def testSupportedBuildTypesByfilter(self, testingBuildConf):
@@ -212,12 +174,10 @@ class TestSuite(object):
         ]
         self._checkSupportedBuildTypes(buildconf, [ 'gb1', 'b2', 'b3' ])
 
-        # CASE: buildtypes in buildconf.buildtypes, non-empty buildconf.platforms
-        # and global/platform buildtypes in byfilter
+        # CASE: buildtypes in buildconf.buildtypes and buildtypes in byfilter
         buildconf = deepcopy(testingBuildConf)
         buildconf.buildtypes.b1 = {}
         buildconf.buildtypes.b2 = {}
-        buildconf.platforms[PLATFORM].valid = [ 'b1', 'b2' ]
         buildconf.byfilter = [
             { 'for' : { 'buildtype' : 'b3 b4' } },
         ]

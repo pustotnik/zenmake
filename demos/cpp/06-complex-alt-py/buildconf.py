@@ -3,20 +3,17 @@
 
 buildtypes = {
     # -fPIC is necessary to compile static lib
-    'debug-gcc' : { 'cxxflags' : '-fPIC -O0 -g' },
-    'release-gcc' : { 'cxxflags' : '-fPIC -O2' },
-    'debug-clang' : { 'cxxflags' : '-fPIC -O0 -g' },
-    'release-clang' : { 'cxxflags' : '-fPIC -O2' },
-    'debug-msvc' : { 'cxxflags' : '/Od /EHsc' },
+    'debug-gcc'    : { 'cxxflags' : '-fPIC -O0 -g' },
+    'release-gcc'  : { 'cxxflags' : '-fPIC -O2' },
+    'debug-clang'  : { 'cxxflags' : '-fPIC -O0 -g' },
+    'release-clang': { 'cxxflags' : '-fPIC -O2' },
+    'debug-msvc'   : { 'cxxflags' : '/Od /EHsc' },
     'release-msvc' : { 'cxxflags' : '/O2 /EHsc' },
-    'default' : 'debug-gcc',
-}
-
-platforms = {
-    'linux' : { 'default' : 'release-gcc' },
-    # Mac OS
-    'darwin' : { 'default' : 'debug-clang' },
-    'windows' : { 'default' : 'debug-msvc' },
+    'default' : {
+        'linux': 'debug-gcc',
+        'darwin': 'debug-clang',
+        'windows': 'debug-msvc',
+    },
 }
 
 byfilter = [

@@ -472,37 +472,6 @@ class TestSuite(object):
             'testbtype' : {}
         })
 
-    def testValidateParamPlatforms(self):
-
-        buildconf = FakeBuildConf()
-        self._checkAttrAsDict(buildconf, 'platforms')
-
-        buildconf = FakeBuildConf()
-        setattr(buildconf, 'platforms', {
-            KNOWN_PLATFORMS[0] + cmn.randomstr() : {}
-        })
-        with pytest.raises(ZenMakeConfError):
-            validator.validate(buildconf)
-        setattr(buildconf, 'platforms', {
-            KNOWN_PLATFORMS[0] + cmn.randomstr() : {},
-            KNOWN_PLATFORMS[1] + cmn.randomstr() : {},
-        })
-        with pytest.raises(ZenMakeConfError):
-            validator.validate(buildconf)
-        setattr(buildconf, 'platforms', {})
-        for _platform in KNOWN_PLATFORMS:
-            buildconf.platforms[_platform] = {}
-        validator.validate(buildconf)
-
-        buildconf = FakeBuildConf()
-        setattr(buildconf, 'platforms', {})
-        for _platform in KNOWN_PLATFORMS:
-            buildconf.platforms[_platform] = {}
-            self._checkParamsAsStrOrListOfStrs(
-                        buildconf, buildconf.platforms[_platform], ['valid'])
-            self._checkParamsAsStr(
-                        buildconf, buildconf.platforms[_platform], ['default'])
-
     def testValidateParamTasks(self):
 
         taskNames = [cmn.randomstr() for i in range(2)]

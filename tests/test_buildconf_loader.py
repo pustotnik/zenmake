@@ -37,7 +37,7 @@ def checkCommonDefaults(buildconf):
 
     assert hasattr(buildconf, 'project')
 
-    for param in ('toolchains', 'platforms', 'buildtypes', 'tasks'):
+    for param in ('toolchains', 'buildtypes', 'tasks'):
         assert hasattr(buildconf, param)
         assert getattr(buildconf, param) == {}
 

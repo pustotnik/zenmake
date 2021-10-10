@@ -12,13 +12,11 @@ buildtypes:
   release-clang: { cxxflags: $GCC_BASE_CXXFLAGS -O2 }
   debug-msvc   : { cxxflags: $MSVC_BASE_CXXFLAGS /Od }
   release-msvc : { cxxflags: $MSVC_BASE_CXXFLAGS /O2 }
-  default: debug-gcc
-
-platforms:
-  linux: { default: release-gcc }
-  # Mac OS
-  darwin: { default: debug-clang }
-  windows: { default: debug-msvc }
+  default:
+    _: debug-gcc
+    linux: debug-gcc
+    darwin: debug-clang
+    windows: debug-msvc
 
 byfilter:
 - for: all

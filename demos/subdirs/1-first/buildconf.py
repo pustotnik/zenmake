@@ -8,51 +8,48 @@ subdirs = [
 ]
 
 buildtypes = {
-    'debug-gcc' : {
-        'toolchain' : 'g++',
-        'cxxflags' : '-fPIC -O0 -g',
-        'linkflags' : '-Wl,--as-needed',
+    'debug' : {
+        'toolchain.select' : {
+            'default': 'g++',
+            'darwin' : 'clang++',
+            'windows': 'msvc',
+        },
+        'cflags.select' : {
+            'gcc'     : '-fPIC -O0 -g',
+            'clang'   : '-fPIC -O0 -g',
+            'msvc'    : '/Od',
+        },
+        'cxxflags.select' : {
+            'g++'     : '-fPIC -O0 -g',
+            'clang++' : '-fPIC -O0 -g',
+            'msvc'    : '/Od /EHsc',
+        },
+        'linkflags.select' : {
+            'g++': '-Wl,--as-needed',
+        },
     },
-    'release-gcc' : {
-        'toolchain' : 'g++',
-        'cxxflags' : '-fPIC -O2',
-        'linkflags' : '-Wl,--as-needed',
+    'release' : {
+        'toolchain.select' : {
+            'default': 'g++',
+            'darwin' : 'clang++',
+            'windows': 'msvc',
+        },
+        'cflags.select' : {
+            'gcc'     : '-fPIC -O2',
+            'clang'   : '-fPIC -O2',
+            'msvc'    : '/O2',
+        },
+        'cxxflags.select' : {
+            'g++'     : '-fPIC -O2',
+            'clang++' : '-fPIC -O2',
+            'msvc'    : '/O2 /EHsc',
+        },
+        'linkflags.select' : {
+            'g++': '-Wl,--as-needed',
+        },
     },
-    'debug-clang' : {
-        'toolchain' : 'clang++',
-        'cxxflags' : '-fPIC -O0 -g',
-    },
-    'release-clang' : {
-        'toolchain' : 'clang++',
-        'cxxflags' : '-fPIC -O2',
-    },
-    'debug-msvc' : {
-        'toolchain' : 'msvc',
-        'cflags' : '/Od',
-        'cxxflags' : '/Od /EHsc',
-    },
-    'release-msvc' : {
-        'toolchain' : 'msvc',
-        'cflags' : '/O2',
-        'cxxflags' : '/O2 /EHsc',
-    },
-    'default' : 'debug-gcc',
-}
 
-platforms = {
-    'linux' : {
-        'valid'   : 'debug-gcc debug-clang release-gcc release-clang',
-        'default' : 'debug-gcc',
-    },
-    # Mac OS
-    'darwin' : {
-        'valid'   : 'debug-clang release-clang',
-        'default' : 'debug-clang',
-    },
-    'windows' : {
-        'valid'   : 'debug-msvc release-msvc',
-        'default' : 'debug-msvc',
-    },
+    'default' : 'debug',
 }
 
 byfilter = [

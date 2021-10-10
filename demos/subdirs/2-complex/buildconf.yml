@@ -2,63 +2,46 @@
 buildroot: _build
 
 project:
-    version: '0.3.1-dev'
+  version: '0.3.1-dev'
 
 general:
-    db-format: msgpack
+  db-format: msgpack
 
 subdirs: [
-    libs,
-    main,
-    tests,
+  libs,
+  main,
+  tests,
 ]
 
 buildtypes:
-    debug-gcc:
-        toolchain : g++
-        cxxflags  : -O0 -g
-        linkflags : -Wl,--as-needed
+  debug:
+    toolchain.select:
+      default: g++
+      darwin: clang++
+      windows: msvc
+    cxxflags.select:
+      default : -O0 -g
+      msvc    : /Od /EHsc
+    linkflags.select:
+      g++: -Wl,--as-needed
+      gcc: -Wl,--as-needed
 
-    release-gcc:
-        toolchain : g++
-        cxxflags  : -O2
-        linkflags : -Wl,--as-needed
+  release:
+    toolchain.select:
+      default: g++
+      darwin: clang++
+      windows: msvc
+    cxxflags.select:
+      default : -O2
+      msvc    : /O2 /EHsc
+    linkflags.select:
+      g++: -Wl,--as-needed
+      gcc: -Wl,--as-needed
 
-    debug-clang:
-        toolchain : clang++
-        cxxflags  : -O0 -g
-
-    release-clang:
-        toolchain : clang++
-        cxxflags  : -O2
-
-    debug-msvc:
-        toolchain : msvc
-        cflags    : /Od
-        cxxflags  : /Od /EHsc
-
-    release-msvc:
-        toolchain : msvc
-        cflags    : /O2
-        cxxflags  : /O2 /EHsc
-
-    default: debug-gcc
-
-platforms:
-    linux:
-        valid   : debug-gcc debug-clang release-gcc release-clang
-        default : debug-gcc
-
-    darwin: # Mac OS
-        valid   : debug-clang release-clang
-        default : debug-clang
-
-    windows:
-        valid   : debug-msvc release-msvc
-        default : debug-msvc
+  default: debug
 
 byfilter:
-    - for: {} # for all
-      set:
-        rpath: '.'
+  - for: {} # for all
+    set:
+      rpath: '.'
 

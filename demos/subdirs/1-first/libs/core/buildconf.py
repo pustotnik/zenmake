@@ -19,15 +19,13 @@ tasks = {
 
 byfilter = [
     {
-        'for' : { 'buildtype' : ['debug-gcc', 'release-gcc'], },
+        'for' : 'all',
         'set' : {
-            'toolchain' : 'gcc',
-        }
-    },
-    {
-        'for' : { 'buildtype' : ['debug-clang', 'release-clang'], },
-        'set' : {
-            'toolchain' : 'clang',
+            'toolchain.select': {
+                'default': 'gcc',
+                'darwin' : 'clang',
+                'windows': 'msvc',
+            }
         }
     },
 ]

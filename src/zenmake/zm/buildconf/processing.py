@@ -339,8 +339,8 @@ class Config(object):
         # tasks - it's not merged
         mergedParams.add('tasks')
 
-        # buildtypes, toolchains, platforms
-        for param in ('buildtypes', 'toolchains', 'platforms'):
+        # buildtypes, toolchains
+        for param in ('buildtypes', 'toolchains'):
             mergeDictParam(currentConf, parentConf, param)
             mergedParams.add(param)
 
@@ -438,34 +438,14 @@ class Config(object):
         Calculate list of supported build types
         """
 
-        destPlatform = PLATFORM
+        supported = set(self._conf.buildtypes.keys())
 
-        supported = set()
         filterBuildTypes = self._getFilterBuildtypes()
-
-        platformFound = False
-        platforms = self._conf.platforms
-        regularBuildtypes = self._conf.buildtypes.keys()
-        if destPlatform in platforms:
-            platformFound = True
-            supported = platforms[destPlatform].get('valid', regularBuildtypes)
-            supported = toListSimple(supported)
-        else:
-            supported = regularBuildtypes
-        supported = set(supported)
-
-        if destPlatform in filterBuildTypes:
-            platformFound = True
-            supported.update(filterBuildTypes[destPlatform])
-
+        supported.update(filterBuildTypes.get(PLATFORM, set()))
         supported.update(filterBuildTypes.get('all', set()))
 
         if 'default' in supported:
             supported.remove('default')
-
-        if platformFound and not supported:
-            msg = "No valid build types for platform '%s'" % destPlatform
-            raise ZenMakeConfError(msg, confpath = self.path)
 
         if not supported:
             # empty buildtype if others aren't detected
@@ -476,10 +456,10 @@ class Config(object):
     def _handleDefaultBuildType(self):
         """ Calculate default build type """
 
-        platforms = self._conf.platforms
         buildtype = self._conf.buildtypes.get('default', None)
-        if PLATFORM in platforms:
-            buildtype = platforms[PLATFORM].get('default', buildtype)
+        if buildtype and not isinstance(buildtype, stringtype):
+            buildtype = buildtype.get(PLATFORM,
+                            buildtype.get('_', buildtype.get('no-match')))
 
         supportedBuildTypes = self.supportedBuildTypes
         if buildtype is None:
@@ -490,10 +470,7 @@ class Config(object):
 
         if buildtype not in supportedBuildTypes:
             errmsg = "Default build type '%s'" % buildtype
-            if PLATFORM in platforms and 'default' in platforms[PLATFORM]:
-                errmsg += " from the config variable 'platform'"
-            else:
-                errmsg += " from the config variable 'buildtypes'"
+            errmsg += " from the config variable 'buildtypes'"
             errmsg += " is invalid\nfor the current supported values."
             supportedValues = str(supportedBuildTypes)[1:-1]
             if not supportedValues:

@@ -59,18 +59,8 @@ buildtypes:
         toolchain : msvc
         cxxflags : /O2 /EHsc
 
-    default: debug-gcc
-
-platforms:
-    linux:
-        valid   : [ debug-gcc, debug-clang, release-gcc, release-clang ]
-        default : debug-gcc
-
-    darwin: # Mac OS
-        valid   : [ debug-clang, release-clang ]
-        default : debug-clang
-
-    windows:
-        valid   : [ debug-msvc, release-msvc ]
-        default : debug-msvc
-
+    default:
+        no-match: debug-gcc
+        #linux: debug-gcc
+        darwin: debug-clang
+        windows: debug-msvc

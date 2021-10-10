@@ -28,7 +28,6 @@ Simplified scheme of buildconf is:
     tasks_ = { name: :ref:`task parameters<buildconf-taskparams>` }
     buildtypes_ = { name: :ref:`task parameters<buildconf-taskparams>` }
     toolchains_ = { name: parameters }
-    platforms_ = { name: parameters }
     byfilter_ = [ { for: {...}, set: :ref:`task parameters<buildconf-taskparams>` }, ... ]
     :ref:`buildconf-subdirs` = []
     edeps_ = { ... }
@@ -284,8 +283,22 @@ buildtypes
 
     Possible parameters for each build type are described in
     :ref:`task parameters<buildconf-taskparams>`.
-    Special value ``default`` must be name of one of the build types.
-    Example in YAML format:
+
+    Special value ``default`` must be a string with the name of one of the
+    build types or a `dict <buildconf-dict-def_>`_ where keys are supported name
+    of the host operating system and values are strings with the names of one of the
+    build types. Special key '_' or 'no-match' can be used in the ``default`` to
+    define a value that will be used if the name of the current host operating system
+    is not found among the keys in the ``default``.
+
+    Valid host operating system names: ``linux``, ``windows``, ``darwin``, ``freebsd``,
+    ``openbsd``, ``sunos``, ``cygwin``, ``msys``, ``riscos``, ``atheos``,
+    ``os2``, ``os2emx``, ``hp-ux``, ``hpux``, ``aix``, ``irix``.
+
+    .. note::
+        Only ``linux``, ``windows`` and ``darwin`` are tested.
+
+    Examples in YAML format:
 
     .. code-block:: yaml
 
@@ -299,8 +312,40 @@ buildtypes
           release-msvc : { toolchain: msvc, cxxflags: /O2 /EHsc }
           default: debug
 
+        buildtypes:
+          debug:
+            toolchain.select:
+              default: g++
+              darwin: clang++
+              windows: msvc
+            cxxflags.select:
+              default : -O0 -g
+              msvc    : /Od /EHsc
+          release:
+            toolchain.select:
+              default: g++
+              darwin: clang++
+              windows: msvc
+            cxxflags.select:
+              default : -O2
+              msvc    : /O2 /EHsc
+          default: debug
+
+        buildtypes:
+          debug-gcc    : { cxxflags: -O0 -g }
+          release-gcc  : { cxxflags: -O2 }
+          debug-clang  : { cxxflags: -O0 -g }
+          release-clang: { cxxflags: -O2 }
+          debug-msvc   : { cxxflags: /Od /EHsc }
+          release-msvc : { cxxflags: /O2 /EHsc }
+          default:
+            _: debug-gcc
+            linux: debug-gcc
+            darwin: debug-clang
+            windows: debug-msvc
+
     .. note::
-        Parameters in this variable can override parameters in tasks_ and
+        Parameters in this variable override corresponding parameters in tasks_ and
         can be overridden by parameters in byfilter_.
 
 .. _buildconf-toolchains:
@@ -336,42 +381,6 @@ toolchains
           g++:
             LINKFLAGS : -Wl,--as-needed
 
-.. _buildconf-platforms:
-
-platforms
-"""""""""
-    A `dict <buildconf-dict-def_>`_ with some settings specific to platforms.
-    It's important variable if your project should be built on more than one
-    platform. Each value must have name of platform with value of 2 parameters:
-    ``valid`` and ``default``. Parameter ``valid`` is a string or list of
-    valid/supported buildtypes_ for selected platform and optional parameter
-    ``default`` specifies default buildtype as one of valid buildtypes.
-    Also parameter ``default`` overrides parameter ``default``
-    from buildtypes_ for selected platform.
-
-    Valid platform names: ``linux``, ``windows``, ``darwin``, ``freebsd``,
-    ``openbsd``, ``sunos``, ``cygwin``, ``msys``, ``riscos``, ``atheos``,
-    ``os2``, ``os2emx``, ``hp-ux``, ``hpux``, ``aix``, ``irix``.
-
-    .. note::
-        Only ``linux``, ``windows``, ``darwin`` are tested.
-
-    Example in YAML format:
-
-    .. code-block:: yaml
-
-        platforms:
-          linux :
-            valid : [debug-gcc, debug-clang, release-gcc, release-clang ]
-            default : debug-gcc
-          # Mac OS
-          darwin :
-            valid : [debug-clang, release-clang ]
-            default : debug-clang
-          windows :
-            valid : [debug-msvc, release-msvc ]
-            default : debug-msvc
-
 .. _buildconf-byfilter:
 
 byfilter
@@ -391,8 +400,8 @@ byfilter
 
     :task:      Build task name or list of build task names.
                 It can be existing task(s) from tasks_ or new.
-    :platform:  Name of platform or list of them. Valid values are the same
-                as for platforms_.
+    :platform:  Name of host operating system or list of them.
+                Valid values are the same as for ``default`` in buildtypes_.
     :buildtype: Build type or list of build types.
                 It can be existing build type(s) from buildtypes_ or new.
 
@@ -439,6 +448,10 @@ byfilter
 
           - for: { buildtype: [debug-clang, release-clang], platform: linux darwin }
             set: { toolchain: clang++ }
+
+    .. note::
+        Parameters in this variable override corresponding parameters in tasks_
+        and in buildtypes_.
 
 .. _buildconf-subdirs:
 
