@@ -103,6 +103,8 @@ one or more such parameters:
 
     :platform:
         Selected platform like 'linux', 'windows', 'darwin', etc.
+        Valid values are the same as for ``default`` in
+        the :ref:`buildtypes<buildconf-buildtypes>`.
 
         It can be one value or list of values or string with more than one
         value separated by spaces like this: 'linux windows'.

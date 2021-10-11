@@ -400,7 +400,7 @@ byfilter
 
     :task:      Build task name or list of build task names.
                 It can be existing task(s) from tasks_ or new.
-    :platform:  Name of host operating system or list of them.
+    :platform:  Name of a host platform/operating system or list of them.
                 Valid values are the same as for ``default`` in buildtypes_.
     :buildtype: Build type or list of build types.
                 It can be existing build type(s) from buildtypes_ or new.
