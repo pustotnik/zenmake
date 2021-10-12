@@ -285,7 +285,7 @@ def getFixtureCase4(_, testingBuildConf, paramName):
     selectableParamName = "%s.select" % paramName
     buildconf.buildtypes.debug[selectableParamName] = {
         'default' : paramTestValues[0],
-        'linux task1' : paramTestValues[1],
+        'linux and task1' : paramTestValues[1],
         'windows' : paramTestValues[2],
     }
     _postBuildconfSetup(buildconf, paramName)
@@ -316,7 +316,7 @@ def getFixtureCase5(_, testingBuildConf, paramName):
     selectableParamName = "%s.select" % paramName
     buildconf.buildtypes.debug[selectableParamName] = {
         'default' : paramTestValues[0],
-        'x64 task1' : paramTestValues[1],
+        'x64 and task1' : paramTestValues[1],
         'arm' : paramTestValues[2],
     }
     _postBuildconfSetup(buildconf, paramName)
@@ -395,7 +395,7 @@ def getFixtureCase7(_, testingBuildConf, paramName):
     buildconf.buildtypes.debug['toolchain'] = 'clang'
     buildconf.buildtypes.debug[selectableParamName] = {
         'default' : paramTestValues[0],
-        'clang task1' : paramTestValues[1],
+        'clang and task1' : paramTestValues[1],
         'gcc' : paramTestValues[2],
     }
     _postBuildconfSetup(buildconf, paramName)

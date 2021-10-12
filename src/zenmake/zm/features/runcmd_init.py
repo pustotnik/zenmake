@@ -9,7 +9,7 @@
 from os.path import relpath
 
 from zm.pyutils import maptype
-from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY
+from zm.buildconf.schemeutils import ANYSTR_KEY
 
 CONF_TASKSCHEME_SPEC = {
     'base' : {
@@ -21,7 +21,7 @@ CONF_TASKSCHEME_SPEC = {
                 'cwd' : { 'type': 'str' },
                 'env' : {
                     'type': 'dict',
-                    'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
+                    'vars' : { ANYSTR_KEY : { 'type': 'str' } },
                 },
                 'repeat' : { 'type': 'int' },
                 'timeout' : { 'type': 'int' },

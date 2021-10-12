@@ -13,8 +13,16 @@ from zm.utils import toList
 from zm.error import ZenMakeLogicError, ZenMakeConfError
 from zm.buildconf.scheme import KNOWN_CONDITION_PARAM_NAMES
 from zm.buildconf.processing import convertTaskParamValue
+from zm.buildconf.expression import Expression
 from zm.features import areFeaturesLoaded
 from zm.toolchains import getAllNames as getAllToolchainNames
+
+_SYS_STATES = (
+    ('platform', PLATFORM),
+    ('cpu-arch', CPU_ARCH),
+)
+
+_exprHandler = Expression(['and', 'or', 'not'])
 
 _local = {}
 
@@ -53,6 +61,59 @@ def _getReadyConditions(bconf):
     _local['ready-conditions'][bconfId] = conditions
     return conditions
 
+def _tryToSelect(bconf, condName, taskParams, paramName):
+    # pylint: disable = too-many-return-statements
+
+    condition = bconf.conditions.get(condName,
+                                _getReadyConditions(bconf).get(condName))
+    if condition is None:
+        msg = "Task %r: " % taskParams['name']
+        msg += "there is no condition %r in buildconf.conditions" % condName
+        raise ZenMakeConfError(msg, confpath = bconf.path)
+
+    # check we didn't forget any param
+    assert frozenset(condition.keys()) <= KNOWN_CONDITION_PARAM_NAMES
+
+    # check system states
+    for name, val in _SYS_STATES:
+        filterVals = condition.get(name)
+        if filterVals is not None and val not in filterVals:
+            return False
+
+    # check task
+    filterVals = condition.get('task')
+    if filterVals is not None and taskParams['name'] not in filterVals:
+        return False
+
+    # check buildtype
+    buildtype = bconf.selectedBuildType
+    filterVals = condition.get('buildtype')
+    if filterVals is not None and buildtype not in filterVals:
+        return False
+
+    # check toolchain
+    filterVals = condition.get('toolchain')
+    if filterVals is not None:
+        if paramName == 'toolchain':
+            msg = "Task %r: " % taskParams['name']
+            msg += "Condition %r in buildconf.conditions" % condName
+            msg += " cannot be used to select toolchain because it"
+            msg += " contains the 'toolchain' parameter."
+            raise ZenMakeConfError(msg, confpath = bconf.path)
+
+        filterVals = set(filterVals)
+        taskToolchains = toList(taskParams.get('toolchain', []))
+        if not filterVals.issubset(taskToolchains):
+            return False
+
+    # check system env vars
+    filterVals = condition.get('env', {})
+    for var, val in filterVals.items():
+        if os.environ.get(var) != val:
+            return False
+
+    return True
+
 def clearLocalCache():
     """ Clear local cache. It's mostly for tests """
     _local.clear()
@@ -68,78 +129,18 @@ def handleOneTaskParamSelect(bconf, taskParams, paramName):
     if selectParam is None:
         return
 
-    sysStates = (
-        ('platform', PLATFORM),
-        ('cpu-arch', CPU_ARCH),
-    )
-
-    buildtype = bconf.selectedBuildType
-
-    def tryToSelect(conditions, condName, taskParams):
-        # pylint: disable = too-many-return-statements
-
-        condition = conditions.get(condName,
-                                   _getReadyConditions(bconf).get(condName))
-        if condition is None:
-            msg = "Task %r: " % taskParams['name']
-            msg += "there is no condition %r in buildconf.conditions" % condName
-            raise ZenMakeConfError(msg, confpath = bconf.path)
-
-        # check we didn't forget any param
-        assert frozenset(condition.keys()) <= KNOWN_CONDITION_PARAM_NAMES
-
-        # check system states
-        for name, val in sysStates:
-            filterVals = condition.get(name)
-            if filterVals is not None and val not in filterVals:
-                return False
-
-        # check task
-        filterVals = condition.get('task')
-        if filterVals is not None and taskParams['name'] not in filterVals:
-            return False
-
-        # check buildtype
-        filterVals = condition.get('buildtype')
-        if filterVals is not None and buildtype not in filterVals:
-            return False
-
-        # check toolchain
-        filterVals = condition.get('toolchain')
-        if filterVals is not None:
-            if paramName == 'toolchain':
-                msg = "Task %r: " % taskParams['name']
-                msg += "Condition %r in buildconf.conditions" % condName
-                msg += " cannot be used to select toolchain because it"
-                msg += " contains 'toolchain'"
-                raise ZenMakeConfError(msg, confpath = bconf.path)
-
-            filterVals = set(filterVals)
-            taskToolchains = toList(taskParams.get('toolchain', []))
-            if not filterVals.issubset(taskToolchains):
-                return False
-
-        # check system env vars
-        filterVals = condition.get('env', {})
-        for var, val in filterVals.items():
-            if os.environ.get(var) != val:
-                return False
-
-        return True
-
     defaultValue = selectParam.get('default', taskParams.get(paramName))
     detectedValue = None
+
+    def handleCond(name):
+        return _tryToSelect(bconf, name, taskParams, paramName)
 
     for label, param in selectParam.items():
         if label == 'default':
             continue
 
         # try one record of conditions
-        paramConditions = label.split()
-        for condName in paramConditions:
-            if not tryToSelect(bconf.conditions, condName, taskParams):
-                break
-        else:
+        if _exprHandler.eval(label, lambda x: handleCond):
             # found
             detectedValue = param
 

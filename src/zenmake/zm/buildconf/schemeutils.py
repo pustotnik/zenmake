@@ -6,12 +6,12 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
-class AnyAmountStrsKey(object):
+class AnyStrKey(object):
     """ Any amount of string keys"""
     __slots__ = ()
 
     def __eq__(self, other):
-        if not isinstance(other, AnyAmountStrsKey):
+        if not isinstance(other, AnyStrKey):
             # don't attempt to compare against unrelated types
             return NotImplemented # pragma: no cover
         return True
@@ -20,7 +20,7 @@ class AnyAmountStrsKey(object):
         # necessary for instances to behave sanely in dicts and sets.
         return hash(self.__class__)
 
-ANYAMOUNTSTRS_KEY = AnyAmountStrsKey()
+ANYSTR_KEY = AnyStrKey()
 
 def addSelectToParams(scheme, paramNames = None):
     """
@@ -36,6 +36,6 @@ def addSelectToParams(scheme, paramNames = None):
             'type' : 'dict',
             'vars' : {
                 'default' : origParam,
-                ANYAMOUNTSTRS_KEY : origParam,
+                ANYSTR_KEY : origParam,
             },
         }

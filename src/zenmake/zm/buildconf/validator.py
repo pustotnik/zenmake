@@ -10,7 +10,7 @@ from zm.error import ZenMakeConfError, ZenMakeConfTypeError, ZenMakeConfValueErr
 from zm.pyutils import maptype, stringtype
 from zm.utils import toList
 from zm.autodict import AutoDict as _AutoDict
-from zm.buildconf.schemeutils import AnyAmountStrsKey, ANYAMOUNTSTRS_KEY
+from zm.buildconf.schemeutils import AnyStrKey, ANYSTR_KEY
 from zm.buildconf.scheme import confscheme
 
 class ZenMakeConfSubTypeError(ZenMakeConfTypeError):
@@ -210,10 +210,10 @@ class Validator(object):
             # don't validate keys
             return
 
-        disallowedKeys = _getAttrValue(schemeAttrs, 'disallowed-keys',
+        allowedKeys = _getAttrValue(schemeAttrs, 'allowed-keys',
                                        'dict', default = None)
 
-        if disallowedKeys:
+        if allowedKeys:
             allowUnknownKeys = False
         else:
             allowUnknownKeys = _getAttrValue(schemeAttrs, 'allow-unknown-keys',
@@ -224,7 +224,7 @@ class Validator(object):
 
         try:
             Validator._validate(confnode, subscheme, fullkey,
-                                allowUnknownKeys, disallowedKeys)
+                                allowUnknownKeys, allowedKeys)
         except ZenMakeConfTypeError as ex:
             raise ZenMakeConfSubTypeError(ex = ex) from ex
 
@@ -253,7 +253,7 @@ class Validator(object):
         if keysKind == 'anystr':
             for key, _confnode in confnode.items():
                 Validator._checkStrKey(key, fullkey)
-            schemeAttrs['dict-vars'] = { ANYAMOUNTSTRS_KEY : subscheme }
+            schemeAttrs['dict-vars'] = { ANYSTR_KEY : subscheme }
         elif keysKind == 'bylist':
             allowedKeys = schemeAttrs.pop('keys-list')
             schemeAttrs['dict-vars'] = { k:subscheme for k in allowedKeys }
@@ -283,12 +283,14 @@ class Validator(object):
         return _handledKeys
 
     @staticmethod
-    def _validate(conf, scheme, keyprefix, allowUnknownKeys = False, disallowedKeys = None):
+    def _validate(conf, scheme, keyprefix, allowUnknownKeys = False, allowedKeys = None):
+
+        # pylint: disable = too-many-branches
 
         _anyAmountStrsKey = None
         _usualItems = []
         for key, schemeAttrs in scheme.items():
-            if isinstance(key, AnyAmountStrsKey):
+            if isinstance(key, AnyStrKey):
                 _anyAmountStrsKey = key
             else:
                 _usualItems.append((key, schemeAttrs))
@@ -305,9 +307,12 @@ class Validator(object):
             handler = Validator._getHandler(schemeAttrs['type'])
 
         for key, value in conf.items():
-            if disallowedKeys and key in disallowedKeys:
-                msg = "The key '%s' is not allowed in the param %r." % (str(key), keyprefix)
-                raise ZenMakeConfError(msg)
+            if allowedKeys:
+                if callable(allowedKeys):
+                    allowedKeys(key, keyprefix)
+                elif key not in allowedKeys:
+                    msg = "The key '%s' is not allowed in the param %r." % (str(key), keyprefix)
+                    raise ZenMakeConfError(msg)
             if key in _handledKeys:
                 continue
             if _anyAmountStrsKey is not None and isinstance(key, stringtype):

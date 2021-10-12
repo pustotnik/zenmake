@@ -13,16 +13,34 @@ from zm.constants import KNOWN_PLATFORMS, TASK_TARGET_KINDS
 from zm.pyutils import stringtype
 from zm.error import ZenMakeConfValueError
 from zm.cli import config as cliConfig
-from zm.buildconf.schemeutils import ANYAMOUNTSTRS_KEY, addSelectToParams
+from zm.buildconf.schemeutils import ANYSTR_KEY, addSelectToParams
 from zm.buildconf.sugar import genSugarSchemes
 from zm.features import ConfValidation
 
 _RE_VER_NUM = re.compile(r"^(0|[1-9]\d*)(\.(0|[1-9]\d*)){0,2}?$")
+_RE_CONDNAME = re.compile(r"^[\w\d+-_]+$", re.ASCII)
 
 def _checkVerNum(value, fullkey):
 
     if value and not _RE_VER_NUM.match(value):
         msg = "Value %r is invalid version number" % value
+        msg += " for the param %r." % fullkey
+        raise ZenMakeConfValueError(msg)
+
+def _checkCondName(value, fullkey):
+
+    if not value:
+        msg = "Value  cannot be empty"
+        msg += " for the param %r." % fullkey
+        raise ZenMakeConfValueError(msg)
+
+    if value == 'default':
+        msg = "The 'default' value is not allowed"
+        msg += " for the param %r." % fullkey
+        raise ZenMakeConfValueError(msg)
+
+    if not _RE_CONDNAME.match(value):
+        msg = "Value %r is invalid" % value
         msg += " for the param %r." % fullkey
         raise ZenMakeConfValueError(msg)
 
@@ -93,7 +111,7 @@ _actionToVars = {
         },
         'def-pkg-vars' : {
             'type': 'dict',
-            'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
+            'vars' : { ANYSTR_KEY : { 'type': 'str' } },
         },
         'tool-atleast-version' : { 'type': 'str' },
         'pkg-version' : { 'type': 'bool' },
@@ -268,7 +286,7 @@ _DEP_RULE_SCHEME = {
                 'func' : { 'type': 'func' },
                 'env' : {
                     'type': 'dict',
-                    'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
+                    'vars' : { ANYSTR_KEY : { 'type': 'str' } },
                 },
             },
         },
@@ -276,7 +294,7 @@ _DEP_RULE_SCHEME = {
         'cwd' : { 'type': 'str' },
         'env' : {
             'type': 'dict',
-            'vars' : { ANYAMOUNTSTRS_KEY : { 'type': 'str' } },
+            'vars' : { ANYSTR_KEY : { 'type': 'str' } },
         },
         'timeout' : { 'type': 'int' },
         'shell' : { 'type': 'bool' },
@@ -406,9 +424,9 @@ confscheme = {
     },
     'conditions' : {
         'type' : 'dict',
-        'disallowed-keys' : ('default', ),
+        'allowed-keys' : _checkCondName,
         'vars' : {
-            ANYAMOUNTSTRS_KEY : {
+            ANYSTR_KEY : {
                 #'type' : ('dict', 'func'),
                 'type' : 'dict',
                 'dict-vars' : {
@@ -432,7 +450,7 @@ confscheme = {
             'targets' :  {
                 'type': 'dict',
                 'vars' : {
-                    ANYAMOUNTSTRS_KEY: {
+                    ANYSTR_KEY: {
                         'type': 'dict',
                         'vars': {
                             'dir'  : {'type' : 'str' },
@@ -459,7 +477,7 @@ confscheme = {
             'buildtypes-map' : {
                 'type': 'dict',
                 'vars' : {
-                    ANYAMOUNTSTRS_KEY : { 'type' : 'str' },
+                    ANYSTR_KEY : { 'type' : 'str' },
                 },
             },
         },
@@ -474,7 +492,7 @@ confscheme = {
     'buildtypes' : {
         'type' : 'dict',
         'vars' : {
-            ANYAMOUNTSTRS_KEY : {
+            ANYSTR_KEY : {
                 'type' : 'dict',
                 'vars' : taskscheme,
             },
@@ -493,7 +511,7 @@ confscheme = {
         'vars-allow-unknown-keys' : False,
         'vars' : {
             'kind' : { 'type': 'str' },
-            ANYAMOUNTSTRS_KEY : { 'type' : 'str' },
+            ANYSTR_KEY : { 'type' : 'str' },
         },
     },
     'byfilter' : {
@@ -529,7 +547,7 @@ confscheme = {
 KNOWN_TASK_PARAM_NAMES = frozenset(taskscheme.keys())
 KNOWN_CONF_PARAM_NAMES = frozenset(confscheme.keys())
 KNOWN_CONDITION_PARAM_NAMES = \
-    frozenset(confscheme['conditions']['vars'][ANYAMOUNTSTRS_KEY]['dict-vars'].keys())
+    frozenset(confscheme['conditions']['vars'][ANYSTR_KEY]['dict-vars'].keys())
 KNOWN_CONF_ACTIONS = frozenset(_actionToVars.keys())
 
 # Syntactic sugar constructions are not 'real' parameters because they

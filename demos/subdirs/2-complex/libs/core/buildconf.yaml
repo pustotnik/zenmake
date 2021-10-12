@@ -19,9 +19,7 @@ byfilter:
         darwin:  clang
         windows: msvc
       cflags.select:
-        debug gcc: -O0
-        debug clang: -O0
-        debug msvc: /Od
-        release gcc: -O3
-        release clang: -O3
-        release msvc: /O2
+        debug and (gcc or clang): -O0
+        debug and msvc: /Od
+        release and (gcc or clang): -O3
+        release and msvc: /O2

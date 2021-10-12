@@ -97,9 +97,9 @@ tries to use the value of <parameter name> if it exists. If none of the
 conditions has been selected and no default value for the parameter then this
 parameter will not be used.
 
-Keys in :ref:`conditions<buildconf-conditions>` are just strings with any
-characters excluding white spaces. A value of each condition is a dict with
-one or more such parameters:
+Keys in :ref:`conditions<buildconf-conditions>` are just strings which consist of
+latin characters, digits and symbols '+', '-', '_' . A value for each condition
+is a dict with one or more such parameters:
 
     :platform:
         Selected platform like 'linux', 'windows', 'darwin', etc.
@@ -182,15 +182,8 @@ variables you can do it by making different conditions in
 
 Only one record from ``*.select`` for each parameter can be selected for each task
 during configuring but condition name in ``*.select`` can be string with more than
-one name from ``conditions``. Such names must be
-just separated by spaces in the string. In this case it is considered like
-(it's not real example):
-
-.. code-block:: yaml
-
-    <parameter name>.select:
-        <name1 AND name2>: <value>
-        ...
+one name from ``conditions``. Such names can be used with 'and', 'or' and/or 'not'
+to form different conditions in ``*.select``.
 
 Example in YAML format:
 
@@ -207,7 +200,7 @@ Example in YAML format:
         release:
             cxxflags.select:
                 # will be selected only on linux with selected/detected toolchain g++
-                linux g++: -Ofast
+                linux and g++: -Ofast
                 # will be selected in all other cases
                 default: -O2
 
@@ -230,7 +223,7 @@ Example in Python format:
         'release' : {
             'cxxflags.select' : {
                 # will be selected only on linux with selected/detected toolchain g++
-                'linux g++': '-Ofast',
+                'linux and g++': '-Ofast',
                 # will be selected in all other cases
                 'default': '-O2',
             },
@@ -252,7 +245,7 @@ in YAML format:
         release:
             cxxflags.select:
                 # will be selected only on linux with selected/detected toolchain g++
-                linux g++: -Ofast
+                linux and g++: -Ofast
                 # will be selected in all other cases
                 default: -O2
 
@@ -268,7 +261,7 @@ in Python format:
         'release' : {
             'cxxflags.select' : {
                 # will be selected only on linux with selected/detected toolchain g++
-                'linux g++': '-Ofast',
+                'linux and g++': '-Ofast',
                 # will be selected in all other cases
                 'default': '-O2',
             },
