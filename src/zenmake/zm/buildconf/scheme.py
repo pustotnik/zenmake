@@ -427,10 +427,11 @@ confscheme = {
         'allowed-keys' : _checkCondName,
         'vars' : {
             ANYSTR_KEY : {
-                #'type' : ('dict', 'func'),
                 'type' : 'dict',
                 'dict-vars' : {
                     'platform' :  { 'type': ('str', 'list-of-strs') },
+                    'host-os'  :  { 'type': ('str', 'list-of-strs') },
+                    'distro'   :  { 'type': ('str', 'list-of-strs') },
                     'cpu-arch' :  { 'type': ('str', 'list-of-strs') },
                     'toolchain' : { 'type': ('str', 'list-of-strs') },
                     'task' :      { 'type': ('str', 'list-of-strs') },

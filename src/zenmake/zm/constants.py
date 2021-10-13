@@ -9,7 +9,7 @@
 import os
 import sys
 import platform
-from zm.utils import platform as _platform
+from zm.utils import hostOS, distroInfo, platform as _platform
 
 APPNAME = 'zenmake'
 CAP_APPNAME = 'ZenMake'
@@ -45,6 +45,8 @@ KNOWN_PLATFORMS = (
     'linux', 'windows', 'darwin', 'freebsd', 'openbsd', 'sunos', 'cygwin',
     'msys', 'riscos', 'atheos', 'os2', 'os2emx', 'hp-ux', 'hpux', 'aix', 'irix',
 )
+HOST_OS = hostOS()
+DISTRO_INFO = distroInfo()
 CPU_ARCH = platform.machine()
 
 if PLATFORM == 'windows':

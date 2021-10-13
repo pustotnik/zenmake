@@ -109,11 +109,20 @@ is a dict with one or more such parameters:
         It can be one value or list of values or string with more than one
         value separated by spaces like this: 'linux windows'.
 
+    :host-os:
+        Selected basic name of a host operating system. It is almost the same as the
+        ``platform`` parameter but for the MSYS2 and cygwin platforms
+        it is always 'windows' and for the darwin platform it is 'macos'.
+
+    :distro:
+        Name of a Linux distribution like 'debian', 'fedora', etc.
+        This name is empty string for other operating systems.
+
     :cpu-arch:
         Selected current CPU architecture. Actual it's a result of the python function
         platform.machine() See https://docs.python.org/library/platform.html.
         Some possible values are: arm, i386, i686, x86_64, AMD64.
-        Real value depends also on platform. For example, on Windows you can get
+        Real value depends on a platform. For example, on Windows you can get
         AMD64 while on Linux you gets x86_64 on the same host.
 
         Current value can be obtained also with the command ``zenmake sysinfo``.
@@ -177,13 +186,13 @@ variables you can do it by making different conditions in
 :ref:`conditions<buildconf-conditions>`.
 
 .. note::
-    There is one limitation for ``toolchain.select`` - it's not possible to use
-    condition with 'toolchain' parameter inside ``toolchain.select``.
+    There is a constraint for ``toolchain.select`` - it's not possible to use
+    a condition with the 'toolchain' parameter inside ``toolchain.select``.
 
 Only one record from ``*.select`` for each parameter can be selected for each task
-during configuring but condition name in ``*.select`` can be string with more than
-one name from ``conditions``. Such names can be used with 'and', 'or' and/or 'not'
-to form different conditions in ``*.select``.
+during configuring but a condition name in ``*.select`` can be string with more than
+one name from ``conditions``. Such names can be used with 'and', 'or', 'not'
+and '()' to form different conditions in ``*.select``.
 
 Example in YAML format:
 

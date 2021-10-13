@@ -14,7 +14,7 @@ import atexit
 
 from waflib import Errors as waferror
 from waflib.Configure import ConfigurationContext as WafConfContext, WAF_CONFIG_LOG
-from zm.constants import PLATFORM
+from zm.constants import PLATFORM, HOST_OS, DISTRO_INFO
 from zm import log, utils
 from zm.cmd import Command as _Command
 # pylint: disable = unused-import
@@ -107,6 +107,8 @@ def gatherSysInfo(progress = False):
     info.append('Bit architecture: %s' % _platform.architecture()[0])
     info.append('Platform: %s' % PLATFORM)
     info.append('Platform id string: %s' % _platform.platform())
+    info.append('Operating system: %s' % HOST_OS)
+    info.append('Distro: %s' % DISTRO_INFO.get('ID', ''))
     info.append('Python version: %s' % _platform.python_version())
     info.append('Python implementation: %s' % _platform.python_implementation())
 

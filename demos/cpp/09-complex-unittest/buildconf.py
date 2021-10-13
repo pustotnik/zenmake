@@ -158,13 +158,12 @@ buildtypes = {
     'debug' : {
         'toolchain.select' : {
             'default': 'g++',
-            'darwin' : 'clang++',
+            'macos'  : 'clang++',
             'windows': 'msvc',
         },
         'cxxflags.select' : {
-            'g++'     : '-fPIC -O0 -g',
-            'clang++' : '-fPIC -O0 -g',
-            'msvc'    : '/Od /EHsc',
+            'g++ or clang++' : '-fPIC -O0 -g',
+            'msvc'           : '/Od /EHsc',
         },
         'linkflags.select' : {
             'g++': '-Wl,--as-needed',
@@ -173,13 +172,12 @@ buildtypes = {
     'release' : {
         'toolchain.select' : {
             'default': 'g++',
-            'darwin' : 'clang++',
+            'macos'  : 'clang++',
             'windows': 'msvc',
         },
         'cxxflags.select' : {
-            'g++'     : '-fPIC -O2',
-            'clang++' : '-fPIC -O2',
-            'msvc'    : '/O2 /EHsc',
+            'g++ or clang++' : '-fPIC -O2',
+            'msvc'           : '/O2 /EHsc',
         },
         'linkflags.select' : {
             'g++': '-Wl,--as-needed',

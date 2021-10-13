@@ -14,7 +14,7 @@
 import os
 import pytest
 
-from zm.constants import PLATFORM
+from zm.constants import PLATFORM, DISTRO_INFO
 from tests.func_utils import *
 
 TOOLCHAN_TO_ENVVAR = dict(
@@ -32,19 +32,6 @@ PARAMS_CONFIG = {
     ('gdc', joinpath('d', '02-withlibs')) :
         dict( default = ('linux', ), ci = ('linux'), ),
 }
-
-def _gatherDistInfo():
-    import csv
-
-    result = {}
-
-    with open("/etc/os-release") as f:
-        reader = csv.reader(f, delimiter="=")
-        for row in reader:
-            if row:
-                result[row[0]] = row[1]
-
-    return result
 
 def _generateParams():
 
@@ -65,10 +52,9 @@ def _generateParams():
             if isTravisCI:
                 disableGDC = os.environ.get('TRAVIS_DIST', '') == 'xenial'
             else:
-                info = _gatherDistInfo()
-                nameId = info.get('ID')
+                nameId = DISTRO_INFO.get('ID')
                 if nameId in ('debian', 'ubuntu'):
-                    codeName = info.get('VERSION_CODENAME')
+                    codeName = DISTRO_INFO.get('VERSION_CODENAME')
                     # do we need the debian codename ?
                     disableGDC = codeName in ('xenial', )
         if disableGDC:

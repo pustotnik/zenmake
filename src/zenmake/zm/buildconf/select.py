@@ -8,7 +8,7 @@
 
 import os
 
-from zm.constants import PLATFORM, KNOWN_PLATFORMS, CPU_ARCH
+from zm.constants import PLATFORM, KNOWN_PLATFORMS, HOST_OS, DISTRO_INFO, CPU_ARCH
 from zm.utils import toList
 from zm.error import ZenMakeLogicError, ZenMakeConfError
 from zm.buildconf.scheme import KNOWN_CONDITION_PARAM_NAMES
@@ -19,6 +19,8 @@ from zm.toolchains import getAllNames as getAllToolchainNames
 
 _SYS_STATES = (
     ('platform', PLATFORM),
+    ('host-os', HOST_OS),
+    ('distro', DISTRO_INFO.get('ID', '')),
     ('cpu-arch', CPU_ARCH),
 )
 
@@ -44,6 +46,7 @@ def _getReadyConditions(bconf):
         # platform conditions
         for platform in KNOWN_PLATFORMS:
             conditions[platform] = { 'platform' : (platform, ) }
+        conditions['macos'] = { 'host-os' : ('macos', ) }
         # toolchain conditions
         for toolchain in getAllToolchainNames(platform = 'all'):
             assert toolchain not in conditions

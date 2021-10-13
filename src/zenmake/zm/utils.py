@@ -44,7 +44,7 @@ _RE_SUBST_BUILTINVARS = re.compile(r"\$\((\s*(\w+)\s*)\)", re.ASCII)
 
 def platform():
     """
-    Return current system platform. For MS Windows platform is always 'windows'.
+    Return current system platform. It is always 'windows' for MS Windows.
     """
     result = wafutils.unversioned_sys_platform()
     if result.startswith('win32'):
@@ -52,6 +52,21 @@ def platform():
     return result
 
 PLATFORM = platform()
+
+def hostOS():
+    """
+    Return current host operating system base name.
+    It is 'windows' for MS Windows, MSYS2 and cygwin;
+    'linux' for GNU/Linux; 'macos' for Mac OS, etc.
+    """
+
+    selector = {
+        'cygwin' : 'windows',
+        'msys'   : 'windows',
+        'darwin' : 'macos',
+    }
+
+    return selector.get(PLATFORM, PLATFORM)
 
 def getDefaultDestOS():
     """
@@ -73,6 +88,30 @@ def getDestBinFormatByOS(destOS):
         return 'pe'
 
     return 'elf'
+
+def distroInfo():
+    """
+    Return dict of info from /etc/os-release or /usr/lib/os-release.
+    Returns {} if failed
+    """
+
+    result = {}
+
+    filePath = "/etc/os-release"
+    if not os.path.isfile(filePath):
+        filePath = "/usr/lib/os-release"
+    if not os.path.isfile(filePath):
+        return result
+
+    import csv
+    try:
+        with open(filePath) as file:
+            reader = csv.reader(file, delimiter = "=")
+            result = { row[0]:row[1] for row in reader if row}
+    except OSError:
+        pass
+
+    return result
 
 def asmethod(cls, methodName = None, wrap = False, **kwargs):
     """
