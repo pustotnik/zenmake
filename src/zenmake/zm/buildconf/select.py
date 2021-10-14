@@ -143,7 +143,7 @@ def handleOneTaskParamSelect(bconf, taskParams, paramName):
             continue
 
         # try one record of conditions
-        if _exprHandler.eval(label, lambda x: handleCond):
+        if _exprHandler.eval(label, lambda x: handleCond, bconf.path):
             # found
             detectedValue = param
 

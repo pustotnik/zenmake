@@ -8,6 +8,8 @@
 
 import re
 
+from zm.error import ZenMakeConfError
+
 _RE_REPLACE = re.compile(r"""([^\s"'\(\)]+)""", re.ASCII)
 
 class Expression(object):
@@ -19,7 +21,7 @@ class Expression(object):
 
         self._operators = allowedOperators
 
-    def eval(self, expr, resolver):
+    def eval(self, expr, resolver, bconfPath = None):
         """
         Evaluate 'expr'
         """
@@ -47,10 +49,15 @@ class Expression(object):
 
         code = _RE_REPLACE.sub(replaceVar, expr)
 
-        # pylint: disable = eval-used
-        # Maybe it's better to make a solution without 'eval'
-        # by using a binary tree for example, but current solution is short,
-        # just works and has good enough performance.
-        result = eval(code, { '__builtins__': {} }, codeLocals)
+        try:
+            # pylint: disable = eval-used
+            # Maybe it's better to make a solution without 'eval'
+            # by using a binary tree for example, but current solution is short,
+            # just works and has good enough performance.
+            # And 'bad' implications of 'eval' don't matter here.
+            result = eval(code, { '__builtins__': {} }, codeLocals)
+        except SyntaxError as ex:
+            msg = "There is syntax error in the expression %r." % expr
+            raise ZenMakeConfError(msg, confpath = bconfPath) from ex
 
         return result
