@@ -8,7 +8,6 @@
 
 import os
 import re
-from collections import defaultdict
 from copy import deepcopy
 
 from zm.constants import PLATFORM, KNOWN_PLATFORMS, DEPNAME_DELIMITER
@@ -369,9 +368,7 @@ class Config(object):
 
         # check buildtype names
 
-        filterBuildTypes = self._getFilterBuildtypes()
-        buildtypes = list(filterBuildTypes.keys())
-        buildtypes.extend(self._conf.buildtypes.keys())
+        buildtypes = self._conf.buildtypes.keys()
         buildtypes = tuple(set(buildtypes)) # make unique list
         for buildtype in buildtypes:
             if buildtype in INVALID_BUILDTYPES or buildtype.startswith(CONFTEST_DIR_PREFIX):
@@ -398,51 +395,12 @@ class Config(object):
         names = set(names)
         self._meta.tasknames = names
 
-    def _handleFilterBuildtypes(self):
-        destPlatform = PLATFORM
-        filterBuildTypes = defaultdict(set)
-
-        def handleCondition(entry, name):
-            condition = entry.get(name, {})
-            if isinstance(condition, stringtype) and condition == 'all':
-                condition = entry[name] = {}
-
-            buildtypes = toList(condition.get('buildtype', []))
-            platforms = toListSimple(condition.get('platform', []))
-
-            if buildtypes:
-                if not platforms:
-                    filterBuildTypes['all'].update(buildtypes)
-                elif name == 'for' and destPlatform in platforms:
-                    filterBuildTypes[destPlatform].update(buildtypes)
-                elif name == 'not-for' and destPlatform not in platforms:
-                    filterBuildTypes[destPlatform].update(buildtypes)
-
-        for entry in self._conf.byfilter:
-            handleCondition(entry, 'for')
-            handleCondition(entry, 'not-for')
-
-        self._meta.byfilter.buildtypes = filterBuildTypes
-
-    def _getFilterBuildtypes(self):
-
-        byfilter = self._meta.byfilter
-        if 'buildtypes' not in byfilter:
-            self._handleFilterBuildtypes()
-            assert 'buildtypes' in byfilter
-
-        return byfilter.buildtypes
-
     def _handleSupportedBuildTypes(self):
         """
         Calculate list of supported build types
         """
 
         supported = set(self._conf.buildtypes.keys())
-
-        filterBuildTypes = self._getFilterBuildtypes()
-        supported.update(filterBuildTypes.get(PLATFORM, set()))
-        supported.update(filterBuildTypes.get('all', set()))
 
         if 'default' in supported:
             supported.remove('default')
@@ -491,6 +449,8 @@ class Config(object):
 
         def getFilterCondition(entry, name):
             condition = entry.get(name, None)
+            if isinstance(condition, stringtype) and condition == 'all':
+                condition = entry[name] = {}
             result = { 'condition' : condition }
 
             if not condition:

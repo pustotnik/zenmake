@@ -424,11 +424,17 @@ byfilter
     .. note::
       ZenMake applies every item in the ``byfilter`` in the order as they were written.
 
-    It's possible to use only ``byfilter`` without tasks_ and buildtypes_.
+    It's possible to use ``byfilter`` without tasks_.
 
     Example in YAML format:
 
     .. code-block:: yaml
+
+        buildtypes:
+          debug-gcc    : {}
+          release-gcc  : {}
+          debug-clang  : {}
+          release-clang: {}
 
         byfilter:
           - for: all
