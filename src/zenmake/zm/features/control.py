@@ -421,6 +421,10 @@ class ToolchainVars(object):
         Return combined tuple of all sys environment variables to set toolchain.
         """
 
+        #pylint: disable = consider-using-generator
+        # We need to convert list into tuple to have guarantee that returned
+        # value from cache (see _cached) will not be changed.
+
         return tuple([ x['sysenv-var'] for x in TOOLCHAIN_VARS.values() ])
 
     @staticmethod
@@ -430,6 +434,9 @@ class ToolchainVars(object):
         Return combined tuple of all WAF ConfigSet variables to set/get toolchain.
         """
 
+        #pylint: disable = consider-using-generator
+        # We need to convert list into tuple to have guarantee that returned
+        # value from cache (see _cached) will not be changed.
         return tuple([ x['cfgenv-var'] for x in TOOLCHAIN_VARS.values() ])
 
     @staticmethod

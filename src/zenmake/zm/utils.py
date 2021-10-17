@@ -467,8 +467,7 @@ def toList(val):
 
     # shlex.split worked quite well but did it too slowly
 
-    # It can be made without regexp but this solution works faster.
-    # Actually manual function should be faster but python regexp engine uses
+    # Actually manual algorithm should be faster but python regexp engine uses
     # some C code and therefore it works faster.
     return [stripQuotes(x) for x in _RE_TOLIST.split(val)[1::2]]
 
@@ -477,6 +476,8 @@ def uniqueListWithOrder(lst):
     Return new list with preserved the original order of the list.
     Each element in lst must be hashable.
     """
+
+    # pylint: disable = simplifiable-condition
 
     used = set()
     return [x for x in lst if x not in used and (used.add(x) or True)]
