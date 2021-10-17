@@ -8,6 +8,7 @@
 
 import os
 import re
+from collections import defaultdict
 from copy import deepcopy
 
 from zm.constants import PLATFORM, KNOWN_PLATFORMS, DEPNAME_DELIMITER
@@ -191,6 +192,8 @@ class Config(object):
         self._confpaths = ConfPaths(self)
         notHandled = self._handlePrimaryBuiltInVars()
 
+        self._handleFilterBuildtypeNames()
+        self._gatherCurrentBuildTypeNames()
         self._postValidateBuildtypeNames()
         self._applyBuildType()
         self._handleBuiltInVarsAfterBuildtype(notHandled)
@@ -368,8 +371,8 @@ class Config(object):
 
         # check buildtype names
 
-        buildtypes = self._conf.buildtypes.keys()
-        buildtypes = tuple(set(buildtypes)) # make unique list
+        assert 'curnames' in self._meta.buildtypes
+        buildtypes = self._meta.buildtypes.curnames
         for buildtype in buildtypes:
             if buildtype in INVALID_BUILDTYPES or buildtype.startswith(CONFTEST_DIR_PREFIX):
                 msg = "Error in the buildconf file %r:" % relpath(self.path, CWD)
@@ -395,21 +398,65 @@ class Config(object):
         names = set(names)
         self._meta.tasknames = names
 
-    def _handleSupportedBuildTypes(self):
+    def _handleFilterBuildtypeNames(self):
+        destPlatform = PLATFORM
+        filterBuildTypes = defaultdict(set)
+
+        def handleCondition(entry, name):
+            condition = entry.get(name, {})
+            if isinstance(condition, stringtype) and condition == 'all':
+                condition = entry[name] = {}
+
+            buildtypes = toList(condition.get('buildtype', []))
+            platforms = toListSimple(condition.get('platform', []))
+
+            if buildtypes:
+                if not platforms:
+                    filterBuildTypes['all'].update(buildtypes)
+                elif name == 'for' and destPlatform in platforms:
+                    filterBuildTypes[destPlatform].update(buildtypes)
+                elif name == 'not-for' and destPlatform not in platforms:
+                    filterBuildTypes[destPlatform].update(buildtypes)
+
+        for entry in self._conf.byfilter:
+            handleCondition(entry, 'for')
+            handleCondition(entry, 'not-for')
+
+        self._meta.byfilter.buildtypes = filterBuildTypes
+
+    def _gatherCurrentBuildTypeNames(self):
+
+        buildtypes = set(self._conf.buildtypes.keys())
+
+        assert 'buildtypes' in self._meta.byfilter
+        filterBuildTypes = self._meta.byfilter.buildtypes
+        buildtypes.update(filterBuildTypes.get(PLATFORM, []))
+        buildtypes.update(filterBuildTypes.get('all', []))
+
+        if 'default' in buildtypes:
+            buildtypes.remove('default')
+
+        self._meta.buildtypes.curnames = buildtypes
+
+    def _gatherAllBuildTypeNames(self):
         """
-        Calculate list of supported build types
+        Gather list of all build type names
         """
 
-        supported = set(self._conf.buildtypes.keys())
+        metaBuildtypes = self._meta.buildtypes
 
-        if 'default' in supported:
-            supported.remove('default')
+        parent = self._parent
+        if parent:
+            buildtypes = set(metaBuildtypes.curnames)
+            buildtypes.update(parent.supportedBuildTypes)
+        else:
+            buildtypes = metaBuildtypes.curnames
 
-        if not supported:
+        if not buildtypes:
             # empty buildtype if others aren't detected
-            supported = set([''])
+            buildtypes = set([''])
 
-        self._meta.buildtypes.supported = sorted(supported)
+        metaBuildtypes.allnames = sorted(buildtypes)
 
     def _handleDefaultBuildType(self):
         """ Calculate default build type """
@@ -821,11 +868,11 @@ class Config(object):
         """ Get calculated list of supported build types """
 
         buildtypes = self._meta.buildtypes
-        if 'supported' not in buildtypes:
-            self._handleSupportedBuildTypes()
-            assert 'supported' in buildtypes
+        if 'allnames' not in buildtypes:
+            self._gatherAllBuildTypeNames()
+            assert 'allnames' in buildtypes
 
-        return buildtypes.supported
+        return buildtypes.allnames
 
     @property
     def tasks(self):

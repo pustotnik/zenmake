@@ -106,6 +106,95 @@ class TestSuite(object):
             'mybuildtype', 'abcbt'
         ])
 
+    def testSupportedBuildTypesByfilter(self, testingBuildConf):
+
+        buildconf = testingBuildConf
+        buildconf.buildtypes.default = 'b1'
+
+        # CASE: no buildtypes in buildconf.buildtypes and global
+        # buildtypes in byfilter
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.byfilter = [
+            { 'for' : { 'buildtype' : 'b1 b2' } }
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2' ])
+        buildconf.byfilter = [
+            { 'for' : { 'buildtype' : 'b1 b2' } },
+            { 'for' : { 'buildtype' : ['b3', 'b2'] } }
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3' ])
+
+        # CASE: no buildtypes in buildconf.buildtypes and platform
+        # buildtypes in byfilter
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.buildtypes.default = 'b2'
+        buildconf.byfilter = [
+            { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM } }
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2' ])
+        buildconf.byfilter = [
+            { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM + randomstr() } },
+            { 'for' : { 'buildtype' : 'b4 b2', 'platform' : PLATFORM } },
+            { 'for' : { 'buildtype' : 'b5 b6', 'platform' : PLATFORM } }
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b4', 'b2', 'b5', 'b6' ])
+
+        # CASE: no buildtypes in buildconf.buildtypes and global/platform
+        # buildtypes in byfilter
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.byfilter = [
+            { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM } },
+            { 'for' : { 'buildtype' : 'b3 b2', } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3' ])
+        buildconf.buildtypes.default = 'b2'
+        buildconf.byfilter = [
+            { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM + randomstr() } },
+            { 'for' : { 'buildtype' : 'b3 b2', } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b2', 'b3' ])
+
+        # CASE: buildtypes in buildconf.buildtypes and global/platform
+        # buildtypes in byfilter
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.buildtypes.gb1 = {}
+        buildconf.buildtypes.default = 'b2'
+        buildconf.byfilter = [
+            { 'for' : { 'buildtype' : 'b1 b2' } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'gb1', 'b1', 'b2' ])
+        buildconf.byfilter = [
+            { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'gb1', 'b1', 'b2' ])
+        buildconf.byfilter = [
+            { 'for' : { 'buildtype' : 'b1 b2', 'platform' : PLATFORM + randomstr() } },
+            { 'for' : { 'buildtype' : 'b3 b2', } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'gb1', 'b2', 'b3' ])
+
+        # CASE: buildtypes in buildconf.buildtypes and buildtypes in byfilter
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.buildtypes.b1 = {}
+        buildconf.buildtypes.b2 = {}
+        buildconf.byfilter = [
+            { 'for' : { 'buildtype' : 'b3 b4' } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3', 'b4' ])
+        buildconf.byfilter = [
+            { 'for' : { 'buildtype' : 'b3 b4', 'platform' : PLATFORM } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3', 'b4' ])
+        buildconf.byfilter = [
+            { 'for' : { 'buildtype' : 'b5 b3', 'platform' : PLATFORM + randomstr() } },
+            { 'for' : { 'buildtype' : 'b4 b3', } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2', 'b3', 'b4' ])
+        buildconf.byfilter = [
+            { 'for' : { 'buildtype' : 'b1' } },
+        ]
+        self._checkSupportedBuildTypes(buildconf, [ 'b1', 'b2' ])
+
     def _checkTasks(self, buildconf, buildtype, expected):
         bconf = BuildConfig(asRealConf(buildconf), clivars = {'buildtype': buildtype})
 

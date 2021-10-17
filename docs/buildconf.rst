@@ -399,11 +399,11 @@ byfilter
     The attributes ``for``/``not-for`` are dicts with one or more such keys:
 
     :task:      Build task name or list of build task names.
-                It can be existing task(s) from tasks_ or new.
+                It can be existing task(s) from tasks_ or new (only in ``for``).
+    :buildtype: Build type or list of build types.
+                It can be existing build type(s) from buildtypes_ or new (only in ``for``).
     :platform:  Name of a host platform/operating system or list of them.
                 Valid values are the same as for ``default`` in buildtypes_.
-    :buildtype: Build type or list of build types.
-                It can be existing build type(s) from buildtypes_ or new.
 
     The attribute ``set`` has value of the :ref:`task parameters<buildconf-taskparams>`.
 
@@ -424,17 +424,11 @@ byfilter
     .. note::
       ZenMake applies every item in the ``byfilter`` in the order as they were written.
 
-    It's possible to use ``byfilter`` without tasks_.
+    It's possible to use ``byfilter`` without tasks_ and buildtypes_.
 
     Example in YAML format:
 
     .. code-block:: yaml
-
-        buildtypes:
-          debug-gcc    : {}
-          release-gcc  : {}
-          debug-clang  : {}
-          release-clang: {}
 
         byfilter:
           - for: all
