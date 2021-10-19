@@ -80,7 +80,7 @@ buildtypes:
   default: debug
 
 byfilter:
-  - for : { task: util }
+  - if: task == 'util'
     set :
       toolchain.select:
         default: gcc

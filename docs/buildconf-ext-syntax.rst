@@ -70,7 +70,7 @@ configure
                   names : stdio.h
 
     In addition to regular arguments for :ref:`configure<buildconf-taskparams-configure>`
-    task param you can use ``for`` and/or ``not-for`` in the same way as in
+    task param you can use ``for``/``not-for``/``if`` in the same way as in
     the :ref:`byfilter<buildconf-byfilter>`.
 
     Example:

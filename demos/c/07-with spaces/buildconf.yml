@@ -38,7 +38,8 @@ tasks:
 configure:
   - do: check-headers
     names : stdio.h
-    not-for: { task: '"alt script"' }
+    #not-for: { task: '"alt script"' }
+    if: task != "alt script"
 
 toolchains:
   my toolchain:

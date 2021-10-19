@@ -24,7 +24,7 @@ _SYS_STATES = (
     ('cpu-arch', CPU_ARCH),
 )
 
-_exprHandler = Expression(['and', 'or', 'not'])
+_exprHandler = Expression()
 
 _local = {}
 
@@ -138,12 +138,24 @@ def handleOneTaskParamSelect(bconf, taskParams, paramName):
     def handleCond(name):
         return _tryToSelect(bconf, name, taskParams, paramName)
 
+    exprAttrs = { 'handleCond': handleCond }
+
+    def exprSubsts(keyword):
+        if keyword in ('and', 'or', 'not'):
+            return keyword
+
+        return '%s(%r)' % ('handleCond', keyword)
+
+    def onExprError(expr, ex):
+        msg = "There is syntax error in the expression: %r." % expr
+        raise ZenMakeConfError(msg, confpath = bconf.path) from ex
+
     for label, param in selectParam.items():
         if label == 'default':
             continue
 
         # try one record of conditions
-        if _exprHandler.eval(label, lambda x: handleCond, bconf.path):
+        if _exprHandler.eval(label, exprSubsts, exprAttrs, onExprError):
             # found
             detectedValue = param
 

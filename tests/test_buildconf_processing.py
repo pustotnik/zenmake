@@ -281,7 +281,7 @@ class TestSuite(object):
         assert expected.test2.toolchain == 'gcc'
         self._checkTasks(buildconf, buildtype, expected)
 
-    def testTasksByfilter(self, testingBuildConf):
+    def testTasksByfilterFor(self, testingBuildConf):
 
         buildtype = 'mybt'
         testingBuildConf.buildtypes.mybt = {}
@@ -398,6 +398,117 @@ class TestSuite(object):
             't3': {'name' : 't3', 'p1': '1', 'p2': '2', 'p3': '3'},
             't4': {'name' : 't4', 'p5': '1', 'p6': '2', 'p3': '3'},
         })
+
+    def testTasksByfilterNotFor(self, testingBuildConf):
+
+        buildtype = 'mybt'
+        testingBuildConf.buildtypes.mybt = {}
+        testingBuildConf.buildtypes.default = 'mybt'
+
+        # CASE: no tasks in buildconf.tasks, some tasks in buildconf.byfilter
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.byfilter = [
+            { 'for' : { 'task' : 't1' }, 'set' : { 'param1' : '1' } },
+            { 'for' : { 'task' : 't2' }, 'set' : { 'param2' : '2' } },
+            { 'not-for' : { 'task' : 't2 t3' }, 'set' : { 'param2' : '2' } },
+        ]
+        expected = {
+            't1': {'name' : 't1', 'param1': '1', 'param2': '2'},
+            't2': {'name' : 't2', 'param2': '2'}
+        }
+        self._checkTasks(buildconf, buildtype, expected)
+
+        # CASE: some tasks in buildconf.tasks
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.tasks.t1.p1 = '1'
+        buildconf.tasks.t2.p2 = '2'
+        buildconf.tasks.t3.p3 = '3'
+
+        buildconf.byfilter = [
+            { 'not-for' : { 'task' : 't2' }, 'set' : { 'param1' : '1' } },
+            { 'not-for' : { 'task' : ['t1', 't3'] }, 'set' : { 'param2' : '2', 'p2' : '22' } },
+        ]
+        expected = {
+            't1': {'name' : 't1', 'p1' : '1', 'param1': '1'},
+            't2': {'name' : 't2', 'p2' : '22', 'param2': '2'},
+            't3': {'name' : 't3', 'p3' : '3', 'param1': '1'},
+        }
+        self._checkTasks(buildconf, buildtype, expected)
+
+    def testTasksByfilterIf(self, testingBuildConf):
+
+        buildtype = 'mybt'
+        testingBuildConf.buildtypes.mybt = {}
+        testingBuildConf.buildtypes.default = 'mybt'
+
+        # CASE: expr: "", False, false
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.tasks.t1.p1 = '1'
+        buildconf.tasks.t2.p2 = '2'
+
+        buildconf.byfilter = [
+            { 'if' : '', 'set' : { 'param1' : '1' } },
+            { 'if' : False, 'set' : { 'param2' : '2' } },
+            { 'if' : 'False', 'set' : { 'param3' : '3' } },
+            { 'if' : 'false', 'set' : { 'param4' : '4' } },
+        ]
+        expected = {
+            't1': {'name' : 't1', 'p1' : '1'},
+            't2': {'name' : 't2', 'p2' : '2'},
+        }
+        self._checkTasks(buildconf, buildtype, expected)
+
+
+        # CASE: all, True, true
+        for cond in (' all ', True, 'True', 'true'):
+            buildconf = deepcopy(testingBuildConf)
+            buildconf.tasks.t1.p1 = '1'
+            buildconf.tasks.t2.p2 = '2'
+
+            buildconf.byfilter = [
+                { 'if' : cond, 'set' : { 'p1' : '2' } },
+            ]
+            expected = {
+                't1': {'name' : 't1', 'p1' : '2'},
+                't2': {'name' : 't2', 'p1' : '2', 'p2' : '2'},
+            }
+            self._checkTasks(buildconf, buildtype, expected)
+
+        # CASE: complex expr
+        buildconf = deepcopy(testingBuildConf)
+        buildconf.buildtypes['debug-gcc'] = {}
+        buildconf.buildtypes['release-gcc'] = {}
+        buildconf.buildtypes['debug-clang'] = {}
+        buildconf.buildtypes['release-clang'] = {}
+
+        buildconf.tasks.t1.p1 = '1'
+        buildconf.tasks.t2.p2 = '2'
+
+        expr1 = "startswith(buildtype, 'debug-') and platform == '%s'" % PLATFORM
+        expr2 = "endswith(buildtype, '-gcc') and platform in ('%s', '%s')" % \
+                                            (PLATFORM, PLATFORM + randomstr())
+        expr3 = "task == 't1' and platform == '%s'" % PLATFORM
+        buildconf.byfilter = [
+            { 'if' : expr1, 'set' : { 'pp1' : '1' } },
+            { 'if' : expr2, 'set' : { 'pp2' : '2' } },
+            { 'if' : expr3, 'set' : { 'pp3' : '3' } },
+        ]
+
+        expected = {
+            't1': {'name' : 't1', 'p1' : '1', 'pp1' : '1', 'pp2' : '2', 'pp3' : '3'},
+            't2': {'name' : 't2', 'p2' : '2', 'pp1' : '1', 'pp2' : '2'},
+        }
+        self._checkTasks(buildconf, 'debug-gcc', expected)
+        expected = {
+            't1': {'name' : 't1', 'p1' : '1', 'pp1' : '1', 'pp3' : '3'},
+            't2': {'name' : 't2', 'p2' : '2', 'pp1' : '1', },
+        }
+        self._checkTasks(buildconf, 'debug-clang', expected)
+        expected = {
+            't1': {'name' : 't1', 'p1' : '1', 'pp2' : '2', 'pp3' : '3'},
+            't2': {'name' : 't2', 'p2' : '2', 'pp2' : '2', },
+        }
+        self._checkTasks(buildconf, 'release-gcc', expected)
 
     def testCustomToolchains(self, testingBuildConf, capsys):
         buildconf = testingBuildConf

@@ -21,6 +21,7 @@ def _genSchemeWithFilter(confscheme, fromTaskParam, sugarParam):
         scheme.update({
             'for'     : byfilterDictVars['for'],
             'not-for' : byfilterDictVars['not-for'],
+            'if'      : byfilterDictVars['if'],
         })
 
         return scheme
@@ -46,7 +47,8 @@ def _applyAttrByFilter(buildconf, attrName, paramNameToSet):
         if not _for:
             _for = 'all'
         _notfor = item.pop('not-for', {})
-        indKey = hashOrdObj([_for, _notfor])
+        _if = item.pop('if', None)
+        indKey = hashOrdObj([_for, _notfor, _if])
 
         existing = indexes.get(indKey)
         if existing is not None:
@@ -55,7 +57,7 @@ def _applyAttrByFilter(buildconf, attrName, paramNameToSet):
             continue
 
         byfilter.append({
-            'for' : _for, 'not-for' : _notfor,
+            'for' : _for, 'not-for' : _notfor, 'if' : _if,
             'set' : { paramNameToSet: [item] },
         })
         indexes[indKey] = len(byfilter) - 1

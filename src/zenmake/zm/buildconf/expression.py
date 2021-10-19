@@ -10,44 +10,69 @@ import re
 
 from zm.error import ZenMakeConfError
 
-_RE_REPLACE = re.compile(r"""([^\s"'\(\)]+)""", re.ASCII)
+_RE_REPLACE = re.compile(r"""([\w\d+-_]+)""", re.ASCII)
+_RE_CATCH_QUOTES = re.compile(r"""('([^']*)'|"([^"]*)")""", re.ASCII)
+
+class _BuiltIns: # private namespace emulation
+
+    __slots__ = ()
+
+    true = True
+    false = False
+
+    startswith = lambda s, prefix: s.startswith(prefix)
+    endswith   = lambda s, suffix: s.endswith(suffix)
+
+_CODE_BUILTINS = { k:v for k, v in vars(_BuiltIns).items() if not k.startswith('_') }
 
 class Expression(object):
     """ Class to evalute some python-like expression"""
 
-    __slots__ = ('_operators',)
+    __slots__ = ()
 
-    def __init__(self, allowedOperators):
-
-        self._operators = allowedOperators
-
-    def eval(self, expr, resolver, bconfPath = None):
+    def eval(self, expr, substitutions = None, attrs = None, onError = None):
         """
-        Evaluate 'expr'
+        Evaluate a python like expression.
+        expr - expression
+        substitutions - dict of string substitutions in expression
+        attrs - dict of actual attributes: functions and variables
         """
 
-        codeLocals = {}
+        codeGlobals = { '__builtins__': {} }
+        codeGlobals.update(_CODE_BUILTINS)
+        if attrs is not None:
+            codeGlobals.update(attrs)
 
-        def replaceVar(match):
+        code = expr
 
-            foundName = match.group(1)
+        if substitutions is not None:
 
-            if foundName in self._operators:
-                return foundName
+            def replaceVar(match):
 
-            foundVal = resolver(foundName)
+                foundName = match.group(1)
 
-            if foundVal:
-                if callable(foundVal):
-                    funcName = foundVal.__name__
-                    codeLocals[funcName] = foundVal
-                    foundVal = "%s(%r)" % (funcName, foundName)
-            else:
-                foundVal = foundName
+                foundVal = substitutions(foundName)
+                if foundVal is None:
+                    foundVal = foundName
 
-            return foundVal
+                return foundVal
 
-        code = _RE_REPLACE.sub(replaceVar, expr)
+            # strings in quotes must be ignored
+            code = ''
+            idx = 0
+            for match in _RE_CATCH_QUOTES.finditer(expr):
+                start = match.start()
+                end = match.end()
+
+                withoutQuotes = expr[idx:start]
+                if withoutQuotes:
+                    code += _RE_REPLACE.sub(replaceVar, expr[idx:start])
+                idx = end
+
+                code += expr[start:end]
+
+            if idx < len(expr):
+                code += _RE_REPLACE.sub(replaceVar, expr[idx:])
 
         try:
             # pylint: disable = eval-used
@@ -55,9 +80,12 @@ class Expression(object):
             # by using a binary tree for example, but current solution is short,
             # just works and has good enough performance.
             # And 'bad' implications of 'eval' don't matter here.
-            result = eval(code, { '__builtins__': {} }, codeLocals)
+            result = eval(code, codeGlobals)
         except SyntaxError as ex:
-            msg = "There is syntax error in the expression %r." % expr
-            raise ZenMakeConfError(msg, confpath = bconfPath) from ex
+            if onError:
+                onError(expr, ex)
+            else:
+                msg = "There is a syntax error in the expression %r." % expr
+                raise ZenMakeConfError(msg) from ex
 
         return result

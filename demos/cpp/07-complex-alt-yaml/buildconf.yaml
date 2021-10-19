@@ -44,17 +44,18 @@ byfilter:
     source   : 'prog/**/*.cpp'
     use      : shlibmain
 
-- for: { buildtype : [debug-gcc, release-gcc], platform : linux }
+- if: endswith(buildtype, '-gcc') and platform == 'linux'
   set:
     toolchain: g++
     linkflags: -Wl,--as-needed
 
-- for: { buildtype: release-gcc, platform: linux }
+- if: buildtype == 'release-gcc' and platform == 'linux'
   set: { cxxflags: $GCC_BASE_CXXFLAGS -O3 }
 
-- for: { buildtype: [debug-clang, release-clang], platform: linux darwin }
-  set: { toolchain: clang++ }
+- if: endswith(buildtype, '-clang') and platform in ('linux', 'darwin')
+  set:
+    toolchain: clang++
 
-- for: { buildtype: [debug-msvc, release-msvc], platform: windows }
+- if: endswith(buildtype, '-msvc') and platform == 'windows'
   set:
     toolchain: msvc

@@ -387,8 +387,8 @@ byfilter
 """"""""
     This variable describes extra/alternative way to set up build tasks.
     It's a list of `dicts <buildconf-dict-def_>`_ with attributes
-    ``set`` and ``for`` and/or ``not-for``.
-    Attributes ``for``/``not-for`` describe conditions for parameters
+    ``set`` and ``for``, ``not-for`` and/or ``if``.
+    Attributes ``for``/``not-for``/``if`` describe conditions for parameters
     in attribute ``set``, that is, a filter to set some build task parameters.
     The attribute ``for`` is like a ``if a`` and the attribute
     ``not-for`` is like a ``if not b`` where ``a`` and ``b`` are some conditions.
@@ -396,7 +396,12 @@ byfilter
     same item. The attribute ``not-for`` has higher priority in the case of the
     same condition in the both of them.
 
-    The attributes ``for``/``not-for`` are dicts with one or more such keys:
+    Since v0.11 ZenMake supports ``if`` attribute where you can set a string with
+    python like expression.
+
+    The ``for``/``not-for`` are dicts and ``if`` is an expression.
+    In ``for``/``not-for``/``if`` you can use such variables as dict keys in
+    ``for``/``not-for`` and as keywords within an expression:
 
     :task:      Build task name or list of build task names.
                 It can be existing task(s) from tasks_ or new (only in ``for``).
@@ -405,20 +410,35 @@ byfilter
     :platform:  Name of a host platform/operating system or list of them.
                 Valid values are the same as for ``default`` in buildtypes_.
 
+    The ``if`` is a real python expression with some builtin functions.
+    You can use standard python operators as '(', ')', 'and', 'or', 'not', '==',
+    '!=' and 'in'. ZenMake supports a little set of extensions as well:
+
+    ===========================  ==========================================================
+    Name                         Description
+    ===========================  ==========================================================
+    true                         The same as python 'True'.
+    false                        The same as python 'False'.
+    startswith(str, prefix)      Returns true if 'str' starts with the specified 'prefix'.
+    endswith(str, prefix)        Returns true if 'str' ends with the specified 'suffix'.
+    ===========================  ==========================================================
+
     The attribute ``set`` has value of the :ref:`task parameters<buildconf-taskparams>`.
 
     Other features:
 
-    - If some key parameter is not specified in ``for``/``not-for`` it means that
+    - If some key parameter is not specified in ``for``/``not-for``/``if`` it means that
       this is for all possible values of this kind of condition. For example
       if it has no ``task`` it means 'for all existing tasks'.
-      Special word ``all`` can be used to indicate that current item must be applied
-      to all build tasks.
-      Empty dict (i.e. ``{}``) can be used for the same reason as well.
+      Special word ``all`` (without any other parameters) can be used to indicate
+      that current item must be applied to all build tasks.
+      Empty dict (i.e. ``{}``) in ``for``/``not-for`` can be used for the same reason as well.
     - Variable 'byfilter' overrides all matched values defined in
       tasks_ and buildtypes_.
-    - Items in ``set`` with the same names and the same conditions in ``for``/``not-for``
-      override items defined before.
+    - Items in ``set`` with the same names and the same conditions in
+      ``for``/``not-for``/``if`` override items defined before.
+    - If ``for``/``not-for`` and ``if`` are used for the same ``set`` then
+      result will be the intersection of resulting sets from ``for``/``not-for`` and ``if``.
     - When ``set`` is empty or not defined it does nothing.
 
     .. note::
@@ -429,6 +449,21 @@ byfilter
     Example in YAML format:
 
     .. code-block:: yaml
+
+        GCC_BASE_CXXFLAGS: -std=c++11 -fPIC
+
+        buildtypes:
+        debug-gcc    : { cxxflags: $GCC_BASE_CXXFLAGS -O0 -g }
+        release-gcc  : { cxxflags: $GCC_BASE_CXXFLAGS -O2 }
+        debug-clang  : { cxxflags: $GCC_BASE_CXXFLAGS -O0 -g }
+        release-clang: { cxxflags: $GCC_BASE_CXXFLAGS -O2 }
+        debug-msvc   : { cxxflags: /Od /EHsc }
+        release-msvc : { cxxflags: /O2 /EHsc }
+        default:
+          _: debug-gcc
+          linux: debug-gcc
+          darwin: debug-clang
+          windows: debug-msvc
 
         byfilter:
           - for: all
@@ -448,6 +483,23 @@ byfilter
 
           - for: { buildtype: [debug-clang, release-clang], platform: linux darwin }
             set: { toolchain: clang++ }
+
+          - if: endswith(buildtype, '-gcc') and platform == 'linux'
+            set:
+              toolchain: g++
+              linkflags: -Wl,--as-needed
+
+          - if: buildtype == 'release-gcc' and platform == 'linux'
+            set:
+              cxxflags: $GCC_BASE_CXXFLAGS -O3
+
+          - if: endswith(buildtype, '-clang') and platform in ('linux', 'darwin')
+            set:
+              toolchain: clang++
+
+          - if: endswith(buildtype, '-msvc') and platform == 'windows'
+            set:
+              toolchain: msvc
 
     .. note::
         Parameters in this variable override corresponding parameters in tasks_

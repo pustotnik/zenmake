@@ -8,6 +8,7 @@
 
 import os
 import re
+import functools
 from collections import defaultdict
 from copy import deepcopy
 
@@ -22,6 +23,7 @@ from zm.buildconf import loader
 from zm.buildconf.scheme import taskscheme, KNOWN_CONF_PARAM_NAMES, KNOWN_CONF_SUGAR_NAMES
 from zm.buildconf.sugar import applySyntacticSugar
 from zm.buildconf.paths import ConfPaths
+from zm.buildconf.expression import Expression
 from zm.features import ToolchainVars
 
 joinpath = os.path.join
@@ -42,9 +44,12 @@ _ALL_CONF_PARAM_NAMES = list(KNOWN_CONF_PARAM_NAMES | KNOWN_CONF_SUGAR_NAMES)
 _CONF_PARAM_NAMES_FOR_BUILTIN = list(KNOWN_CONF_PARAM_NAMES - set([
     'startdir', 'buildroot', 'realbuildroot'
 ]))
+_SET_KNOWN_PLATFORMS = set(KNOWN_PLATFORMS)
 
 _RE_LIB_VER = re.compile(r"^\d+(?:\.\d+)*")
 _TASKPARAMS_TOLIST_MAP = {}
+
+_exprHandler = Expression()
 
 #def _isDevVersion():
 #    """
@@ -294,10 +299,12 @@ class Config(object):
             taskParams['$startdir'] = taskStartDir
             taskParams['$bconf'] = self
 
-        tasknames = self._meta.tasknames
-        for name in disabled:
-            tasknames.remove(name)
-            tasks.pop(name)
+        if disabled:
+            tasknames = set(self._meta.tasknames)
+            for name in disabled:
+                tasknames.remove(name)
+                tasks.pop(name)
+            self._meta.tasknames = tuple(tasknames)
 
     def _merge(self):
 
@@ -395,7 +402,7 @@ class Config(object):
                 msg = 'The %r name of a task is invalid.' % name
                 msg += 'The name cannot contain symbol %r' % DEPNAME_DELIMITER
                 raise ZenMakeConfError(msg, confpath = self.path)
-        names = set(names)
+        names = tuple(set(names))
         self._meta.tasknames = names
 
     def _handleFilterBuildtypeNames(self):
@@ -487,65 +494,110 @@ class Config(object):
 
         self._meta.buildtypes.default = buildtype
 
-    def _handleFilterTasks(self, buildtype, tasks):
+    def _applyFilterFor(self, buildtype, entry, allTaskNames, name):
 
-        knownPlatforms = set(KNOWN_PLATFORMS)
-        allTaskNames = self.taskNames
-        destPlatform = PLATFORM
-        supportedBuildTypes = self.supportedBuildTypes
+        condition = entry.get(name)
+        if isinstance(condition, stringtype) and condition == 'all':
+            condition = entry[name] = {}
+        result = { 'found' : condition is not None }
 
-        def getFilterCondition(entry, name):
-            condition = entry.get(name, None)
-            if isinstance(condition, stringtype) and condition == 'all':
-                condition = entry[name] = {}
-            result = { 'condition' : condition }
-
-            if not condition:
-                if name == 'for':
-                    result['tasks'] = allTaskNames
-                else: # if name == 'not-for'
-                    assert name == 'not-for'
-                    result['tasks'] = set()
-                return result
-
-            buildtypes = set(toList(condition.get('buildtype', [])))
-            platforms = set(toListSimple(condition.get('platform', [])))
-            tasks = set(toList(condition.get('task', [])))
-
-            if not platforms:
-                platforms = knownPlatforms
-            if not buildtypes:
-                buildtypes = supportedBuildTypes
-
-            if destPlatform in platforms and buildtype in buildtypes:
-                if not tasks:
-                    tasks = set(allTaskNames)
-                tasks &= allTaskNames # use tasks from current config only
-                result['tasks'] = tasks
-            else:
-                result['tasks'] = set()
-
+        if not condition:
+            if name == 'for':
+                result['tasks'] = allTaskNames
+            else: # if name == 'not-for'
+                result['tasks'] = []
             return result
+
+        buildtypes = set(toList(condition.get('buildtype', [])))
+        platforms = set(toListSimple(condition.get('platform', [])))
+        tasks = set(toList(condition.get('task', [])))
+
+        if not platforms:
+            platforms = _SET_KNOWN_PLATFORMS
+        if not buildtypes:
+            buildtypes = self.supportedBuildTypes
+
+        destPlatform = PLATFORM
+        if destPlatform in platforms and buildtype in buildtypes:
+            if not tasks:
+                tasks = set(allTaskNames)
+            tasks &= set(allTaskNames) # use tasks from current config only
+            result['tasks'] = tuple(tasks)
+        else:
+            result['tasks'] = []
+
+        return result
+
+    def _applyFilterIf(self, buildtype, entry, taskNames):
+
+        expr = entry.get('if')
+        result = { 'found' : expr is not None, 'tasks': taskNames }
+
+        if expr is None:
+            return result
+
+        if isinstance(expr, bool):
+            result['tasks'] = taskNames if expr else []
+            return result
+
+        if expr.strip() == 'all':
+            expr = entry['if'] = 'true'
+
+        _expr = '[(%s) for task in tasks]' % expr
+
+        def onExprError(exprWithErr, _, ex):
+            msg = "There is syntax error in the expression: %r." % exprWithErr
+            raise ZenMakeConfError(msg, confpath = self.path) from ex
+
+        kwargs = {
+            'attrs': {
+                'buildtype' : buildtype,
+                'platform' : PLATFORM,
+                'tasks': taskNames,
+            },
+            'onError': functools.partial(onExprError, expr)
+        }
+
+        enabledTasks = _exprHandler.eval(_expr, **kwargs)
+        enabledTasks = [taskNames[i] for i, x in enumerate(enabledTasks) if x]
+        result['tasks'] = enabledTasks
+        return result
+
+    def _handleFilterTasks(self, buildtype, tasks):
 
         # make consistency of task params
 
+        allTaskNames = self.taskNames
         for entry in self._conf.byfilter:
 
-            enabled = getFilterCondition(entry, 'for')
-            disabled = getFilterCondition(entry, 'not-for')
+            conditionNotFound = True
 
-            if enabled['condition'] is None and disabled['condition'] is None:
-                log.warn("WARN: buildconf.byfilter has an item without 'for' and 'not-for'. "
-                         "It's probably a mistake.")
+            # for/not-for:
+            enabled = self._applyFilterFor(buildtype, entry, allTaskNames, 'for')
+            conditionNotFound = conditionNotFound and not enabled['found']
 
-            enabledTasks = tuple(enabled['tasks'])
+            disabled = self._applyFilterFor(buildtype, entry, allTaskNames, 'not-for')
+            conditionNotFound = conditionNotFound and not disabled['found']
+
+            enabledTasks = enabled['tasks']
             disabledTasks = disabled['tasks']
+            if disabledTasks:
+                enabledTasks = list(set(enabledTasks) - set(disabledTasks))
+
+            # if:
+            enabled = self._applyFilterIf(buildtype, entry, enabledTasks)
+            conditionNotFound = conditionNotFound and not enabled['found']
+            enabledTasks = enabled['tasks']
+
+            if conditionNotFound:
+                pad = " " * 6
+                msg = "WARN: buildconf.byfilter has an item without "
+                msg += "'for', 'not-for' and 'if' in:\n%s%r" % (pad, entry)
+                msg += "\n%sIt's probably a mistake." % pad
+                log.warn(msg)
 
             paramsSet = entry.get('set', {})
             for taskName in enabledTasks:
-                if taskName in disabledTasks:
-                    continue
-
                 task = tasks[taskName]
                 task.update(paramsSet)
 
@@ -692,7 +744,7 @@ class Config(object):
     def taskNames(self):
         """
         Get all task names from the current config.
-        Returns set of names.
+        Returns tuple of names.
         """
 
         return self._meta.tasknames
@@ -887,7 +939,7 @@ class Config(object):
 
         tasks = {}
 
-        for taskName in tuple(self.taskNames):
+        for taskName in self.taskNames:
 
             task = tasks.setdefault(taskName, {})
             # 1. Copy existing params from origin task

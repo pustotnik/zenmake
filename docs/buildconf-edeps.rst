@@ -117,7 +117,7 @@ rules
     parameters to run. The rule names that allowed to use are:
     ``configure``, ``build``, ``test``, ``clean``, ``install``, ``uninstall``.
 
-    The parameters for each rule can a string with a command line to run or
+    The parameters for each rule can be a string with a command line to run or
     a dict with attributes:
 
     :cmd:

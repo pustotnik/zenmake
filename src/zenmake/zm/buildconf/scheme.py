@@ -537,6 +537,9 @@ confscheme = {
                     'platform' : { 'type': ('str', 'list-of-strs') },
                 },
             },
+            'if' : {
+                'type': ('str', 'bool'),
+            },
             'set' : {
                 'type' : 'dict',
                 'vars' : taskscheme,
