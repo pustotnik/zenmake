@@ -20,14 +20,14 @@ from zm.features import ConfValidation
 _RE_VER_NUM = re.compile(r"^(0|[1-9]\d*)(\.(0|[1-9]\d*)){0,2}?$")
 _RE_CONDNAME = re.compile(r"^[\w\d+-_]+$", re.ASCII)
 
-def _checkVerNum(value, fullkey):
+def _checkVerNum(_, value, fullkey):
 
     if value and not _RE_VER_NUM.match(value):
         msg = "Value %r is invalid version number" % value
         msg += " for the param %r." % fullkey
         raise ZenMakeConfValueError(msg)
 
-def _checkCondName(value, fullkey):
+def _checkCondName(_, value, fullkey):
 
     if not value:
         msg = "Value  cannot be empty"
@@ -43,6 +43,31 @@ def _checkCondName(value, fullkey):
         msg = "Value %r is invalid" % value
         msg += " for the param %r." % fullkey
         raise ZenMakeConfValueError(msg)
+
+def _checkBuildtypeName(conf, value, fullkey):
+
+    allowed = []
+    try:
+        allowed.extend(conf['buildtypes'].keys())
+    except AttributeError:
+        pass
+
+    allowed = set(allowed)
+    if 'default' in allowed:
+        allowed.remove('default')
+
+    if allowed:
+        if value not in allowed:
+            msg = "Value %r is invalid" % value
+            msg += " for the param %r." % fullkey
+            msg = '%s\nAllowed values: %s' %(msg, str(list(allowed))[1:-1])
+            raise ZenMakeConfValueError(msg)
+    else:
+        if value:
+            msg = "Value %r is invalid" % value
+            msg += " for the param %r." % fullkey
+            msg += '\nIt must be empty string.'
+            raise ZenMakeConfValueError(msg)
 
 def _genSameSchemeDict(keys, scheme):
     return { k:scheme for k in keys }
@@ -333,7 +358,7 @@ taskscheme = {
 
 ############ EXTEND TASK PARAMS
 
-def _checkExportParams(values, fullkey):
+def _checkExportParams(_, values, fullkey):
 
     for val in values:
         if val not in EXPORTING_TASK_PARAMS_S:
@@ -502,6 +527,7 @@ confscheme = {
                 'dict-vars' : {
                     k: { 'type': 'str' } for k in KNOWN_PLATFORMS + ('_', 'no-match')
                 },
+                'str-allowed': _checkBuildtypeName,
             },
         },
     },
