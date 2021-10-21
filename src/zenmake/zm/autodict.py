@@ -7,19 +7,16 @@
 """
 
 from copy import deepcopy
-
-try:
-    from collections.abc import Mapping as maptype
-except ImportError:
-    from collections import Mapping as maptype
+from collections.abc import Mapping as maptype
 
 class AutoDict(dict):
     """
     This class provides dot notation and auto creation of items.
-    Usually inheritance from built-in dict type is a bad idea. Especially if you
-    want to override __*item__ methods. But here I want just to have dot
-    notation and auto creation of items. And this class for internal use only.
-    I will remake this class if I get some problems with it.
+    Usually inheritance from the built-in dict type is a bad idea.
+    Especially if you want to override __*item__ methods.
+    But it is normal internal solution with a good performance if you just want
+    to have a dot notation and auto creation of items.
+    Just don't override __*item__ methods.
     """
 
     def __missing__(self, key):
