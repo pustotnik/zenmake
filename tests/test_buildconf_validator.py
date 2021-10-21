@@ -20,8 +20,10 @@ from zm.buildconf.validator import Validator
 import tests.common as cmn
 
 class FakeBuildConf:
-    __name__ = 'testconf'
-    __file__ = os.path.join(os.getcwd(), 'fakeconf.py')
+
+    def __init__(self):
+        self.__name__ = 'testconf'
+        self.__file__ = os.path.join(os.getcwd(), 'fakeconf.py')
 
 class TestSuite(object):
 

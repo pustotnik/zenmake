@@ -6,12 +6,18 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+from copy import deepcopy
+
 from zm.error import ZenMakeConfError, ZenMakeConfTypeError, ZenMakeConfValueError
 from zm.pyutils import maptype, stringtype
 from zm.utils import toList
-from zm.autodict import AutoDict as _AutoDict
 from zm.buildconf.schemeutils import AnyStrKey, ANYSTR_KEY
 from zm.buildconf.scheme import confscheme
+
+# Validator makes changes in the conf scheme in some cases.
+# It doesn't matter for Validator but can make side effects in other places
+# of use of confscheme from zm.buildconf.scheme
+_confscheme = deepcopy(confscheme)
 
 class ZenMakeConfSubTypeError(ZenMakeConfTypeError):
     """Invalid buildconf param type error"""
@@ -36,7 +42,7 @@ class Validator(object):
     }
 
     def __init__(self, buildconf):
-        self._conf = _AutoDict(vars(buildconf))
+        self._conf = vars(buildconf)
 
     @staticmethod
     def _getHandler(typeName):
@@ -326,10 +332,10 @@ class Validator(object):
         """
 
         try:
-            self._validate(self._conf, confscheme, '', allowUnknownKeys = True)
+            self._validate(self._conf, _confscheme, '', allowUnknownKeys = True)
         except ZenMakeConfError as ex:
             origMsg = ex.msg
-            ex.msg = "Error in the file %r:" % (self._conf.__file__)
+            ex.msg = "Error in the file %r:" % (self._conf['__file__'])
             for line in origMsg.splitlines():
                 ex.msg += "\n  %s" % line
             raise ex
