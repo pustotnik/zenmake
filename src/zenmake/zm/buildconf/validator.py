@@ -14,10 +14,8 @@ from zm.utils import toList
 from zm.buildconf.schemeutils import AnyStrKey, ANYSTR_KEY
 from zm.buildconf.scheme import confscheme
 
-# Validator makes changes in the conf scheme in some cases.
-# It doesn't matter for Validator but can make side effects in other places
-# of use of confscheme from zm.buildconf.scheme
-_confscheme = deepcopy(confscheme)
+# for checks
+_oldconfscheme = deepcopy(confscheme)
 
 class ZenMakeConfSubTypeError(ZenMakeConfTypeError):
     """Invalid buildconf param type error"""
@@ -97,16 +95,13 @@ class Validator(object):
             else:
                 return
 
-        typeNames = []
-        for _type in types:
-            if _type == 'str':
-                typeNames.append('string')
-            elif _type == 'list-of-strs':
-                typeNames.append('list of strings')
-            elif _type == 'dict':
-                typeNames.append('dict/another map type')
-            else:
-                typeNames.append(_type)
+        typeswitch = {
+            'str'         : 'string',
+            'list-of-strs': 'list of strings',
+            'dict'        : 'dict/another map type',
+        }
+        typeNames = [ typeswitch.get(_type, _type) for _type in types ]
+
         msg = "Value `%r` is invalid for the param %r." % (confnode, fullkey)
         msg += " It should be %s." % " or ".join(typeNames)
         raise ZenMakeConfTypeError(msg)
@@ -234,6 +229,8 @@ class Validator(object):
             msg = "Param %r should be dict or another map type." % fullkey
             raise ZenMakeConfTypeError(msg)
 
+        # it's better not to change the origin conf scheme
+        schemeAttrs = schemeAttrs.copy()
         vartype = schemeAttrs.pop('vars-type')
         oldtype = schemeAttrs['type']
         if isinstance(oldtype, stringtype):
@@ -326,16 +323,20 @@ class Validator(object):
                 msg += "\nValid values: %r" % sorted(scheme.keys())
                 raise ZenMakeConfError(msg)
 
-    def validate(self):
+    def validate(self, doAsserts = False):
         """
         Entry point for validation
         """
 
         try:
-            self._validate(self._conf, _confscheme, '', allowUnknownKeys = True)
+            self._validate(self._conf, confscheme, '', allowUnknownKeys = True)
         except ZenMakeConfError as ex:
             origMsg = ex.msg
             ex.msg = "Error in the file %r:" % (self._conf['__file__'])
             for line in origMsg.splitlines():
                 ex.msg += "\n  %s" % line
             raise ex
+
+        if doAsserts:
+            # check that was not changed
+            assert _oldconfscheme == confscheme

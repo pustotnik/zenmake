@@ -19,6 +19,9 @@ from zm.buildconf.scheme import KNOWN_CONF_ACTIONS
 from zm.buildconf.validator import Validator
 import tests.common as cmn
 
+def validateConfig(buildconf):
+    Validator(buildconf).validate(doAsserts = True)
+
 class FakeBuildConf:
 
     def __init__(self):
@@ -50,14 +53,14 @@ class TestSuite(object):
 
     def _validateBoolValues(self, buildconf, confnode, param, _ = None):
         confnode[param] = True
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
         confnode[param] = False
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
 
     def _validateIntValues(self, buildconf, confnode, param, validVals = None):
         if not validVals:
             confnode[param] = cmn.randomint()
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         else:
             invalid = cmn.randomint()
             while invalid in validVals:
@@ -65,44 +68,44 @@ class TestSuite(object):
                 invalid = cmn.randomint()
             confnode[param] = invalid
             with pytest.raises(ZenMakeConfValueError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             for v in validVals:
                 confnode[param] = v
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
 
     def _validateStrValues(self, buildconf, confnode, param, validVals = None):
         if not validVals:
             confnode[param] = cmn.randomstr()
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         else:
             invalid = validVals[0] + cmn.randomstr()
             while invalid in validVals:
                 invalid = cmn.randomstr()
             confnode[param] = invalid
             with pytest.raises(ZenMakeConfValueError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             for v in validVals:
                 confnode[param] = v
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
 
     def _validateListOfStrsValues(self, buildconf, confnode, param, validVals = None):
         if not validVals:
             confnode[param] = [cmn.randomstr(), cmn.randomstr()]
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
             confnode[param] = (cmn.randomstr(), cmn.randomstr())
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         else:
             invalid = str(validVals[0]) + cmn.randomstr()
             confnode[param] = [invalid]
             with pytest.raises(ZenMakeConfValueError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             confnode[param] = validVals
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
 
     def _validateDictValues(self, buildconf, confnode, param, validVals = None):
         if not validVals:
             confnode[param] = { cmn.randomstr() : cmn.randomint() }
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
             return
 
         for k, v in validVals.items():
@@ -118,7 +121,7 @@ class TestSuite(object):
 
         confnode[param] = { cmn.randomstr() : cmn.randomint() }
         with pytest.raises(ZenMakeConfError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         confnode[param] = {}
 
     def _validateFuncValues(self, buildconf, confnode, param, validVals = None):
@@ -126,68 +129,68 @@ class TestSuite(object):
             def f():
                 pass
             confnode[param] = f
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
             confnode[param] = lambda: 1
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         else:
             for v in validVals:
                 confnode[param] = v
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
 
     def _checkAttrAsDict(self, buildconf, attrName):
         setattr(buildconf, attrName, cmn.randomint())
         with pytest.raises(ZenMakeConfTypeError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         setattr(buildconf, attrName, cmn.randomstr())
         with pytest.raises(ZenMakeConfTypeError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         setattr(buildconf, attrName, [])
         with pytest.raises(ZenMakeConfTypeError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         setattr(buildconf, attrName, {})
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
 
     def _checkAttrAsList(self, buildconf, attrName):
         setattr(buildconf, attrName, cmn.randomint())
         with pytest.raises(ZenMakeConfTypeError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         setattr(buildconf, attrName, cmn.randomstr())
         with pytest.raises(ZenMakeConfTypeError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         setattr(buildconf, attrName, {})
         with pytest.raises(ZenMakeConfTypeError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         setattr(buildconf, attrName, [])
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
         setattr(buildconf, attrName, tuple())
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
 
     @saveparam
     def _checkParamAsDict(self, buildconf, confnode, paramName):
         confnode[paramName] = cmn.randomint()
         with pytest.raises(ZenMakeConfTypeError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         confnode[paramName] = cmn.randomstr()
         with pytest.raises(ZenMakeConfTypeError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         confnode[paramName] = []
         with pytest.raises(ZenMakeConfTypeError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         confnode[paramName] =  {}
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
 
     @saveparam
     def _checkParamsAsStr(self, buildconf, confnode, paramNames, validVals = None):
         for param in paramNames:
             confnode[param] = cmn.randomint()
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             confnode[param] = [cmn.randomint()]
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             confnode[param] = [cmn.randomstr(), cmn.randomstr()]
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             self._validateStrValues(buildconf, confnode, param, validVals)
 
     @saveparam
@@ -195,13 +198,13 @@ class TestSuite(object):
         for param in paramNames:
             confnode[param] = cmn.randomstr()
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             confnode[param] = [cmn.randomstr()]
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             confnode[param] = [cmn.randomint(), cmn.randomint()]
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             self._validateIntValues(buildconf, confnode, param, validVals)
 
     @saveparam
@@ -209,13 +212,13 @@ class TestSuite(object):
         for param in paramNames:
             confnode[param] = cmn.randomstr()
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             confnode[param] = [cmn.randomstr()]
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             confnode[param] = [cmn.randomint(), cmn.randomint()]
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             self._validateFuncValues(buildconf, confnode, param)
 
     @saveparam
@@ -223,16 +226,16 @@ class TestSuite(object):
         for param in paramNames:
             confnode[param] = {}
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             confnode[param] = cmn.randomint()
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             confnode[param] = cmn.randomstr()
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             confnode[param] = [cmn.randomint(), cmn.randomint(), cmn.randomstr()]
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             self._validateListOfStrsValues(buildconf, confnode, param, validVals)
 
     @saveparam
@@ -240,13 +243,13 @@ class TestSuite(object):
         for param in paramNames:
             confnode[param] = {}
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             confnode[param] = cmn.randomint()
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             confnode[param] = [cmn.randomint(), cmn.randomint(), cmn.randomstr()]
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             self._validateStrValues(buildconf, confnode, param, validVals)
             self._validateListOfStrsValues(buildconf, confnode, param, validVals)
 
@@ -284,18 +287,18 @@ class TestSuite(object):
                 for val in typeValues[t]['valid']:
                     confnode[param] = val
                     with pytest.raises(ZenMakeConfTypeError):
-                        Validator(buildconf).validate()
+                        validateConfig(buildconf)
             for t in validTypes:
                 if not validTypesAndVals[t]:
                     for val in typeValues[t]['valid']:
                         confnode[param] = val
-                        Validator(buildconf).validate()
+                        validateConfig(buildconf)
                 if 'invalid' not in typeValues[t]:
                     continue
                 for val in typeValues[t]['invalid']:
                     confnode[param] = val
                     with pytest.raises(ZenMakeConfTypeError):
-                        Validator(buildconf).validate()
+                        validateConfig(buildconf)
 
             for t, validVals in validTypesAndVals.items():
                 methodName = ''.join([x.capitalize() for x in t.split('-')])
@@ -330,17 +333,17 @@ class TestSuite(object):
 
         confnode['configure'] = cmn.randomint()
         with pytest.raises(ZenMakeConfTypeError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         confnode['configure'] = cmn.randomstr()
         with pytest.raises(ZenMakeConfTypeError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         confnode['configure'] = tuple()
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
         confnode['configure'] = []
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
 
         confnode['configure'] = [ { 'do' : 'check-headers', } ]
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
         self._checkParamsAsStr(buildconf, confnode['configure'][0],
                                ['do'], list(KNOWN_CONF_ACTIONS))
         self._checkParamsAsStrOrListOfStrs(buildconf, confnode['configure'][0],
@@ -348,7 +351,7 @@ class TestSuite(object):
         self._validateBoolValues(buildconf, confnode['configure'][0], 'mandatory')
 
         confnode['configure'] = [ { 'do' : 'check-libs', } ]
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
         self._checkParamsAsStr(buildconf, confnode['configure'][0],
                                ['do'], list(KNOWN_CONF_ACTIONS))
         self._validateBoolValues(buildconf, confnode['configure'][0], 'autodefine')
@@ -368,9 +371,9 @@ class TestSuite(object):
             buildconf = FakeBuildConf()
             setattr(buildconf, param, 11)
             with pytest.raises(ZenMakeConfTypeError):
-                Validator(buildconf).validate()
+                validateConfig(buildconf)
             setattr(buildconf, param, cmn.randomstr())
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
 
     def testValidateParamFeatures(self):
 
@@ -379,12 +382,12 @@ class TestSuite(object):
 
         setattr(buildconf, 'general', { 'autoconfig' : 1 })
         with pytest.raises(ZenMakeConfTypeError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         setattr(buildconf, 'general', { 'autoconfig' : False })
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
         setattr(buildconf, 'general', { 'autoconfig' : False, 'unknown': 1 })
         with pytest.raises(ZenMakeConfError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
 
     def testValidateParamProject(self):
 
@@ -422,15 +425,15 @@ class TestSuite(object):
             btypeNames[3] : {},
         }
         buildconf.buildtypes['default'] = btypeNames[0]
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
         buildconf.buildtypes['default'] = btypeNames[1]
         with pytest.raises(ZenMakeConfValueError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         buildconf.buildtypes['default'] = btypeNames[2]
         with pytest.raises(ZenMakeConfValueError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
         buildconf.buildtypes['default'] = btypeNames[3]
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
 
         #####
         buildconf = FakeBuildConf()
@@ -449,13 +452,13 @@ class TestSuite(object):
 
         setattr(buildconf, 'toolchains', { 1 : 1})
         with pytest.raises(ZenMakeConfTypeError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
 
         buildconf = FakeBuildConf()
         setattr(buildconf, 'toolchains', {})
         for tool in toolNames:
             buildconf.toolchains[tool] = {}
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
             self._checkParamAsDict(buildconf, buildconf.toolchains, tool)
             paramNames = [cmn.randomstr() for i in range(10)]
             for param in paramNames:
@@ -480,12 +483,12 @@ class TestSuite(object):
 
         setattr(buildconf, 'tasks', { 1 : 1})
         with pytest.raises(ZenMakeConfTypeError):
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
 
         setattr(buildconf, 'tasks', {})
         for taskName in taskNames:
             buildconf.tasks[taskName] = {}
-            Validator(buildconf).validate()
+            validateConfig(buildconf)
             self._checkParamAsDict(buildconf, buildconf.tasks, taskName)
             self._checkTaskScheme(buildconf, buildconf.tasks[taskName])
 
@@ -496,7 +499,7 @@ class TestSuite(object):
 
         setattr(buildconf, 'byfilter', [])
         buildconf.byfilter = [ {} ]
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
 
         validTypesAndVals = {
             'str' : ['all'],
@@ -528,5 +531,5 @@ class TestSuite(object):
         self._checkParamAsDict(buildconf, buildconf.byfilter[0], 'set')
 
         buildconf.byfilter = [ { 'for' : {}, }, { 'for' : {}, 'set' : {} } ]
-        Validator(buildconf).validate()
+        validateConfig(buildconf)
         self._checkTaskScheme(buildconf, buildconf.byfilter[1]['set'])
