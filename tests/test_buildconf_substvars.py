@@ -96,11 +96,15 @@ def checkVars(bconf, dbgValidVals, relValidVals):
 
     for idx in range(1, 7):
         buildtype = 'debug%d' % idx
-        assert buildtypes[buildtype]['cxxflags'] == dbgValidVals[idx-1]
+        valid = dbgValidVals[idx-1]
+        valid2 = valid.split()
+        assert buildtypes[buildtype]['cxxflags'] in (valid, valid2)
 
     for idx in range(1, 4):
         buildtype = 'release%d' % idx
-        assert buildtypes[buildtype]['cxxflags'] == relValidVals[idx-1]
+        valid = relValidVals[idx-1]
+        valid2 = valid.split()
+        assert buildtypes[buildtype]['cxxflags'] in (valid, valid2)
 
 def checkConfigNoEnv(bconf):
 

@@ -246,14 +246,14 @@ class TestSuite(object):
         buildconf.tasks.test2.name = 'test2'
         buildconf.tasks.test1.param1 = '111'
         buildconf.tasks.test2.param2 = '222'
-        buildconf.buildtypes.mybuildtype = { 'cxxflags' : '-O2' }
+        buildconf.buildtypes.mybuildtype = { 'cxxflags' : ['-O2'] }
 
         expected = deepcopy(buildconf.tasks)
         for task in expected:
             expected[task].update(deepcopy(buildconf.buildtypes.mybuildtype))
         # self checking
-        assert expected.test1.cxxflags == '-O2'
-        assert expected.test2.cxxflags == '-O2'
+        assert expected.test1.cxxflags == ['-O2']
+        assert expected.test2.cxxflags == ['-O2']
 
         self._checkTasks(buildconf, buildtype, expected)
 
@@ -265,20 +265,20 @@ class TestSuite(object):
         buildconf.tasks.test1.name = 'test1'
         buildconf.tasks.test2.name = 'test2'
         buildconf.tasks.test1.param1 = 'p1'
-        buildconf.tasks.test2.cxxflags = '-Os'
-        buildconf.tasks.test2.toolchain = 'auto-c'
+        buildconf.tasks.test2.cxxflags = ['-Os']
+        buildconf.tasks.test2.toolchain = ['auto-c']
         buildconf.buildtypes.mybuildtype = {
-            'cxxflags' : '-O2',
-            'toolchain' : 'gcc',
+            'cxxflags' : ['-O2'],
+            'toolchain' : ['gcc'],
         }
         expected = deepcopy(buildconf.tasks)
         for task in expected:
             expected[task].update(deepcopy(buildconf.buildtypes.mybuildtype))
         # self checking
-        assert expected.test1.cxxflags == '-O2'
-        assert expected.test2.cxxflags == '-O2'
-        assert expected.test1.toolchain == 'gcc'
-        assert expected.test2.toolchain == 'gcc'
+        assert expected.test1.cxxflags == ['-O2']
+        assert expected.test2.cxxflags == ['-O2']
+        assert expected.test1.toolchain == ['gcc']
+        assert expected.test2.toolchain == ['gcc']
         self._checkTasks(buildconf, buildtype, expected)
 
     def testTasksByfilterFor(self, testingBuildConf):
