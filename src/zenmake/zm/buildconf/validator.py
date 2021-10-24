@@ -11,7 +11,7 @@ from copy import deepcopy
 from zm.error import ZenMakeConfError, ZenMakeConfTypeError, ZenMakeConfValueError
 from zm.pyutils import maptype, stringtype
 from zm.utils import toList
-from zm.buildconf.schemeutils import AnyStrKey, ANYSTR_KEY
+from zm.buildconf.schemeutils import ANYSTR_KEY
 from zm.buildconf.scheme import confscheme
 
 # for checks
@@ -282,21 +282,17 @@ class Validator(object):
 
         # pylint: disable = too-many-branches
 
-        _anyAmountStrsKey = None
-        _usualItems = []
-        for key, schemeAttrs in scheme.items():
-            if isinstance(key, AnyStrKey):
-                _anyAmountStrsKey = key
-            else:
-                _usualItems.append((key, schemeAttrs))
+        scheme = scheme.copy()
+        _anyStrScheme = scheme.pop(ANYSTR_KEY, None)
+        _anyStrKeyExists = _anyStrScheme is not None
 
-        _handledKeys = self._validateUsualItems(conf, _usualItems, keyprefix)
+        _handledKeys = self._validateUsualItems(conf, scheme.items(), keyprefix)
 
-        if _anyAmountStrsKey is None and allowUnknownKeys:
+        if not _anyStrKeyExists and allowUnknownKeys:
             return
 
-        if _anyAmountStrsKey is not None:
-            schemeAttrs = scheme[_anyAmountStrsKey]
+        if _anyStrKeyExists:
+            schemeAttrs = _anyStrScheme
             if callable(schemeAttrs):
                 schemeAttrs = schemeAttrs(conf, keyprefix)
             handler = Validator._getHandler(schemeAttrs['type'])
@@ -310,13 +306,13 @@ class Validator(object):
                     raise ZenMakeConfError(msg)
             if key in _handledKeys:
                 continue
-            if _anyAmountStrsKey is not None and isinstance(key, stringtype):
+            if _anyStrKeyExists and isinstance(key, stringtype):
                 fullKey = Validator._genFullKey(keyprefix, key)
                 handler(self, value, schemeAttrs, fullKey)
             elif not allowUnknownKeys:
                 msg = "Unknown key '%s' is in the param %r." % (str(key), keyprefix)
                 msg += " Unknown keys aren't allowed here."
-                if _anyAmountStrsKey is not None:
+                if _anyStrKeyExists:
                     msg += " Only string keys are valid."
                     raise ZenMakeConfTypeError(msg)
 

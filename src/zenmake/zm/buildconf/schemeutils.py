@@ -31,11 +31,11 @@ def addSelectToParams(scheme, paramNames = None):
         paramNames = tuple(scheme.keys())
 
     for name in paramNames:
-        origParam = scheme[name]
+        origScheme = scheme[name]
         scheme['%s.select' % name] = {
             'type' : 'dict',
             'vars' : {
-                'default' : origParam,
-                ANYSTR_KEY : origParam,
+                'default' : origScheme,
+                ANYSTR_KEY : origScheme,
             },
         }
