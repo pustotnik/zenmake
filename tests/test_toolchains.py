@@ -1,7 +1,6 @@
 # coding=utf-8
 #
 
-# _pylint: skip-file
 # pylint: disable = missing-docstring, invalid-name
 
 """

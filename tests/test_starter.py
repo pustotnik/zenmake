@@ -1,7 +1,6 @@
 # coding=utf-8
 #
 
-# _pylint: skip-file
 # pylint: disable = wildcard-import, unused-wildcard-import, unused-import
 # pylint: disable = missing-docstring, invalid-name
 
@@ -13,11 +12,12 @@
 import os
 import sys
 import pytest
-import tests.common as cmn
+
 from zm.autodict import AutoDict
 from zm.constants import APPNAME
 from zm import cli
 from zm import starter
+import tests.common as cmn
 
 joinpath = os.path.join
 
