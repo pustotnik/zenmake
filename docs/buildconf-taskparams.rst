@@ -993,7 +993,7 @@ enabled
     If it's False then current task will not be used at all.
     By default it is True.
 
-    It has sense mostly to use with
+    It makes sense mostly to use with
     :ref:`selectable parameters<buildconf-select>` or with
     :ref:`byfilter<buildconf-byfilter>`. With this parameter you can make a build
     task which can be used, for example, on Linux only or for specific toolchain

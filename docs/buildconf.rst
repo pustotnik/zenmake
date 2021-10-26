@@ -103,7 +103,7 @@ realbuildroot
     equal to value of ``buildroot``. It is optional parameter and if
     ``realbuildroot`` has different value from ``buildroot`` then
     ``buildroot`` will be symlink to ``realbuildroot``. Using ``realbuildroot``
-    has sense mostly on linux where '/tmp' is usually on tmpfs filesystem
+    makes sense mostly on linux where '/tmp' is usually on tmpfs filesystem
     nowadays and it can used to make building in memory. Such a way can improve
     speed of building. Note that on Windows OS the process of ZenMake needs to be
     started with enabled "Create symbolic links" privilege and usual user
@@ -356,14 +356,15 @@ toolchains
     for simple cross builds for example, or for custom settings for existing
     toolchains. Each value has unique name and parameters. Parameters are also
     dict with names of environment variables and
-    special name ``kind`` that is used for specifying type of
+    special name ``kind`` that is used to specify the type of
     toolchain/compiler. Environment variables are usually such variables as
-    ``CC``, ``CXX``, ``AR``, etc that is used to specify
+    ``CC``, ``CXX``, ``AR``, etc that are used to specify
     name or path to existing toolchain/compiler. Path can be absolute or
-    relative to the startdir_. But also it can be variables ``CFLAGS``,
-    ``CXXFLAGS``, etc. Names of toolchains from this
-    variable can be used as value for parameter ``toolchain``
-    in :ref:`task parameters<buildconf-taskparams>`.
+    relative to the startdir_. Also such variables as ``CFLAGS``,
+    ``CXXFLAGS``, etc can be set here.
+
+    Names of toolchains from this parameter can be used as a value for the
+    ``toolchain`` in :ref:`task parameters<buildconf-taskparams>`.
 
     Example in YAML format:
 
