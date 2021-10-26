@@ -1,7 +1,7 @@
 # coding=utf-8
 #
 
-# pylint: disable = wildcard-import, unused-wildcard-import, unused-import
+# pylint: disable = wildcard-import, unused-wildcard-import
 # pylint: disable = missing-docstring, invalid-name
 # pylint: disable = no-member, redefined-outer-name
 
@@ -11,20 +11,18 @@
 """
 
 import os
-import sys
 from copy import deepcopy
 import pytest
 
-from waflib import Context, Options, Build
-from waflib.ConfigSet import ConfigSet
 from waflib.Errors import WafError
 from zm.autodict import AutoDict
-from zm import toolchains, utils, log
+from zm import toolchains
 from zm.error import *
-from zm.waf import context, configure, assist
+from zm.waf import assist
 from zm.buildconf.processing import Config as BuildConfig
-from zm.waf.configure import ConfigurationContext
+# pylint: disable = unused-import
 from zm.features import ToolchainVars, c, cxx
+# pylint: enable = unused-import
 from tests.common import asRealConf
 
 joinpath = os.path.join
@@ -35,43 +33,13 @@ class FakeConfig(object):
         self.projectName = ''
 
 @pytest.fixture
-def cfgctx(monkeypatch, mocker, tmpdir):
+def cfgctx(cfgctx, mocker):
 
-    rundir = str(tmpdir.realpath())
-    outdir = joinpath(rundir, 'out')
-
-    monkeypatch.setattr(Context, 'launch_dir', rundir)
-    monkeypatch.setattr(Context, 'run_dir', rundir)
-    monkeypatch.setattr(Context, 'out_dir', outdir)
-
-    monkeypatch.chdir(Context.run_dir)
-
-    monkeypatch.setattr(Options, 'options', AutoDict())
-    cfgCtx = ConfigurationContext(run_dir = rundir)
+    cfgCtx = cfgctx
 
     setattr(cfgCtx, 'fakebconf', FakeConfig())
 
-    cfgCtx.fatal = mocker.MagicMock(side_effect = WafError)
-
-    def setenv(name, env = None):
-        cfgCtx.variant = name
-        if name not in cfgCtx.all_envs or env:
-            if not env:
-                env = ConfigSet()
-            else:
-                env = env.derive()
-            cfgCtx.all_envs[name] = env
-
-    cfgCtx.setenv = mocker.MagicMock(side_effect = setenv)
-
-    def envProp(val = None):
-        if val is not None:
-            cfgCtx.all_envs[cfgCtx.variant] = val
-        return cfgCtx.all_envs[cfgCtx.variant]
-
-    type(cfgCtx).env = mocker.PropertyMock(side_effect = envProp)
-
-    def getbconf(pathNode):
+    def getbconf(_):
         return cfgCtx.fakebconf
     cfgCtx.getbconf = mocker.MagicMock(side_effect = getbconf)
 
@@ -88,23 +56,6 @@ def cfgctx(monkeypatch, mocker, tmpdir):
         return env
 
     cfgCtx.loadTool = mocker.MagicMock(side_effect = loadTool)
-
-    cfgCtx.start_msg = cfgCtx.startMsg = mocker.MagicMock()
-    cfgCtx.end_msg = cfgCtx.endMsg = mocker.MagicMock()
-    cfgCtx.to_log = mocker.MagicMock()
-
-    cfgCtx.top_dir = rundir
-    cfgCtx.out_dir = outdir
-    cfgCtx.init_dirs()
-    assert cfgCtx.srcnode.abspath().startswith(rundir)
-    assert cfgCtx.bldnode.abspath().startswith(rundir)
-    cfgCtx.top_dir = None
-    cfgCtx.out_dir = None
-
-    cfgCtx.cachedir = cfgCtx.bldnode.make_node(Build.CACHE_DIR)
-    cfgCtx.cachedir.mkdir()
-
-    cfgCtx.loadCaches()
 
     return cfgCtx
 

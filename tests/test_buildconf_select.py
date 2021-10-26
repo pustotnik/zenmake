@@ -14,9 +14,7 @@
 import os
 import pytest
 
-from waflib import Options, Context, Build
-from waflib.ConfigSet import ConfigSet
-from waflib.Errors import WafError
+from waflib import Context
 from zm.constants import PLATFORM, CPU_ARCH
 from zm.pyutils import maptype, stringtype
 from zm.pathutils import PathsParam
@@ -25,7 +23,6 @@ from zm import cli, utils
 from zm.buildconf.processing import Config, ConfManager
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES, EXPORTING_TASK_PARAMS
 from zm.buildconf.select import clearLocalCache as clearSelectLocalCache
-from zm.waf.configure import ConfigurationContext
 from zm import features
 from tests.common import asRealConf
 
@@ -76,64 +73,16 @@ TASKPARAM_NAMES, PARAM_TEST_VALUES = _setup()
 
 @pytest.mark.usefixtures("unsetEnviron")
 @pytest.fixture
-def cfgctx(monkeypatch, mocker, tmpdir):
+def cfgctx(cfgctx):
 
-    rundir = str(tmpdir.realpath())
-    outdir = joinpath(rundir, 'out')
-
-    monkeypatch.setattr(Context, 'launch_dir', rundir)
-    monkeypatch.setattr(Context, 'run_dir', rundir)
-    monkeypatch.setattr(Context, 'out_dir', outdir)
-
-    monkeypatch.chdir(Context.run_dir)
-
-    monkeypatch.setattr(Options, 'options', AutoDict())
-    cfgCtx = ConfigurationContext(run_dir = rundir)
-    cfgCtx.cleanExportParams = False
-
-    cfgCtx.fatal = mocker.MagicMock(side_effect = WafError)
-
-    def setenv(name, env = None):
-        cfgCtx.variant = name
-        if name not in cfgCtx.all_envs or env:
-            if not env:
-                env = ConfigSet()
-            else:
-                env = env.derive()
-            cfgCtx.all_envs[name] = env
-
-    cfgCtx.setenv = mocker.MagicMock(side_effect = setenv)
-
-    def envProp(val = None):
-        if val is not None:
-            cfgCtx.all_envs[cfgCtx.variant] = val
-        return cfgCtx.all_envs[cfgCtx.variant]
-
-    type(cfgCtx).env = mocker.PropertyMock(side_effect = envProp)
+    cfgCtx = cfgctx
 
     def execute():
         # pylint: disable = protected-access
         cfgCtx._prepareBConfs()
         cfgCtx.preconfigure()
-        cfgCtx.recurse([rundir])
+        cfgCtx.recurse([Context.run_dir])
     cfgCtx.execute = execute
-
-    cfgCtx.start_msg = cfgCtx.startMsg = mocker.MagicMock()
-    cfgCtx.end_msg = cfgCtx.endMsg = mocker.MagicMock()
-    cfgCtx.to_log = mocker.MagicMock()
-
-    cfgCtx.top_dir = rundir
-    cfgCtx.out_dir = outdir
-    cfgCtx.init_dirs()
-    assert cfgCtx.srcnode.abspath().startswith(rundir)
-    assert cfgCtx.bldnode.abspath().startswith(rundir)
-    cfgCtx.top_dir = None
-    cfgCtx.out_dir = None
-
-    cfgCtx.cachedir = cfgCtx.bldnode.make_node(Build.CACHE_DIR)
-    cfgCtx.cachedir.mkdir()
-
-    cfgCtx.loadCaches()
 
     return cfgCtx
 
