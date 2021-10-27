@@ -36,7 +36,7 @@ def _prepareBuildDir(bconfPaths):
     if buildroot != realbuildroot and not os.path.exists(buildroot):
         utils.mksymlink(realbuildroot, buildroot)
 
-def _setWafMainModule(rootdir):
+def setWafMainModule(rootdir):
     """
     Alternative implementation of Scripting.set_main_module
     """
@@ -48,7 +48,10 @@ def _setWafMainModule(rootdir):
     fakename = 'fakeconfname'
     Context.g_module.root_path = joinpath(rootdir, fakename)
 
-def _prepareAndLoadFeatures(bconfManager):
+def loadFeatureModules(bconfManager):
+    """
+    Load modules for all features from current build tasks.
+    """
 
     from zm.features import loadFeatures
 
@@ -152,15 +155,14 @@ def setupAndRunCommands(wafCmdLine, bconfManager):
 
     runCommand(bconfManager, 'shutdown')
 
-def run(cwd, cmd, wafCmdLine, bconfManager):
+def run(cmd, wafCmdLine, bconfManager):
     """
     Replacement for the Scripting.waf_entry_point
     """
 
-    # pylint: disable = unused-import
     # load and set waf wrappers
     from zm.waf import wrappers
-    # pylint: enable = unused-import
+    wrappers.setUp()
 
     bconf = bconfManager.root
     bconfPaths = bconf.confPaths
@@ -184,7 +186,7 @@ def run(cwd, cmd, wafCmdLine, bconfManager):
         log.error('The folder %r is unreadable', Context.run_dir)
         sys.exit(1)
 
-    _setWafMainModule(bconf.rootdir)
+    setWafMainModule(bconf.rootdir)
 
     cliArgs = cmd.args
     verbose = cliArgs.verbose
@@ -193,7 +195,7 @@ def run(cwd, cmd, wafCmdLine, bconfManager):
     try:
 
         if 'buildtype' in cliArgs:
-            _prepareAndLoadFeatures(bconfManager)
+            loadFeatureModules(bconfManager)
 
         setupAndRunCommands(wafCmdLine, bconfManager)
     except Errors.WafError as ex:

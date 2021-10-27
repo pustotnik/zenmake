@@ -180,6 +180,6 @@ def run():
 
     # start waf ecosystem
     from zm.waf import launcher
-    launcher.run(cwd, cmd, wafCmdLine, bconfManager)
+    launcher.run(cmd, wafCmdLine, bconfManager)
 
     return 0

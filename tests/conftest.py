@@ -20,7 +20,6 @@ from zm.buildconf import loader as bconfloader
 joinpath = os.path.join
 
 def pytest_report_header(config):
-    from zm.waf import wrappers
     from zm import sysinfo
     sysinfo.printSysInfo()
     return ""

@@ -7,7 +7,6 @@
 """
 
 import os
-import sys
 import tempfile
 import shutil
 import atexit
@@ -17,9 +16,7 @@ from waflib.Configure import ConfigurationContext as WafConfContext, WAF_CONFIG_
 from zm.constants import PLATFORM, HOST_OS, DISTRO_INFO
 from zm import log, utils
 from zm.cmd import Command as _Command
-# pylint: disable = unused-import
 from zm.waf import wrappers
-# pylint: enable = unused-import
 
 _tempdirs = []
 
@@ -81,8 +78,9 @@ def gatherSysInfo(progress = False):
     Gather some useful system info.
     """
 
-    # Check that waf wrappers are loaded
-    assert 'zm.waf.wrappers' in sys.modules
+    # pylint: disable = too-many-statements
+
+    wrappers.setUp()
 
     import subprocess
     import multiprocessing
@@ -148,7 +146,7 @@ def gatherSysInfo(progress = False):
                 try:
                     ver = subprocess.check_output([_bin] + compiler.verargs,
                                               universal_newlines = True)
-                    ver = ver.split('\n')[0]
+                    ver = ver.split('\n', maxsplit = 1)[0]
                 except subprocess.SubprocessError:
                     ver = 'not recognized'
             else:

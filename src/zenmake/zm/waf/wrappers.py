@@ -159,8 +159,15 @@ def wrapUtilsGetProcess(_):
 
     return execute
 
+_alreadySetUp = [False]
+
 def setUp():
     """ Set up some wrappers for Waf """
+
+    _autoconfStates.clear()
+
+    if _alreadySetUp[0]:
+        return
 
     Utils.get_process = wrapUtilsGetProcess(Utils.get_process)
 
@@ -171,4 +178,4 @@ def setUp():
     for ctxCls in (Build.CleanContext, Build.ListContext):
         ctxCls.execute = wrapBldCtxNoLockInTop(ctxCls.execute)
 
-setUp()
+    _alreadySetUp[0] = True
