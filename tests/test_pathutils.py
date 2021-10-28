@@ -16,7 +16,7 @@ from zm.pathutils import *
 
 joinpath = os.path.join
 
-def testUnfoldPath(monkeypatch):
+def testUnfoldPath():
     # it should be always absolute path
     cwd = os.getcwd()
 
@@ -29,11 +29,6 @@ def testUnfoldPath(monkeypatch):
     path = unfoldPath(cwd, relpath)
     assert joinpath(cwd, relpath) == path
     assert os.path.isabs(unfoldPath(abspath, relpath))
-
-    monkeypatch.setenv('ABC', 'qwerty')
-
-    assert joinpath(cwd, 'qwerty', relpath) == \
-                    unfoldPath(cwd, joinpath('$ABC', relpath))
 
 def testGetNativePath(monkeypatch):
 

@@ -17,12 +17,10 @@ from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
 DEFAULT_PATH_EXCLUDES = toListSimple(DEFAULT_PATH_EXCLUDES)
 
 _joinpath = os.path.join
-_abspath = os.path.abspath
 _normpath = os.path.normpath
 _relpath = os.path.relpath
 _isabs = os.path.isabs
 _isdir = os.path.isdir
-_expandvars = os.path.expandvars
 _expanduser = os.path.expanduser
 
 _pathPatternsCache = {}
@@ -31,20 +29,18 @@ splitPath = wafutils.split_path
 
 def unfoldPath(cwd, path):
     """
-    Unfold path applying os.path.expandvars and os.path.expanduser.
-    Join 'path' with 'cwd' in the beginning If 'path' is not absolute path.
+    Unfold path applying os.path.expanduser.
+    Joins 'path' with 'cwd' in the beginning If the 'path' is not absolute path.
     Returns normalized absolute path.
     """
 
     if not path:
         return path
 
-    path = _expandvars(path)
     path = _expanduser(path)
     if not _isabs(path):
         path = _joinpath(cwd, path)
-    path = _abspath(path)
-    return path
+    return _normpath(path)
 
 def getNativePath(path):
     """
