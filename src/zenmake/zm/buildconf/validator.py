@@ -219,7 +219,7 @@ class Validator(object):
             subscheme = subscheme(confnode, fullkey)
 
         try:
-            self._validate(confnode, subscheme, fullkey,
+            self._process(confnode, subscheme, fullkey,
                                 allowUnknownKeys, allowedKeys)
         except ZenMakeConfTypeError as ex:
             raise ZenMakeConfSubTypeError(ex = ex) from ex
@@ -264,7 +264,7 @@ class Validator(object):
     def _genFullKey(keyprefix, key):
         return '.'.join((keyprefix, key)) if keyprefix else key
 
-    def _validateUsualItems(self, conf, items, keyprefix):
+    def _processItems(self, conf, items, keyprefix):
         _handledKeys = []
         for key, schemeAttrs in items:
             confnode = conf.get(key, None)
@@ -278,7 +278,7 @@ class Validator(object):
             _handledKeys.append(key)
         return _handledKeys
 
-    def _validate(self, conf, scheme, keyprefix, allowUnknownKeys = False, allowedKeys = None):
+    def _process(self, conf, scheme, keyprefix, allowUnknownKeys = False, allowedKeys = None):
 
         # pylint: disable = too-many-branches
 
@@ -286,7 +286,7 @@ class Validator(object):
         _anyStrScheme = scheme.pop(ANYSTR_KEY, None)
         _anyStrKeyExists = _anyStrScheme is not None
 
-        _handledKeys = self._validateUsualItems(conf, scheme.items(), keyprefix)
+        _handledKeys = self._processItems(conf, scheme.items(), keyprefix)
 
         if not _anyStrKeyExists and allowUnknownKeys:
             return
@@ -319,13 +319,13 @@ class Validator(object):
                 msg += "\nValid values: %r" % sorted(scheme.keys())
                 raise ZenMakeConfError(msg)
 
-    def validate(self, doAsserts = False):
+    def run(self, doAsserts = False):
         """
         Entry point for validation
         """
 
         try:
-            self._validate(self._conf, confscheme, '', allowUnknownKeys = True)
+            self._process(self._conf, confscheme, '', allowUnknownKeys = True)
         except ZenMakeConfError as ex:
             origMsg = ex.msg
             ex.msg = "Error in the file %r:" % (self._conf['__file__'])
@@ -334,5 +334,5 @@ class Validator(object):
             raise ex
 
         if doAsserts:
-            # check that was not changed
+            # self checking that scheme was not changed
             assert _oldconfscheme == confscheme

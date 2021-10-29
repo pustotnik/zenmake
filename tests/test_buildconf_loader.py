@@ -14,6 +14,7 @@ import pytest
 from zm.error import *
 import tests.common as cmn
 from zm.constants import DEFAULT_BUILDROOTNAME
+from zm.buildconf.validator import Validator
 from zm.buildconf import loader as bconfloader
 
 file = __file__
@@ -21,6 +22,9 @@ file = __file__
 class FakeBuildConf:
     __name__ = 'testconf'
     __file__ = file
+
+def validateConf(buildconf):
+    Validator(buildconf).run()
 
 def checkCommonDefaults(buildconf):
 
@@ -52,7 +56,7 @@ def testInitDefaults():
     projectDir = os.path.dirname(buildconf.__file__)
     bconfloader.applyDefaults(buildconf, True, projectDir)
     # check if applyDefaults produces validate params
-    bconfloader.validate(buildconf)
+    validateConf(buildconf)
 
     checkCommonDefaults(buildconf)
 
@@ -76,7 +80,7 @@ def testInitDefaults():
     projectDir = os.path.dirname(buildconf.__file__)
     bconfloader.applyDefaults(buildconf, False, projectDir)
     # check if applyDefaults produces validate params
-    bconfloader.validate(buildconf)
+    validateConf(buildconf)
 
     checkCommonDefaults(buildconf)
 
@@ -105,16 +109,16 @@ def testInitDefaults():
     setattr(buildconf, 'buildtypes', buildtypes)
     bconfloader.applyDefaults(buildconf, True, '')
     # check if applyDefaults produces validate params
-    bconfloader.validate(buildconf)
+    validateConf(buildconf)
 
     assert buildconf.buildtypes == buildtypes
 
-def testLoad(capsys, monkeypatch, tmpdir):
+def testLoad(monkeypatch, tmpdir):
     import sys
     from zm.waf.assist import isBuildConfFake
 
     buildconf = bconfloader.load()
-    bconfloader.validate(buildconf)
+    validateConf(buildconf)
     # It should be fake
     assert isBuildConfFake(buildconf)
 
@@ -126,12 +130,9 @@ def testLoad(capsys, monkeypatch, tmpdir):
 
     # invalidate conf
     monkeypatch.setattr(buildconf, 'tasks', 'something')
-    with pytest.raises(SystemExit) as cm:
+    with pytest.raises(ZenMakeConfError) as cm:
         buildconf = bconfloader.load()
-        bconfloader.validate(buildconf)
-    captured = capsys.readouterr()
-    assert cm.value.code
-    assert captured.err
+        validateConf(buildconf)
 
     # find first real buildconf.py
     prjdir = None
@@ -141,12 +142,12 @@ def testLoad(capsys, monkeypatch, tmpdir):
             break
 
     buildconf = bconfloader.load(dirpath = prjdir)
-    bconfloader.validate(buildconf)
+    validateConf(buildconf)
     assert not isBuildConfFake(buildconf)
 
     monkeypatch.syspath_prepend(os.path.abspath(prjdir))
     buildconf = bconfloader.load()
-    bconfloader.validate(buildconf)
+    validateConf(buildconf)
     assert not isBuildConfFake(buildconf)
 
     # find first real buildconf.yaml
@@ -157,12 +158,12 @@ def testLoad(capsys, monkeypatch, tmpdir):
             break
 
     buildconf = bconfloader.load(dirpath = prjdir)
-    bconfloader.validate(buildconf)
+    validateConf(buildconf)
     assert not isBuildConfFake(buildconf)
 
     monkeypatch.syspath_prepend(os.path.abspath(prjdir))
     buildconf = bconfloader.load()
-    bconfloader.validate(buildconf)
+    validateConf(buildconf)
     assert not isBuildConfFake(buildconf)
 
     testdir = tmpdir.mkdir("load.yaml")

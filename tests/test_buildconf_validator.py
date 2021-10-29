@@ -20,7 +20,7 @@ from zm.buildconf.validator import Validator
 import tests.common as cmn
 
 def validateConfig(buildconf):
-    Validator(buildconf).validate(doAsserts = True)
+    Validator(buildconf).run(doAsserts = True)
 
 class FakeBuildConf:
 

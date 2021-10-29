@@ -24,6 +24,7 @@ from zm.buildconf.scheme import taskscheme, KNOWN_CONF_PARAM_NAMES, KNOWN_CONF_S
 from zm.buildconf.sugar import applySyntacticSugar
 from zm.buildconf.paths import ConfPaths
 from zm.buildconf.expression import Expression
+from zm.buildconf.validator import Validator
 from zm.features import ToolchainVars
 
 joinpath = os.path.join
@@ -1026,7 +1027,7 @@ class ConfManager(object):
         #TODO: optimize to validate only if buildconf files were changed
         #if assist.isBuildConfChanged(buildconf, clivars) or _isDevVersion():
         #    loader.validate(buildconf)
-        loader.validate(buildconf)
+        Validator(buildconf).run()
 
         index = len(self._orderedConfigs)
         self._configs[dirpath] = index

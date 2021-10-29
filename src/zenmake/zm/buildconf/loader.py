@@ -7,7 +7,6 @@
 """
 
 __all__ = [
-    'validate',
     'applyDefaults',
     'load',
 ]
@@ -15,27 +14,11 @@ __all__ = [
 import os
 import sys
 
-from zm import log
 from zm.constants import BUILDCONF_FILENAMES, DEFAULT_BUILDROOTNAME
-from zm.error import ZenMakeConfError
 from zm.utils import loadPyModule
-from zm.buildconf.validator import Validator
 
 isfile = os.path.isfile
 joinpath = os.path.join
-
-def validate(buildconf):
-    """
-    Validate selected buildconf object
-    """
-
-    try:
-        Validator(buildconf).validate()
-    except ZenMakeConfError as ex:
-        if log.verbose() > 1:
-            log.pprint('RED', ex.fullmsg) # pragma: no cover
-        log.error(str(ex))
-        sys.exit(1)
 
 def applyDefaults(buildconf, isTopLevel, projectDir):
     """

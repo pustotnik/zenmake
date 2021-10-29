@@ -17,6 +17,7 @@ from zm.pyutils import maptype, stringtype
 from zm import error, log, db, cli, utils
 from zm.pathutils import PathsParam, getNodesFromPathsConf
 from zm.buildconf import loader as buildconfLoader
+from zm.buildconf.validator import Validator
 from zm.buildconf.processing import Config as BuildConfig
 from zm.waf import assist
 
@@ -174,9 +175,8 @@ def _detectZenMakeProjectRules(depConf, buildtype):
     buildtype = depConf.get('buildtypes-map', {}).get(buildtype, buildtype)
 
     depBuildConf = buildconfLoader.load(projectRoot, bconfFilePath)
-    buildconfLoader.validate(depBuildConf)
-    depBConf = BuildConfig(depBuildConf)
-    depBConfPaths = depBConf.confPaths
+    Validator(depBuildConf).run()
+    depBConfPaths = BuildConfig(depBuildConf).confPaths
 
     depConf['$zmcachedir'] = depBConfPaths.zmcachedir
 
@@ -195,7 +195,7 @@ def _detectZenMakeProjectRules(depConf, buildtype):
         depRootDir = depBConfPaths.rootdir
         depZmCacheDir = depBConfPaths.zmcachedir
 
-        # It will be no problem with empty cliargs unless you don't use
+        # It will be no problem with empty cliargs if you don't use
         # monitored cli args in cmdArgs
         assert not any(x in cmdArgs for x in assist.getMonitoredCliArgNames())
         cliargs = {}
