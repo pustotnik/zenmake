@@ -9,9 +9,9 @@
 """
 
 import os
-from collections import namedtuple
 
 from zm.autodict import AutoDict as _AutoDict
+from zm.pyutils import struct
 from zm.pypkg import PkgPath
 from zm.utils import loadPyModule
 from zm.error import ZenMakeError
@@ -148,8 +148,8 @@ CCROOT_FEATURES = frozenset(
 
 _hooks = {}
 
-WhenCall = namedtuple('WhenCall', 'pre, post')
-HooksInfo = namedtuple('HooksInfo', 'funcs, sorted')
+WhenCall = struct('WhenCall', 'pre, post')
+HooksInfo = struct('HooksInfo', 'funcs, sorted')
 
 class FuncMeta(object):
     ''' Sortable func info for precmd/postcmd decorators '''

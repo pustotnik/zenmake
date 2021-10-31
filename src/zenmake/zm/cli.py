@@ -8,19 +8,19 @@
 
 import os
 import sys
-from collections import namedtuple, defaultdict
+from collections import defaultdict
 
 # argparse from the https://pypi.org/project/argparse/ supports aliases
 from thirdparty.argparse import argparse
 from zm.constants import APPNAME, CAP_APPNAME, PLATFORM, CWD
-from zm.pyutils import maptype
+from zm.pyutils import maptype, struct
 from zm.pathutils import unfoldPath
 from zm.utils import envValToBool
 from zm import log
 from zm.error import ZenMakeLogicError
 from zm.autodict import AutoDict as _AutoDict
 
-ParsedCommand = namedtuple('ParsedCommand', 'name, args, orig')
+ParsedCommand = struct('ParsedCommand', 'name, args, orig')
 
 """
 Object of ParsedCommand with current command after last parsing of command line.

@@ -45,3 +45,47 @@ else:
 
 from collections.abc import Mapping, MutableMapping
 maptype = Mapping
+
+def struct(typename, attrnames):
+    """
+    Generate simple and fast data class
+    """
+
+    attrnames = tuple(attrnames.replace(',', ' ').split())
+    reprfmt = '(' + ', '.join(name + '=%r' for name in attrnames) + ')'
+
+    def __init__(self, *args, **kwargs):
+        if len(args) > len(attrnames):
+            msg = "__init__() takes %d positional arguments but %d were given" \
+                % (len(attrnames) + 1, len(args) + 1)
+            raise AttributeError(msg)
+        for name, value in zip(attrnames, args):
+            setattr(self, name, value)
+        for name, value in kwargs.items():
+            if name not in attrnames:
+                msg = "__init__() got an unexpected keyword argument '%s'" % name
+                raise TypeError(msg)
+            setattr(self, name, value)
+
+    def __repr__(self):
+        """ Return a nicely formatted representation string """
+        return self.__class__.__name__ + \
+                reprfmt % tuple(getattr(self, x) for x in attrnames)
+
+    def __getattr__(self, name):
+        """
+        It will only get called for undefined attributes
+        and mostly to mute pylint 'no-member' warning
+        """
+        raise self.__getattribute__(name)
+
+    namespace = {
+        '__doc__': '%s(%s)' % (typename, attrnames),
+        '__slots__' : attrnames,
+        '__init__' : __init__,
+        '__repr__' : __repr__,
+        '__getattr__': __getattr__,
+    }
+    result = type(typename, (object,), namespace)
+
+    return result
