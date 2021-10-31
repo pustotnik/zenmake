@@ -10,8 +10,10 @@ from zm.utils import hashOrdObj
 
 def _genSchemeWithFilter(confscheme, fromTaskParam, sugarParam):
 
+    from zm.buildconf.scheme import taskscheme
+
     byfilterDictVars = confscheme['byfilter']['dict-vars']
-    origSchemeFunc = confscheme['tasks']['vars'][fromTaskParam]
+    origSchemeFunc = taskscheme[fromTaskParam]
     topScheme = origSchemeFunc(None, None)
     itemsOrigSchemeFunc = topScheme['dict-vars']
 
