@@ -110,7 +110,7 @@ def loadTesting():
 
 def run():
     """
-    Prepare and run ZenMake and Waf with ZenMake stuffs
+    Prepare and run ZenMake and Waf with ZenMake stuff
     """
 
     # process buildconf and CLI
