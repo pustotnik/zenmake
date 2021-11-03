@@ -75,31 +75,26 @@ class PathsParam(object):
                 kind = 'paths'
             else:
                 kind = 'path'
-                value = (value,)
+                value = [value]
         else:
             if kind == 'paths':
                 value = toList(value)
             elif kind == 'path':
-                value = (value,)
+                value = [value]
             else:
                 raise NotImplementedError
 
+        startdir = getNativePath(startdir)
         if rootdir is not None:
-            startdir = _normpath(_joinpath(rootdir, startdir))
+            startdir = _normpath(_joinpath(getNativePath(rootdir), startdir))
 
         value = [ getNativePath(x) for x in value ]
-        # value can contain absolute and/or relative paths
-        value = [ _normpath(_relpath(x, startdir) if _isabs(x) else x) for x in value ]
 
         self._startdir = startdir
 
         self._kind = kind
         self._value = value
-        self._cache = {
-            # while current startdir is unchanged 'value' contains paths
-            # relative to the current startdir
-            'relpaths' : value,
-        }
+        self._cache = {}
 
     def _makeFrom(self, pathsParam, startdir = None, rootdir = None, kind = None):
         """ Make the new object as a copy of pathsParam """
@@ -122,20 +117,22 @@ class PathsParam(object):
         else:
             self._kind = otherKind
 
-        self._value = list(otherVal)
+        self._value = list(otherVal) # shallow copy
         self._cache = {}
 
         otherAbsPaths = otherCache.get('abspaths')
         if otherAbsPaths is not None:
-            self._cache['abspaths'] = list(otherAbsPaths)
+            self._cache['abspaths'] = list(otherAbsPaths) # shallow copy
 
         self._startdir = otherStartdir
+
+        startdir = getNativePath(startdir)
         if startdir is not None and startdir != otherStartdir:
             if rootdir is not None:
-                startdir = _normpath(_joinpath(rootdir, startdir))
-            self.abspaths()
-            self._startdir = startdir
+                startdir = _normpath(_joinpath(getNativePath(rootdir), startdir))
+            self.startdir = startdir
         else:
+            # it is not necessary to do but it is better for performance
             otherRelPaths = otherCache.get('relpaths')
             if otherRelPaths is not None:
                 if id(otherRelPaths) == id(otherVal):
@@ -152,26 +149,6 @@ class PathsParam(object):
         self = cls.__new__(cls)
         return self._makeFrom(pathsParam, startdir, rootdir, kind)
 
-    @property
-    def startdir(self):
-        """ Get current startdir """
-        return self._startdir
-
-    @startdir.setter
-    def startdir(self, val):
-        """
-        Set new startdir. It doesn't change absolute path(s).
-        It changes relative path(s).
-        """
-
-        if val == self._startdir:
-            return
-
-        self._cache.pop('relpaths', None)
-        # force abspaths before change of startdir
-        self.abspaths()
-        self._startdir = val
-
     def _changeBySlice(self, ibeg, iend, value, startdir = None):
 
         assert self._kind == 'paths'
@@ -181,9 +158,9 @@ class PathsParam(object):
             # startdir is not important in this case
             value = value.abspaths()
         else:
-            if startdir is None:
-                startdir = self._startdir
-            value = [_normpath(_joinpath(startdir, x)) for x in value]
+            _native = getNativePath
+            startdir = self._startdir if startdir is None else _native(startdir)
+            value = [_normpath(_joinpath(startdir, _native(x))) for x in value]
 
         # update abspaths
         abspaths = self._cache.get('abspaths')
@@ -229,7 +206,7 @@ class PathsParam(object):
 
     def abspaths(self):
         """
-        Get absolute paths in sorted order
+        Get list of absolute paths
         """
 
         abspaths = self._cache.get('abspaths')
@@ -241,16 +218,9 @@ class PathsParam(object):
 
         return abspaths
 
-    def relpaths(self, applyStartDir = None):
-        """
-        Get relative paths in sorted order
-        """
-
-        if applyStartDir is not None:
-            self.startdir = applyStartDir
+    def _relpaths(self):
 
         relpaths = self._cache.get('relpaths')
-
         if relpaths is None:
             abspaths = self.abspaths()
             startdir = self._startdir
@@ -260,6 +230,16 @@ class PathsParam(object):
             self._cache['relpaths'] = self._value = relpaths
 
         return relpaths
+
+    def relpaths(self, applyStartDir = None):
+        """
+        Get list of relative paths
+        """
+
+        if applyStartDir is not None:
+            self.startdir = applyStartDir
+
+        return self._relpaths()
 
     def abspath(self):
         """
@@ -278,6 +258,29 @@ class PathsParam(object):
 
         assert self._kind == 'path'
         return self.relpaths(applyStartDir)[0]
+
+    @property
+    def startdir(self):
+        """ Get current startdir """
+        return self._startdir
+
+    @startdir.setter
+    def startdir(self, val):
+        """
+        Set new startdir. It doesn't change absolute path(s).
+        It changes relative path(s).
+        """
+
+        val = getNativePath(val)
+        if val == self._startdir:
+            return
+
+        # force abspaths before change of startdir
+        self.abspaths()
+
+        self._startdir = val
+        self._cache.pop('relpaths', None)
+        self._value = self._relpaths()
 
     def __repr__(self):
         _repr = "%s(value = %r, startdir = %r, kind = %r)" % \
