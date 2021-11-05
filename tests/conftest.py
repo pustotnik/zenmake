@@ -63,6 +63,7 @@ def testingBuildConf():
 @pytest.fixture
 def cfgctx(monkeypatch, mocker, tmpdir):
 
+    import optparse
     from waflib import Context, Options, Build
     from waflib.ConfigSet import ConfigSet
     from waflib.Errors import WafError
@@ -77,7 +78,19 @@ def cfgctx(monkeypatch, mocker, tmpdir):
 
     monkeypatch.chdir(Context.run_dir)
 
-    monkeypatch.setattr(Options, 'options', AutoDict())
+    options = optparse.Values()
+    optvals = dict(
+        top = None,
+        out = None,
+        destdir = None,
+        prefix = None,
+        bindir = None,
+        libdir = None,
+    )
+    for k,v in optvals.items():
+        setattr(options, k, v)
+    monkeypatch.setattr(Options, 'options', options)
+
     cfgCtx = ConfigurationContext(run_dir = rundir)
 
     cfgCtx.fatal = mocker.MagicMock(side_effect = WafError)
