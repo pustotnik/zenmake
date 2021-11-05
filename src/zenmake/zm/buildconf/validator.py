@@ -11,7 +11,7 @@ from copy import deepcopy
 from zm.error import ZenMakeConfError, ZenMakeConfTypeError, ZenMakeConfValueError
 from zm.pyutils import maptype, stringtype
 from zm.utils import toList
-from zm.buildconf.schemeutils import ANYSTR_KEY
+from zm.buildconf.types import ANYSTR_KEY, ConfNode
 from zm.buildconf.scheme import confscheme
 
 # for checks
@@ -25,7 +25,7 @@ class Validator(object):
     Validator for structure of buidconf.
     """
 
-    __slots__ = ('_conf', )
+    __slots__ = ('_conf', '_checksOnly')
 
     _typeHandlerNames = {
         'bool' : '_handleBool',
@@ -41,6 +41,28 @@ class Validator(object):
 
     def __init__(self, buildconf):
         self._conf = vars(buildconf)
+        self._checksOnly = False
+
+    def _saveParamTraits(self, node, key, schemeAttrs):
+
+        if self._checksOnly:
+            return
+
+        cnode = node[key]
+        if isinstance(cnode, ConfNode):
+            return
+
+        traits = schemeAttrs.get('traits', [])
+        types = schemeAttrs['type']
+        if isinstance(types, stringtype):
+            types = [types]
+
+        if 'list-of-strs' in types:
+            traits = list(traits)
+            traits.append('str-list')
+
+        if traits:
+            node[key] = ConfNode(cnode, traits)
 
     @staticmethod
     def _getHandler(typeName):
@@ -64,60 +86,65 @@ class Validator(object):
             raise KeyError(key) # pragma: no cover
         return value
 
-    def _handleComplex(self, confnode, schemeAttrs, fullkey):
+    def _handleComplex(self, node, key, schemeAttrs, fullkey):
 
         types = schemeAttrs['type']
-        valToList = False
         _types = types
+        listInStr = False
 
         # special case
         if 'allowed' in schemeAttrs and sorted(types) == ['list-of-strs', 'str']:
             # this order of types is necessary
             _types = ('list-of-strs', 'str')
-            valToList = True
+            listInStr = True
 
+        failed = True
         for _type in _types:
-            if valToList and _type == 'list-of-strs':
-                val = toList(confnode)
-            else:
-                val = confnode
 
-            _schemeAttrs = schemeAttrs.get(_type, schemeAttrs)
+            if listInStr and _type == 'list-of-strs':
+                _schemeAttrs = schemeAttrs.copy()
+                _schemeAttrs['type'] = ('str', 'list-of-strs')
+            else:
+                _schemeAttrs = schemeAttrs.get(_type, schemeAttrs)
 
             try:
                 handler = Validator._getHandler(_type)
-                handler(self, val, _schemeAttrs, fullkey)
+                handler(self, node, key, _schemeAttrs, fullkey)
             except ZenMakeConfSubTypeError:
                 # it's an error from a sub type
                 raise
             except ZenMakeConfTypeError:
                 pass
             else:
-                return
+                failed = False
+                break
 
-        typeswitch = {
-            'str'         : 'string',
-            'list-of-strs': 'list of strings',
-            'dict'        : 'dict/another map type',
-        }
-        typeNames = [ typeswitch.get(_type, _type) for _type in types ]
+        if failed:
+            typeswitch = {
+                'str'         : 'string',
+                'list-of-strs': 'list of strings',
+                'dict'        : 'dict/another map type',
+            }
+            typeNames = [ typeswitch.get(_type, _type) for _type in types ]
 
-        msg = "Value `%r` is invalid for the param %r." % (confnode, fullkey)
-        msg += " It should be %s." % " or ".join(typeNames)
-        raise ZenMakeConfTypeError(msg)
+            cnode = node[key]
+            msg = "Value `%r` is invalid for the param %r." % (cnode, fullkey)
+            msg += " It should be %s." % " or ".join(typeNames)
+            raise ZenMakeConfTypeError(msg)
 
-    def _handleBool(self, confnode, _, fullkey):
-        if not isinstance(confnode, bool):
+    def _handleBool(self, node, key, _, fullkey):
+        if not isinstance(node[key], bool):
             msg = "Param %r should be bool" % fullkey
             raise ZenMakeConfTypeError(msg)
 
-    def _handleInt(self, confnode, _, fullkey):
-        if not isinstance(confnode, int):
+    def _handleInt(self, node, key, _, fullkey):
+        if not isinstance(node[key], int):
             msg = "Param %r should be integer" % fullkey
             raise ZenMakeConfTypeError(msg)
 
-    def _handleStr(self, confnode, schemeAttrs, fullkey):
-        if not isinstance(confnode, stringtype):
+    def _handleStr(self, node, key, schemeAttrs, fullkey):
+        cnode = node[key]
+        if not isinstance(cnode, stringtype):
             msg = "Param %r should be string" % fullkey
             raise ZenMakeConfTypeError(msg)
         if not schemeAttrs:
@@ -125,21 +152,27 @@ class Validator(object):
 
         _getAttrValue = Validator._getAttrValue
         allowed = _getAttrValue(schemeAttrs, 'allowed', 'str', default = None)
+        if allowed is None:
+            return
+
         if callable(allowed):
-            allowed = allowed(self._conf, confnode, fullkey)
-        if allowed is not None and confnode not in allowed:
-            msg = "Value `%r` is invalid for the param %r." % (confnode, fullkey)
+            allowed(self._conf, cnode, fullkey)
+        elif cnode not in allowed:
+            msg = "Value `%r` is invalid for the param %r." % (cnode, fullkey)
             msg = '%s Allowed values: %s' %(msg, str(list(allowed))[1:-1])
             raise ZenMakeConfValueError(msg)
 
-    def _handleList(self, confnode, schemeAttrs, fullkey):
+    def _handleList(self, node, key, schemeAttrs, fullkey):
+
+        cnode = node[key]
+
         def raiseInvalidTypeErr(value):
             msg = "Value `%r` is invalid for the param %r." % (value, fullkey)
             msg += " It should be list"
             raise ZenMakeConfTypeError(msg)
 
-        if not isinstance(confnode, (list, tuple)):
-            raiseInvalidTypeErr(confnode)
+        if not isinstance(cnode, (list, tuple)):
+            raiseInvalidTypeErr(cnode)
 
         schemeAttrs = schemeAttrs.get('list', schemeAttrs)
 
@@ -154,38 +187,50 @@ class Validator(object):
             _schemeAttrs['type'] = varsType
 
         if callable(allowed):
-            allowed = allowed(self._conf, confnode, fullkey)
+            allowed(self._conf, cnode, fullkey)
+            allowed = None
 
-        for i, elem in enumerate(confnode):
+        for i, elem in enumerate(cnode):
             if allowed is not None and elem not in allowed:
                 msg = "Value %r is invalid for the param %r." % (elem, fullkey)
                 msg = '%s Allowed values: %s' %(msg, str(list(allowed))[1:-1])
                 raise ZenMakeConfValueError(msg)
             if varsType:
                 try:
-                    handler(self, elem, _schemeAttrs, '%s.[%d]' % (fullkey, i))
+                    handler(self, cnode, i, _schemeAttrs, '%s.[%d]' % (fullkey, i))
+                    self._saveParamTraits(cnode, i, _schemeAttrs)
                 except ZenMakeConfTypeError as ex:
                     raise ZenMakeConfSubTypeError(ex = ex) from ex
 
-    def _handleFunc(self, confnode, _, fullkey):
-        if not callable(confnode):
+    def _handleFunc(self, node, key, _, fullkey):
+        if not callable(node[key]):
             msg = "Param %r should be function" % fullkey
             raise ZenMakeConfTypeError(msg)
 
-    def _handleListOfStrs(self, confnode, schemeAttrs, fullkey):
+    def _handleListOfStrs(self, node, key, schemeAttrs, fullkey):
+
+        cnode = node[key]
+        types = schemeAttrs['type']
+        if isinstance(types, stringtype):
+            types = [types]
+        if 'str' in types:
+            cnode = toList(cnode)
+
         def raiseInvalidTypeErr(value):
             msg = "Value `%r` is invalid for the param %r." % (value, fullkey)
             msg += " It should be list of strings"
             raise ZenMakeConfTypeError(msg)
 
-        if not isinstance(confnode, (list, tuple)):
-            raiseInvalidTypeErr(confnode)
+        if not isinstance(cnode, (list, tuple)):
+            raiseInvalidTypeErr(cnode)
 
         _getAttrValue = Validator._getAttrValue
         allowed = _getAttrValue(schemeAttrs, 'allowed', 'list-of-strs', default = None)
         if callable(allowed):
-            allowed = allowed(self._conf, confnode, fullkey)
-        for elem in confnode:
+            allowed(self._conf, cnode, fullkey)
+            allowed = None
+
+        for elem in cnode:
             if not isinstance(elem, stringtype):
                 raiseInvalidTypeErr(elem)
             if allowed is not None and elem not in allowed:
@@ -193,8 +238,11 @@ class Validator(object):
                 msg = '%s\nAllowed values: %s' %(msg, str(list(allowed))[1:-1])
                 raise ZenMakeConfValueError(msg)
 
-    def _handleDict(self, confnode, schemeAttrs, fullkey):
-        if not isinstance(confnode, maptype):
+    def _handleDict(self, node, key, schemeAttrs, fullkey):
+
+        cnode = node[key]
+
+        if not isinstance(cnode, maptype):
             msg = "Param %r should be dict or another map type." % fullkey
             raise ZenMakeConfTypeError(msg)
 
@@ -216,16 +264,19 @@ class Validator(object):
                                              'dict', default = False)
 
         if callable(subscheme):
-            subscheme = subscheme(confnode, fullkey)
+            subscheme = subscheme(cnode, fullkey)
 
         try:
-            self._process(confnode, subscheme, fullkey,
+            self._process(cnode, subscheme, fullkey,
                                 allowUnknownKeys, allowedKeys)
         except ZenMakeConfTypeError as ex:
             raise ZenMakeConfSubTypeError(ex = ex) from ex
 
-    def _handleVarsInDict(self, confnode, schemeAttrs, fullkey):
-        if not isinstance(confnode, maptype):
+    def _handleVarsInDict(self, node, key, schemeAttrs, fullkey):
+
+        cnode = node[key]
+
+        if not isinstance(cnode, maptype):
             msg = "Param %r should be dict or another map type." % fullkey
             raise ZenMakeConfTypeError(msg)
 
@@ -248,8 +299,8 @@ class Validator(object):
 
         keysKind = schemeAttrs.pop('keys-kind')
         if keysKind == 'anystr':
-            for key, _confnode in confnode.items():
-                Validator._checkStrKey(key, fullkey)
+            for ckey in cnode:
+                Validator._checkStrKey(ckey, fullkey)
             schemeAttrs['dict-vars'] = { ANYSTR_KEY : subscheme }
         elif keysKind == 'bylist':
             allowedKeys = schemeAttrs.pop('keys-list')
@@ -258,27 +309,31 @@ class Validator(object):
             raise NotImplementedError # pragma: no cover
 
         handler = Validator._getHandler(schemeAttrs['type'])
-        handler(self, confnode, schemeAttrs, fullkey)
+        handler(self, node, key, schemeAttrs, fullkey)
+        self._saveParamTraits(node, key, schemeAttrs)
 
     @staticmethod
     def _genFullKey(keyprefix, key):
         return '.'.join((keyprefix, key)) if keyprefix else key
 
-    def _processItems(self, conf, items, keyprefix):
+    def _processItems(self, node, items, keyprefix):
         _handledKeys = []
         for key, schemeAttrs in items:
-            confnode = conf.get(key, None)
-            if confnode is None:
+            cnode = node.get(key, None)
+            if cnode is None:
                 continue
             fullKey = Validator._genFullKey(keyprefix, key)
             if callable(schemeAttrs):
-                schemeAttrs = schemeAttrs(confnode, fullKey)
+                schemeAttrs = schemeAttrs(cnode, fullKey)
+
             typeName = schemeAttrs['type']
-            Validator._getHandler(typeName)(self, confnode, schemeAttrs, fullKey)
+            Validator._getHandler(typeName)(self, node, key, schemeAttrs, fullKey)
             _handledKeys.append(key)
+
+            self._saveParamTraits(node, key, schemeAttrs)
         return _handledKeys
 
-    def _process(self, conf, scheme, keyprefix, allowUnknownKeys = False, allowedKeys = None):
+    def _process(self, node, scheme, keyprefix, allowUnknownKeys = False, allowedKeys = None):
 
         # pylint: disable = too-many-branches
 
@@ -286,7 +341,7 @@ class Validator(object):
         _anyStrScheme = scheme.pop(ANYSTR_KEY, None)
         _anyStrKeyExists = _anyStrScheme is not None
 
-        _handledKeys = self._processItems(conf, scheme.items(), keyprefix)
+        _handledKeys = self._processItems(node, scheme.items(), keyprefix)
 
         if not _anyStrKeyExists and allowUnknownKeys:
             return
@@ -294,10 +349,10 @@ class Validator(object):
         if _anyStrKeyExists:
             schemeAttrs = _anyStrScheme
             if callable(schemeAttrs):
-                schemeAttrs = schemeAttrs(conf, keyprefix)
+                schemeAttrs = schemeAttrs(node, keyprefix)
             handler = Validator._getHandler(schemeAttrs['type'])
 
-        for key, value in conf.items():
+        for key in node:
             if allowedKeys:
                 if callable(allowedKeys):
                     allowedKeys(self._conf, key, keyprefix)
@@ -308,7 +363,8 @@ class Validator(object):
                 continue
             if _anyStrKeyExists and isinstance(key, stringtype):
                 fullKey = Validator._genFullKey(keyprefix, key)
-                handler(self, value, schemeAttrs, fullKey)
+                handler(self, node, key, schemeAttrs, fullKey)
+                self._saveParamTraits(node, key, schemeAttrs)
             elif not allowUnknownKeys:
                 msg = "Unknown key '%s' is in the param %r." % (str(key), keyprefix)
                 msg += " Unknown keys aren't allowed here."
@@ -319,12 +375,13 @@ class Validator(object):
                 msg += "\nValid values: %r" % sorted(scheme.keys())
                 raise ZenMakeConfError(msg)
 
-    def run(self, doAsserts = False):
+    def run(self, checksOnly = False, doAsserts = False):
         """
         Entry point for validation
         """
 
         try:
+            self._checksOnly = checksOnly
             self._process(self._conf, confscheme, '', allowUnknownKeys = True)
         except ZenMakeConfError as ex:
             origMsg = ex.msg

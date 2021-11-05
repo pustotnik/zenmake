@@ -12,7 +12,6 @@ from zm.constants import PLATFORM, KNOWN_PLATFORMS, HOST_OS, DISTRO_INFO, CPU_AR
 from zm.utils import toList
 from zm.error import ZenMakeLogicError, ZenMakeConfError
 from zm.buildconf.scheme import KNOWN_CONDITION_PARAM_NAMES
-from zm.buildconf.processing import convertTaskParamValue
 from zm.buildconf.expression import Expression
 from zm.features import areFeaturesLoaded
 from zm.toolchains import getAllNames as getAllToolchainNames
@@ -170,7 +169,6 @@ def handleOneTaskParamSelect(bconf, taskParams, paramName):
         taskParams.pop(paramName, None)
     else:
         taskParams[paramName] = detectedValue
-        convertTaskParamValue(taskParams, paramName)
 
     # remove *.select param
     taskParams.pop(selectName, None)

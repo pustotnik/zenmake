@@ -11,9 +11,10 @@ import re
 
 from zm.constants import KNOWN_PLATFORMS, TASK_TARGET_KINDS
 from zm.pyutils import stringtype
+from zm.utils import toList
 from zm.error import ZenMakeConfValueError
 from zm.cli import config as cliConfig
-from zm.buildconf.schemeutils import ANYSTR_KEY, addSelectToParams
+from zm.buildconf.types import ANYSTR_KEY
 from zm.buildconf.sugar import genSugarSchemes
 from zm.features import ConfValidation
 
@@ -91,12 +92,14 @@ _actionToVars = {
     },
     'find-program' : {
         'names' : { 'type': ('str', 'list-of-strs') },
-        'paths' : { 'type': ('str', 'list-of-strs') },
+        'paths' : { 'type': ('str', 'list-of-strs'),
+                    'traits': ['list-of-paths', 'abs'] },
         'var':    { 'type': 'str' },
     },
     'find-file' : {
         'names' : { 'type': ('str', 'list-of-strs') },
-        'paths' : { 'type': ('str', 'list-of-strs') },
+        'paths' : { 'type': ('str', 'list-of-strs'),
+                    'traits': ['list-of-paths', 'abs'] },
         'var':    { 'type': 'str' },
     },
     'check-headers' : {
@@ -120,7 +123,8 @@ _actionToVars = {
     },
     'pkgconfig' : {
         'toolname' : { 'type': 'str' },
-        'toolpaths' : { 'type': ('str', 'list-of-strs') },
+        'toolpaths' : { 'type': ('str', 'list-of-strs'),
+                        'traits': ['list-of-paths', 'abs'] },
         'packages' : { 'type': 'str' },
         'cflags' : { 'type': 'bool' },
         'libs' : { 'type': 'bool' },
@@ -144,7 +148,10 @@ _actionToVars = {
     'toolconfig' : {
         'msg' : { 'type': 'str' },
         'toolname' : { 'type': 'str' },
-        'toolpaths' : { 'type': ('str', 'list-of-strs') },
+        'toolpaths' : {
+            'type': ('str', 'list-of-strs'),
+            'traits' : ['list-of-paths', 'abs']
+        },
         'args' : { 'type': ('str', 'list-of-strs') },
         'parse-as' : {
             'type': 'str',
@@ -199,7 +206,7 @@ _PATHS_SCHEME_DICT_VARS = {
 }
 
 _PATHS_SCHEME = {
-    'type': ('str', 'list', 'dict'),
+    'type' : ('str', 'list', 'dict'),
     'dict' : {
         'vars' : _PATHS_SCHEME_DICT_VARS,
     },
@@ -207,6 +214,7 @@ _PATHS_SCHEME = {
         'vars-type' : ('str', 'dict'),
         'dict-vars' : _PATHS_SCHEME_DICT_VARS,
     },
+    'traits' : ['complex-path'],
 }
 
 def _genInstallFilesScheme(confnode, fullkey):
@@ -214,7 +222,7 @@ def _genInstallFilesScheme(confnode, fullkey):
     # pylint: disable = unused-argument
 
     scheme = {
-        'type': 'list',
+        'type' : 'list',
         'vars-type' : ('dict', ),
         'dict-vars' : _genInstallFilesDictVarsScheme
     }
@@ -224,23 +232,23 @@ def _genInstallFilesScheme(confnode, fullkey):
 _installTypeSpecVars = {
     'copy' : {
         'src'   : _PATHS_SCHEME,
-        'dst'   : { 'type': 'str' },
+        'dst'   : { 'type': 'str', 'traits': ['one-path', 'abs'] },
         'chmod' : { 'type' : ('int', 'str'), },
         'user'  : { 'type': 'str' },
         'group' : { 'type': 'str' },
         'follow-symlinks' : { 'type': 'bool', },
     },
     'copy-as' : {
-        'src'   : { 'type': 'str' },
-        'dst'   : { 'type': 'str' },
+        'src'   : { 'type': 'str', 'traits': ['one-path', 'abs'] },
+        'dst'   : { 'type': 'str', 'traits': ['one-path', 'abs'] },
         'chmod' : { 'type' : ('int', 'str'), },
         'user'  : { 'type': 'str' },
         'group' : { 'type': 'str' },
         'follow-symlink' : { 'type': 'bool', },
     },
     'symlink' : {
-        'src' : { 'type': 'str' },
-        'symlink' : { 'type': 'str' },
+        'src' : { 'type': 'str', 'traits': ['one-path', 'abs'] },
+        'symlink' : { 'type': 'str', 'traits': ['one-path', 'abs'] },
         'user'  : { 'type': 'str' },
         'group' : { 'type': 'str' },
         'relative' : { 'type': 'bool', },
@@ -308,7 +316,7 @@ _DEP_RULE_SCHEME = {
                 'no-targets' : { 'type': 'bool' },
                 'paths-exist' : _PATHS_SCHEME,
                 'paths-dont-exist' : _PATHS_SCHEME,
-                'func' : { 'type': 'func' },
+                'func' : { 'type': 'func', 'traits': ['func'] },
                 'env' : {
                     'type': 'dict',
                     'vars' : { ANYSTR_KEY : { 'type': 'str' } },
@@ -316,7 +324,7 @@ _DEP_RULE_SCHEME = {
             },
         },
         'cmd' : { 'type': 'str' },
-        'cwd' : { 'type': 'str' },
+        'cwd' : { 'type': 'str', 'traits': ['one-path'] },
         'env' : {
             'type': 'dict',
             'vars' : { ANYSTR_KEY : { 'type': 'str' } },
@@ -336,18 +344,18 @@ taskscheme = {
     'source' :          _PATHS_SCHEME,
     'toolchain' :       { 'type': ('str', 'list-of-strs') },
     'libs' :            { 'type': ('str', 'list-of-strs') },
-    'libpath':          { 'type': ('str', 'list-of-strs') },
+    'libpath':          { 'type': ('str', 'list-of-strs'), 'traits': ['list-of-paths'] },
     'monitlibs':        { 'type': ('bool', 'str', 'list-of-strs') },
     'stlibs' :          { 'type': ('str', 'list-of-strs') },
-    'stlibpath':        { 'type': ('str', 'list-of-strs') },
+    'stlibpath':        { 'type': ('str', 'list-of-strs'), 'traits': ['list-of-paths'] },
     'monitstlibs':      { 'type': ('bool', 'str', 'list-of-strs') },
     'rpath' :           { 'type': ('str', 'list-of-strs') },
     'ver-num' :         { 'type': 'str', 'allowed' : _checkVerNum },
-    'includes':         { 'type': ('str', 'list-of-strs') },
+    'includes':         { 'type': ('str', 'list-of-strs'), 'traits': ['list-of-paths'] },
     'linkflags' :       { 'type': ('str', 'list-of-strs') },
     'ldflags' :         { 'type': ('str', 'list-of-strs') },
     'defines' :         { 'type': ('str', 'list-of-strs') },
-    'install-path' :    { 'type': ('bool', 'str') },
+    'install-path' :    { 'type': ('bool', 'str'), 'traits': ['one-path', 'abs'] },
     'install-files' :   _genInstallFilesScheme,
     'configure' :       _genConfActionsScheme,
     'group-dependent-tasks' : { 'type': 'bool' },
@@ -358,9 +366,9 @@ taskscheme = {
 
 ############ EXTEND TASK PARAMS
 
-def _checkExportParams(_, values, fullkey):
+def _checkExportParams(_, value, fullkey):
 
-    for val in values:
+    for val in toList(value):
         if val not in EXPORTING_TASK_PARAMS_S:
             msg = "Value %r is invalid" % val
             msg += " for the param %r." % fullkey
@@ -380,6 +388,24 @@ def _addExportParamsToScheme(tscheme, exportingParams):
             paramScheme = deepcopy(tscheme[param])
             paramScheme['type'] = ('bool', ) + paramScheme['type']
         tscheme['export-%s' % param] = paramScheme
+
+def _addSelectToParams(scheme, paramNames = None):
+    """
+    Add '.select' variant to param from scheme
+    """
+
+    if paramNames is None:
+        paramNames = tuple(scheme.keys())
+
+    for name in paramNames:
+        origScheme = scheme[name]
+        scheme['%s.select' % name] = {
+            'type' : 'dict',
+            'vars' : {
+                'default' : origScheme,
+                ANYSTR_KEY : origScheme,
+            },
+        }
 
 def _applyExportAndSelectedTaskParams():
 
@@ -406,7 +432,7 @@ def _applyExportAndSelectedTaskParams():
 
     #---------- *.select params
     selectableParams.extend(featuresTaskSchemes['select'])
-    addSelectToParams(taskscheme, selectableParams)
+    _addSelectToParams(taskscheme, selectableParams)
 
     return tuple(exportingParams)
 
@@ -416,18 +442,23 @@ EXPORTING_TASK_PARAMS_S = frozenset(EXPORTING_TASK_PARAMS)
 ###################################
 
 confscheme = {
+    # traits are not used for 'startdir', 'buildroot'/'realbuildroot'
     'startdir' : { 'type': 'str' },
     'buildroot' : { 'type': 'str' },
     'realbuildroot' : { 'type': 'str' },
+
     'general' : {
         'type' : 'dict',
         'vars' : {
             'autoconfig' : { 'type': 'bool' },
-            'monitor-files' : { 'type': ('str', 'list-of-strs') },
+            'monitor-files' : {
+                'type': ('str', 'list-of-strs'),
+                'traits': ['list-of-paths'],
+            },
             'hash-algo' : { 'type': 'str', 'allowed' : ('sha1', 'md5') },
             'db-format' : {
                 'type': 'str',
-                'allowed' : set(('py', 'pickle', 'msgpack', )),
+                'allowed': ('py', 'pickle', 'msgpack'),
             },
             'provide-edep-targets' : { 'type': 'bool' },
             'build-work-dir-name' : { 'type': 'str' },
@@ -438,7 +469,7 @@ confscheme = {
         'vars' : _genCliOptionsVarsScheme,
     },
     'subdirs' : {
-        'type' : 'list-of-strs',
+        'type': 'list-of-strs', 'traits': ['list-of-paths', 'abs']
     },
     'project' : {
         'type' : 'dict',
@@ -471,15 +502,18 @@ confscheme = {
         'keys-kind' : 'anystr',
         'vars-type' : 'dict',
         'vars' : {
-            'rootdir' :  { 'type': 'str' },
-            'export-includes' : { 'type': ('str', 'list-of-strs') },
+            'rootdir' :  { 'type': 'str', 'traits': ['one-path'] },
+            'export-includes' : {
+                'type': ('str', 'list-of-strs'),
+                'traits': ['list-of-paths']
+            },
             'targets' :  {
                 'type': 'dict',
                 'vars' : {
                     ANYSTR_KEY: {
                         'type': 'dict',
                         'vars': {
-                            'dir'  : {'type' : 'str' },
+                            'dir'  : {'type' : 'str', 'traits' : ['one-path'] },
                             'type' : {'type' : 'str', 'allowed' : _ALLOWED_DEP_TARGET_TYPES },
                             'name' : {'type' : 'str' },
                             'ver-num' : { 'type': 'str', 'allowed' : _checkVerNum },
@@ -509,11 +543,13 @@ confscheme = {
         },
     },
     'tasks' : {
-        'type' : 'vars-in-dict',
-        'keys-kind' : 'anystr',
-        'vars-type' : 'dict',
-        'vars-allow-unknown-keys' : False,
-        'vars' : taskscheme,
+        'type' : 'dict',
+        'vars' : {
+            ANYSTR_KEY : {
+                'type' : 'dict',
+                'vars' : taskscheme,
+            },
+        },
     },
     'buildtypes' : {
         'type' : 'dict',
@@ -532,13 +568,15 @@ confscheme = {
         },
     },
     'toolchains' : {
-        'type' : 'vars-in-dict',
-        'keys-kind' : 'anystr',
-        'vars-type' : 'dict',
-        'vars-allow-unknown-keys' : False,
+        'type' : 'dict',
         'vars' : {
-            'kind' : { 'type': 'str' },
-            ANYSTR_KEY : { 'type' : 'str' },
+            ANYSTR_KEY : {
+                'type' : 'dict',
+                'vars' : {
+                    'kind' : { 'type': 'str' },
+                    ANYSTR_KEY : { 'type' : 'str' },
+                },
+            },
         },
     },
     'byfilter' : {

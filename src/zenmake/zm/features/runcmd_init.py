@@ -9,7 +9,7 @@
 from os.path import relpath
 
 from zm.pyutils import maptype
-from zm.buildconf.schemeutils import ANYSTR_KEY
+from zm.buildconf.types import ANYSTR_KEY
 
 CONF_TASKSCHEME_SPEC = {
     'base' : {
@@ -18,7 +18,7 @@ CONF_TASKSCHEME_SPEC = {
             'dict-allow-unknown-keys' : False,
             'dict-vars' : {
                 'cmd' : { 'type': ('str', 'func') },
-                'cwd' : { 'type': 'str' },
+                'cwd' : { 'type': 'str', 'traits' : ['one-path'] },
                 'env' : {
                     'type': 'dict',
                     'vars' : { ANYSTR_KEY : { 'type': 'str' } },

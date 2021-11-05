@@ -24,7 +24,7 @@ class FakeBuildConf:
     __file__ = file
 
 def validateConf(buildconf):
-    Validator(buildconf).run()
+    Validator(buildconf).run(checksOnly = True, doAsserts = True)
 
 def checkCommonDefaults(buildconf):
 

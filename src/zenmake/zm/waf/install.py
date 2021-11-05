@@ -19,7 +19,7 @@ from waflib.Task import ASK_LATER as TASK_ASK_LATER, RUN_ME as TASK_RUN_ME
 from waflib.Build import INSTALL, UNINSTALL, inst as WafInstallTask
 from zm import utils, error, log
 from zm.pyutils import stringtype
-from zm.pathutils import getNativePath, makePathsConf, getNodesFromPathsConf
+from zm.pathutils import PathsParam, getNativePath, makePathsConf, getNodesFromPathsConf
 from zm.autodict import AutoDict
 from zm.waf.build import BuildContext
 
@@ -169,7 +169,7 @@ class inst(WafInstallTask):
             path = self.install_to
 
         bvars = self._getSubstBuiltInVars()
-        if isinstance(path, Node.Node):
+        if isinstance(path, (Node.Node, PathsParam)):
             dest = path.abspath()
         else:
             path = utils.substVars(path, self.env.get_flat)

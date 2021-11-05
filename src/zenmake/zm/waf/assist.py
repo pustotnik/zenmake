@@ -353,7 +353,12 @@ def handleTaskLibPathParams(taskParams):
         if param is not None:
             # Waf doesn't change 'libpath' relative to current ctx.path as for 'includes'.
             # So we use absolute paths here.
-            paths = param.abspaths()
+            try:
+                paths = param.abspaths()
+            except AttributeError:
+                paths = toList(param)
+                startdir = taskParams['$startdir']
+                paths = [normpath(joinpath(startdir, x)) for x in paths]
 
         if paths:
             taskParams[paramName] = utils.uniqueListWithOrder(paths)
@@ -367,7 +372,10 @@ def handleTaskIncludesParam(taskParams, startdir):
 
     if 'includes' in taskParams:
         param = taskParams['includes']
-        includes = param.relpaths(startdir)
+        try:
+            includes = param.relpaths(startdir)
+        except AttributeError:
+            includes = toList(param)
     else:
         includes = []
 

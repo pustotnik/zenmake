@@ -63,6 +63,9 @@ tasks = {
 
 buildtypes = {
     'debug' : {
-        'cxxflags' : '-O1 -g',
+        'cxxflags.select': {
+            'default' : '-O1 -g',
+            #'msvc'    : '/Od /EHsc',
+        },
     },
 }

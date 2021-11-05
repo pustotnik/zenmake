@@ -6,6 +6,8 @@
  license: BSD 3-Clause License, see LICENSE for more details.
 """
 
+from zm.pyutils import struct
+
 class AnyStrKey(object):
     """ Any amount of string keys"""
     __slots__ = ()
@@ -22,20 +24,4 @@ class AnyStrKey(object):
 
 ANYSTR_KEY = AnyStrKey()
 
-def addSelectToParams(scheme, paramNames = None):
-    """
-    Add '.select' variant to param from scheme
-    """
-
-    if paramNames is None:
-        paramNames = tuple(scheme.keys())
-
-    for name in paramNames:
-        origScheme = scheme[name]
-        scheme['%s.select' % name] = {
-            'type' : 'dict',
-            'vars' : {
-                'default' : origScheme,
-                ANYSTR_KEY : origScheme,
-            },
-        }
+ConfNode = struct('ConfNode', 'val, traits')

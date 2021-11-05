@@ -26,6 +26,7 @@ from waflib import Utils as wafutils
 from waflib.ConfigSet import ConfigSet
 from zm.pyutils import stringtype, maptype, _unicode, _encode
 from zm.error import ZenMakeError, ZenMakeProcessTimeoutExpired
+from zm.buildconf.types import ConfNode
 
 _joinpath = os.path.join
 
@@ -231,7 +232,7 @@ def substBuiltInVarsInParam(val, svars, splitListOfStrs = True, notHandled = Non
     if isinstance(val, stringtype):
         return substBuiltInVars(val, svars, notHandled = notHandled)
 
-    # This method should not create allocate new memory for existing containers
+    # This method should not allocate new memory for existing containers
     # in val if it can be avoided.
 
     extraArgs = {
@@ -266,6 +267,10 @@ def substBuiltInVarsInParam(val, svars, splitListOfStrs = True, notHandled = Non
     if isinstance(val, maptype):
         for k, v in val.items():
             val[k] = substBuiltInVarsInParam(v, **extraArgs)
+        return val
+
+    if isinstance(val, ConfNode):
+        val.val = substBuiltInVarsInParam(val.val, **extraArgs)
         return val
 
     # buildconf should not use tuples for public elements
@@ -345,20 +350,36 @@ class BuildConfFunc(object):
     Class to store a func from buildconf
     """
 
-    __slots__ = ('func', 'name', 'filepath', 'startLN')
+    __slots__ = ('func', 'name', '_filepath', '_startLN')
 
-    def __init__(self, func, filepath = None):
+    def __init__(self, func):
         self.func = func
         self.name = func.__name__
+        self._filepath = None
+        self._startLN = None
 
-        if not filepath:
+    @property
+    def filepath(self):
+        """ Get file path where the function is """
+
+        if self._filepath is None:
+            func = self.func
             # the inspect.getabsfile exists but not documented
             filepath = inspect.getsourcefile(func) or inspect.getfile(func)
+            if not os.path.isabs(filepath):
+                filepath = os.path.abspath(filepath)
+            self._filepath = filepath
 
-        if not os.path.isabs(filepath):
-            filepath = os.path.abspath(filepath)
-        self.filepath = filepath
-        self.startLN = inspect.getsourcelines(func)[1]
+        return self._filepath
+
+    @property
+    def startLN(self):
+        """ Get line number in the file where the function is """
+
+        if self._startLN is None:
+            self._startLN = inspect.getsourcelines(self.func)[1]
+
+        return self._startLN
 
     def __repr__(self):
         _repr = "%s:%s:%d" % (self.filepath, self.name, self.startLN)

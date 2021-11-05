@@ -104,7 +104,10 @@ def checkExpectedTarget(taskParams, paramName, expected):
 
 def checkExpectedSource(taskParams, paramName, expected):
     result = taskParams[paramName]
-    assert utils.toList(result[0]['paths']) == utils.toList(expected)
+    if isinstance(result, (list, tuple)):
+        if isinstance(result[0], maptype):
+            result = result[0]['paths']
+    assert utils.toList(result) == utils.toList(expected)
 
 def checkExpectedIncludes(taskParams, paramName, expected):
     result = taskParams[paramName]

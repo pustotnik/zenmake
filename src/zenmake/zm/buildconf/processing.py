@@ -18,18 +18,18 @@ from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeConfError
 from zm.pyutils import stringtype, maptype
 from zm import utils, log
-from zm.pathutils import unfoldPath, getNativePath, makePathsConf
+from zm.pathutils import unfoldPath, getNativePath, PathsParam, makePathsConf
 from zm.buildconf import loader
-from zm.buildconf.scheme import taskscheme, KNOWN_CONF_PARAM_NAMES, KNOWN_CONF_SUGAR_NAMES
+from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES, KNOWN_CONF_SUGAR_NAMES
 from zm.buildconf.sugar import applySyntacticSugar
 from zm.buildconf.paths import ConfPaths
 from zm.buildconf.expression import Expression
+from zm.buildconf.types import ConfNode
 from zm.buildconf.validator import Validator
 from zm.features import ToolchainVars
 
 joinpath = os.path.join
 abspath  = os.path.abspath
-normpath = os.path.normpath
 dirname  = os.path.dirname
 relpath  = os.path.relpath
 isabs    = os.path.isabs
@@ -40,6 +40,7 @@ toList        = utils.toList
 toListSimple  = utils.toListSimple
 substVars     = utils.substVars
 
+_SEL_SUFFIX_LEN = len(".select")
 _TOOLCHAIN_PATH_ENVVARS = frozenset(ToolchainVars.allSysVarsToSetToolchain())
 _ALL_CONF_PARAM_NAMES = list(KNOWN_CONF_PARAM_NAMES | KNOWN_CONF_SUGAR_NAMES)
 _CONF_PARAM_NAMES_FOR_BUILTIN = list(KNOWN_CONF_PARAM_NAMES - set([
@@ -48,61 +49,72 @@ _CONF_PARAM_NAMES_FOR_BUILTIN = list(KNOWN_CONF_PARAM_NAMES - set([
 _SET_KNOWN_PLATFORMS = set(KNOWN_PLATFORMS)
 
 _RE_LIB_VER = re.compile(r"^\d+(?:\.\d+)*")
-_TASKPARAMS_TOLIST_MAP = {}
 
 _exprHandler = Expression()
 
-#def _isDevVersion():
-#    """
-#    Detect if it is development version of the ZenMake
-#    """
-#    from zm import version
-#    return version.isDev()
+def _mergeDictParam(currentConf, parentConf, param):
 
-def _genTaskParamsToListMap(result):
-
-    skipNames = ('configure', 'name', 'install-files')
-    for name, scheme in taskscheme.items():
-        if name in skipNames or name.endswith('.select'):
-            continue
-        types = scheme['type']
-        if 'str' in types and 'list-of-strs' in types:
-            if name.endswith('flags'):
-                result[name] = toListSimple
-            else:
-                result[name] = toList
-
-    # Value 'None' means: don't make a list
-    result.update({
-        'name' : None,
-        'features' : toListSimple,
-        'configure' : None,
-        'install-files' : None, # all convertions are in commands install/uninstall
-    })
-    return result
-
-def convertTaskParamValue(taskParams, paramName):
-    """
-    Convert task param value to a list or to a dict (for 'source' only) with
-    correct structure where it's necessary.
-    """
-
-    paramVal = taskParams[paramName]
-
-    if paramName == 'source':
-        startdir = taskParams['$bconf'].startdir
-        taskParams[paramName] = makePathsConf(paramVal, startdir)
+    if parentConf is None:
         return
 
-    if paramName.endswith('.select'):
-        return
+    _parent = getattr(parentConf, param, {})
+    _current = getattr(currentConf, param, {})
 
-    if not _TASKPARAMS_TOLIST_MAP:
-        _genTaskParamsToListMap(_TASKPARAMS_TOLIST_MAP)
+    def _simpleMerge(new, current):
+        for curk, curv in current.items():
+            try:
+                val = new.setdefault(curk, {})
+                val.update(curv)
+            except AttributeError:
+                new[curk] = curv
+        return new
 
-    _toList = _TASKPARAMS_TOLIST_MAP.get(paramName)
-    if _toList is not None:
-        taskParams[paramName] = _toList(paramVal)
+    if param in ('buildtypes', 'tasks'):
+        _new = _parent.copy()
+
+        for curk, curv in _current.items():
+            try:
+
+                # curv == current taskParams
+
+                taskParams = _new.get(curk)
+                if taskParams is None:
+                    _new[curk] = curv
+                    continue
+
+                # gather all base param names so that:
+                # cxxflags        -> cxxflags
+                # cxxflags.select -> cxxflags
+                pnames = [ x[:-_SEL_SUFFIX_LEN] if x.endswith('.select') else x \
+                                                    for x in taskParams.keys()  ]
+
+                # merge params taking into account the *.select params from
+                # current and parent configs
+                taskParams = taskParams.copy()
+                for name in pnames:
+                    nameWithSelect = '%s.select' % name
+                    if name in curv:
+                        taskParams.pop(name, None)
+                        taskParams.pop(nameWithSelect, None)
+                        continue
+
+                    if nameWithSelect not in curv:
+                        continue
+
+                    taskParams.pop(name, None)
+                    parentValSel = taskParams.pop(nameWithSelect, {})
+                    parentValSel.update(curv[nameWithSelect])
+                    curv[nameWithSelect] = parentValSel
+
+                taskParams.update(curv)
+                _new[curk] = taskParams
+
+            except AttributeError:
+                _new[curk] = curv
+    else:
+        _new = _simpleMerge(_parent.copy(), _current)
+
+    setattr(currentConf, param, _new)
 
 class _SubstVarsResolver(object):
     """
@@ -181,21 +193,19 @@ class Config(object):
 
         self._meta.buildconffile = abspath(buildconf.__file__)
         self._meta.buildconfdir  = dirname(self._meta.buildconffile)
-
         self._svarsResolver = _SubstVarsResolver(self)
-        self._substVarsInParams()
 
-        # it must be done after substitutions
         self._makeStartDirParam()
         self._meta.rootdir = parent.rootdir if parent else self._meta.startdir
 
-        # init/merge params including values from parent Config
+        self._substVarsInParams()
 
         self._applyDefaults()
-        self._applySugar()
         self._makeBuildDirParams(clivars.get('buildroot'))
 
         self._confpaths = ConfPaths(self)
+
+        self._applySugar()
         notHandled = self._handlePrimaryBuiltInVars()
 
         self._handleFilterBuildtypeNames()
@@ -204,8 +214,7 @@ class Config(object):
         self._applyBuildType()
         self._handleBuiltInVarsAfterBuildtype(notHandled)
 
-        self._handleTaskNames() # must be called before merging
-        self._merge()
+        self._replaceParamsFromParent()
 
     def _parentConf(self):
         # pylint: disable = protected-access
@@ -214,7 +223,7 @@ class Config(object):
     def _substVarsInParams(self):
 
         buildconf = self._conf
-        foundEnvVars = set()
+        foundEnvVars = self._meta.envvars
         svarGetter = self._svarsResolver.get
 
         def apply(param):
@@ -230,6 +239,10 @@ class Config(object):
             if isinstance(param, maptype):
                 return { k:apply(param[k]) for k in param }
 
+            if isinstance(param, ConfNode):
+                param.val = apply(param.val)
+                return param
+
             return param
 
         for name in _ALL_CONF_PARAM_NAMES:
@@ -237,13 +250,13 @@ class Config(object):
             if param:
                 setattr(buildconf, name, apply(param))
 
-        self._meta.envvars.update(foundEnvVars)
-
     def _makeStartDirParam(self):
         buildconf = self._conf
         meta = self._meta
         try:
-            startdir = getNativePath(buildconf.startdir)
+            startdir = substVars(buildconf.startdir, self._svarsResolver.get,
+                                 envVars = osenv, foundEnvVars = meta.envvars)
+            startdir = getNativePath(startdir)
         except AttributeError:
             startdir = os.curdir
         meta.startdir = unfoldPath(meta.buildconfdir, startdir)
@@ -276,6 +289,78 @@ class Config(object):
         else:
             mergeBuildRoot('realbuildroot')
 
+    def _processConfTraits(self):
+
+        buildconf = self._conf
+        startdir = self.startdir
+
+        def apply(param):
+            if not param:
+                return param
+
+            if isinstance(param, (list, tuple)):
+                return [apply(x) for x in param]
+            if isinstance(param, maptype):
+                return { k:apply(param[k]) for k in param }
+
+            if isinstance(param, ConfNode):
+
+                traits = param.traits
+                value = param.val
+
+                if 'complex-path' in traits:
+                    param = apply(makePathsConf(value, startdir))
+                elif 'one-path' in traits or 'list-of-paths' in traits:
+                    if isinstance(value, bool):
+                        param = value
+                    else:
+                        kind = 'paths' if 'list-of-paths' in traits else 'path'
+                        param = PathsParam(value, startdir, kind = kind)
+                        if 'abs' in traits:
+                            param = param.abspaths() if kind == 'paths' else param.abspath()
+                elif 'str-list' in traits:
+                    param = toList(value)
+                elif 'func' in traits:
+                    param = utils.BuildConfFunc(value)
+
+                return param
+
+            return param
+
+        for name in _ALL_CONF_PARAM_NAMES:
+            param = getattr(buildconf, name, None)
+            if param:
+                setattr(buildconf, name, apply(param))
+
+    def _cleanupSelectParams(self):
+
+        buildconf = self._conf
+
+        def prepare(taskParams):
+
+            # cleanup *.select params
+            namesSel = [ x[:-_SEL_SUFFIX_LEN] for x in taskParams if x.endswith('.select')]
+            for paramName in namesSel:
+                singleVal = taskParams.pop(paramName, None)
+                if singleVal is not None:
+                    paramNameSel = '%s.select' % paramName
+                    taskParams[paramNameSel].setdefault('default', singleVal)
+
+        # tasks, buildtypes
+        for varName in ('tasks', 'buildtypes'):
+            confVar = getattr(buildconf, varName)
+            for taskParams in confVar.values():
+                if not isinstance(taskParams, maptype):
+                    # buildtypes has special key 'default'
+                    continue
+                prepare(taskParams)
+
+        # byfilter
+        for entry in buildconf.byfilter:
+            taskParams = entry.get('set')
+            if taskParams:
+                prepare(taskParams)
+
     def _postprocessTaskParams(self, tasks):
 
         # they are absolute paths
@@ -307,43 +392,38 @@ class Config(object):
                 tasks.pop(name)
             self._meta.tasknames = tuple(tasknames)
 
+    def _replaceParamsFromParent(self):
+
+        parentConf = self._parentConf()
+        if parentConf is None:
+            return
+
+        # project, general, cliopts - they are not merged and always use parent values
+        for param in ('project', 'general', 'cliopts'):
+            setattr(self._conf, param, getattr(parentConf, param))
+
     def _merge(self):
+
+        parentConf = self._parentConf()
+        if parentConf is None:
+            return
 
         mergedParams = set()
         currentConf = self._conf
-        parentConf = self._parentConf()
-
-        def mergeDictParam(currentConf, parentConf, param):
-            if parentConf is None:
-                return
-
-            _current = getattr(currentConf, param, {})
-            _parent = getattr(parentConf, param, {})
-            _new = _parent.copy()
-            for k, v in _current.items():
-                if isinstance(v, maptype):
-                    _new.setdefault(k, {})
-                    _new[k].update(v)
-                else:
-                    _new[k] = v
-
-            setattr(currentConf, param, _new)
 
         # startdir, subdirs - they are not merged
         mergedParams.update(('startdir', 'subdirs'))
 
         # project, general, cliopts - they are not merged and always use parent values
-        for param in ('project', 'general', 'cliopts'):
-            if parentConf is not None:
-                setattr(currentConf, param, getattr(parentConf, param))
-            mergedParams.add(param)
+        # see _replaceParamsFromParent
+        mergedParams.update(('project', 'general', 'cliopts'))
 
         # buildroot, realbuildroot - see _makeBuildDirParams
         mergedParams.update(('buildroot', 'realbuildroot'))
 
         # conditions, edeps
         for param in ('conditions', 'edeps'):
-            mergeDictParam(currentConf, parentConf, param)
+            _mergeDictParam(currentConf, parentConf, param)
             mergedParams.add(param)
 
         # tasks - it's not merged
@@ -351,18 +431,35 @@ class Config(object):
 
         # buildtypes, toolchains
         for param in ('buildtypes', 'toolchains'):
-            mergeDictParam(currentConf, parentConf, param)
+            _mergeDictParam(currentConf, parentConf, param)
             mergedParams.add(param)
 
         # byfilter
-        if parentConf:
-            # append the parentConf.byfilter to the front of the currentConf.byfilter
-            currentConf.byfilter[0:0] = parentConf.byfilter
+
+        # append the parentConf.byfilter to the front of the currentConf.byfilter
+        # to avoid side effects it's better to make a whole copy
+        currentConf.byfilter[0:0] = deepcopy(parentConf.byfilter)
         mergedParams.add('byfilter')
 
         #TODO: move to tests
         # check all params were processed
         assert mergedParams == KNOWN_CONF_PARAM_NAMES
+
+    def _provideMergedConfs(self):
+
+        merged = self._meta.get('confs-are-merged', False)
+        if merged:
+            return
+
+        # methods below must be called before merging
+        self._processConfTraits() # lists of flags, paths, etc.
+        self._cleanupSelectParams()
+        self._handleTaskNames()
+
+        # merge params with params from a parent Config
+        self._merge()
+
+        self._meta['confs-are-merged'] = True
 
     def _applyDefaults(self):
         """
@@ -398,25 +495,37 @@ class Config(object):
             except AttributeError:
                 _names = []
             names.extend(_names)
+
+        names = tuple(set(names))
         for name in names:
             if DEPNAME_DELIMITER in name:
                 msg = 'The %r name of a task is invalid.' % name
                 msg += 'The name cannot contain symbol %r' % DEPNAME_DELIMITER
                 raise ZenMakeConfError(msg, confpath = self.path)
-        names = tuple(set(names))
+
         self._meta.tasknames = names
 
     def _handleFilterBuildtypeNames(self):
         destPlatform = PLATFORM
         filterBuildTypes = defaultdict(set)
 
+        def getCondParam(cond, name):
+            param = cond.get(name)
+            if param is None:
+                return []
+
+            try:
+                return param.val
+            except AttributeError:
+                return param
+
         def handleCondition(entry, name):
             condition = entry.get(name, {})
             if isinstance(condition, stringtype) and condition == 'all':
                 condition = entry[name] = {}
 
-            buildtypes = toList(condition.get('buildtype', []))
-            platforms = toListSimple(condition.get('platform', []))
+            buildtypes = toList(getCondParam(condition, 'buildtype'))
+            platforms = toListSimple(getCondParam(condition, 'platform'))
 
             if buildtypes:
                 if not platforms:
@@ -748,6 +857,7 @@ class Config(object):
         Returns tuple of names.
         """
 
+        self._provideMergedConfs()
         return self._meta.tasknames
 
     @property
@@ -858,28 +968,14 @@ class Config(object):
     def conditions(self):
         """ Get conditions """
 
-        conditions = self._meta.get('conditions')
-        if conditions is not None:
-            return conditions
-
-        conditions = self._conf.conditions
-        for condition in conditions.values():
-            for param in condition:
-                if param == 'env':
-                    continue
-                if param in ('platform', 'cpu-arch'):
-                    _toList = toListSimple
-                else:
-                    _toList = toList
-                condition[param] = _toList(condition[param])
-
-        self._meta.conditions = conditions
-        return conditions
+        self._provideMergedConfs()
+        return self._conf.conditions
 
     @property
     def edeps(self):
         """ Get edeps """
 
+        self._provideMergedConfs()
         return self._conf.edeps
 
     @property
@@ -891,28 +987,22 @@ class Config(object):
 
         try:
             subdirs = self._conf.subdirs
+            if isinstance(subdirs, ConfNode):
+                subdirs = PathsParam(subdirs.val, self.startdir, kind = 'paths')
+                subdirs = subdirs.abspaths()
         except AttributeError:
             subdirs = None
 
         if not subdirs:
             subdirs = []
 
-        def fixpath(bconfdir, path):
-            path = getNativePath(path)
-            if not isabs(path):
-                path = joinpath(bconfdir, path)
-            return path
-
-        bconfdir = self.confdir
-        dirs = [fixpath(bconfdir, x) for x in subdirs]
-
-        for i, fullpath in enumerate(dirs):
+        for fullpath in subdirs:
             if not isdir(fullpath):
                 msg = "Error in the buildconf file %r:" % relpath(self.path, CWD)
-                msg += "\nDirectory %r from the 'subdirs' doesn't exist." % subdirs[i]
+                msg += "\nDirectory %r from the 'subdirs' doesn't exist." % \
+                        relpath(fullpath, CWD)
                 raise ZenMakeError(msg)
 
-        subdirs = dirs
         self._meta.subdirs = subdirs
         return subdirs
 
@@ -938,6 +1028,8 @@ class Config(object):
         if tasks is not None:
             return tasks
 
+        self._provideMergedConfs()
+
         tasks = {}
 
         for taskName in self.taskNames:
@@ -960,13 +1052,16 @@ class Config(object):
         Get 'custom' toolchains.
         """
 
-        if 'custom' in self._meta.toolchains:
-            return self._meta.toolchains.custom
+        toolchains = self._meta.get('toolchains')
+        if toolchains is not None:
+            return toolchains
+
+        self._provideMergedConfs()
 
         srcToolchains = self._conf.toolchains
         _customToolchains = AutoDict()
         for name, info in srcToolchains.items():
-            _vars = deepcopy(info) # don't change origin
+            _vars = info
             # checking of the 'kind' value is in 'configure' phase
             kind = _vars.pop('kind', None)
 
@@ -982,7 +1077,7 @@ class Config(object):
             _customToolchains[name].kind = kind
             _customToolchains[name].vars = _vars
 
-        self._meta.toolchains.custom = _customToolchains
+        self._meta.toolchains = _customToolchains
         return _customToolchains
 
 class ConfManager(object):
@@ -1023,10 +1118,6 @@ class ConfManager(object):
             raise ZenMakeError(msg)
 
         buildconf = loader.load(dirpath, filename)
-
-        #TODO: optimize to validate only if buildconf files were changed
-        #if assist.isBuildConfChanged(buildconf, clivars) or _isDevVersion():
-        #    loader.validate(buildconf)
         Validator(buildconf).run()
 
         index = len(self._orderedConfigs)

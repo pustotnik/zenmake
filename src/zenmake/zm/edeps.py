@@ -175,7 +175,7 @@ def _detectZenMakeProjectRules(depConf, buildtype):
     buildtype = depConf.get('buildtypes-map', {}).get(buildtype, buildtype)
 
     depBuildConf = buildconfLoader.load(projectRoot, bconfFilePath)
-    Validator(depBuildConf).run()
+    Validator(depBuildConf).run(checksOnly = True)
     depBConfPaths = BuildConfig(depBuildConf).confPaths
 
     depConf['$zmcachedir'] = depBConfPaths.zmcachedir

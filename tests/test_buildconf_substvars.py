@@ -94,17 +94,25 @@ def checkVars(bconf, dbgValidVals, relValidVals):
 
     buildtypes = bconf.getattr('buildtypes')[0]
 
+    def getFlags(buildtypes, buildtype):
+        cxxflags = buildtypes[buildtype]['cxxflags']
+        try:
+            cxxflags = cxxflags.val
+        except AttributeError:
+            pass
+        return cxxflags
+
     for idx in range(1, 7):
         buildtype = 'debug%d' % idx
         valid = dbgValidVals[idx-1]
         valid2 = valid.split()
-        assert buildtypes[buildtype]['cxxflags'] in (valid, valid2)
+        assert getFlags(buildtypes, buildtype) in (valid, valid2)
 
     for idx in range(1, 4):
         buildtype = 'release%d' % idx
         valid = relValidVals[idx-1]
         valid2 = valid.split()
-        assert buildtypes[buildtype]['cxxflags'] in (valid, valid2)
+        assert getFlags(buildtypes, buildtype) in (valid, valid2)
 
 def checkConfigNoEnv(bconf):
 

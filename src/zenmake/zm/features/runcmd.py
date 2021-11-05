@@ -147,9 +147,11 @@ def postConf(conf):
 
         cwd = cmdArgs.get('cwd', None)
         if cwd:
-            bconf = taskParams['$bconf']
-            startdir = cmdArgs.get('startdir', bconf.startdir)
-            cwd = PathsParam(cwd, startdir, rootdir).abspath()
+            try:
+                cwd = cwd.abspath()
+            except AttributeError:
+                startdir = cmdArgs.get('startdir', taskParams['$bconf'].startdir)
+                cwd = PathsParam(cwd, startdir, rootdir).abspath()
         else:
             cwd = btypeDir
         cmdTaskArgs['cwd'] = cwd
