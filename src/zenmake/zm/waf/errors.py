@@ -8,7 +8,7 @@
 
 from waflib import Errors as WafErrors
 from waflib.Build import inst as InstallTask
-from zm.utils import asmethod
+from zm.pyutils import asmethod
 from zm import error
 
 _TRACEBACK_BEGIN = 'Traceback'

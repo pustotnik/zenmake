@@ -11,8 +11,8 @@ import sys
 from waflib import Utils
 from waflib.TaskGen import after_method, feature
 from waflib.Tools import ccroot as wafccroot # don't remove
-
-from zm.utils import asmethod, toList, toListSimple, uniqueListWithOrder
+from zm.pyutils import asmethod
+from zm.utils import toList, toListSimple, uniqueListWithOrder
 from zm.features import TASK_TARGET_FEATURES_TO_LANG
 from zm.waf.assist import makeTargetRealName
 

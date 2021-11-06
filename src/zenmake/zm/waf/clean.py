@@ -7,7 +7,7 @@
 """
 
 from waflib.Build import CleanContext as WafCleanContext
-from zm.utils import asmethod
+from zm.pyutils import asmethod
 from zm.edeps import produceExternalDeps
 
 @asmethod(WafCleanContext, 'execute')

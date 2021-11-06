@@ -10,7 +10,8 @@ import re
 
 from waflib import Node as WafNode
 from waflib.Utils import is_win32 as _isWindows
-from zm.utils import asmethod, toListSimple
+from zm.pyutils import asmethod
+from zm.utils import toListSimple
 from zm import error
 
 _antReCache = {}

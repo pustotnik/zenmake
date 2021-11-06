@@ -12,7 +12,8 @@ import sys
 from waflib.ConfigSet import ConfigSet
 from waflib.Build import BuildContext as WafBuildContext, inst as InstallTask
 from zm.constants import DEFAULT_BUILDWORKNAME
-from zm.utils import asmethod, Timer
+from zm.pyutils import asmethod
+from zm.utils import Timer
 from zm import log, db, error
 from zm.waf.assist import makeTasksCachePath
 from zm.edeps import produceExternalDeps

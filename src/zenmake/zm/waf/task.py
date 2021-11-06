@@ -10,7 +10,7 @@ import os
 
 from waflib import Task as WafTask, Node as WafNode
 from zm.constants import TASK_TARGET_KINDS, SYSTEM_LIB_PATHS
-from zm.utils import asmethod
+from zm.pyutils import asmethod
 from zm import log, error
 from zm.features import TASK_TARGET_FEATURES_TO_LANG
 

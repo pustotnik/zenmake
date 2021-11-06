@@ -7,7 +7,7 @@
 """
 
 from waflib import TaskGen as WafTaskGen
-from zm.utils import asmethod
+from zm.pyutils import asmethod
 from zm import error
 
 @asmethod(WafTaskGen.task_gen, 'get_hook')

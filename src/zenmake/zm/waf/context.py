@@ -15,7 +15,8 @@ from waflib.Context import Context as WafContext
 from zm import ZENMAKE_DIR, WAF_DIR
 from zm.autodict import AutoDict as _AutoDict
 from zm import error, log
-from zm.utils import toList, asmethod
+from zm.pyutils import asmethod
+from zm.utils import toList
 from zm.waf.assist import loadZenMakeMetaFile
 from zm.waf import wscriptimpl
 

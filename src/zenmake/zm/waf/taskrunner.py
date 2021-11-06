@@ -7,7 +7,8 @@
 """
 
 from waflib import Runner as WafRunner
-from zm.utils import asmethod, SafeCounter
+from zm.pyutils import asmethod
+from zm.utils import SafeCounter
 
 @asmethod(WafRunner.Parallel, '__init__', wrap = True, callOrigFirst = True)
 def _parallelInit(self, *_, **__):

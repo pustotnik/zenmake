@@ -114,41 +114,6 @@ def distroInfo():
 
     return result
 
-def asmethod(cls, methodName = None, wrap = False, **kwargs):
-    """
-    Decorator to replace/attach/wrap method to any existing class
-    """
-
-    saveOrigAs = kwargs.get('saveOrigAs')
-
-    def decorator(func):
-        funcName = methodName if methodName else func.__name__
-        if wrap:
-            callOrigFirst = kwargs.get('callOrigFirst', True)
-            origMethod = getattr(cls, funcName)
-
-            if callOrigFirst:
-                def execute(*args, **kwargs):
-                    retval = origMethod(*args, **kwargs)
-                    func(*args, **kwargs)
-                    return retval
-            else:
-                def execute(*args, **kwargs):
-                    func(*args, **kwargs)
-                    return origMethod(*args, **kwargs)
-
-            setattr(cls, funcName, execute)
-        else:
-            if saveOrigAs:
-                origMethod = getattr(cls, funcName)
-            setattr(cls, funcName, func)
-
-        if saveOrigAs:
-            setattr(cls, saveOrigAs, origMethod)
-        return func
-
-    return decorator
-
 md5                = wafutils.md5
 readFile           = wafutils.readf
 hashOrdObj         = wafutils.h_list
