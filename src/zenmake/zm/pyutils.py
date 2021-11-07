@@ -107,3 +107,37 @@ def asmethod(cls, methodName = None, wrap = False, **kwargs):
         return func
 
     return decorator
+
+_NOT_FOUND = object()
+
+class cachedprop(object):
+    """
+    Decorator for cached read-only properties.
+
+    Anyway, the standard implementation of @cached_property from python >=3.8
+    has some perf problem with locks: https://bugs.python.org/issue43468
+    This implementation doesn't use locks and it is thread safe while
+    implementation of cached property method is thread safe.
+    """
+
+    def __init__(self, fget):
+        self.fget     = fget
+        self.attrname = fget.__name__
+        self.__doc__  = fget.__doc__
+
+    def __get__(self, obj, owner = None):
+
+        if obj is None:
+            return self
+
+        try:
+            cache = obj.__dict__
+        except AttributeError:
+            msg = "No '__dict__' attribute on %r " % type(obj).__name__
+            raise TypeError(msg) from None
+
+        value = cache.get(self.attrname, _NOT_FOUND)
+        if value is _NOT_FOUND:
+            value = cache[self.attrname] = self.fget(obj)
+
+        return value

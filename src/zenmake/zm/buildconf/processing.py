@@ -16,7 +16,7 @@ from zm.constants import PLATFORM, KNOWN_PLATFORMS, DEPNAME_DELIMITER
 from zm.constants import CWD, INVALID_BUILDTYPES, CONFTEST_DIR_PREFIX
 from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeConfError
-from zm.pyutils import stringtype, maptype
+from zm.pyutils import stringtype, maptype, cachedprop
 from zm import utils, log
 from zm.pathutils import unfoldPath, getNativePath, PathsParam, makePathsConf
 from zm.buildconf import loader
@@ -170,8 +170,6 @@ class Config(object):
     """
 
     # pylint: disable = too-many-public-methods
-
-    __slots__ = '_conf', '_meta', '_confpaths', '_parent', '_svarsResolver'
 
     def __init__(self, buildconf, clivars = None, parent = None):
         """
@@ -850,7 +848,7 @@ class Config(object):
         """ Get parent Config. Returns None if no parent"""
         return self._parent
 
-    @property
+    @cachedprop
     def taskNames(self):
         """
         Get all task names from the current config.
@@ -870,13 +868,9 @@ class Config(object):
         """ Get project version """
         return self._conf.project['version']
 
-    @property
+    @cachedprop
     def defaultLibVersion(self):
         """ Get default lib version """
-
-        version = self._meta.get('default-lib-version')
-        if version is not None:
-            return version
 
         version = _RE_LIB_VER.findall(self.projectVersion)
         if version:
@@ -884,7 +878,6 @@ class Config(object):
         else:
             version = ''
 
-        self._meta['default-lib-version'] = version
         return version
 
     @property
@@ -928,18 +921,14 @@ class Config(object):
         """ Get list of used env vars in the buildconf """
         return self._meta.envvars
 
-    @property
+    @cachedprop
     def defaultBuildType(self):
         """ Get calculated default build type """
 
+        self._handleDefaultBuildType()
         buildtypes = self._meta.buildtypes
-        default = buildtypes.get('default')
-        if default is None:
-            self._handleDefaultBuildType()
-            assert 'default' in buildtypes
-            default = buildtypes.default
-
-        return default
+        assert 'default' in buildtypes
+        return buildtypes.default
 
     @property
     def selectedBuildType(self):
@@ -964,26 +953,23 @@ class Config(object):
         """ Get general features """
         return self._conf.general
 
-    @property
+    @cachedprop
     def conditions(self):
         """ Get conditions """
 
         self._provideMergedConfs()
         return self._conf.conditions
 
-    @property
+    @cachedprop
     def edeps(self):
         """ Get edeps """
 
         self._provideMergedConfs()
         return self._conf.edeps
 
-    @property
+    @cachedprop
     def subdirs(self):
         """ Get correct 'subdirs' from the buildconf """
-
-        if 'subdirs' in self._meta:
-            return self._meta.subdirs
 
         try:
             subdirs = self._conf.subdirs
@@ -1003,30 +989,25 @@ class Config(object):
                         relpath(fullpath, CWD)
                 raise ZenMakeError(msg)
 
-        self._meta.subdirs = subdirs
         return subdirs
 
-    @property
+    @cachedprop
     def supportedBuildTypes(self):
         """ Get calculated list of supported build types """
 
+        self._gatherAllBuildTypeNames()
         buildtypes = self._meta.buildtypes
-        if 'allnames' not in buildtypes:
-            self._gatherAllBuildTypeNames()
-            assert 'allnames' in buildtypes
+        assert 'allnames' in buildtypes
 
         return buildtypes.allnames
 
-    @property
+    @cachedprop
     def tasks(self):
         """
         Get all build tasks
         """
 
         buildtype = self.selectedBuildType
-        tasks = self._meta.tasks.get(buildtype)
-        if tasks is not None:
-            return tasks
 
         self._provideMergedConfs()
 
@@ -1043,18 +1024,13 @@ class Config(object):
         self._handleFilterTasks(buildtype, tasks)
         self._postprocessTaskParams(tasks)
 
-        self._meta.tasks[buildtype] = tasks
         return tasks
 
-    @property
+    @cachedprop
     def customToolchains(self):
         """
         Get 'custom' toolchains.
         """
-
-        toolchains = self._meta.get('toolchains')
-        if toolchains is not None:
-            return toolchains
 
         self._provideMergedConfs()
 
@@ -1077,7 +1053,6 @@ class Config(object):
             _customToolchains[name].kind = kind
             _customToolchains[name].vars = _vars
 
-        self._meta.toolchains = _customToolchains
         return _customToolchains
 
 class ConfManager(object):
