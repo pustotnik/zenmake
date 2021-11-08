@@ -19,9 +19,9 @@ def testZmCache():
 
     ctx = WafContext(run_dir = os.getcwd())
 
-    cache = ctx.zmcache()
+    cache = ctx.zmcache
     assert isinstance(cache, maptype)
     assert not cache
 
     cache['ttt'] = 'test val'
-    assert ctx.zmcache()['ttt'] == cache['ttt']
+    assert ctx.zmcache['ttt'] == cache['ttt']

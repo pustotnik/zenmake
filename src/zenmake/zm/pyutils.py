@@ -81,12 +81,19 @@ def asmethod(cls, methodName = None, wrap = False, **kwargs):
     saveOrigAs = kwargs.get('saveOrigAs')
 
     def decorator(func):
-        funcName = methodName if methodName else func.__name__
-        if wrap:
-            callOrigFirst = kwargs.get('callOrigFirst', True)
+
+        if isinstance(func, cachedprop):
+            if methodName:
+                func.attrname = methodName
+            funcName = func.attrname
+        else:
+            funcName = methodName if methodName else func.__name__
+
+        if wrap or saveOrigAs:
             origMethod = getattr(cls, funcName)
 
-            if callOrigFirst:
+        if wrap:
+            if kwargs.get('callOrigFirst', True):
                 def execute(*args, **kwargs):
                     retval = origMethod(*args, **kwargs)
                     func(*args, **kwargs)
@@ -98,8 +105,6 @@ def asmethod(cls, methodName = None, wrap = False, **kwargs):
 
             setattr(cls, funcName, execute)
         else:
-            if saveOrigAs:
-                origMethod = getattr(cls, funcName)
             setattr(cls, funcName, func)
 
         if saveOrigAs:
@@ -113,6 +118,7 @@ _NOT_FOUND = object()
 class cachedprop(object):
     """
     Decorator for cached read-only properties.
+    Notice that it cannot be used with __slots__.
 
     Anyway, the standard implementation of @cached_property from python >=3.8
     has some perf problem with locks: https://bugs.python.org/issue43468

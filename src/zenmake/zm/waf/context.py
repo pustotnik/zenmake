@@ -43,6 +43,7 @@ _cache = {}
 
 @asmethod(WafContext, '__init__', wrap = True, callOrigFirst = False)
 def _ctxInit(self, **kwargs):
+    self.zmcache = _AutoDict()
     self.bconfManager = kwargs.get('bconfManager')
 
 @asmethod(WafContext, 'zmMetaConf')
@@ -58,22 +59,11 @@ def _getZmMetaConf(self):
 def _getBuildConf(self, pathNode):
     return self.bconfManager.config(pathNode.abspath())
 
-@asmethod(WafContext, 'zmcache')
-def _getLocalCache(self):
-    #pylint: disable=protected-access
-    try:
-        return self._zmcache
-    except AttributeError:
-        pass
-
-    self._zmcache = _AutoDict()
-    return self._zmcache
-
 @asmethod(WafContext, 'recurse')
 def _ctxRecurse(self, dirs, name = None, mandatory = True, once = True, encoding = None):
     #pylint: disable=too-many-arguments,unused-argument
 
-    cache = self.zmcache().recurse
+    cache = self.zmcache.recurse
 
     for dirpath in toList(dirs):
         if not isabspath(dirpath):
@@ -113,7 +103,7 @@ def _ctxRecurse(self, dirs, name = None, mandatory = True, once = True, encoding
 @asmethod(WafContext, 'getPathNode')
 def _getPathNode(self, path):
 
-    cache = self.zmcache().ctxpath
+    cache = self.zmcache.pathnodes
     node = cache.get(path)
     if node is not None:
         return node
@@ -125,15 +115,15 @@ def _getPathNode(self, path):
 @asmethod(WafContext, 'getStartDirNode')
 def _getStartDirNode(self, startdir):
 
-    cache = self.zmcache().startdirpath
+    cache = self.zmcache.pathnodes
     node = cache.get(startdir)
     if node is not None:
         return node
 
     rootdir = self.bconfManager.root.rootdir
-    path = normpath(joinpath(rootdir, startdir))
-    node = self.root.make_node(path)
-    cache[path] = node
+    fullpath = normpath(joinpath(rootdir, startdir))
+    node = self.root.make_node(fullpath)
+    cache[startdir] = cache[fullpath] = node
     return node
 
 @asmethod(WafContext, 'startMsg')

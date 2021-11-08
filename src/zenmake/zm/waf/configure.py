@@ -979,9 +979,8 @@ class ConfigurationContext(WafConfContext):
         # store necessary info
         self.store()
 
-        instanceCache = self.zmcache()
-        bconfPathsAdded = instanceCache.get('confpaths-added-to-monit', False)
-        if not bconfPathsAdded:
+        instanceCache = self.zmcache
+        if not instanceCache.get('confpaths-added-to-monit', False):
             self.monitFiles.extend([x.path for x in self.bconfManager.configs])
             instanceCache['confpaths-added-to-monit'] = True
 
