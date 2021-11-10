@@ -16,7 +16,7 @@ from zm.constants import PLATFORM, KNOWN_PLATFORMS, DEPNAME_DELIMITER
 from zm.constants import CWD, INVALID_BUILDTYPES, CONFTEST_DIR_PREFIX
 from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeConfError
-from zm.pyutils import stringtype, maptype, cachedprop
+from zm.pyutils import stringtype, maptype, cachedprop, cached
 from zm import utils, log
 from zm.pathutils import unfoldPath, getNativePath, PathsParam, makePathsConf
 from zm.buildconf import loader
@@ -443,11 +443,8 @@ class Config(object):
         # check all params were processed
         assert mergedParams == KNOWN_CONF_PARAM_NAMES
 
+    @cached('_cache')
     def _provideMergedConfs(self):
-
-        merged = self._meta.get('confs-are-merged', False)
-        if merged:
-            return
 
         # methods below must be called before merging
         self._processConfTraits() # lists of flags, paths, etc.
@@ -456,8 +453,6 @@ class Config(object):
 
         # merge params with params from a parent Config
         self._merge()
-
-        self._meta['confs-are-merged'] = True
 
     def _applyDefaults(self):
         """

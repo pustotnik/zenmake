@@ -25,6 +25,7 @@ _SYS_STATES = (
 
 _exprHandler = Expression()
 
+# module local cache
 _local = {}
 
 def _getReadyConditions(bconf):
@@ -117,7 +118,7 @@ def _tryToSelect(bconf, condName, taskParams, paramName):
     return True
 
 def clearLocalCache():
-    """ Clear local cache. It's mostly for tests """
+    """ Clear module local cache. It's mostly for tests """
     _local.clear()
 
 def handleOneTaskParamSelect(bconf, taskParams, paramName):

@@ -10,29 +10,14 @@
 
 import os
 
-from zm.autodict import AutoDict as _AutoDict
-from zm.pyutils import struct
+from zm.pyutils import struct, cached
 from zm.pypkg import PkgPath
 from zm.utils import loadPyModule
 from zm.error import ZenMakeError
 
 # private cache
-_cache = _AutoDict()
-
-def _cached(cacheName):
-    """ Decorator to use private cache """
-
-    def decorator(method):
-        def execute():
-            _vars = _cache.get(cacheName)
-            if _vars:
-                return _vars
-            _vars = method()
-            _cache[cacheName] = _vars
-            return _vars
-        return execute
-
-    return decorator
+_cache = {}
+_local = {}
 
 #######################################################################
 ## Base
@@ -40,7 +25,7 @@ def _cached(cacheName):
 MODULE_NAME_PREFIX = __name__[0:__name__.rfind('.') + 1]
 CURRENT_MODULE_NAME = __name__[__name__.rfind('.') + 1:]
 
-@_cached('module-names')
+@cached(_cache)
 def _allModuleNames():
     """ Return list of all existent module names """
 
@@ -50,7 +35,7 @@ def _allModuleNames():
     names = [ x for x in names if x not in ('__init__', CURRENT_MODULE_NAME) ]
     return names
 
-@_cached('init-modules')
+@cached(_cache)
 def _getInitModules():
 
     names = _allModuleNames()
@@ -176,11 +161,8 @@ class FuncMeta(object):
     def __ge__(self, other):
         return self == other or self > other
 
+@cached(_cache)
 def _initHooks():
-
-    ready = _cache.get('hooks-are-ready')
-    if ready:
-        return
 
     import zm.waf.wscriptimpl as wscript
 
@@ -211,8 +193,6 @@ def _initHooks():
             post = HooksInfo( funcs = [], sorted = set() )
         )
         setattr(wscript, cmd, wrap(cmdFunc, cmd))
-
-    _cache['hooks-are-ready'] = True
 
 def _hookDecorator(func, hooksInfo, beforeModules, afterModules):
 
@@ -273,13 +253,13 @@ def loadFeatures(tasksList):
 
     _initHooks()
 
-    modules = _cache.setdefault('feature-modules', {})
+    modules = _local.setdefault('feature-modules', {})
     allModuleNames = set(_allModuleNames())
 
-    detectFeaturesFuncs = _cache.get('detect-features-funcs')
+    detectFeaturesFuncs = _local.get('detect-features-funcs')
     if not detectFeaturesFuncs:
         detectFeaturesFuncs = _getFeatureDetectFuncs()
-        _cache['detect-features-funcs'] = detectFeaturesFuncs
+        _local['detect-features-funcs'] = detectFeaturesFuncs
 
     # gather unique features
     features = set()
@@ -303,21 +283,21 @@ def loadFeatures(tasksList):
         module = loadPyModule(moduleName, withImport = True)
         modules[feature] = module
 
-    _cache['features-are-loaded'] = True
+    _local['features-are-loaded'] = True
 
 def getLoadedFeatures():
     """
     Get names of loaded features
     """
 
-    return tuple(_cache.get('feature-modules', {}).keys())
+    return tuple(_local.get('feature-modules', {}).keys())
 
 def areFeaturesLoaded():
     """
     Return True if loadFeatures was called at least one time
     """
 
-    return _cache.get('features-are-loaded', False)
+    return _local.get('features-are-loaded', False)
 
 class ConfValidation(object):
     """
@@ -361,7 +341,7 @@ class ToolchainVars(object):
     __slots__ = ()
 
     @staticmethod
-    @_cached('all-sysenv-flagvars')
+    @cached(_cache)
     def allSysFlagVars():
         """
         For all toolchains return tuple of all env flag variables that have effect
@@ -374,7 +354,7 @@ class ToolchainVars(object):
         return tuple(set(_vars))
 
     @staticmethod
-    @_cached('all-cfgenv-flagvars')
+    @cached(_cache)
     def allCfgFlagVars():
         """
         For all toolchains return tuple of all WAF ConfigSet flag variables
@@ -415,29 +395,27 @@ class ToolchainVars(object):
         return TOOLCHAIN_VARS[lang]['cfgenv-var']
 
     @staticmethod
-    @_cached('all-sysvars-to-set-toolchain')
+    @cached(_cache)
     def allSysVarsToSetToolchain():
         """
         Return combined tuple of all sys environment variables to set toolchain.
         """
 
-        #pylint: disable = consider-using-generator
         # We need to convert list into tuple to have guarantee that returned
         # value from cache (see _cached) will not be changed.
 
-        return tuple([ x['sysenv-var'] for x in TOOLCHAIN_VARS.values() ])
+        return tuple(x['sysenv-var'] for x in TOOLCHAIN_VARS.values())
 
     @staticmethod
-    @_cached('all-cfgvars-to-set-toolchain')
+    @cached(_cache)
     def allCfgVarsToSetToolchain():
         """
         Return combined tuple of all WAF ConfigSet variables to set/get toolchain.
         """
 
-        #pylint: disable = consider-using-generator
         # We need to convert list into tuple to have guarantee that returned
         # value from cache (see _cached) will not be changed.
-        return tuple([ x['cfgenv-var'] for x in TOOLCHAIN_VARS.values() ])
+        return tuple(x['cfgenv-var'] for x in TOOLCHAIN_VARS.values())
 
     @staticmethod
     def langBySysVarToSetToolchain(var):
