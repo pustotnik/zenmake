@@ -115,16 +115,13 @@ class TestSuite(object):
             'verboseBuild' : None,
             'withTests': 'no',
             'runTests': 'none',
-            'bindir' : None,
-            'libdir' : None,
-            'prefix' : cli.DEFAULT_PREFIX,
             'buildroot' : None,
             'forceExternalDeps' : False,
             'cacheCfgActionResults' : False,
         }
 
         CMDNAME = 'build'
-        CMNOPTS = ['--color=auto', '--prefix=' + cli.DEFAULT_PREFIX]
+        CMNOPTS = ['--color=auto',]
 
         checks = [
             dict(

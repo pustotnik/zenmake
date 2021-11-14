@@ -240,17 +240,17 @@ config.options = [
     ),
     Option(
         names = ['--prefix'],
-        commands = ['configure', 'build', 'install', 'uninstall'],
+        commands = ['configure', 'install', 'uninstall'],
         help = 'installation prefix',
     ),
     Option(
         names = ['--bindir'],
-        commands = ['configure', 'build', 'install', 'uninstall'],
+        commands = ['configure', 'install', 'uninstall'],
         help = 'installation bin directory [ ${PREFIX}/bin ]',
     ),
     Option(
         names = ['--libdir'],
-        commands = ['configure', 'build', 'install', 'uninstall'],
+        commands = ['configure', 'install', 'uninstall'],
         help = 'installation lib directory [ ${PREFIX}/lib[64] ]',
     ),
     Option(
