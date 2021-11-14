@@ -972,8 +972,8 @@ class ConfigurationContext(WafConfContext):
         WafContext.Context.execute(self)
 
         if self.zmdepconfs:
-            # insert into 'libs'/'stlibs' after conf actions to avoid problems
-            # with some cont tests (check-libs)
+            # insert libs/stlibs into params 'libs'/'stlibs' after conf actions
+            # to avoid problems with some cont tests (check-libs)
             edeps.applyExternalDepLibsToTasks(self.allOrderedTasks)
 
         # store necessary info

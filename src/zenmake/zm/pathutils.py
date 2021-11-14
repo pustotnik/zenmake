@@ -324,7 +324,7 @@ def makePathsConf(param, startdir):
         param = [param]
     else:
         # avoid conversion of already processed param
-        if isinstance(param[0], maptype) and '*ready*' in param[0]:
+        if isinstance(param[0], maptype) and '$ready' in param[0]:
             return param
 
         items = []
@@ -357,7 +357,7 @@ def makePathsConf(param, startdir):
         # gather all paths in one item
         result.append({ 'startdir' : startdir, 'paths' : paths })
 
-    result[0]['*ready*'] = 1 # marker about finished work
+    result[0]['$ready'] = 1 # marker about finished work
     return result
 
 def _getNodesFromPathPatterns(ctx, param, startNode, withDirs,
