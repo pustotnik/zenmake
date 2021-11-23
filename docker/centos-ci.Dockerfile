@@ -135,13 +135,19 @@ USER root
 COPY --from=dlang --chown=$USERNAME:$USERNAME $DLANG_DIRPATH $DLANG_DIRPATH
 
 # global vars
+
+# prepare to avoid implication of empty vars, otherwise empty *LIBRARY_PATH
+# will be considered as current (".") path by a system.
+RUN if [[ -n "$LIBRARY_PATH" ]]; then LIBRARY_PATH=":$LIBRARY_PATH"; fi;\
+    if [[ -n "$LD_LIBRARY_PATH" ]]; then LD_LIBRARY_PATH=":$LD_LIBRARY_PATH"; fi
+
 ARG DMD_VERNAME
 ARG LDC_VERNAME
 
 # dmd
 ENV PATH="$DMD_PATH/$DMD_VERNAME/linux/bin64:$PATH"
-ENV LIBRARY_PATH="$DMD_PATH/$DMD_VERNAME/linux/lib64:$LIBRARY_PATH"
-ENV LD_LIBRARY_PATH="$DMD_PATH/$DMD_VERNAME/linux/lib64:$LD_LIBRARY_PATH"
+ENV LIBRARY_PATH="$DMD_PATH/$DMD_VERNAME/linux/lib64$LIBRARY_PATH"
+ENV LD_LIBRARY_PATH="$DMD_PATH/$DMD_VERNAME/linux/lib64$LD_LIBRARY_PATH"
 
 # ldc
 ENV PATH="$LDC_PATH/$LDC_VERNAME/bin:$PATH"
