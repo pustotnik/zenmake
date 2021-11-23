@@ -555,6 +555,27 @@ def setEnvInstallDirPaths(env, clivars):
         if val:
             env[name.upper()] = val
 
+def addRTLibPathToOSEnv(path, osenv):
+    """
+    Add runtime lib path to OS environment depending on type of OS.
+    Returns the osenv parameter.
+    """
+
+    def add(osenv, envname, val):
+        paths = osenv.get(envname, '')
+        if paths:
+            paths = os.path.pathsep + paths
+        osenv[envname] = val + paths
+
+    if PLATFORM == 'windows':
+        add(osenv, 'PATH', path)
+    else:
+        add(osenv, 'LD_LIBRARY_PATH', path)
+        if PLATFORM == 'darwin':
+            add(osenv, 'DYLD_LIBRARY_PATH', path)
+
+    return osenv
+
 def mksymlink(src, dst, force = True):
     """
     Make symlink, force delete if destination exists already

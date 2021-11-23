@@ -187,5 +187,5 @@ buildtypes = {
 }
 
 byfilter = [
-    { 'for' : 'all', 'set' : { 'rpath' : '.', } },
+    #{ 'for' : 'all', 'set' : { 'rpath' : '.', } },
 ]

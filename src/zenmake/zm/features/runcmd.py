@@ -17,7 +17,7 @@ from waflib import Task
 from zm.constants import PLATFORM, EXE_FILE_EXTS, PYTHON_EXE
 from zm.pyutils import maptype, stringtype
 from zm import log, error
-from zm.utils import cmdHasShellSymbols, substVars, substBuiltInVars
+from zm.utils import cmdHasShellSymbols, substVars, substBuiltInVars, addRTLibPathToOSEnv
 from zm.pathutils import PathsParam
 from zm.features import postcmd
 
@@ -278,9 +278,11 @@ def _makeCmdRuleArgs(tgen):
         return None
 
     ruleArgs = cmdArgs.copy()
+    realTarget = zmTaskParams['$real.target']
 
     env = tgen.env.derive()
     environ = (env.env or os.environ).copy()
+    addRTLibPathToOSEnv(os.path.dirname(realTarget), environ)
     environ.update(ruleArgs.pop('env', {}))
     env.env = environ
 
@@ -299,7 +301,7 @@ def _makeCmdRuleArgs(tgen):
         ruleArgs['deep_inputs'] = True
 
     if not cmd and zmTaskParams['$runnable']:
-        cmd = zmTaskParams['$real.target']
+        cmd = realTarget
 
     if not cmd:
         msg = 'Task %r has not runnable command: %r.' % (tgen.name, cmd)
