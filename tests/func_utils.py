@@ -57,6 +57,7 @@ def getZmExecutables():
     zmExes['normal'] = [PYTHON_EXE, ZM_BIN]
 
     cmd = zmExes['normal'] + ['zipapp', '--destdir', tmpdir]
+    # pylint: disable = consider-using-with
     devnull = open(os.devnull, 'w')
     subprocess.call(cmd, stdout = devnull)
     assert isfile(zipAppFile)
@@ -445,7 +446,7 @@ def gatherEventsFromOutput(output):
             continue
 
         terminators = [r"^Waf:\s+"]
-        if isWafTaskStarting or any([ bool(re.match(expr, line)) for expr in terminators ]):
+        if isWafTaskStarting or any(bool(re.match(expr, line)) for expr in terminators):
             continue
 
         cmdOutput.append(line)

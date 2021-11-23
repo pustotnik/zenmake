@@ -178,7 +178,7 @@ def _makeCacheKey(prefix, args, kwargs, kwargsmark = (object(),), fasttypes = (i
 
 class cached(object):
     """
-    Decoarator to cache a result of a function/method. Sometimes called "memoize".
+    Decorator to cache a result of a function/method. Sometimes called "memoize".
     Similar to @cache from python >= 3.9 but allows to set custom cache holder
     and doesn't keep custom cache holder for object methods 'forever'.
     """

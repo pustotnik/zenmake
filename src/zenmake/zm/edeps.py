@@ -176,6 +176,8 @@ def _detectZenMakeProjectRules(depConf, buildtype):
 
     depBuildConf = buildconfLoader.load(projectRoot, bconfFilePath)
     Validator(depBuildConf).run(checksOnly = True)
+    # This call can be optimized because it needs only confPaths here
+    # but it doesn't seem that it makes noticeable performance regression
     depBConfPaths = BuildConfig(depBuildConf).confPaths
 
     depConf['$zmcachedir'] = depBConfPaths.zmcachedir

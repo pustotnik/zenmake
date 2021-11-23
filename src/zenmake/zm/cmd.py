@@ -9,7 +9,7 @@
 from zm import log
 
 class Command(object):
-    """ Base class for command out of waf wscript """
+    """ Base class for a command outside of waf wscript """
 
     COLOR = log.colors('NORMAL')
 
