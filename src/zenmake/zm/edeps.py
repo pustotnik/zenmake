@@ -675,9 +675,7 @@ def _runRule(ctx, rule):
     cmd = rule['cmd']
     env = dict(os.environ)
     if depType == 'zenmake':
-        if 'ZENMAKE_ON_TTY' not in env:
-            onTTY = sys.stderr.isatty() or sys.stdout.isatty()
-            env['ZENMAKE_ON_TTY'] = '1' if onTTY else '0'
+        cmd += ' --color %s' % ('yes' if log.colorsEnabled() else 'no')
         if _local.get('configure-cmd-was-called', False):
             # optimization: avoid needless work to autodetect running of 'configure'
             env['ZENMAKE_AUTOCONFIG'] = 'false'

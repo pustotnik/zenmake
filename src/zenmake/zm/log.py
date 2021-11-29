@@ -10,7 +10,6 @@ import os
 import sys
 from waflib import Logs
 from zm.constants import PLATFORM
-from zm.utils import envValToBool
 
 if not Logs.log:
     Logs.init_log() # pragma: no cover
@@ -35,17 +34,13 @@ def enableColorsByCli(colorArg):
 
     setting = {'yes' : 2, 'auto' : 1, 'no' : 0}[colorArg]
     if setting == 1:
-        onTTY = os.environ.get('ZENMAKE_ON_TTY')
-        if onTTY:
-            onTTY = envValToBool(onTTY)
-        else:
-            onTTY = sys.stderr.isatty() or sys.stdout.isatty()
-        if not onTTY:
+        atTTY = sys.stderr.isatty() or sys.stdout.isatty()
+        if not atTTY:
             setting = 0
 
     if setting == 1:
         defaultTerm = 'dumb'
-        if PLATFORM == 'windows' and os.name != 'java':
+        if PLATFORM in ('windows', 'msys') and os.name != 'java':
             defaultTerm = ''
         if os.environ.get('TERM', defaultTerm) in ('dumb', 'emacs'):
             setting = 0
