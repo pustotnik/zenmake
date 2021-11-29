@@ -74,7 +74,7 @@ class TestFeatureRunCmd(object):
         cmdLine = ['build']
         env = { 'RUN_FAILED': '1' }
         runZm(self, cmdLine, env)
-        assert self.zm['exitcode'] != 0
+        assert self.zmresult.exitcode != 0
 
 @pytest.mark.usefixtures("unsetEnviron")
 class TestFeatureTest(object):

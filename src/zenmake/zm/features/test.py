@@ -168,6 +168,7 @@ def preBuild(bld):
 
     # use tasks from cache db, not from bconf
     tasks = bld.zmtasks
+    testTaskNames = []
 
     _shared.testsBuilt = False
     for params in tasks.values():
@@ -182,6 +183,12 @@ def preBuild(bld):
         params['features'] = [ x for x in features if x != 'runcmd' ]
 
         _shared.testsBuilt = True
+        testTaskNames.append(params['name'])
+
+    if not _shared.withTests:
+        for name in testTaskNames:
+            tasks.pop(name, None)
+        bld.zmOrdTaskNames = [x for x in bld.zmOrdTaskNames if x not in testTaskNames]
 
 @postcmd('build')
 def postBuild(bld):

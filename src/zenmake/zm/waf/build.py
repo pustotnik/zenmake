@@ -81,7 +81,7 @@ def _loadTasks(self):
     cachePath = makeTasksCachePath(cachedir, buildtype)
 
     self.zmtasks = {}
-    self.zmOrderedTaskNames = tuple()
+    self.zmOrdTaskNames = tuple()
     self.zmdepconfs = {}
 
     if self.cmd == 'clean':
@@ -104,7 +104,7 @@ def _loadTasks(self):
         env.table = taskenvs[taskVariant]
         self.all_envs[taskVariant] = env
 
-    self.zmOrderedTaskNames = tuple(tasksData['ordered-tasknames'])
+    self.zmOrdTaskNames = tuple(tasksData['ordered-tasknames'])
     self.zmdepconfs = tasksData['depconfs']
 
 @asmethod(WafBuildContext, 'init_dirs', wrap = True, callOrigFirst = True)

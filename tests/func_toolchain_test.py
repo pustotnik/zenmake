@@ -89,7 +89,7 @@ class TestToolchain(object):
         env = { TOOLCHAN_TO_ENVVAR[toolchain] : toolchain }
         cmdLine = ['build', '-B']
         assert runZm(self, cmdLine, env)[0] == 0
-        assert "Autodetecting toolchain" not in self.zm['stdout']
-        assert "Checking for '%s'" % toolchain in self.zm['stdout']
+        assert "Autodetecting toolchain" not in self.zmresult.stdout
+        assert "Checking for '%s'" % toolchain in self.zmresult.stdout
 
         checkBuildResults(self, cmdLine, True)

@@ -23,7 +23,7 @@ import os
 
 from waflib.Build import BuildContext
 from zm.constants import WAF_CACHE_DIRNAME, WAF_CFG_FILES_ENV_KEY
-from zm.constants import WAF_CONFIG_LOG, CONFTEST_DIR_PREFIX
+from zm.constants import WAF_CONFIG_LOG, CONFTEST_DIR_PREFIX, CWD
 from zm import utils, cli, error, log
 from zm.buildconf.scheme import KNOWN_TASK_PARAM_NAMES
 from zm.waf import assist
@@ -40,6 +40,8 @@ out = 0
 
 APPNAME = None
 VERSION = None
+
+_runcmdInfo = {}
 
 def options(_):
     """
@@ -125,23 +127,29 @@ def _setupClean(bld, bconfPaths):
 
     bld.clean_files = list(removeFiles)
 
-def _getAllowedBuildTaskNames(allTasks):
+def _getAllowedBuildTaskNames(allTaskNames, allTasks):
 
-    allowedTasks = cli.selected.args.tasks
-    if not allowedTasks:
-        return allowedTasks
+    # In some cases like the 'test' command the 'allTaskNames' can contain
+    # more items than the 'allTasks'. So we must make actual list names with
+    # preserved order.
+    allTaskNames = [x for x in allTaskNames if x in allTasks]
+    allowedNames = cli.selected.args.tasks
+    if not allowedNames:
+        return allTaskNames
 
-    allTaskNames = set(allTasks.keys())
-    if not set(allowedTasks).issubset(allTaskNames):
-        unknownTasks = list(set(allowedTasks) - allTaskNames)
+    _allTaskNames = set(allTaskNames)
+    if not set(allowedNames).issubset(_allTaskNames):
+        unknownTasks = list(set(allowedNames) - _allTaskNames)
         if len(unknownTasks) == 1:
-            msg = "Unknown task name %r" % unknownTasks[0]
+            msg = "Unknown/disabled task name %r" % unknownTasks[0]
         else:
-            msg = "Unknown task names: %s" % str(unknownTasks)[1:-1]
+            msg = "Unknown/disabled task names: %s" % str(unknownTasks)[1:-1]
         raise error.ZenMakeError(msg)
 
-    allowedTasks = set(assist.getTaskNamesWithDeps(allTasks, allowedTasks))
-    return allowedTasks
+    allowedNames = set(assist.getTaskNamesWithDeps(allTasks, allowedNames))
+    # remake as a list from 'allTaskNames' to save order of names
+    allowedNames = [x for x in allTaskNames if x in allowedNames]
+    return allowedNames
 
 def build(bld):
     """
@@ -176,11 +184,11 @@ def build(bld):
 
     # tasks from bconf cannot be used here
     tasks = bld.zmtasks
-    taskNames = bld.zmOrderedTaskNames
+    taskNames = _getAllowedBuildTaskNames(bld.zmOrdTaskNames, tasks)
 
-    allowedTasks = _getAllowedBuildTaskNames(tasks)
-    if allowedTasks:
-        taskNames = [x for x in taskNames if x in allowedTasks]
+    actualCmdName = cli.selected.name
+    if actualCmdName == 'run':
+        _runcmdInfo['tasks'] = tasks
 
     for taskName in taskNames:
 
@@ -255,6 +263,62 @@ def test(_):
     """
 
     log.warn("There are no tests to build and run")
+
+def run(_):
+    """
+    Implementation of the 'run' command
+    """
+
+    tasks = _runcmdInfo['tasks']
+
+    tname = cli.selected.args.task
+    if tname:
+        taskParams = tasks.get(tname)
+        if taskParams is None:
+            # try to find the name in the 'target' param
+            for params in tasks.values():
+                target = os.path.split(params['target'])[1]
+                realTarget = os.path.split(params['$real.target'])[1]
+                if tname in (target, realTarget):
+                    taskParams = params
+                    break
+
+        if taskParams is None:
+            msg = "Target '%s' not found" % tname
+            raise error.ZenMakeError(msg)
+    else:
+        # autodetect appropriate task with an executable target
+        exeTasks = [ x for x in tasks.values() if x['$tkind'] == 'program']
+        if not exeTasks:
+            msg = "There are no executable targets to run"
+            raise error.ZenMakeError(msg)
+        if len(exeTasks) != 1:
+            names = [x['name'] for x in exeTasks]
+            msg = "There are more than one executable targets to run."
+            msg += " You can select one of them: %s" % ", ".join(names)
+            raise error.ZenMakeError(msg)
+
+        taskParams = exeTasks[0]
+
+    realTarget = taskParams['$real.target']
+    dirpath = os.path.dirname(realTarget)
+
+    relTargetPath = os.path.relpath(realTarget, CWD)
+    cmd = '"%s" %s' % (realTarget, ' '.join(cli.selected.notparsed))
+
+    # NOTE: Don't use any arg that can turn on the capture of the output.
+    # Otherwise it can produce incorrect order of stdout from a target on Windows.
+    kwargs = {
+        'cwd' : dirpath,
+        'env' : utils.addRTLibPathToOSEnv(dirpath, os.environ.copy()),
+        'shell': False,
+    }
+
+    log.info("Running '%s' ..." % relTargetPath, extra = { 'c1': log.colors('PINK') } )
+    result = utils.runCmd(cmd, **kwargs)
+    if result.exitcode != 0:
+        log.warn("Program '%s' has finished with exit code %d" \
+                            % (relTargetPath, result.exitcode))
 
 def distclean(ctx):
     """

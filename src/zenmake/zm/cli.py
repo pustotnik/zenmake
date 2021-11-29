@@ -20,7 +20,7 @@ from zm import log
 from zm.error import ZenMakeLogicError
 from zm.autodict import AutoDict as _AutoDict
 
-ParsedCommand = struct('ParsedCommand', 'name, args, orig')
+ParsedCommand = struct('ParsedCommand', 'name, args, notparsed, orig')
 
 """
 Object of ParsedCommand with current command after last parsing of command line.
@@ -61,8 +61,15 @@ config.commands = [
     ),
     Command(
         name = 'test',
+        cmdBefore = 'build', # this command must be always in pair with 'build'
         description = 'build and run tests',
         usageTextTempl = "%s [options] [task [task] ... ]",
+    ),
+    Command(
+        name = 'run',
+        cmdBefore = 'build', # this command must be always in pair with 'build'
+        description = 'build and run executable task/target',
+        usageTextTempl = "%s [options] [task] [-- program args]",
     ),
     Command(
         name = 'clean',
@@ -121,10 +128,16 @@ config.posargs = [
     # global options that are used before command in cmd line
     PosArg(
         name = 'tasks',
-        nargs = '*', # it means this arg is optional
+        nargs = '*', # optional list of args
         default = [],
         help = 'select tasks from buildconf, all tasks if nothing is selected',
         commands = ['build', 'test'],
+    ),
+    PosArg(
+        name = 'task',
+        nargs = '?', # one optional arg
+        help = 'set task name from buildconf or target name',
+        commands = ['run',],
     ),
 ]
 
@@ -170,40 +183,41 @@ config.options = [
     ),
     Option(
         names = ['-b', '--buildtype'],
-        commands = ['configure', 'build', 'clean', 'test', 'install', 'uninstall'],
+        commands = ['configure', 'build', 'clean', 'test', 'run',
+                    'install', 'uninstall', ],
         help = 'set the build type',
     ),
     Option(
         names = ['-g', '--configure'],
-        commands = ['build', 'test', 'install'],
+        commands = ['build', 'test', 'run', 'install'],
         runcmd = 'configure',
     ),
     Option(
         names = ['-c', '--clean'],
-        commands = ['build', 'test', 'install'],
+        commands = ['build', 'test', 'run', 'install'],
         runcmd = 'clean',
     ),
     Option(
         names = ['-a', '--clean-all'],
-        dest = 'cleanAll',
-        commands = ['configure', 'build', 'test', 'install'],
+        dest = 'cleanall',
+        commands = ['configure', 'build', 'test', 'run', 'install'],
         runcmd = 'cleanall',
     ),
     Option(
         names = ['-d', '--distclean'],
-        commands = ['configure', 'build', 'test', 'install'],
+        commands = ['configure', 'build', 'test', 'run', 'install'],
         runcmd = 'distclean',
     ),
     Option(
         names = ['-j', '--jobs'],
         type = int,
-        commands = ['build', 'test', 'install'],
+        commands = ['build', 'test', 'run', 'install'],
         help = 'amount of parallel jobs',
     ),
     Option(
         names = ['-p', '--progress'],
         action = "store_true",
-        commands = ['build', 'test', 'install', 'uninstall'],
+        commands = ['build', 'test', 'run', 'install', 'uninstall'],
         help = 'progress bar',
     ),
     Option(
@@ -214,7 +228,7 @@ config.options = [
     ),
     Option(
         names = ['-o', '--buildroot'],
-        commands = ['configure', 'build', 'test', 'clean', 'cleanall',
+        commands = ['configure', 'build', 'test', 'run', 'clean', 'cleanall',
                     'distclean', 'install', 'uninstall'],
         help = "build directory for the project",
     ),
@@ -222,7 +236,7 @@ config.options = [
         names = ['-E', '--force-edeps'],
         dest = 'forceExternalDeps',
         action = "store_true",
-        commands = ['configure', 'build', 'test', 'clean',
+        commands = ['configure', 'build', 'test', 'run', 'clean',
                     'install', 'uninstall'],
         help = "force rules for external dependencies",
     ),
@@ -230,7 +244,7 @@ config.options = [
         names = ['-H', '--cache-cfg-actions'],
         dest = 'cacheCfgActionResults',
         action = "store_true",
-        commands = ['configure', 'build', 'test', 'install', 'uninstall'],
+        commands = ['configure', 'build', 'test', 'run', 'install', 'uninstall'],
         help = "cache results of config actions",
     ),
     Option(
@@ -263,14 +277,14 @@ config.options = [
         names = ['-A', '--verbose-configure'],
         dest = 'verboseConfigure',
         action = "count",
-        commands = ['configure', 'build', 'install', 'uninstall', 'test'],
+        commands = ['configure', 'build', 'install', 'uninstall', 'test', 'run'],
         help = 'verbosity level -A -AA or -AAA for configure stage',
     ),
     Option(
         names = ['-B', '--verbose-build'],
         dest = 'verboseBuild',
         action = "count",
-        commands = ['build', 'install', 'uninstall', 'test'],
+        commands = ['build', 'install', 'uninstall', 'test', 'run'],
         help = 'verbosity level -B -BB or -BBB for build stage',
     ),
     Option(
@@ -478,7 +492,7 @@ class CmdLineParser(object):
 
             target.add_argument(*opt.names, **kwargs)
 
-    def _fillCmdInfo(self, parsedArgs):
+    def _fillCmdInfo(self, parsedArgs, notparsed):
         args = _AutoDict(vars(parsedArgs))
         for opt in self._globalOptions:
             if 'runcmd' in opt:
@@ -488,6 +502,7 @@ class CmdLineParser(object):
         self._command = ParsedCommand(
             name = cmd.name,
             args = args,
+            notparsed = notparsed,
             orig = self._origArgs,
         )
 
@@ -498,41 +513,37 @@ class CmdLineParser(object):
             args['destdir'] = unfoldPath(CWD, path)
 
     def _fillWafCmdLine(self):
-        if self._command is None:
-            raise ZenMakeLogicError("Programming error: _command is None") # pragma: no cover
-
         # NOTE: The option/command 'distclean'/'cleanall' is handled in special way
 
-        cmdline = [self._command.name]
+        cmdName = self._command.name
+        cmdline = [cmdName]
 
         # self._command.args is AutoDict and it means that it'll create
         # nonexistent keys inside, so we need to make a copy
         options = _AutoDict(self._command.args)
 
-        if self._command.name == 'test':
-            # command 'test' should be always in pair with 'build'
-            cmdline.insert(0, 'build')
-        elif self._command.name == 'build':
-            runTests = options.get('runTests', None)
+        cmdConfig = next(x for x in config.commands if x.name == cmdName)
+
+        if cmdConfig.cmdBefore:
+            cmdline.insert(0, cmdConfig.cmdBefore)
+
+        if cmdName == 'build':
+            runTests = options.get('runTests')
             if runTests is not None and runTests != 'none':
                 cmdline.append('test')
 
-        if options.configure:
-            cmdline.insert(0, 'configure')
-        if options.clean:
-            cmdline.insert(0, 'clean')
-        if options.cleanAll:
-            cmdline.insert(0, 'cleanall')
-        if options.distclean:
-            cmdline.insert(0, 'distclean')
-        if options.progress:
-            cmdline.append('--progress')
-        if options.verbose:
-            cmdline.append('-' + options.verbose * 'v')
+        for opt in ('configure', 'clean', 'cleanall', 'distclean'):
+            if options.get(opt):
+                cmdline.insert(0, opt)
         for opt in ('jobs', 'color', 'destdir', 'prefix', 'bindir', 'libdir'):
             val = options.get(opt)
             if val:
                 cmdline.append('--%s=%s' % (opt, str(val)))
+
+        if options.progress:
+            cmdline.append('--progress')
+        if options.verbose:
+            cmdline.append('-' + options.verbose * 'v')
 
         self._wafCmdLine = cmdline
 
@@ -543,6 +554,14 @@ class CmdLineParser(object):
             args = sys.argv[1:]
 
         self._origArgs = args
+        _args = []
+        notparsed = []
+        for i, arg in enumerate(args):
+            if arg == '--':
+                notparsed = args[i+1:]
+                break
+            _args.append(arg)
+        args = _args
 
         defaultCmdIsReady = False
         globalOpts = self._globalOptions
@@ -569,10 +588,10 @@ class CmdLineParser(object):
         cmd = self._cmdNameMap[parsedArgs.command]
 
         if cmd.name == 'help':
-            self._fillCmdInfo(parsedArgs)
+            self._fillCmdInfo(parsedArgs, notparsed)
             sys.exit(not self._showHelp(self._commandHelps, parsedArgs.topic))
 
-        self._fillCmdInfo(parsedArgs)
+        self._fillCmdInfo(parsedArgs, notparsed)
         self._postProcess()
         self._fillWafCmdLine()
         return self._command

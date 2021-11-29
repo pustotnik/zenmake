@@ -704,9 +704,9 @@ def _runRule(ctx, rule):
         stream.flush()
 
     kwargs['outCallback'] = printLine
-    exitcode = utils.runCmd(cmd, **kwargs)
-    if exitcode != 0:
-        raise error.ZenMakeProcessFailed(cmd, exitcode)
+    result = utils.runCmd(cmd, **kwargs)
+    if result.exitcode != 0:
+        raise error.ZenMakeProcessFailed(cmd, result.exitcode)
 
 def _getAllTargetFiles(target):
 

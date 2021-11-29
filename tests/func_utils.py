@@ -84,16 +84,12 @@ def runZm(self, cmdline, env = None):
     kwargs = {
         'cwd' : self.cwd,
         'env' : _env,
+        'stdErrToOut' : True,
         'timeout' : 60 * 15,
     }
-    exitcode, stdout, stderr = utils.runCmd(cmdLine, **kwargs)
 
-    self.zm = dict(
-        stdout = stdout,
-        stderr = stderr,
-        exitcode = exitcode,
-    )
-    return exitcode, stdout, stderr
+    self.zmresult = utils.runCmd(cmdLine, **kwargs)
+    return self.zmresult.exitcode, self.zmresult.stdout, self.zmresult.stderr
 
 def printOutputs(testSuit):
     zmInfo = getattr(testSuit, 'zm', None)
@@ -178,6 +174,8 @@ def setupTest(self, request, tmpdir):
     self.cwd = joinpath(tmptestDir, os.sep.join(testPathParts[2:]))
     self.projectConf = bconfloader.load(dirpath = self.cwd)
     self.origProjectDir = currentPrjDir
+
+    return testPath
 
 def processConfManagerWithCLI(testSuit, cmdLine):
     cmdLine = list(cmdLine)

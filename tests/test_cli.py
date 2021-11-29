@@ -107,7 +107,7 @@ class TestSuite(object):
             'color': 'auto',
             'clean': False,
             'progress': False,
-            'cleanAll': False,
+            'cleanall': False,
             'distclean': False,
             'tasks': [],
             'verbose': 0,
@@ -161,7 +161,7 @@ class TestSuite(object):
             ),
             dict(
                 args = [CMDNAME, '--clean-all'],
-                expectedArgsUpdate = {'cleanAll': True},
+                expectedArgsUpdate = {'cleanall': True},
                 wafArgs = ['cleanall', CMDNAME] + CMNOPTS,
             ),
             dict(
@@ -222,7 +222,7 @@ class TestSuite(object):
             'color': 'auto',
             'clean': False,
             'progress': False,
-            'cleanAll': False,
+            'cleanall': False,
             'distclean': False,
             'tasks': [],
             'verbose': 0,
@@ -276,7 +276,7 @@ class TestSuite(object):
             ),
             dict(
                 args = [CMDNAME, '--clean-all'],
-                expectedArgsUpdate = {'cleanAll': True},
+                expectedArgsUpdate = {'cleanall': True},
                 wafArgs = ['cleanall', 'build', CMDNAME] + CMNOPTS,
             ),
             dict(
@@ -333,7 +333,7 @@ class TestSuite(object):
         baseExpectedArgs = {
             'buildtype' : self.defaults['buildtype'],
             'color': 'auto',
-            'cleanAll': False,
+            'cleanall': False,
             'distclean': False,
             'verbose': 0,
             'verboseConfigure' : None,
@@ -363,7 +363,7 @@ class TestSuite(object):
             ),
             dict(
                 args = [CMDNAME, '--clean-all'],
-                expectedArgsUpdate = {'cleanAll': True},
+                expectedArgsUpdate = {'cleanall': True},
                 wafArgs = ['cleanall', CMDNAME] + CMNOPTS,
             ),
             dict(
@@ -523,7 +523,7 @@ class TestSuite(object):
             'configure': False,
             'clean': False,
             'progress': False,
-            'cleanAll': False,
+            'cleanall': False,
             'distclean': False,
             'verbose': 0,
             'verboseConfigure' : None,
@@ -538,7 +538,7 @@ class TestSuite(object):
         }
 
         if cmd == 'uninstall':
-            for name in ('configure', 'jobs', 'clean', 'cleanAll', 'distclean'):
+            for name in ('configure', 'jobs', 'clean', 'cleanall', 'distclean'):
                 baseExpectedArgs.pop(name)
 
         CMDNAME = cmd

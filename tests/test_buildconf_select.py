@@ -437,7 +437,7 @@ def testParam(cfgctx, monkeypatch, paramfixture):
 
     paramname, buildconf, expected = paramfixture
 
-    clicmd = cli.ParsedCommand(name = 'build', args = AutoDict(), orig = [])
+    clicmd = cli.ParsedCommand(name = 'build', args = AutoDict(), orig = [], notparsed = [])
     monkeypatch.setattr(cli, 'selected', clicmd)
 
     bconfDir = ctx.path.abspath()

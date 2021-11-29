@@ -24,7 +24,7 @@ except ImportError as _pex:
 
 from waflib import Utils as wafutils
 from waflib.ConfigSet import ConfigSet
-from zm.pyutils import stringtype, maptype, _unicode, _encode
+from zm.pyutils import stringtype, maptype, struct, _unicode, _encode
 from zm.error import ZenMakeError, ZenMakeProcessTimeoutExpired
 from zm.buildconf.types import ConfNode
 
@@ -709,12 +709,22 @@ class SafeCounter(object):
         with self._lock:
             self._value = val
 
+ProcCmdResult = struct('ProcCmdResult', 'exitcode, stdout, stderr')
+
 class ProcCmd(object):
     """
     Class to run external command in a subprocess
     """
 
-    def __init__(self, cmdLine, shell = False, stdErrToOut = True):
+    def __init__(self, cmdLine, shell = False, captureOutput = False,
+                                        stdErrToOut = True, outCallback = None):
+
+        """
+        Parameter outCallback can be used to handle stdout/stderr line by line
+        without waiting for a process to exit. Also if outCallback is not None
+        then it means that captureOutput is True. If stdErrToOut is True it means
+        that captureOutput is True as well.
+        """
 
         self._origCmdLine = cmdLine
 
@@ -734,16 +744,22 @@ class ProcCmd(object):
                     cmdLine = shlex.split(cmdLine)
 
         self._cmdLine = cmdLine
+        self._outCallback = outCallback
         self._proc = None
         self._timeoutExpired = False
         self._popenArgs = {
             'shell' : shell,
-            'stdout' : subprocess.PIPE,
-            'stderr' : subprocess.PIPE,
+            'stdout' : None,
+            'stderr' : None,
             'universal_newlines' : True,
         }
 
+        if captureOutput or outCallback is not None:
+            self._popenArgs['stdout'] = subprocess.PIPE
+            self._popenArgs['stderr'] = subprocess.PIPE
+
         if stdErrToOut:
+            self._popenArgs['stdout'] = subprocess.PIPE
             self._popenArgs['stderr'] = subprocess.STDOUT
 
         # start_new_session was added in python 3.2
@@ -754,7 +770,7 @@ class ProcCmd(object):
 
     def _communicate(self):
         stdout, stderr = self._proc.communicate()
-        return self._proc.returncode, stdout, stderr
+        return ProcCmdResult(self._proc.returncode, stdout, stderr)
 
     def _communicateCallback(self, callback):
         proc = self._proc
@@ -777,14 +793,12 @@ class ProcCmd(object):
             proc.stdout.close()
         if proc.stderr:
             proc.stderr.close()
-        return proc.returncode
+        return ProcCmdResult(proc.returncode, None, None)
 
-    def run(self, cwd = None, env = None, timeout = None, outCallback = None):
+    def run(self, cwd = None, env = None, timeout = None):
         """
         Run command.
-        Parameter outCallback can be used to handle stdout/stderr line by line
-        without waiting for a process to exit.
-        Returns tuple (exitcode, stdout, stderr) or exitcode if outCallback is not None.
+        Returns ProcCmdResult.
         """
 
         kwargs = self._popenArgs
@@ -815,6 +829,7 @@ class ProcCmd(object):
             timer.daemon = True
             timer.start()
 
+        outCallback = self._outCallback
         if outCallback is None:
             result = self._communicate()
         else:
@@ -823,7 +838,7 @@ class ProcCmd(object):
         if self._timeoutExpired:
             stdout = ''
             if outCallback is None:
-                stdout = result[1]
+                stdout = result.stdout
             raise ZenMakeProcessTimeoutExpired(self._origCmdLine, timeout, stdout)
 
         if timer:
@@ -833,16 +848,18 @@ class ProcCmd(object):
         self._proc = None
         return result
 
-def runCmd(cmdLine, cwd = None, env = None, shell = False,
-           timeout = None, stdErrToOut = True, outCallback = None):
+def runCmd(cmdLine, cwd = None, env = None, shell = False, timeout = None,
+            captureOutput = False, stdErrToOut = False, outCallback = None):
     """
     Run external command in a subprocess.
     Parameter outCallback can be used to handle stdout/stderr line by line
-    without waiting for a process to exit.
-    Returns tuple (exitcode, stdout, stderr) or exitcode if outCallback is not None.
+    without waiting for a process to exit. Also if outCallback is not None then
+    it means that captureOutput is True. If stdErrToOut is True it means
+    that captureOutput is True as well.
+    Returns ProcCmdResult. If
     """
 
     # pylint: disable = too-many-arguments
 
-    procCmd = ProcCmd(cmdLine, shell, stdErrToOut)
-    return procCmd.run(cwd, env, timeout, outCallback)
+    procCmd = ProcCmd(cmdLine, shell, captureOutput, stdErrToOut, outCallback)
+    return procCmd.run(cwd, env, timeout)

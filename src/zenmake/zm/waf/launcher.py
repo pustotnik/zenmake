@@ -138,7 +138,8 @@ def setupAndRunCommands(wafCmdLine, bconfManager):
     def runNextCmd():
         cmdName = Options.commands.pop(0)
         timer = runCommand(bconfManager, cmdName)
-        log.info('%r finished successfully (%s)', cmdName, timer)
+        if cmdName != 'run':
+            log.info('%r finished successfully (%s)', cmdName, timer)
 
     bconf = bconfManager.root
     setWscriptVars(wscriptimpl, bconf)

@@ -93,6 +93,7 @@ def _checkSubdirsBuildtypesSelectParam(cfgctx, tmpdir, monkeypatch, textParams, 
     clicmd = cli.ParsedCommand(
         name = 'configure',
         args = AutoDict(buildtype = None),
+        notparsed = [],
         orig = []
     )
 
