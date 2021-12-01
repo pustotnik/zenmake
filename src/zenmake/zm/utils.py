@@ -769,10 +769,13 @@ class ProcCmd(object):
         self._popenArgs['start_new_session'] = True
 
     def _communicate(self):
-        stdout, stderr = self._proc.communicate()
-        return ProcCmdResult(self._proc.returncode, stdout, stderr)
 
-    def _communicateCallback(self, callback):
+        callback = self._outCallback
+        if callback is None:
+            stdout, stderr = self._proc.communicate()
+            return ProcCmdResult(self._proc.returncode, stdout, stderr)
+
+        # It is simple and actually not optimal algo but it works for ZenMake needs
         proc = self._proc
         while True:
             noData = True
@@ -807,45 +810,44 @@ class ProcCmd(object):
             'env' : env,
         })
 
-        self._proc = subprocess.Popen(self._cmdLine, **kwargs)
+        try:
+            self._proc = subprocess.Popen(self._cmdLine, **kwargs)
 
-        timer = None
-        if timeout is not None:
-            self._timeoutExpired = False
+            timer = None
+            if timeout is not None:
+                self._timeoutExpired = False
 
-            def killProc(self):
-                proc = self._proc
-                if kwargs.get('start_new_session') and hasattr(os, 'killpg'):
-                    # If 'shell' is true then killing of current process is killing of
-                    # executed shell but not childs.
-                    # Unix only.
-                    os.killpg(proc.pid, signal.SIGKILL)
-                else:
-                    proc.kill()
-                self._timeoutExpired = True
+                def killProc(self):
+                    proc = self._proc
+                    if kwargs.get('start_new_session') and hasattr(os, 'killpg'):
+                        # If 'shell' is true then killing of current process is killing of
+                        # executed shell but not childs.
+                        # Unix only.
+                        os.killpg(proc.pid, signal.SIGKILL)
+                    else:
+                        proc.kill()
+                    self._timeoutExpired = True
 
-            timer = threading.Timer(timeout, killProc, args = [self])
-            # allow entire program to exit on unexpected exception like KeyboardInterrupt
-            timer.daemon = True
-            timer.start()
+                timer = threading.Timer(timeout, killProc, args = [self])
+                # allow entire program to exit on unexpected exception like KeyboardInterrupt
+                timer.daemon = True
+                timer.start()
 
-        outCallback = self._outCallback
-        if outCallback is None:
             result = self._communicate()
-        else:
-            result = self._communicateCallback(outCallback)
 
-        if self._timeoutExpired:
-            stdout = ''
-            if outCallback is None:
-                stdout = result.stdout
-            raise ZenMakeProcessTimeoutExpired(self._origCmdLine, timeout, stdout)
+            if self._timeoutExpired:
+                raise ZenMakeProcessTimeoutExpired(self._origCmdLine, timeout,
+                                                    result.stdout, result.stderr)
 
-        if timer:
-            timer.cancel()
+        except (OSError, subprocess.SubprocessError) as ex:
+            raise ZenMakeError(str(ex)) from ex
+        finally:
+            if timer:
+                timer.cancel()
 
-        # release Popen object
-        self._proc = None
+            # release Popen object
+            self._proc = None
+
         return result
 
 def runCmd(cmdLine, cwd = None, env = None, shell = False, timeout = None,

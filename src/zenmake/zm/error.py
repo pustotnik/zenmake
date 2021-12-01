@@ -82,15 +82,18 @@ class ZenMakeProcessFailed(ZenMakeError):
 class ZenMakeProcessTimeoutExpired(ZenMakeError):
     """ Raised when a timeout expires while waiting for a process """
 
-    def __init__(self, cmd, timeout, output, msg = None):
+    def __init__(self, cmd, timeout, stdout = None, stderr = None, msg = None):
         self.cmd = cmd
         self.timeout = timeout
-        self.output = output
+        self.stdout  = stdout
+        self.stderr  = stderr
 
         if not msg:
             msg = "Timeout (%d sec.) for command expired." % timeout
             msg += "\nCommand: %r" % cmd
-            if output:
-                msg += '\nCaptured output:\n'
-                msg += output
+            if stdout:
+                msg += '\nCaptured stdout:\n%s' % stdout
+            if stderr:
+                msg += '\nCaptured stderr:\n%s' % stderr
+
         super().__init__(msg)
