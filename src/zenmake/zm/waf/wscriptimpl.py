@@ -68,7 +68,15 @@ def init(ctx):
 
     setattr(BuildContext, 'variant', buildtype)
 
-    assist.printZenMakeHeader(ctx.bconfManager)
+    # print some info
+
+    if cliArgs.verbose > 1:
+        log.info("* ZenMake command line args: %s", " ".join(cli.selected.orig))
+
+    log.info("* Project name: '%s'" % bconf.projectName)
+    if bconf.projectVersion:
+        log.info("* Project version: %s" % bconf.projectVersion)
+    log.info("* Build type: '%s'" % bconf.selectedBuildType)
 
 def configure(conf):
     """
