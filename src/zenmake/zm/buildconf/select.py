@@ -65,7 +65,6 @@ def _getReadyConditions(bconf):
     return conditions
 
 def _tryToSelect(bconf, condName, taskParams, paramName):
-    # pylint: disable = too-many-return-statements
 
     condition = bconf.conditions.get(condName,
                                 _getReadyConditions(bconf).get(condName))

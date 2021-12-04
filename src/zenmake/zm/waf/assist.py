@@ -86,6 +86,7 @@ def writeZenMakeMetaFile(filePath, meta, prevZmMeta):
     zmMeta.monithash  = utils.hashFiles(zmMeta.monitfiles)
 
     from waflib import Context
+    zmMeta.wafhexversion = Context.HEXVERSION
     zmMeta.rundir = Context.run_dir
     zmMeta.topdir = Context.top_dir
     zmMeta.outdir = Context.out_dir
@@ -563,6 +564,11 @@ def needToConfigure(zmMetaConf, rootdir, zmcachedir, buildtype, cliargs):
         return True
 
     if not isBuildTypeConfigured(zmcachedir, buildtype):
+        return True
+
+    # It's needed mostly in development of ZenMake so we check it at the end
+    from waflib import Context
+    if zmMetaConf.wafhexversion != Context.HEXVERSION:
         return True
 
     return False
