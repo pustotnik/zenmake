@@ -109,7 +109,8 @@ RUN dnf --nodocs -y install python36 \
     && true
 
 COPY ./tests/requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir --upgrade pip; \
+    pip3 install --no-cache-dir -r requirements.txt
 
 ### complete pyenv setup
 
@@ -123,6 +124,7 @@ USER $USERNAME
 RUN true \
     && PATH="$PYENV_ROOT/shims:$PATH"; for ver in $PYENV_VERS; do \
            pyenv global $ver; \
+           python -m pip install --no-cache-dir --upgrade pip; \
            python -m pip install --no-cache-dir -r requirements.txt; \
        done \
     && pyenv global system \

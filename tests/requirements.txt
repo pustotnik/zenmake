@@ -1,5 +1,4 @@
 msgpack
-setuptools
 pytest
 pytest-cov
 pytest-mock
