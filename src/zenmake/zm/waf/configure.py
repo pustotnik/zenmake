@@ -476,6 +476,12 @@ class ConfigurationContext(WafConfContext):
                 for lang in toolchains.getLangs(tool):
                     var = ToolchainVars.cfgVarToSetToolchain(lang)
                     if toolEnv[var]:
+                        # The COMPILER_%LANG% vars are almost useless because
+                        # of existing vars like CXX, CC, etc. But in some rare
+                        # places Waf checks and uses these vars.
+                        varName = ToolchainVars.cfgCompilerVarName(lang)
+                        toolEnv[varName] = tool
+
                         endMsg = toolEnv.get_flat(var)
                         break
                 self.endMsg(endMsg)

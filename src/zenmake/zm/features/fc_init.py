@@ -39,6 +39,7 @@ TOOLCHAIN_VARS = {
     'fc' : {
         'sysenv-var'      : 'FC',
         'cfgenv-var'      : 'FC',
+        'cfgenv-compiler' : 'COMPILER_FORTRAN',
         'sysenv-flagvars' : ('FCFLAGS', 'LINKFLAGS', 'LDFLAGS',),
         'cfgenv-flagvars' : ('FCFLAGS', 'LINKFLAGS', 'LDFLAGS', 'DEFINES', ),
     },

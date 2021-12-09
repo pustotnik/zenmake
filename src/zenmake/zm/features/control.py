@@ -395,6 +395,18 @@ class ToolchainVars(object):
         return TOOLCHAIN_VARS[lang]['cfgenv-var']
 
     @staticmethod
+    def cfgCompilerVarName(lang):
+        """
+        For selected language return WAF ConfigSet variable name to set/get
+        compiler name in the form COMPILER_CXX, COMPILER_CC, etc.
+        """
+
+        if not lang or lang not in TOOLCHAIN_VARS:
+            raise ZenMakeError("Toolchain for '%s' is not supported" % lang)
+        return TOOLCHAIN_VARS[lang].get('cfgenv-compiler',
+            'COMPILER_%s' % ToolchainVars.cfgVarToSetToolchain(lang))
+
+    @staticmethod
     @cached(_cache)
     def allSysVarsToSetToolchain():
         """
