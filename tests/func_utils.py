@@ -92,11 +92,11 @@ def runZm(self, cmdline, env = None):
     return self.zmresult.exitcode, self.zmresult.stdout, self.zmresult.stderr
 
 def printOutputs(testSuit):
-    zmInfo = getattr(testSuit, 'zm', None)
+    zmInfo = getattr(testSuit, 'zmresult', None)
     if not zmInfo:
         return
     for param in ('stdout', 'stderr'):
-        out = zmInfo.get(param, None)
+        out = getattr(zmInfo, param, None)
         if out:
             print('\n' + out)
 
