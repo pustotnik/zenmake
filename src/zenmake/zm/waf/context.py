@@ -24,11 +24,10 @@ joinpath = os.path.join
 normpath = os.path.normpath
 isabspath = os.path.isabs
 
-DEFAULT_TOOLDIRS = [
-    joinpath(ZENMAKE_DIR, 'zm', 'tools'),
-    joinpath(ZENMAKE_DIR, 'waf', 'waflib', 'Tools'),
-    joinpath(ZENMAKE_DIR, 'waf', 'waflib', 'extras'),
-]
+TOOL_MODULE_PATTERNS = (
+    'zm.tools.%s',
+    'waflib.Tools.%s', 'waflib.extras.%s', 'waflib.%s', '%s'
+)
 
 DEFAULT_STDOUT_MSG_LEN = 40
 MAX_STDOUT_MSG_LEN = 100
@@ -202,6 +201,7 @@ WafContext.end_msg = _endMsg
 def loadTool(tool, tooldirs = None, withSysPath = True):
     """
     Alternative version of WafContextModule.load_tool
+    Main reason is to add ability to load tools from zm.tools firstly.
     """
 
     if tool == 'java':
@@ -211,24 +211,37 @@ def loadTool(tool, tooldirs = None, withSysPath = True):
 
     oldSysPath = sys.path
 
+    if tooldirs:
+        mpatterns = ['%s']
+    else:
+        mpatterns = TOOL_MODULE_PATTERNS
+        tooldirs = []
+
     if not withSysPath:
         sys.path = []
         if not tooldirs:
-            sys.path = [WAF_DIR]
+            tooldirs = [ZENMAKE_DIR, WAF_DIR]
 
-    if not tooldirs:
-        tooldirs = DEFAULT_TOOLDIRS
     sys.path = tooldirs + sys.path
 
     module = None
+
     try:
-        module = importModule(tool)
+
+        for pattern in mpatterns[:-1]:
+            try:
+                module = importModule(pattern % tool)
+                break
+            except ImportError:
+                pass
+        else:
+            module = importModule(mpatterns[-1] % tool)
+
         WafContext.tools[tool] = module
     except ImportError as ex:
         toolsSysPath = list(sys.path)
-        ex.toolsSysPath = toolsSysPath
-        # for Waf
-        ex.waf_sys_path = toolsSysPath
+        # waf_sys_path is for Waf
+        ex.toolsSysPath = ex.waf_sys_path = toolsSysPath
         raise
     finally:
         sys.path = oldSysPath
