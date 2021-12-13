@@ -9,6 +9,7 @@
 """
 
 import os
+import sys
 import shutil
 import pytest
 from zm.error import *
@@ -145,10 +146,14 @@ def testLoad(monkeypatch, tmpdir):
     validateConf(buildconf)
     assert not isBuildConfFake(buildconf)
 
-    monkeypatch.syspath_prepend(os.path.abspath(prjdir))
-    buildconf = bconfloader.load()
-    validateConf(buildconf)
-    assert not isBuildConfFake(buildconf)
+    oldSysPath = sys.path
+    try:
+        sys.path = [os.path.abspath(prjdir)] + sys.path
+        buildconf = bconfloader.load()
+        validateConf(buildconf)
+        assert not isBuildConfFake(buildconf)
+    finally:
+        sys.path = oldSysPath
 
     # find first real buildconf.yaml
     prjdir = None
@@ -161,10 +166,14 @@ def testLoad(monkeypatch, tmpdir):
     validateConf(buildconf)
     assert not isBuildConfFake(buildconf)
 
-    monkeypatch.syspath_prepend(os.path.abspath(prjdir))
-    buildconf = bconfloader.load()
-    validateConf(buildconf)
-    assert not isBuildConfFake(buildconf)
+    oldSysPath = sys.path
+    try:
+        sys.path = [os.path.abspath(prjdir)] + sys.path
+        buildconf = bconfloader.load()
+        validateConf(buildconf)
+        assert not isBuildConfFake(buildconf)
+    finally:
+        sys.path = oldSysPath
 
     testdir = tmpdir.mkdir("load.yaml")
     yamlconf = testdir.join("buildconf.yaml")
