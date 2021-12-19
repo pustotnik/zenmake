@@ -23,7 +23,7 @@ CONF_TASKSCHEME_SPEC = {
 TASK_FEATURES_SETUP = {
     'd' : {
         'target-kinds' : TASK_TARGET_KINDS,
-        'file-extensions' : ('.d', '.D', '.di', '.DI'),
+        'file-extensions' : ('.d', '.D', '.di'),
     },
 }
 

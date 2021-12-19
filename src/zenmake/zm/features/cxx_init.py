@@ -23,7 +23,7 @@ CONF_TASKSCHEME_SPEC = {
 TASK_FEATURES_SETUP = {
     'cxx' : {
         'target-kinds' : TASK_TARGET_KINDS,
-        'file-extensions' : ('.cpp', '.CPP', '.cxx', '.CXX', '.c++', '.C++', '.cc', '.CC'),
+        'file-extensions' : ('.cpp', '.cc', '.cxx', '.C', '.c++'),
     },
 }
 

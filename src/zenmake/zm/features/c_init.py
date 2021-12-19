@@ -24,7 +24,7 @@ CONF_TASKSCHEME_SPEC = {
 TASK_FEATURES_SETUP = {
     'c' : {
         'target-kinds' : TASK_TARGET_KINDS,
-        'file-extensions' : ('.c', '.C',),
+        'file-extensions' : ('.c',),
     },
 }
 
