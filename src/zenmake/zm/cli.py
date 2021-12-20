@@ -34,7 +34,7 @@ Contains configurable 'commands', 'options' and 'posargs'
 config = _AutoDict()
 
 class Command(_AutoDict):
-    """ Class to setup a command for CLI """
+    """ Class to set up a command for CLI """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -119,7 +119,7 @@ def _makeCmdNameMap():
     return cmdNameMap
 
 class PosArg(_AutoDict):
-    """ Class to setup positional param for CLI """
+    """ Class to set up positional param for CLI """
 
     NOTARGPARSE_FIELDS = ('name', 'commands')
 
@@ -142,7 +142,7 @@ config.posargs = [
 ]
 
 class Option(_AutoDict):
-    """ Class to setup an option for CLI """
+    """ Class to set up an option for CLI """
 
     NOTARGPARSE_FIELDS = ('names', 'commands', 'runcmd', 'isglobal')
 

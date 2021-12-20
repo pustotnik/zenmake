@@ -335,9 +335,8 @@ def applyRunCmd(tgen):
         zmTaskParams = getattr(tgen, 'zm-task-params', {})
         target = zmTaskParams.get('target', '')
 
-        source = zmTaskParams.get('source', [])
-        if source:
-            source = [ _normpath(_relpath(x.abspath(), cwd)) for x in source]
+        source = getattr(tgen, 'source', [])
+        source = [ _normpath(_relpath(x.abspath(), cwd)) for x in source]
 
         substvars = zmTaskParams.get('substvars', {})
         cmdline = substVars(cmdline, substvars.get)

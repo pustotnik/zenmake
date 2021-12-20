@@ -1544,7 +1544,7 @@ def runActions(cfgCtx):
         taskName = taskParams['name']
 
         if printLogo:
-            log.printStep('Running configuration actions')
+            log.printStep('Running user configuration actions')
             printLogo = False
         #log.info('.. Actions for the %r:' % taskName)
 

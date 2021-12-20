@@ -237,6 +237,9 @@ def loadTool(tool, tooldirs = None, withSysPath = True):
         else:
             module = importModule(mpatterns[-1] % tool)
 
+        # I didn't find where it is used in Waf, moreover ConfigurationContext
+        # has own 'tools' and doesn't use 'tools' from Waf Context.
+        # May be it is just legacy element but I left it as it is.
         WafContext.tools[tool] = module
     except ImportError as ex:
         toolsSysPath = list(sys.path)

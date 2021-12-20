@@ -495,14 +495,14 @@ def finishExternalDepsConfig(cfgCtx):
     bconfManager = cfgCtx.bconfManager
     rootdir = bconfManager.root.rootdir
 
-    ### setup tasks
+    ### set up tasks
 
     depTargets = []
     for bconf in bconfManager.configs:
         for taskParams in bconf.tasks.values():
             depTargets.extend(_setupTaskDeps(cfgCtx, bconf, taskParams))
 
-    ### setup rule targets
+    ### set up rule targets
 
     depConfToRules = {}
     seenRules = set()

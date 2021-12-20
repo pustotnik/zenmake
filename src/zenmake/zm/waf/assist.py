@@ -253,7 +253,7 @@ def setTaskEnvVars(env, taskParams, toolchainSettings):
 
 def fixToolchainEnvVars(env, taskParams):
     """
-    Fix some env vars for some toolchains like env.LIBPATH
+    Fix some env vars like env.LIBPATH for some toolchains
     """
 
     # fix (st)libpath

@@ -34,7 +34,6 @@ venv.bak
 **/*.dll
 **/*.obj
 **/*.log
-**/*.png
 **/*~
 demos/**/build
 demos/**/_build
