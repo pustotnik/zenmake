@@ -8,9 +8,9 @@
 
 import json
 
-from waflib import Task
-from waflib.Tools import ccroot
-import zm.waf.wscriptimpl as wscript
+from zm.waf.task import WafTask
+from zm.waf.ccroot import wafccroot
+from zm.waf import wscriptimpl as wscript
 
 class JSONEncoder(json.JSONEncoder):
     """
@@ -52,7 +52,7 @@ def nobuildTaskRun(task):
     for node in task.outputs:
         data = {}
         data['tgen-name'] = tgen.name
-        data['is-link'] = isinstance(task, ccroot.link_task)
+        data['is-link'] = isinstance(task, wafccroot.link_task)
         data['inputs'] = task.inputs
         env = task.env.get_merged_dict()
         data['env'] = env
@@ -62,7 +62,7 @@ def nobuildTaskRun(task):
 
 def _wrapBuild(method):
     def execute(ctx):
-        for cls in Task.classes.values():
+        for cls in WafTask.classes.values():
             cls.run = nobuildTaskRun
         method(ctx)
     return execute
