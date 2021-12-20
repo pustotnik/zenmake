@@ -10,6 +10,7 @@ from collections import defaultdict, deque
 
 from waflib import TaskGen as WafTaskGen
 from zm.pyutils import asmethod
+from zm.utils import toList
 from zm import error
 
 _taskGen = WafTaskGen.task_gen
@@ -120,3 +121,25 @@ def _tgenGetHook(self, node):
         mapExts += ', '.join(featureMappings.keys())
         msg += "\nRegistered file extensions for task %r are: %s" % (self.name, mapExts)
     raise error.ZenMakeError(msg)
+
+@WafTaskGen.feature('*')
+@WafTaskGen.before('process_rule', 'process_source', 'process_subst',
+                   'process_marshal', 'process_mocs')
+def makesource(tgen):
+    """
+    Waf doesn't expect a generator in 'source' and this causes an error in some cases.
+    This function makes generator from ZenMake to generate all values in a list.
+    """
+
+    source = getattr(tgen, 'source', None)
+    if not source:
+        return
+
+    # The function 'toList' ignores a generator but it's needed because of
+    # calls from config actions where it can be a string
+    tgen.source = list(toList(source))
+
+    zmTaskParams = getattr(tgen, 'zm-task-params', {})
+    if zmTaskParams:
+        # sync ZenMake task params with the new value, just in case
+        zmTaskParams['source'] = tgen.source
