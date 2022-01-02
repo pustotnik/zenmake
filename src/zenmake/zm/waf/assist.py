@@ -32,10 +32,10 @@ toListSimple = utils.toListSimple
 
 _getenv = os.environ.get
 
-# These keys are not removed from waf task gen on 'build' step
-# Such keys as '*flags' and 'defines' are set in task envs, so they
+# These attributes/parameters are not removed from waf task gen on 'build' step
+# Such params as '*flags' and 'defines' are set in task envs, so they
 # don't need to be protected from removing from waf task gen.
-_usedWafTaskKeys = set([
+_allowedTGenAttrs = set([
     'name', 'target', 'features', 'source', 'includes',
     'lib', 'libpath', 'monitlibs', 'stlib', 'stlibpath', 'monitstlibs',
     'rpath', 'use', 'vnum', 'idx', 'export_includes', 'export_defines',
@@ -45,17 +45,17 @@ _usedWafTaskKeys = set([
 _RE_TASKVARIANT_NAME = re.compile(r'[^-\w.]', re.UNICODE)
 _RE_EXT_AT_THE_END = re.compile(r'\.\w+$', re.UNICODE)
 
-def registerUsedWafTaskKeys(keys):
-    ''' Register used Waf task keys '''
-    _usedWafTaskKeys.update(keys)
+def allowTGenAttrs(params):
+    ''' add allowed Waf task gen attributes '''
+    _allowedTGenAttrs.update(params)
 
-def unregisterUsedWafTaskKeys(keys):
-    ''' Unregister used Waf task keys '''
-    _usedWafTaskKeys.difference_update(keys)
+def disallowTGenAttrs(params):
+    ''' del allowed Waf task gen attributes '''
+    _allowedTGenAttrs.difference_update(params)
 
-def getUsedWafTaskKeys():
-    ''' Get used Waf task keys '''
-    return _usedWafTaskKeys
+def allowedTGenAttrs():
+    ''' Get allowed Waf task gen attributes '''
+    return _allowedTGenAttrs
 
 def getMonitoredEnvVarNames():
     ''' Get all monitored env vars to reconfigure on their change '''

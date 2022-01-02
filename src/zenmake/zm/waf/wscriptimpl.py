@@ -234,7 +234,7 @@ def build(bld):
 
         bldParams = taskParams.copy()
         # Remove params that can conflict with waf in theory
-        dropKeys = set(KNOWN_TASK_PARAM_NAMES) - assist.getUsedWafTaskKeys()
+        dropKeys = set(KNOWN_TASK_PARAM_NAMES) - assist.allowedTGenAttrs()
         bldParamKeys = tuple(bldParams.keys())
         dropKeys.update([k for k in bldParamKeys if k[0] == '$' ])
         dropKeys = tuple(dropKeys)

@@ -422,9 +422,9 @@ def testIsBuildConfFake():
 
 def testUsedWafTaskKeys():
 
-    keys = set(assist.getUsedWafTaskKeys())
+    keys = set(assist.allowedTGenAttrs())
     assert 'features' in keys
-    assist.registerUsedWafTaskKeys(['t1', 't2'])
-    assert assist.getUsedWafTaskKeys() - set(['t1', 't2']) == keys
-    assist.unregisterUsedWafTaskKeys(['t1', 't2'])
-    assert assist.getUsedWafTaskKeys() == keys
+    assist.allowTGenAttrs(['t1', 't2'])
+    assert assist.allowedTGenAttrs() - set(['t1', 't2']) == keys
+    assist.disallowTGenAttrs(['t1', 't2'])
+    assert assist.allowedTGenAttrs() == keys
