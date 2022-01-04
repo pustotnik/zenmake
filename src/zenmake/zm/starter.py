@@ -161,6 +161,7 @@ def run():
         if bconf.cliopts:
             # Do parsing of CLI again to apply defaults from buildconf
             cmd, wafCmdLine = handleCLI(sys.argv, noBuildConf, bconf.cliopts)
+            adjustCliDirPaths(cwd, cmd.args) # for consistency
 
         from zm import db
         utils.setDefaultHashAlgo(bconf.general['hash-algo'])

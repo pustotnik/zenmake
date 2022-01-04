@@ -530,6 +530,10 @@ def areExternalParamsChanged(zmMetaConf, buildtype, cliargs):
 
     prevCliArgs = eparams.get('cliargs', {})
     for name in getMonitoredCliArgNames():
+        if name not in cliargs:
+            # Ignore arg if it cannot be used in current cli command
+            # Otherwise it can cause unnecessary call of 'configure'
+            continue
         if prevCliArgs.get(name) != cliargs.get(name):
             return True
 
