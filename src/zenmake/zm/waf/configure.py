@@ -201,16 +201,31 @@ class ConfigurationContext(WafConfContext):
                 indexes[key] = idx
         return idx
 
-    def _checkTaskLocalDeps(self):
+    def _checkTaskDepsInUse(self):
+
+        def check(dep, bconf, taskParams, allTasks):
+
+            # check in local deps
+            if dep in allTasks:
+                return
+
+            # check in configured external libs
+            env = self.all_envs[taskParams['$task.variant']]
+            _dep = dep.upper()
+            envNames = ('LIB_%s' % _dep, 'STLIB_%s' % _dep)
+            if any(x in env for x in envNames):
+                return
+
+            # problem found
+            taskName = taskParams['name']
+            msg = 'Task %r: dependency %r not found.' % (taskName, dep)
+            raise error.ZenMakeConfError(msg, confpath = bconf.path)
 
         allTasks = self.allTasks
         for bconf in self.bconfManager.configs:
             for taskParams in bconf.tasks.values():
-                for localDep in taskParams.get('use', []):
-                    if localDep not in allTasks:
-                        taskName = taskParams['name']
-                        msg = 'Task %r: local dependency %r not found.' % (taskName, localDep)
-                        raise error.ZenMakeConfError(msg, confpath = bconf.path)
+                for dep in taskParams.get('use', []):
+                    check(dep, bconf, taskParams, allTasks)
 
     def _finishToolConfig(self, toolenv):
 
@@ -968,7 +983,6 @@ class ConfigurationContext(WafConfContext):
 
         # prepare external dep rules to run
         edeps.preconfigureExternalDeps(self)
-        self._checkTaskLocalDeps()
 
         # run external dep 'configure' rules and gather needed info after them
         edeps.produceExternalDeps(self)
@@ -976,6 +990,9 @@ class ConfigurationContext(WafConfContext):
 
         # finally run rest configuration including conf tests
         WafContext.Context.execute(self)
+
+        # It is better to check deps in 'use' after conf checks
+        self._checkTaskDepsInUse()
 
         if self.zmdepconfs:
             # insert libs/stlibs into params 'libs'/'stlibs' after conf actions

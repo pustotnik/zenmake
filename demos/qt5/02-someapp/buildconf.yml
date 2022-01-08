@@ -1,0 +1,39 @@
+
+tasks:
+  util:
+    features : cxxshlib
+    source   : util/**/*.cpp
+
+  qutil:
+    features : cxxshlib qt5
+    source   : qutil/**/*.cpp
+    source   : qutil/**/*.cpp qutil/**/*.ts
+    use      : Qt5Core
+
+  myqt5app:
+    features  : cxxprogram qt5
+    source    : prog/**/*.cpp prog/**/*.qrc prog/**/*.ui prog/**/*.ts
+    moc       : prog/**/*.h # suppose all .h files in the 'prog' have Q_OBJECT
+    rclangprefix: lang
+    #qmpathprefix : prog/i18n
+    #unique-qmpaths: true
+    use       : Qt5Widgets qutil util
+    configure:
+      - do : check-headers
+        names : iostream
+
+GCC_BASE_FLAGS: -std=c++11 -fPIC
+
+buildtypes:
+  debug:
+    cxxflags.select:
+      default: $GCC_BASE_FLAGS -O0 -g # g++/clang++
+      msvc   : /Od /EHsc
+
+  release:
+     cxxflags.select:
+      default: $GCC_BASE_FLAGS -O2 # g++/clang++
+      msvc   : /O2 /EHsc
+
+  default: release
+

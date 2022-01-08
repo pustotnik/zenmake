@@ -1,0 +1,8 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="/icons">
+    <file alias="new.png">../images/new.png</file>
+    <file alias="open.png">../images/open.png</file>
+    <file alias="quit.png">../images/quit.png</file>
+    <file alias="dialog.png">../images/dialog.png</file>
+</qresource>
+</RCC>

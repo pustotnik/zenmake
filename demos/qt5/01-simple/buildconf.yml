@@ -1,0 +1,22 @@
+
+tasks:
+  main:
+    features : cxxprogram qt5
+    source   : appwindow.cpp main.cpp
+    use      : Qt5Widgets
+
+GCC_BASE_FLAGS: -std=c++11 -fPIC
+
+buildtypes:
+  debug:
+    cxxflags.select:
+      default: $GCC_BASE_FLAGS -O0 -g # g++/clang++
+      msvc   : /Od /EHsc
+
+  release:
+     cxxflags.select:
+      default: $GCC_BASE_FLAGS -O2 # g++/clang++
+      msvc   : /O2 /EHsc
+
+  default: debug
+

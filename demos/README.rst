@@ -32,6 +32,8 @@ Linux:
     - gfortran
     - gtk3 (libgtk-3-dev)
     - sdl2 (libsdl2-dev)
+    - qt5 (qt5-default)
+    - qt5 tools: qmake, uic, rcc, lrelease, lupdate
 
 macOS:
     - python 3.x

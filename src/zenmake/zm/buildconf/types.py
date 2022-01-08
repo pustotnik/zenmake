@@ -24,4 +24,23 @@ class AnyStrKey(object):
 
 ANYSTR_KEY = AnyStrKey()
 
+_PATHS_SCHEME_DICT_VARS = {
+    'incl'       : { 'type': ('str', 'list-of-strs') },
+    'excl'       : { 'type': ('str', 'list-of-strs') },
+    'ignorecase' : { 'type': 'bool' },
+    'startdir'   : { 'type': 'str' },
+}
+
+PATHS_SCHEME = {
+    'type' : ('str', 'list', 'dict'),
+    'dict' : {
+        'vars' : _PATHS_SCHEME_DICT_VARS,
+    },
+    'list' : {
+        'vars-type' : ('str', 'dict'),
+        'dict-vars' : _PATHS_SCHEME_DICT_VARS,
+    },
+    'traits' : ['complex-path'],
+}
+
 ConfNode = struct('ConfNode', 'val, traits')

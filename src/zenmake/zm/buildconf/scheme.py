@@ -14,7 +14,7 @@ from zm.pyutils import stringtype
 from zm.utils import toList
 from zm.error import ZenMakeConfValueError
 from zm.cli import config as cliConfig
-from zm.buildconf.types import ANYSTR_KEY
+from zm.buildconf.types import PATHS_SCHEME, ANYSTR_KEY
 from zm.buildconf.sugar import genSugarSchemes
 from zm.features import ConfValidation
 
@@ -198,25 +198,6 @@ def _genConfActionsDictVarsScheme(confnode, fullkey):
         schemeDictVars.update(_actionToVars.get(action, {}))
     return schemeDictVars
 
-_PATHS_SCHEME_DICT_VARS = {
-    'incl'       : { 'type': ('str', 'list-of-strs') },
-    'excl'       : { 'type': ('str', 'list-of-strs') },
-    'ignorecase' : { 'type': 'bool' },
-    'startdir'   : { 'type': 'str' },
-}
-
-_PATHS_SCHEME = {
-    'type' : ('str', 'list', 'dict'),
-    'dict' : {
-        'vars' : _PATHS_SCHEME_DICT_VARS,
-    },
-    'list' : {
-        'vars-type' : ('str', 'dict'),
-        'dict-vars' : _PATHS_SCHEME_DICT_VARS,
-    },
-    'traits' : ['complex-path'],
-}
-
 def _genInstallFilesScheme(confnode, fullkey):
 
     # pylint: disable = unused-argument
@@ -231,7 +212,7 @@ def _genInstallFilesScheme(confnode, fullkey):
 
 _installTypeSpecVars = {
     'copy' : {
-        'src'   : _PATHS_SCHEME,
+        'src'   : PATHS_SCHEME,
         'dst'   : { 'type': 'str', 'traits': ['one-path', 'abs'] },
         'chmod' : { 'type' : ('int', 'str'), },
         'user'  : { 'type': 'str' },
@@ -314,8 +295,8 @@ _DEP_RULE_SCHEME = {
             'vars' : {
                 'always' : { 'type': 'bool' },
                 'no-targets' : { 'type': 'bool' },
-                'paths-exist' : _PATHS_SCHEME,
-                'paths-dont-exist' : _PATHS_SCHEME,
+                'paths-exist' : PATHS_SCHEME,
+                'paths-dont-exist' : PATHS_SCHEME,
                 'func' : { 'type': 'func', 'traits': ['func'] },
                 'env' : {
                     'type': 'dict',
@@ -341,7 +322,7 @@ taskscheme = {
     'target' :          { 'type': 'str' },
     'features' :        { 'type': ('str', 'list-of-strs') },
     'use' :             { 'type': ('str', 'list-of-strs') },
-    'source' :          _PATHS_SCHEME,
+    'source' :          PATHS_SCHEME,
     'toolchain' :       { 'type': ('str', 'list-of-strs') },
     'libs' :            { 'type': ('str', 'list-of-strs') },
     'libpath':          { 'type': ('str', 'list-of-strs'), 'traits': ['list-of-paths'] },
@@ -386,7 +367,12 @@ def _addExportParamsToScheme(tscheme, exportingParams):
             paramScheme = { 'type': 'bool' }
         else:
             paramScheme = deepcopy(tscheme[param])
-            paramScheme['type'] = ('bool', ) + paramScheme['type']
+            _type = paramScheme['type']
+            if not isinstance(_type, (tuple, list)):
+                _type = (_type,)
+            else:
+                _type = tuple(_type)
+            paramScheme['type'] = ('bool', ) + _type
         tscheme['export-%s' % param] = paramScheme
 
 def _addSelectToParams(scheme, paramNames = None):
@@ -492,7 +478,7 @@ confscheme = {
                     'toolchain' : { 'type': ('str', 'list-of-strs') },
                     'task' :      { 'type': ('str', 'list-of-strs') },
                     'buildtype' : { 'type': ('str', 'list-of-strs') },
-                    'env' :       { 'type' : 'dict' },
+                    'env' :       { 'type': 'dict' },
                 },
             },
         },
