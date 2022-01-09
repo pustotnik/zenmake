@@ -155,7 +155,7 @@ def substVars(strval, svarGetter, envVars = None, foundEnvVars = None):
         if foundVal is None:
             foundVal = svarGetter(foundName)
 
-        if not foundVal:
+        if foundVal is None:
             # leave it for Waf if it doesn't start with $$
             foundVal = "${%s}" % foundName if useEnv else ""
 

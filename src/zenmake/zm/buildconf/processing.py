@@ -147,7 +147,7 @@ class _SubstVarsResolver(object):
             if parentBConf is not None:
                 val = parentBConf._svarsResolver.get(name)
 
-        if val:
+        if val is not None:
             if not isinstance(val, stringtype):
                 msg = 'The %r variable has invalid type to use as' % name
                 msg += ' a substitution variable. Such a variable must be string.'
