@@ -535,10 +535,15 @@ class CmdLineParser(object):
         for opt in ('configure', 'clean', 'cleanall', 'distclean'):
             if options.get(opt):
                 cmdline.insert(0, opt)
-        for opt in ('jobs', 'color', 'destdir', 'prefix', 'bindir', 'libdir'):
+        for opt in ('jobs', 'destdir', 'prefix', 'bindir', 'libdir'):
             val = options.get(opt)
             if val:
                 cmdline.append('--%s=%s' % (opt, str(val)))
+        if 'color' in options:
+            val = options.color
+            if isinstance(val, bool):
+                val = 'yes' if val else 'no'
+            cmdline.append('--color=%s' % val)
 
         if options.progress:
             cmdline.append('--progress')
