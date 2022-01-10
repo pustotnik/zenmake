@@ -9,7 +9,7 @@ tasks:
 
     gui:
         features : cshlib
-        source   : 'gui/*.c'
+        source   : gui/*.c
         use      : builder.ui
         ver-num  : '0.1.2'
         configure:
@@ -21,7 +21,7 @@ tasks:
 
     gtk3demo:
         features : cprogram
-        source   : 'app/*.c'
+        source   : app/*.c
         use      : gui
         #rpath    : .
 
@@ -32,5 +32,5 @@ buildtypes:
 
 install:
     - for: { task: gui }
-      src: '$(buildtypedir)/builder.ui'
-      dst: '$(prefix)/share/$(prjname)'
+      src: $(buildtypedir)/builder.ui
+      dst: $(prefix)/share/$(prjname)
