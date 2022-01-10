@@ -22,6 +22,8 @@ _relpath = os.path.relpath
 _isabs = os.path.isabs
 _isdir = os.path.isdir
 _expanduser = os.path.expanduser
+_commonpath = os.path.commonpath
+_splitdrive = os.path.splitdrive
 
 _pathPatternsCache = {}
 
@@ -298,7 +300,7 @@ class PathsParam(object):
             return self.relpaths() == other.relpaths()
         return self.abspaths() == other.abspaths()
 
-def pathsDictParamsToList(item):
+def _pathsDictParamsToList(item):
     """
     Call 'toList' to all appropriate params of paths conf dict item
     """
@@ -339,7 +341,7 @@ def makePathsConf(param, startdir):
 
         if isinstance(item, maptype):
             item.setdefault('startdir', startdir)
-            pathsDictParamsToList(item)
+            _pathsDictParamsToList(item)
             result.append(item)
             continue
 
@@ -357,7 +359,7 @@ def makePathsConf(param, startdir):
         # gather all paths in one item
         result.append({ 'startdir' : startdir, 'paths' : paths })
 
-    result[0]['$ready'] = 1 # marker about finished work
+    result[0]['$ready'] = 1 # marker of finished work
     return result
 
 def _getNodesFromPathPatterns(ctx, param, startNode, withDirs,
@@ -368,13 +370,13 @@ def _getNodesFromPathPatterns(ctx, param, startNode, withDirs,
     if not ('incl' in param or 'excl' in param):
         return []
 
-    include = param.get('incl', '**')
-
     if cache:
         cacheKey = repr(sorted(param.items()))
         cached = _pathPatternsCache.get(cacheKey)
         if cached is not None:
             return [ctx.root.make_node(x) for x in cached]
+
+    include = param.get('incl', ['**'])
 
     exclude = list(param.get('excl', []))
     exclude.extend(DEFAULT_PATH_EXCLUDES)
@@ -403,6 +405,48 @@ def _getNodesFromPathPatterns(ctx, param, startNode, withDirs,
         _pathPatternsCache[cacheKey] = [x.abspath() for x in nodes]
 
     return nodes
+
+def _handleStartDir(rootdir, item):
+
+    startdir = _normpath(_joinpath(rootdir, item['startdir']))
+    sep = os.sep
+
+    prefixes = []
+    meta = { 'incl': [], 'excl': [] }
+    for arg in ('incl', 'excl'):
+        patterns = toListSimple(item.get(arg, []))
+        if not patterns:
+            continue
+
+        item[arg] = patterns
+        for i, path in enumerate(patterns):
+            if not _isabs(path):
+                continue
+
+            drive, _path = _splitdrive(path)
+            parts = _path.split(sep)
+
+            patrnIdx = 0
+            for part in parts:
+                if '*' in part or '?' in part:
+                    break
+                patrnIdx += 1
+
+            prefixPath = _normpath(drive + sep.join(parts[:patrnIdx]))
+            prefixes.append(prefixPath)
+            tail = sep.join(parts[patrnIdx:])
+            if tail:
+                tail = sep + tail
+            meta[arg].append([i, prefixPath + tail])
+
+    if prefixes:
+        prefixes.append(startdir)
+        startdir = _commonpath(prefixes)
+        for arg in ('incl', 'excl'):
+            for i, path in meta[arg]:
+                item[arg][i] = path[len(startdir) + 1:]
+
+    return startdir
 
 def getNodesFromPathsConf(ctx, param, rootdir, withDirs = False,
                           excludeExtraPaths = None, cache = False, onNoPath = None):
@@ -436,7 +480,7 @@ def getNodesFromPathsConf(ctx, param, rootdir, withDirs = False,
 
     for item in param:
 
-        startdir = _normpath(_joinpath(rootdir, item['startdir']))
+        startdir = _handleStartDir(rootdir, item)
 
         if not _isdir(startdir):
             doNoPathError(ZenMakeDirNotFoundError, startdir)
