@@ -43,7 +43,6 @@ class InstallContext(BuildContext):
     def __init__(self, **kw):
         super().__init__(**kw)
         self.is_install = INSTALL
-        self.buildWorkDirName = ''
 
     def execute(self):
 

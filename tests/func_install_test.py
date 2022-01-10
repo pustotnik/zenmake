@@ -17,7 +17,7 @@ import posixpath
 import pytest
 from zm import cli, utils
 from zm.autodict import AutoDict
-from zm.constants import PLATFORM
+from zm.constants import PLATFORM, DEFAULT_BUILDWORKNAME
 from zm.features import TASK_TARGET_FEATURES
 
 from tests.func_utils import *
@@ -109,6 +109,17 @@ def getInstallFixtureParams():
 
 INSTALL_FIXTURE_PARAMS = getInstallFixtureParams()
 
+def checkBuildWorkDir(testSuit):
+    """
+    Check that the @bld directory exists and isn't empty
+    """
+
+    buildtypedir = testSuit.confManager.root.selectedBuildTypeDir
+    buildworkdir = joinpath(buildtypedir, DEFAULT_BUILDWORKNAME)
+
+    assert os.path.isdir(buildworkdir)
+    assert len(os.listdir(buildworkdir)) > 0
+
 @pytest.mark.usefixtures("unsetEnviron")
 class TestInstall(object):
 
@@ -139,6 +150,9 @@ class TestInstall(object):
 
         targets = set()
         processConfManagerWithCLI(self, cmdLine)
+
+        checkBuildWorkDir(self)
+
         tasks = getBuildTasks(self.confManager)
         for taskName, taskParams in tasks.items():
 
@@ -338,6 +352,9 @@ class TestInstallFiles(object):
             cmdLine.extend(fixtures.installArgs)
             exitcode, _, _ = runZm(self, cmdLine)
             assert exitcode == 0
+
+            processConfManagerWithCLI(self, cmdLine)
+            checkBuildWorkDir(self)
 
             for item in fixtures['files']:
                 filepath = joinpath(destdir, item['path'])
