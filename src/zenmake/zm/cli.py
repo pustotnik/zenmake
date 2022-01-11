@@ -155,6 +155,12 @@ class Option(_AutoDict):
         self.setdefault('choices', None)
         self.setdefault('default', None)
 
+# All commands which depend on parameters from buildconf.
+# Also these are all commands that can call 'configure' cmd + 'configure'.
+ALL_CONF_CMD_NAMES = [
+    'configure', 'build', 'test', 'run', 'install', 'uninstall'
+]
+
 # Declarative list of options in CLI
 # Special param 'runcmd' is used to declare option that runs another command
 # before current. There is no need to set 'action' in that case. And it cannot
@@ -228,8 +234,7 @@ config.options = [
     ),
     Option(
         names = ['-o', '--buildroot'],
-        commands = ['configure', 'build', 'test', 'run', 'clean', 'cleanall',
-                    'distclean', 'install', 'uninstall'],
+        commands = ALL_CONF_CMD_NAMES + ['clean', 'cleanall', 'distclean'],
         help = "build directory for the project",
     ),
     Option(
@@ -244,7 +249,7 @@ config.options = [
         names = ['-H', '--cache-cfg-actions'],
         dest = 'cacheCfgActionResults',
         action = "store_true",
-        commands = ['configure', 'build', 'test', 'run', 'install', 'uninstall'],
+        commands = ALL_CONF_CMD_NAMES,
         help = "cache results of config actions",
     ),
     Option(
@@ -254,17 +259,17 @@ config.options = [
     ),
     Option(
         names = ['--prefix'],
-        commands = ['configure', 'install', 'uninstall'],
+        commands = ALL_CONF_CMD_NAMES, # it must be in all these commands
         help = 'installation prefix',
     ),
     Option(
         names = ['--bindir'],
-        commands = ['configure', 'install', 'uninstall'],
+        commands = ALL_CONF_CMD_NAMES, # it must be in all these commands
         help = 'installation bin directory [ ${PREFIX}/bin ]',
     ),
     Option(
         names = ['--libdir'],
-        commands = ['configure', 'install', 'uninstall'],
+        commands = ALL_CONF_CMD_NAMES, # it must be in all these commands
         help = 'installation lib directory [ ${PREFIX}/lib[64] ]',
     ),
     Option(
@@ -277,7 +282,7 @@ config.options = [
         names = ['-A', '--verbose-configure'],
         dest = 'verboseConfigure',
         action = "count",
-        commands = ['configure', 'build', 'install', 'uninstall', 'test', 'run'],
+        commands = ALL_CONF_CMD_NAMES,
         help = 'verbosity level -A -AA or -AAA for configure stage',
     ),
     Option(

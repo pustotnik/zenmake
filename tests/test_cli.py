@@ -115,13 +115,16 @@ class TestSuite(object):
             'verboseBuild' : None,
             'withTests': 'no',
             'runTests': 'none',
+            'bindir' : None,
+            'libdir' : None,
+            'prefix' : cli.DEFAULT_PREFIX,
             'buildroot' : None,
             'forceExternalDeps' : False,
             'cacheCfgActionResults' : False,
         }
 
         CMDNAME = 'build'
-        CMNOPTS = ['--color=auto',]
+        CMNOPTS = ['--color=auto', '--prefix=' + cli.DEFAULT_PREFIX]
 
         checks = [
             dict(
@@ -230,13 +233,16 @@ class TestSuite(object):
             'verboseBuild' : None,
             'withTests': 'yes',
             'runTests': 'all',
+            'bindir' : None,
+            'libdir' : None,
+            'prefix' : cli.DEFAULT_PREFIX,
             'buildroot' : None,
             'forceExternalDeps' : False,
             'cacheCfgActionResults' : False,
         }
 
         CMDNAME = 'test'
-        CMNOPTS = ['--color=auto',]
+        CMNOPTS = ['--color=auto', '--prefix=' + cli.DEFAULT_PREFIX]
 
         checks = [
             dict(
@@ -307,7 +313,7 @@ class TestSuite(object):
             dict(
                 args = [CMDNAME, '--color', 'no'],
                 expectedArgsUpdate = {'color': 'no'},
-                wafArgs = ['build', CMDNAME, '--color=no'],
+                wafArgs = ['build', CMDNAME, '--color=no'] + CMNOPTS[1:],
             ),
             dict(
                 args = [CMDNAME, 'sometask'],
