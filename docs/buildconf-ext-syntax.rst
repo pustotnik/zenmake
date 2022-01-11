@@ -234,11 +234,6 @@ List of built-in variables:
     :libdir:
         Installation lib directory.
 
-    :destdir:
-        Installation destination directory. It's mostly for installing to a
-        temporary directory. For example this can be used for building deb packages.
-        See also ``--destdir`` command line argument for commands 'install'/'uninstall'.
-
 In some cases some extra variables are provided. For example,
 variables ``src`` and ``tgt`` are provided
 for the ``cmd`` in the task parameter :ref:`run<buildconf-taskparams-run>`.

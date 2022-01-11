@@ -711,7 +711,7 @@ class Config(object):
         else:
             clivars = self._meta.clivars
             builtinvars = {}
-            for name in ('destdir', 'prefix', 'bindir', 'libdir'):
+            for name in ('prefix', 'bindir', 'libdir'):
                 builtinvars[name] = clivars.get(name, '')
 
             builtinvars['prjname']      = self.projectName
