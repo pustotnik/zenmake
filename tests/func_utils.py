@@ -187,7 +187,7 @@ def processConfManagerWithCLI(testSuit, cmdLine):
     except AttributeError:
         pass
 
-    cmd, _ = starter.handleCLI(cmdLine, True, None)
+    cmd = starter.handleCLI(cmdLine, True, None)
 
     starter.adjustCliDirPaths(testSuit.cwd, cmd.args)
 
@@ -196,7 +196,7 @@ def processConfManagerWithCLI(testSuit, cmdLine):
     testSuit.confManager = confManager
     testSuit.confPaths = confManager.root.confPaths
 
-    cmd, _ = starter.handleCLI(cmdLine, False, confManager.root.cliopts)
+    cmd = starter.handleCLI(cmdLine, False, confManager.root.cliopts)
 
     testSuit.cmdLine = cmdLine
     db.useformat(confManager.root.general['db-format'])

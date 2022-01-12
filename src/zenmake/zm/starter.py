@@ -31,9 +31,9 @@ def handleCLI(args, noBuildConf, options):
     from zm import cli
 
     defaults = options if options else {}
-    cmd, wafCmdLine = cli.parseAll(args, noBuildConf, defaults)
+    cmd = cli.parseAll(args, noBuildConf, defaults)
     cli.selected = cmd
-    return cmd, wafCmdLine
+    return cmd
 
 def adjustCliDirPaths(cwd, cliargs):
     """
@@ -137,7 +137,7 @@ def run():
 
         bconfDir = findTopLevelBuildConfDir(cwd)
         noBuildConf = bconfDir is None
-        cmd, wafCmdLine = handleCLI(sys.argv, noBuildConf, None)
+        cmd = handleCLI(sys.argv, noBuildConf, None)
 
         error.verbose = cmd.args.verbose
 
@@ -160,7 +160,7 @@ def run():
 
         if bconf.cliopts:
             # Do parsing of CLI again to apply defaults from buildconf
-            cmd, wafCmdLine = handleCLI(sys.argv, noBuildConf, bconf.cliopts)
+            cmd = handleCLI(sys.argv, noBuildConf, bconf.cliopts)
             adjustCliDirPaths(cwd, cmd.args) # for consistency
 
         from zm import db
@@ -181,6 +181,6 @@ def run():
 
     # start waf ecosystem
     from zm.waf import launcher
-    launcher.run(cmd, wafCmdLine, bconfManager)
+    launcher.run(cmd, bconfManager)
 
     return 0

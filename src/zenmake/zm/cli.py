@@ -20,7 +20,7 @@ from zm import log
 from zm.error import ZenMakeLogicError
 from zm.autodict import AutoDict as _AutoDict
 
-ParsedCommand = struct('ParsedCommand', 'name, args, notparsed, orig')
+ParsedCommand = struct('ParsedCommand', 'name, args, wafline, notparsed, orig')
 
 """
 Object of ParsedCommand with current command after last parsing of command line.
@@ -339,8 +339,8 @@ class CmdLineParser(object):
     """
 
     __slots__ = (
-        '_defaults', '_globalOptions', '_command', '_wafCmdLine',
-        '_parser', '_commandHelps', '_cmdNameMap', '_origArgs',
+        '_defaults', '_globalOptions', '_parser', '_parsedCmd',
+        '_commandHelps', '_cmdNameMap', '_origArgs',
     )
 
     def __init__(self, progName, defaults):
@@ -349,9 +349,8 @@ class CmdLineParser(object):
         self._defaults.update(_getReadyOptDefaults())
         self._defaults.update(defaults)
 
-        self._command = None
+        self._parsedCmd = None
         self._origArgs = None
-        self._wafCmdLine = []
 
         self._setupOptions()
         self._cmdNameMap = _makeCmdNameMap()
@@ -504,15 +503,16 @@ class CmdLineParser(object):
                 optName = opt.names[-1].replace('-', '', 2)
                 args.pop(optName, None)
         cmd = self._cmdNameMap[args.pop('command')]
-        self._command = ParsedCommand(
+        self._parsedCmd = ParsedCommand(
             name = cmd.name,
             args = args,
+            wafline = [],
             notparsed = notparsed,
             orig = self._origArgs,
         )
 
     def _postProcess(self):
-        args = self._command.args
+        args = self._parsedCmd.args
         path = args.get('destdir')
         if path:
             args['destdir'] = unfoldPath(CWD, path)
@@ -520,12 +520,12 @@ class CmdLineParser(object):
     def _fillWafCmdLine(self):
         # NOTE: The option/command 'distclean'/'cleanall' is handled in special way
 
-        cmdName = self._command.name
+        cmdName = self._parsedCmd.name
         cmdline = [cmdName]
 
-        # self._command.args is AutoDict and it means that it'll create
+        # self._parsedCmd.args is AutoDict and it means that it'll create
         # nonexistent keys inside, so we need to make a copy
-        options = _AutoDict(self._command.args)
+        options = _AutoDict(self._parsedCmd.args)
 
         cmdConfig = next(x for x in config.commands if x.name == cmdName)
 
@@ -555,7 +555,7 @@ class CmdLineParser(object):
         if options.verbose:
             cmdline.append('-' + options.verbose * 'v')
 
-        self._wafCmdLine = cmdline
+        self._parsedCmd.wafline = cmdline
 
     def parse(self, args = None, defaultCmd = 'help'):
         """ Parse command line args """
@@ -603,26 +603,21 @@ class CmdLineParser(object):
         self._fillCmdInfo(parsedArgs, notparsed)
         self._postProcess()
         self._fillWafCmdLine()
-        return self._command
+        return self._parsedCmd
 
     @property
-    def command(self):
-        """ current command after last parsing of command line"""
-        return self._command
-
-    @property
-    def wafCmdLine(self):
+    def parsed(self):
         """
-        current command line args for WAF command after last
-        parsing of command line
+        Get parsed info as object of ParsedCommand
+        after last parsing of command line
         """
-        return self._wafCmdLine
+        return self._parsedCmd
 
 def parseAll(args, noBuildConf = True, defaults = None):
     """
     Parse all command line args with CmdLineParser and save selected
     command as object of ParsedCommand in global var 'selected' of this module.
-    Returns selected command as object of ParsedCommand and parser.wafCmdLine
+    Returns selected command as object of ParsedCommand
     """
 
     # simple hack for default behavior if command is not defined
@@ -631,6 +626,4 @@ def parseAll(args, noBuildConf = True, defaults = None):
     if defaults is None:
         defaults = {}
     parser = CmdLineParser(APPNAME, defaults)
-    cmd = parser.parse(args[1:], defaultCmd)
-
-    return cmd, parser.wafCmdLine
+    return parser.parse(args[1:], defaultCmd)

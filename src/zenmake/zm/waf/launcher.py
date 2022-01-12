@@ -156,7 +156,7 @@ def setupAndRunCommands(wafCmdLine, bconfManager):
 
     runCommand(bconfManager, 'shutdown')
 
-def run(cmd, wafCmdLine, bconfManager):
+def run(cmd, bconfManager):
     """
     Replacement for the Scripting.waf_entry_point
     """
@@ -198,7 +198,7 @@ def run(cmd, wafCmdLine, bconfManager):
         if 'buildtype' in cliArgs:
             loadFeatureModules(bconfManager)
 
-        setupAndRunCommands(wafCmdLine, bconfManager)
+        setupAndRunCommands(cmd.wafline, bconfManager)
     except Errors.WafError as ex:
         if verbose > 1:
             log.pprint('RED', ex.verbose_msg)

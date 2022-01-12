@@ -42,10 +42,10 @@ def testHandleCLI(capsys):
     #############
     args = [APPNAME, 'build']
     options = {}
-    cmd, wafCmdLine = starter.handleCLI(args, noBuildConf, options)
+    cmd = starter.handleCLI(args, noBuildConf, options)
     assert cmd == cli.selected
     assert cmd.name == 'build'
-    assert wafCmdLine[0] == 'build'
+    assert cmd.wafline[0] == 'build'
     assert cmd.args.verbose == 0
     assert cmd.args.jobs is None
     assert not cmd.args.progress
@@ -55,26 +55,26 @@ def testHandleCLI(capsys):
         'jobs' : { 'build' : 4 },
         'progress' : {'any': False, 'build': True },
     }
-    cmd, wafCmdLine = starter.handleCLI(args, noBuildConf, options)
+    cmd = starter.handleCLI(args, noBuildConf, options)
     assert cmd == cli.selected
     assert cmd.name == 'build'
-    assert wafCmdLine[0] == 'build'
+    assert cmd.wafline[0] == 'build'
     assert cmd.args.verbose == 1
     assert cmd.args.jobs == 4
     assert cmd.args.progress
-    cmd, wafCmdLine = starter.handleCLI(args, noBuildConf, None)
+    cmd = starter.handleCLI(args, noBuildConf, None)
     assert cmd == cli.selected
     assert cmd.name == 'build'
-    assert wafCmdLine[0] == 'build'
+    assert cmd.wafline[0] == 'build'
     assert cmd.args.verbose == 0
     assert cmd.args.jobs is None
     assert not cmd.args.progress
 
     args = [APPNAME, 'test']
-    cmd, wafCmdLine = starter.handleCLI(args, noBuildConf, options)
+    cmd = starter.handleCLI(args, noBuildConf, options)
     assert cmd == cli.selected
     assert cmd.name == 'test'
-    assert wafCmdLine[0] == 'build'
+    assert cmd.wafline[0] == 'build'
     assert cmd.args.verbose == 1
     assert cmd.args.jobs is None
     assert not cmd.args.progress

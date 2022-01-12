@@ -41,10 +41,10 @@ class TestSuite(object):
         assert ecode == 0
         assert CAP_APPNAME in out
         assert 'based on the Waf build system' in out
-        assert self.parser.command is not None
-        assert self.parser.command.name == 'help'
-        assert self.parser.command.args == {'topic': 'overview'}
-        assert self.parser.wafCmdLine == []
+        assert self.parser.parsed is not None
+        assert self.parser.parsed.name == 'help'
+        assert self.parser.parsed.args == {'topic': 'overview'}
+        assert self.parser.parsed.wafline == []
 
     def _assertAllsForCmd(self, cmdname, checks, baseExpectedArgs):
 
@@ -53,7 +53,7 @@ class TestSuite(object):
             expectedArgs = deepcopy(baseExpectedArgs)
             expectedArgs.update(check['expectedArgsUpdate'])
 
-            def assertAll(cmd, parsercmd, wafcmdline):
+            def assertAll(cmd, parsercmd):
                 assert cmd is not None
                 assert parsercmd is not None
                 assert parsercmd == cmd
@@ -61,18 +61,18 @@ class TestSuite(object):
                 assert cmd.args == expectedArgs
                 # pylint: disable = cell-var-from-loop
                 if 'wafArgs' in check:
-                    assert sorted(check['wafArgs']) == sorted(wafcmdline)
+                    assert sorted(check['wafArgs']) == sorted(parsercmd.wafline)
 
             # parser with explicit args
             cmd = self.parser.parse(check['args'])
-            assertAll(cmd, self.parser.command, self.parser.wafCmdLine)
+            assertAll(cmd, self.parser.parsed)
 
             # parser with args from sys.argv
             oldargv = sys.argv
             sys.argv = [APPNAME] + check['args']
             cmd = self.parser.parse()
             sys.argv = oldargv
-            assertAll(cmd, self.parser.command, self.parser.wafCmdLine)
+            assertAll(cmd, self.parser.parsed)
 
     def testEmpty(self, capsys):
         self._testMainHelpMsg([], capsys)
