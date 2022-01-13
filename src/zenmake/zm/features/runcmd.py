@@ -341,7 +341,7 @@ def applyRunCmd(tgen):
         substvars = zmTaskParams.get('substvars', {})
         cmdline = substVars(cmdline, substvars.get)
 
-        bvars = ruleArgs['env']['$builtin-vars']
+        bvars = ruleArgs['env']['$builtin-vars'].copy()
         bvars.update({ 'src': ' '.join(source), 'tgt': target })
         ruleArgs['rule'] = substBuiltInVars(cmdline, bvars)
 

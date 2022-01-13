@@ -159,12 +159,15 @@ def checkConfigWithEnv(bconf):
 def testBasic(tmpdir, monkeypatch):
 
     clivars = { 'buildtype': 'debug1' }
+    clihandler = None
 
     rootDir = tmpdir.mkdir("test")
     confFile = rootDir.join("buildconf.yml")
     confFile.write(ROOT_CONF_YML)
 
-    bconfManager = ConfManager(str(rootDir.realpath()), clivars = clivars)
+    rootDir = str(rootDir.realpath())
+
+    bconfManager = ConfManager(rootDir, clivars = clivars, clihandler = clihandler)
     bconf = bconfManager.root
 
     checkConfigNoEnv(bconf)
@@ -174,7 +177,7 @@ def testBasic(tmpdir, monkeypatch):
     monkeypatch.setenv('MYFLAGS', '-O3 -Wall')
     monkeypatch.setenv('MYFLAGS3', '-O1 -Wall -Wextra')
 
-    bconfManager = ConfManager(str(rootDir.realpath()), clivars = clivars)
+    bconfManager = ConfManager(rootDir, clivars = clivars, clihandler = clihandler)
     bconf = bconfManager.root
 
     checkConfigWithEnv(bconf)
@@ -183,6 +186,7 @@ def testBasic(tmpdir, monkeypatch):
 def testSubdirs(tmpdir, monkeypatch):
 
     clivars = { 'buildtype': 'debug1' }
+    clihandler = None
 
     rootDir = tmpdir.mkdir("test")
     confFile1 = rootDir.join("buildconf.yml")
@@ -196,7 +200,9 @@ def testSubdirs(tmpdir, monkeypatch):
     confFile3 = lvl2Dir.join("buildconf.yml")
     confFile3.write(LAST_SUBDIRS_YAML)
 
-    bconfManager = ConfManager(str(rootDir.realpath()), clivars = clivars)
+    rootDir = str(rootDir.realpath())
+
+    bconfManager = ConfManager(rootDir, clivars = clivars, clihandler = clihandler)
     bconf = bconfManager.configs[-1]
 
     checkConfigNoEnv(bconf)
@@ -206,7 +212,7 @@ def testSubdirs(tmpdir, monkeypatch):
     monkeypatch.setenv('MYFLAGS', '-O3 -Wall')
     monkeypatch.setenv('MYFLAGS3', '-O1 -Wall -Wextra')
 
-    bconfManager = ConfManager(str(rootDir.realpath()), clivars = clivars)
+    bconfManager = ConfManager(rootDir, clivars = clivars, clihandler = clihandler)
     bconf = bconfManager.configs[-1]
 
     checkConfigWithEnv(bconf)

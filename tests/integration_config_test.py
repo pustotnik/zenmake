@@ -87,7 +87,8 @@ def _checkSubdirsBuildtypesSelectParam(cfgctx, tmpdir, monkeypatch, textParams, 
     body = CONF_CHILD_YML % makeParamText(textParams[1])
     confFile3.write(body)
 
-    bconfManager = ConfManager(str(rootDir.realpath()), clivars = clivars)
+    bconfManager = ConfManager(str(rootDir.realpath()),
+                              clivars = clivars, clihandler = None)
     setattr(cfgctx, 'bconfManager', bconfManager)
 
     clicmd = cli.ParsedCommand(

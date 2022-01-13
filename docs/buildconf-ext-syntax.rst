@@ -223,16 +223,23 @@ List of built-in variables:
         Absolute path of :ref:`buildroot<buildconf-buildroot>`.
 
     :buildtypedir:
-        Absolute path of current buildtype directory.
+        Absolute path of current buildtype directory. It is
+        current value of :ref:`buildroot<buildconf-buildroot>` plus current buildtype.
 
     :prefix:
-        Installation prefix.
+        Installation prefix. It can be changed via ``--prefix`` on command line
+        or environment variable PREFIX. ALso see the
+        :ref:`cliopts<buildconf-cliopts>` parameter in buildconf.
 
     :bindir:
-        Installation bin directory.
+        Installation bin directory. It can be changed via ``--bindir`` on command line
+        or environment variable BINDIR. ALso see the
+        :ref:`cliopts<buildconf-cliopts>` parameter in buildconf.
 
     :libdir:
-        Installation lib directory.
+        Installation lib directory. It can be changed via ``--libdir`` on command line
+        or environment variable LIBDIR. ALso see the
+        :ref:`cliopts<buildconf-cliopts>` parameter in buildconf.
 
 In some cases some extra variables are provided. For example,
 variables ``src`` and ``tgt`` are provided
@@ -246,7 +253,3 @@ determine values of that built-in variables. These parameters are:
   - **buildtypedir** only: the ``default`` in the :ref:`buildtypes<buildconf-buildtypes>`
   - **buildtypedir** only: the ``buildtypes``, ``platform`` and  ``task`` in
     the :ref:`byfilter<buildconf-byfilter>`
-
-.. note::
-
-    You cannot redefine built-in variables.

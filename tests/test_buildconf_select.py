@@ -33,7 +33,7 @@ class BConfManager(ConfManager):
     def __init__(self, topdir, clivars, buildconf):
         self._buildconfs = {}
         self.setBuildConf(topdir, buildconf)
-        super().__init__(topdir, clivars)
+        super().__init__(topdir, clivars = clivars, clihandler = None)
 
     def setBuildConf(self, dirpath, buildconf):
         self._buildconfs[dirpath] = buildconf
@@ -44,7 +44,7 @@ class BConfManager(ConfManager):
 
         index = len(self._orderedConfigs)
         self._configs[dirpath] = index
-        bconf = Config(buildconf, self._clivars, parent)
+        bconf = Config(buildconf, clivars = self._clivars, parent = parent)
         self._orderedConfigs.append(bconf)
 
         return super().makeConfig(dirpath, parent)

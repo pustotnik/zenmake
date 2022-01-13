@@ -171,7 +171,7 @@ class Config(object):
 
     # pylint: disable = too-many-public-methods
 
-    def __init__(self, buildconf, clivars = None, parent = None):
+    def __init__(self, buildconf, clivars = None, clihandler = None, parent = None):
         """
         buildconf - module of a buildconf file
         clivars   - actual command line args/options like destdir, prefix, etc
@@ -181,13 +181,16 @@ class Config(object):
         self._parent = parent
         self._conf = buildconf
 
-        if clivars is None:
-            clivars = parent._meta.clivars if parent else {}
+        if parent:
+            self._clivars = parent._clivars
+            self._clihandler = None # don't use cli parsing in child configs
+        else:
+            self._clivars = clivars if clivars else {}
+            self._clihandler = clihandler
 
         self._meta = AutoDict()
         self._meta.buildtypes.selected = None
         self._meta.envvars = set()
-        self._meta.clivars = clivars
 
         self._meta.buildconffile = abspath(buildconf.__file__)
         self._meta.buildconfdir  = dirname(self._meta.buildconffile)
@@ -199,7 +202,12 @@ class Config(object):
         self._substVarsInParams()
 
         self._applyDefaults()
-        self._makeBuildDirParams(clivars.get('buildroot'))
+
+        if self._clihandler and self.cliopts:
+            # apply new default values from config and get resulted CLI vars
+            self._clivars = self._clihandler(self.cliopts).args
+
+        self._makeBuildDirParams(self._clivars.get('buildroot'))
 
         self._confpaths = ConfPaths(self)
 
@@ -709,10 +717,10 @@ class Config(object):
         if self._parent:
             builtinvars = self._parent.builtInVars
         else:
-            clivars = self._meta.clivars
+            clivars = self._clivars
             builtinvars = {}
             for name in ('prefix', 'bindir', 'libdir'):
-                builtinvars[name] = clivars.get(name, '')
+                builtinvars[name] = clivars.get(name, self._conf.cliopts.get(name, ''))
 
             builtinvars['prjname']      = self.projectName
             builtinvars['topdir']       = self.rootdir
@@ -769,7 +777,7 @@ class Config(object):
             self._meta.buildtypedir = parent.selectedBuildTypeDir
             return
 
-        buildtype = self._meta.clivars.get('buildtype')
+        buildtype = self._clivars.get('buildtype')
         if buildtype is None:
             buildtype = self.defaultBuildType
         if not buildtype:
@@ -1055,14 +1063,15 @@ class ConfManager(object):
     Class to manage Config instances
     """
 
-    __slots__ = '_clivars', '_configs', '_virtConfigs', '_orderedConfigs'
+    __slots__ = '_clivars', '_clihandler', '_configs', '_virtConfigs', '_orderedConfigs'
 
-    def __init__(self, topdir, clivars):
+    def __init__(self, topdir, clivars, clihandler):
         """
         clivars - actual command line args/options like destdir, prefix, etc
         """
 
         self._clivars = clivars
+        self._clihandler = clihandler
         self._orderedConfigs = []
         self._configs = {}
         self._virtConfigs = {}
@@ -1093,7 +1102,9 @@ class ConfManager(object):
         index = len(self._orderedConfigs)
         self._configs[dirpath] = index
 
-        bconf = Config(buildconf, self._clivars, parent)
+        bconf = Config(buildconf, clivars = self._clivars,
+                    clihandler = self._clihandler, parent = parent)
+
         self._orderedConfigs.append(bconf)
         startdir = bconf.startdir
         if startdir != dirpath:

@@ -13,8 +13,9 @@ if sys.hexversion < 0x3050000:
     raise ImportError('Python >= 3.5 is required')
 
 #pylint: disable=wrong-import-position
+
 from zm.constants import CWD
-from zm import utils
+from zm import utils, cli
 
 joinpath = path.join
 
@@ -28,7 +29,6 @@ def handleCLI(args, noBuildConf, options):
     """
     Handle CLI and return command object and waf cmd line
     """
-    from zm import cli
 
     defaults = options if options else {}
     cmd = cli.parseAll(args, noBuildConf, defaults)
@@ -155,13 +155,15 @@ def run():
 
         adjustCliDirPaths(cwd, cmd.args)
 
-        bconfManager = BuildConfManager(bconfDir, cmd.args)
-        bconf = bconfManager.root
+        def cliOptsHandler(defaults):
+            cmd = handleCLI(sys.argv, noBuildConf, defaults)
+            adjustCliDirPaths(cwd, cmd.args)
+            return cmd
 
-        if bconf.cliopts:
-            # Do parsing of CLI again to apply defaults from buildconf
-            cmd = handleCLI(sys.argv, noBuildConf, bconf.cliopts)
-            adjustCliDirPaths(cwd, cmd.args) # for consistency
+        bconfManager = BuildConfManager(bconfDir, clivars = cmd.args,
+                                        clihandler = cliOptsHandler)
+        bconf = bconfManager.root
+        cmd = cli.selected
 
         from zm import db
         utils.setDefaultHashAlgo(bconf.general['hash-algo'])

@@ -187,12 +187,18 @@ def processConfManagerWithCLI(testSuit, cmdLine):
     except AttributeError:
         pass
 
-    cmd = starter.handleCLI(cmdLine, True, None)
-
+    noBuildConf = False
+    cmd = starter.handleCLI(cmdLine, noBuildConf, None)
     starter.adjustCliDirPaths(testSuit.cwd, cmd.args)
 
+    def cliOptsHandler(defaults):
+        cmd = starter.handleCLI(cmdLine, noBuildConf, defaults)
+        starter.adjustCliDirPaths(testSuit.cwd, cmd.args)
+        return cmd
+
     bconfDir = testSuit.cwd
-    confManager = BuildConfManager(bconfDir, cmd.args)
+    confManager = BuildConfManager(bconfDir, clivars = cmd.args,
+                                        clihandler = cliOptsHandler)
     testSuit.confManager = confManager
     testSuit.confPaths = confManager.root.confPaths
 

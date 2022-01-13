@@ -202,6 +202,8 @@ general
 
             The default value is ``@bld``.
 
+.. _buildconf-cliopts:
+
 cliopts
 """"""""
     A `dict <buildconf-dict-def_>`_ array with default values for command
@@ -226,8 +228,8 @@ cliopts
         Selected command here is a command that is used on command line.
         It means if you set an option for the ``build`` command and zenmake calls
         the ``configure`` command before this command by itself then this option will
-        be applied for both ``configure`` and ``build`` commands. In other words it's
-        like you run this command with this option on command line.
+        be applied for both ``configure`` and ``build`` commands. In other words
+        it is like you are running this command with this option on command line.
 
 .. _buildconf-conditions:
 

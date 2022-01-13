@@ -86,7 +86,7 @@ class TestSuite(object):
         assert bconf.selectedBuildType == 'mybuildtype'
 
         clivars = { 'buildtype': 'mybtype' }
-        bconf = BuildConfig(asRealConf(buildconf), clivars)
+        bconf = BuildConfig(asRealConf(buildconf), clivars = clivars)
         assert bconf.selectedBuildType == 'mybtype'
 
     def _checkSupportedBuildTypes(self, buildconf, expected):
