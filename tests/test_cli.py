@@ -502,19 +502,19 @@ class TestSuite(object):
         checks = [
             dict(
                 args = [CMDNAME],
-                expectedArgsUpdate = { 'destdir' : CWD },
+                expectedArgsUpdate = { 'destdir' : '.' },
             ),
             dict(
                 args = [CMDNAME, '--destdir', 'somedir'],
-                expectedArgsUpdate = {'destdir' : joinpath(CWD, 'somedir') },
+                expectedArgsUpdate = {'destdir' : 'somedir' },
             ),
             dict(
                 args = [CMDNAME, '--verbose'],
-                expectedArgsUpdate = {'verbose': 1, 'destdir' : CWD},
+                expectedArgsUpdate = {'verbose': 1, 'destdir' : '.'},
             ),
             dict(
                 args = [CMDNAME, '--color', 'no'],
-                expectedArgsUpdate = {'color': 'no', 'destdir' : CWD},
+                expectedArgsUpdate = {'color': 'no', 'destdir' : '.'},
             ),
         ]
 
@@ -558,8 +558,8 @@ class TestSuite(object):
             ),
             dict(
                 args = [CMDNAME, '--destdir', 'somedir'],
-                expectedArgsUpdate = {'destdir' : joinpath(CWD, 'somedir') },
-                wafArgs = [CMDNAME, '--destdir=' + joinpath(CWD, 'somedir')] + CMNOPTS,
+                expectedArgsUpdate = {'destdir' : 'somedir' },
+                wafArgs = [CMDNAME, '--destdir=' + 'somedir'] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--bindir', 'somedir'],

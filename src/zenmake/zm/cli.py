@@ -14,7 +14,6 @@ from collections import defaultdict
 from thirdparty.argparse import argparse
 from zm.constants import APPNAME, CAP_APPNAME, PLATFORM, CWD
 from zm.pyutils import maptype, struct
-from zm.pathutils import unfoldPath
 from zm.utils import envValToBool
 from zm import log
 from zm.error import ZenMakeLogicError
@@ -511,12 +510,6 @@ class CmdLineParser(object):
             orig = self._origArgs,
         )
 
-    def _postProcess(self):
-        args = self._parsedCmd.args
-        path = args.get('destdir')
-        if path:
-            args['destdir'] = unfoldPath(CWD, path)
-
     def _fillWafCmdLine(self):
         # NOTE: The option/command 'distclean'/'cleanall' is handled in special way
 
@@ -601,7 +594,6 @@ class CmdLineParser(object):
             sys.exit(not self._showHelp(self._commandHelps, parsedArgs.topic))
 
         self._fillCmdInfo(parsedArgs, notparsed)
-        self._postProcess()
         self._fillWafCmdLine()
         return self._parsedCmd
 
