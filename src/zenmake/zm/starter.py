@@ -16,6 +16,7 @@ if sys.hexversion < 0x3050000:
 
 from zm.constants import CWD
 from zm import utils, cli
+from zm.pathutils import unfoldPath
 
 joinpath = path.join
 
@@ -25,7 +26,7 @@ _indyCmd = {
     'sysinfo' : 'zm.sysinfo',
 }
 
-def handleCLI(args, noBuildConf, options):
+def handleCLI(args, noBuildConf, options, cwd):
     """
     Handle CLI and return command object and waf cmd line
     """
@@ -33,29 +34,14 @@ def handleCLI(args, noBuildConf, options):
     defaults = options if options else {}
     cmd = cli.parseAll(args, noBuildConf, defaults)
     cli.selected = cmd
+
+    # Adjust some paths
+    for param in ('buildroot', 'destdir'):
+        val = cmd.args.get(param)
+        if val:
+            cmd.args[param] = unfoldPath(cwd, val)
+
     return cmd
-
-def adjustCliDirPaths(cwd, cliargs):
-    """
-    Adjust path CLI vars buildroot, prefix, bindir, libdir
-    """
-
-    cliBuildRoot = cliargs.get('buildroot', None)
-    if cliBuildRoot and not path.isabs(cliBuildRoot):
-        cliBuildRoot = joinpath(cwd, cliBuildRoot)
-        cliargs['buildroot'] = cliBuildRoot
-
-    prefix = cliargs.get('prefix')
-    if prefix:
-        if not cliargs.get('bindir'):
-            cliargs['bindir'] = '%s/bin' % prefix
-        if not cliargs.get('libdir'):
-            cliargs['libdir'] = '%s/lib%s' % (prefix, utils.libDirPostfix())
-
-    for name in ('prefix', 'bindir', 'libdir'):
-        val = cliargs.get(name)
-        if val and not os.path.isabs(val):
-            cliargs[name] = '/' + val
 
 def runIndyCmd(cmd):
     """
@@ -137,7 +123,7 @@ def run():
 
         bconfDir = findTopLevelBuildConfDir(cwd)
         noBuildConf = bconfDir is None
-        cmd = handleCLI(sys.argv, noBuildConf, None)
+        cmd = handleCLI(sys.argv, noBuildConf, None, cwd)
 
         error.verbose = cmd.args.verbose
 
@@ -153,12 +139,8 @@ def run():
                       'exists in the project directory.')
             return 1
 
-        adjustCliDirPaths(cwd, cmd.args)
-
         def cliOptsHandler(defaults):
-            cmd = handleCLI(sys.argv, noBuildConf, defaults)
-            adjustCliDirPaths(cwd, cmd.args)
-            return cmd
+            return handleCLI(sys.argv, noBuildConf, defaults, cwd)
 
         bconfManager = BuildConfManager(bconfDir, clivars = cmd.args,
                                         clihandler = cliOptsHandler)

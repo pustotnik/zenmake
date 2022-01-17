@@ -869,11 +869,12 @@ class ConfigurationContext(WafConfContext):
 
     def _preconfigureRootEnv(self):
 
+        rootbconf = self.bconfManager.root
         rootEnv = self.all_envs['']
-        rootEnv['$builtin-vars'] = self.bconfManager.root.builtInVars
+        rootEnv['$builtin-vars'] = rootbconf.builtInVars
 
-        # set/fix vars PREFIX, BINDIR, LIBDIR
-        utils.setEnvInstallDirPaths(rootEnv, rootEnv['$builtin-vars'])
+        # set/fix vars PREFIX, BINDIR, LIBDIR, etc
+        rootbconf.installDirVars.setAllInEnv(rootEnv)
 
     def preconfigure(self):
         """

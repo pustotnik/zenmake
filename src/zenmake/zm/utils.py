@@ -118,7 +118,6 @@ md5                = wafutils.md5
 readFile           = wafutils.readf
 hashOrdObj         = wafutils.h_list
 hexOfStr           = wafutils.to_hex
-libDirPostfix      = wafutils.lib64
 Timer              = wafutils.Timer
 subprocess         = wafutils.subprocess
 
@@ -544,16 +543,6 @@ def configSetToDict(configSet):
     result = configSet.get_merged_dict()
     result.pop('undo_stack', None)
     return result
-
-def setEnvInstallDirPaths(env, clivars):
-    """
-    Set installation path vars PREFIX, BINDIR, LIBDIR in env
-    """
-
-    for name in ('prefix', 'bindir', 'libdir'):
-        val = clivars.get(name)
-        if val:
-            env[name.upper()] = val
 
 def addRTLibPathToOSEnv(path, osenv):
     """

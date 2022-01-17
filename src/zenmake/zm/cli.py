@@ -12,10 +12,10 @@ from collections import defaultdict
 
 # argparse from the https://pypi.org/project/argparse/ supports aliases
 from thirdparty.argparse import argparse
-from zm.constants import APPNAME, CAP_APPNAME, PLATFORM, CWD
+from zm.constants import APPNAME, CAP_APPNAME
 from zm.pyutils import maptype, struct
 from zm.utils import envValToBool
-from zm import log
+from zm import log, installdirvars
 from zm.error import ZenMakeLogicError
 from zm.autodict import AutoDict as _AutoDict
 
@@ -31,6 +31,8 @@ selected = None
 Contains configurable 'commands', 'options' and 'posargs'
 """
 config = _AutoDict()
+
+_getenv = os.environ.get
 
 class Command(_AutoDict):
     """ Class to set up a command for CLI """
@@ -160,6 +162,8 @@ ALL_CONF_CMD_NAMES = [
     'configure', 'build', 'test', 'run', 'install', 'uninstall'
 ]
 
+INSTALL_VAR_DEFAULTS = installdirvars.DirVars('$(prjname)', {})
+
 # Declarative list of options in CLI
 # Special param 'runcmd' is used to declare option that runs another command
 # before current. There is no need to set 'action' in that case. And it cannot
@@ -256,21 +260,15 @@ config.options = [
         commands = ['zipapp', 'install', 'uninstall'],
         help = 'destination directory',
     ),
-    Option(
-        names = ['--prefix'],
-        commands = ALL_CONF_CMD_NAMES, # it must be in all these commands
-        help = 'installation prefix',
-    ),
-    Option(
-        names = ['--bindir'],
-        commands = ALL_CONF_CMD_NAMES, # it must be in all these commands
-        help = 'installation bin directory [ ${PREFIX}/bin ]',
-    ),
-    Option(
-        names = ['--libdir'],
-        commands = ALL_CONF_CMD_NAMES, # it must be in all these commands
-        help = 'installation lib directory [ ${PREFIX}/lib[64] ]',
-    ),
+    *[
+        Option(
+            names = ['--%s' % item.name],
+            commands = ALL_CONF_CMD_NAMES, # it must be in all these commands
+            help = '%s [default: %s]' % (item.desc,
+                                         INSTALL_VAR_DEFAULTS.get(item.name))
+        )
+        for item in installdirvars.CONFIG
+    ],
     Option(
         names = ['-v', '--verbose'],
         action = "count",
@@ -300,13 +298,6 @@ config.options = [
     ),
 ]
 
-DEFAULT_PREFIX = '/usr/local'
-if PLATFORM == 'windows':
-    import tempfile
-    d = tempfile.gettempdir()
-    # windows preserves the case, but gettempdir does not
-    DEFAULT_PREFIX = d[0].upper() + d[1:]
-
 config.optdefaults = {
     'verbose': 0,
 }
@@ -315,7 +306,7 @@ def _getReadyOptDefaults():
 
     # These params should be obtained only before parsing but
     # not when current python has loaded.
-    _getenv = os.environ.get
+
     config.optdefaults.update({
         'color': _getenv('NOCOLOR', '') and 'no' or 'auto',
         'destdir' : {
@@ -323,7 +314,7 @@ def _getReadyOptDefaults():
             'zipapp' : _getenv('DESTDIR', '.'),
         },
         'buildroot' : _getenv('BUILDROOT', None),
-        'prefix' : _getenv('PREFIX', '') or DEFAULT_PREFIX,
+        'prefix' : _getenv('PREFIX', None),
         'bindir' : _getenv('BINDIR', None),
         'libdir' : _getenv('LIBDIR', None),
         'cache-cfg-actions' : envValToBool(_getenv('ZM_CACHE_CFGACTIONS')),
@@ -533,7 +524,7 @@ class CmdLineParser(object):
         for opt in ('configure', 'clean', 'cleanall', 'distclean'):
             if options.get(opt):
                 cmdline.insert(0, opt)
-        for opt in ('jobs', 'destdir', 'prefix', 'bindir', 'libdir'):
+        for opt in ('jobs', 'destdir'):
             val = options.get(opt)
             if val:
                 cmdline.append('--%s=%s' % (opt, str(val)))

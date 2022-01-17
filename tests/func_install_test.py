@@ -15,7 +15,7 @@ import os
 import posixpath
 
 import pytest
-from zm import cli, utils
+from zm import utils, installdirvars
 from zm.autodict import AutoDict
 from zm.constants import PLATFORM, DEFAULT_BUILDWORKNAME
 from zm.features import TASK_TARGET_FEATURES
@@ -32,9 +32,9 @@ def getInstallFixtureParams():
     fixtures = []
 
     #### 1
-    prefix = cli.DEFAULT_PREFIX
+    prefix = installdirvars.DirVars('installtest', {}).prefix
     bindir = joinpath(prefix, 'bin')
-    libdir = joinpath(prefix, 'lib%s' % utils.libDirPostfix())
+    libdir = joinpath(prefix, 'lib%s' % installdirvars.LIBDIR_POSTFIX)
 
     params = AutoDict(prefix = prefix, bindir = bindir, libdir = libdir)
     params.installArgs = []
@@ -44,7 +44,7 @@ def getInstallFixtureParams():
     #### 2
     prefix = '/usr/my'
     bindir = posixpath.join(prefix, 'bin')
-    libdir = posixpath.join(prefix, 'lib%s' % utils.libDirPostfix())
+    libdir = posixpath.join(prefix, 'lib%s' % installdirvars.LIBDIR_POSTFIX)
 
     params = AutoDict(prefix = prefix, bindir = bindir, libdir = libdir)
     params.installArgs = ['--prefix', params.prefix]

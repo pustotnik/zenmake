@@ -14,7 +14,7 @@ import sys
 import pytest
 
 from zm.autodict import AutoDict
-from zm.constants import APPNAME
+from zm.constants import APPNAME, CWD
 from zm import cli
 from zm import starter
 import tests.common as cmn
@@ -24,25 +24,26 @@ joinpath = os.path.join
 def testHandleCLI(capsys):
 
     oldCliSelected = cli.selected
+    cwd = CWD
 
     noBuildConf = True
     args = [APPNAME]
     options = {}
 
     with pytest.raises(SystemExit):
-        starter.handleCLI(args, noBuildConf, options)
+        starter.handleCLI(args, noBuildConf, options, cwd)
     # clean output
     capsys.readouterr()
 
     with pytest.raises(SystemExit):
-        starter.handleCLI(args, noBuildConf, None)
+        starter.handleCLI(args, noBuildConf, None, cwd)
     # clean output
     capsys.readouterr()
 
     #############
     args = [APPNAME, 'build']
     options = {}
-    cmd = starter.handleCLI(args, noBuildConf, options)
+    cmd = starter.handleCLI(args, noBuildConf, options, cwd)
     assert cmd == cli.selected
     assert cmd.name == 'build'
     assert cmd.wafline[0] == 'build'
@@ -55,14 +56,14 @@ def testHandleCLI(capsys):
         'jobs' : { 'build' : 4 },
         'progress' : {'any': False, 'build': True },
     }
-    cmd = starter.handleCLI(args, noBuildConf, options)
+    cmd = starter.handleCLI(args, noBuildConf, options, cwd)
     assert cmd == cli.selected
     assert cmd.name == 'build'
     assert cmd.wafline[0] == 'build'
     assert cmd.args.verbose == 1
     assert cmd.args.jobs == 4
     assert cmd.args.progress
-    cmd = starter.handleCLI(args, noBuildConf, None)
+    cmd = starter.handleCLI(args, noBuildConf, None, cwd)
     assert cmd == cli.selected
     assert cmd.name == 'build'
     assert cmd.wafline[0] == 'build'
@@ -71,7 +72,7 @@ def testHandleCLI(capsys):
     assert not cmd.args.progress
 
     args = [APPNAME, 'test']
-    cmd = starter.handleCLI(args, noBuildConf, options)
+    cmd = starter.handleCLI(args, noBuildConf, options, cwd)
     assert cmd == cli.selected
     assert cmd.name == 'test'
     assert cmd.wafline[0] == 'build'

@@ -19,6 +19,8 @@ from zm.buildconf import loader as bconfloader
 
 joinpath = os.path.join
 
+_cache = {}
+
 def pytest_report_header(config):
     from zm import sysinfo
     sysinfo.printSysInfo()
@@ -40,8 +42,12 @@ def beforeAllTests(request):
 
 @pytest.fixture
 def unsetEnviron(monkeypatch):
-    from zm.waf.assist import getMonitoredEnvVarNames
-    varnames = getMonitoredEnvVarNames()
+
+    varnames = _cache.get('monitored-envs')
+    if varnames is None:
+        from zm.waf.assist import getMonitoredEnvVarNames
+        _cache['monitored-envs'] = varnames = getMonitoredEnvVarNames()
+
     for v in varnames:
         #os.environ.pop(v, None)
         monkeypatch.delenv(v, raising = False)
@@ -91,11 +97,7 @@ def cfgctx(monkeypatch, mocker, tmpdir):
         setattr(options, k, v)
     monkeypatch.setattr(Options, 'options', options)
 
-    cfgCtx = ConfigurationContext(run_dir = rundir)
-
-    cfgCtx.fatal = mocker.MagicMock(side_effect = WafError)
-
-    def setenv(name, env = None):
+    def setenv(cfgCtx, name, env = None):
         cfgCtx.variant = name
         if name not in cfgCtx.all_envs or env:
             if not env:
@@ -104,7 +106,10 @@ def cfgctx(monkeypatch, mocker, tmpdir):
                 env = env.derive()
             cfgCtx.all_envs[name] = env
 
-    cfgCtx.setenv = mocker.MagicMock(side_effect = setenv)
+    monkeypatch.setattr(ConfigurationContext, 'setenv', setenv)
+    cfgCtx = ConfigurationContext(run_dir = rundir)
+
+    cfgCtx.fatal = mocker.MagicMock(side_effect = WafError)
 
     def envProp(val = None):
         if val is not None:

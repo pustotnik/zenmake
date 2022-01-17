@@ -15,12 +15,15 @@ import os
 from copy import deepcopy
 import pytest
 import tests.common as cmn
-from zm.constants import APPNAME, CAP_APPNAME, CWD
-from zm import cli
+from zm.constants import APPNAME, CAP_APPNAME
+from zm import cli, installdirvars
 
 joinpath = os.path.join
 
-class TestSuite(object):
+INSTALL_DIRVAR_CLI_DEFAULTS = { k:None for k in installdirvars.VAR_NAMES }
+
+@pytest.mark.usefixtures("unsetEnviron")
+class TestCmds(object):
 
     @pytest.fixture(autouse = True)
     def setup(self):
@@ -115,16 +118,14 @@ class TestSuite(object):
             'verboseBuild' : None,
             'withTests': 'no',
             'runTests': 'none',
-            'bindir' : None,
-            'libdir' : None,
-            'prefix' : cli.DEFAULT_PREFIX,
             'buildroot' : None,
             'forceExternalDeps' : False,
             'cacheCfgActionResults' : False,
         }
+        baseExpectedArgs.update(INSTALL_DIRVAR_CLI_DEFAULTS)
 
         CMDNAME = 'build'
-        CMNOPTS = ['--color=auto', '--prefix=' + cli.DEFAULT_PREFIX]
+        CMNOPTS = ['--color=auto']
 
         checks = [
             dict(
@@ -233,16 +234,14 @@ class TestSuite(object):
             'verboseBuild' : None,
             'withTests': 'yes',
             'runTests': 'all',
-            'bindir' : None,
-            'libdir' : None,
-            'prefix' : cli.DEFAULT_PREFIX,
             'buildroot' : None,
             'forceExternalDeps' : False,
             'cacheCfgActionResults' : False,
         }
+        baseExpectedArgs.update(INSTALL_DIRVAR_CLI_DEFAULTS)
 
         CMDNAME = 'test'
-        CMNOPTS = ['--color=auto', '--prefix=' + cli.DEFAULT_PREFIX]
+        CMNOPTS = ['--color=auto']
 
         checks = [
             dict(
@@ -344,17 +343,15 @@ class TestSuite(object):
             'verbose': 0,
             'verboseConfigure' : None,
             'withTests': 'no',
-            'bindir' : None,
-            'libdir' : None,
-            'prefix' : cli.DEFAULT_PREFIX,
             'buildroot' : None,
             'forceExternalDeps' : False,
             'cacheCfgActionResults' : False,
             'force' : False,
         }
+        baseExpectedArgs.update(INSTALL_DIRVAR_CLI_DEFAULTS)
 
         CMDNAME = 'configure'
-        CMNOPTS = ['--color=auto', '--prefix=' + cli.DEFAULT_PREFIX]
+        CMNOPTS = ['--color=auto']
 
         checks = [
             dict(
@@ -535,20 +532,18 @@ class TestSuite(object):
             'verboseConfigure' : None,
             'verboseBuild' : None,
             'destdir' : '',
-            'bindir' : None,
-            'libdir' : None,
-            'prefix' : cli.DEFAULT_PREFIX,
             'buildroot' : None,
             'forceExternalDeps' : False,
             'cacheCfgActionResults' : False,
         }
+        baseExpectedArgs.update(INSTALL_DIRVAR_CLI_DEFAULTS)
 
         if cmd == 'uninstall':
             for name in ('configure', 'jobs', 'clean', 'cleanall', 'distclean'):
                 baseExpectedArgs.pop(name)
 
         CMDNAME = cmd
-        CMNOPTS = ['--color=auto', '--prefix=' + cli.DEFAULT_PREFIX]
+        CMNOPTS = ['--color=auto']
 
         checks = [
             dict(
@@ -562,14 +557,19 @@ class TestSuite(object):
                 wafArgs = [CMDNAME, '--destdir=' + 'somedir'] + CMNOPTS,
             ),
             dict(
+                args = [CMDNAME, '--prefix', '/usr/loc'],
+                expectedArgsUpdate = {'prefix' : '/usr/loc' },
+                wafArgs = [CMDNAME] + CMNOPTS,
+            ),
+            dict(
                 args = [CMDNAME, '--bindir', 'somedir'],
                 expectedArgsUpdate = {'bindir' : 'somedir' },
-                wafArgs = [CMDNAME, '--bindir=' + 'somedir'] + CMNOPTS,
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--libdir', 'somedir'],
                 expectedArgsUpdate = {'libdir' : 'somedir' },
-                wafArgs = [CMDNAME, '--libdir=' + 'somedir'] + CMNOPTS,
+                wafArgs = [CMDNAME] + CMNOPTS,
             ),
             dict(
                 args = [CMDNAME, '--verbose'],

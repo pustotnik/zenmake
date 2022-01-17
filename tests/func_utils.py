@@ -188,13 +188,10 @@ def processConfManagerWithCLI(testSuit, cmdLine):
         pass
 
     noBuildConf = False
-    cmd = starter.handleCLI(cmdLine, noBuildConf, None)
-    starter.adjustCliDirPaths(testSuit.cwd, cmd.args)
+    cmd = starter.handleCLI(cmdLine, noBuildConf, None, testSuit.cwd)
 
     def cliOptsHandler(defaults):
-        cmd = starter.handleCLI(cmdLine, noBuildConf, defaults)
-        starter.adjustCliDirPaths(testSuit.cwd, cmd.args)
-        return cmd
+        return starter.handleCLI(cmdLine, noBuildConf, defaults, testSuit.cwd)
 
     bconfDir = testSuit.cwd
     confManager = BuildConfManager(bconfDir, clivars = cmd.args,
@@ -202,7 +199,7 @@ def processConfManagerWithCLI(testSuit, cmdLine):
     testSuit.confManager = confManager
     testSuit.confPaths = confManager.root.confPaths
 
-    cmd = starter.handleCLI(cmdLine, False, confManager.root.cliopts)
+    cmd = starter.handleCLI(cmdLine, False, confManager.root.cliopts, testSuit.cwd)
 
     testSuit.cmdLine = cmdLine
     db.useformat(confManager.root.general['db-format'])

@@ -20,7 +20,7 @@ from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
 from zm.features import SUPPORTED_TASK_FEATURES
 from zm.features import ToolchainVars
-from zm import utils, log, version, db
+from zm import utils, log, version, db, installdirvars
 
 joinpath  = os.path.join
 splitpath = os.path.split
@@ -62,14 +62,15 @@ def getMonitoredEnvVarNames():
 
     envVarNames = ToolchainVars.allSysFlagVars()
     envVarNames += ToolchainVars.allSysVarsToSetToolchain()
-    envVarNames += ('BUILDROOT', 'DESTDIR', 'PREFIX', 'BINDIR', 'LIBDIR')
+    envVarNames += ('BUILDROOT', 'DESTDIR')
+    envVarNames += installdirvars.VAR_ENVNAMES
 
     return envVarNames
 
 def getMonitoredCliArgNames():
     ''' Get all monitored CLI args to reconfigure on their change '''
 
-    return ('prefix', 'bindir', 'libdir')
+    return installdirvars.VAR_NAMES
 
 def writeZenMakeMetaFile(filePath, meta, prevZmMeta):
     """

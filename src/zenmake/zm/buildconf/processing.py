@@ -17,7 +17,7 @@ from zm.constants import CWD, INVALID_BUILDTYPES, CONFTEST_DIR_PREFIX
 from zm.autodict import AutoDict
 from zm.error import ZenMakeError, ZenMakeConfError
 from zm.pyutils import stringtype, maptype, cachedprop, cached
-from zm import utils, log
+from zm import utils, log, installdirvars
 from zm.pathutils import unfoldPath, getNativePath, PathsParam, makePathsConf
 from zm.buildconf import loader
 from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES, KNOWN_CONF_SUGAR_NAMES
@@ -206,6 +206,12 @@ class Config(object):
         if self._clihandler and self.cliopts:
             # apply new default values from config and get resulted CLI vars
             self._clivars = self._clihandler(self.cliopts).args
+
+        if parent:
+            self._installDirVars = parent._installDirVars
+        else:
+            self._installDirVars = installdirvars.DirVars(
+                                            self.projectName, self._clivars)
 
         self._makeBuildDirParams(self._clivars.get('buildroot'))
 
@@ -717,10 +723,10 @@ class Config(object):
         if self._parent:
             builtinvars = self._parent.builtInVars
         else:
-            clivars = self._clivars
             builtinvars = {}
-            for name in ('prefix', 'bindir', 'libdir'):
-                builtinvars[name] = clivars.get(name, self._conf.cliopts.get(name, ''))
+
+            for name in installdirvars.VAR_NAMES:
+                builtinvars[name] = self._installDirVars.get(name)
 
             builtinvars['prjname']      = self.projectName
             builtinvars['topdir']       = self.rootdir
@@ -950,6 +956,12 @@ class Config(object):
         """ Get built-in vars """
 
         return self._meta.builtinvars
+
+    @property
+    def installDirVars(self):
+        """ Get install dir vars """
+
+        return self._installDirVars
 
     @property
     def general(self):
