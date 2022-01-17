@@ -302,25 +302,34 @@ config.optdefaults = {
     'verbose': 0,
 }
 
-def _getReadyOptDefaults():
+def _generateOptDefaults(defaults):
 
     # These params should be obtained only before parsing but
     # not when current python has loaded.
 
-    config.optdefaults.update({
-        'color': _getenv('NOCOLOR', '') and 'no' or 'auto',
-        'destdir' : {
-            'any': _getenv('DESTDIR', ''),
-            'zipapp' : _getenv('DESTDIR', '.'),
-        },
-        'buildroot' : _getenv('BUILDROOT', None),
-        'prefix' : _getenv('PREFIX', None),
-        'bindir' : _getenv('BINDIR', None),
-        'libdir' : _getenv('LIBDIR', None),
-        'cache-cfg-actions' : envValToBool(_getenv('ZM_CACHE_CFGACTIONS')),
+    optdefaults = config.optdefaults.copy()
+    optdefaults.update(defaults)
+
+    # set specific values and adjust them according env vars
+    optdefaults.update({
+        'color': _getenv('NOCOLOR', '') and 'no' or defaults.get('color', 'auto'),
+        'destdir' : _getenv('DESTDIR',
+            defaults.get('destdir', {
+                'any': '',
+                'zipapp' : '.'
+            })),
+        'buildroot' : _getenv('BUILDROOT', defaults.get('buildroot', None)),
+        'cache-cfg-actions' : envValToBool(
+            _getenv('ZM_CACHE_CFGACTIONS', defaults.get('cache-cfg-actions'))),
     })
 
-    return config.optdefaults
+    # set up install dir vars
+    optdefaults.update({
+        item.name : _getenv(item.envname, defaults.get(item.name, None))
+        for item in installdirvars.CONFIG
+    })
+
+    return optdefaults
 
 class CmdLineParser(object):
     """
@@ -333,11 +342,10 @@ class CmdLineParser(object):
         '_commandHelps', '_cmdNameMap', '_origArgs',
     )
 
-    def __init__(self, progName, defaults):
+    def __init__(self, progName, cfgdefaults):
 
         self._defaults = defaultdict(dict)
-        self._defaults.update(_getReadyOptDefaults())
-        self._defaults.update(defaults)
+        self._defaults.update(_generateOptDefaults(cfgdefaults))
 
         self._parsedCmd = None
         self._origArgs = None

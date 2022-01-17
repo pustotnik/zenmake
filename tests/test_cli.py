@@ -639,3 +639,49 @@ class TestCmds(object):
         ]
 
         self._assertAllsForCmd(CMDNAME, checks, baseExpectedArgs)
+
+def parse(cfgdefaults, args):
+    return cli.CmdLineParser('test', cfgdefaults).parse(args).args
+
+@pytest.mark.usefixtures("unsetEnviron")
+class TestDefaults(object):
+
+    def testBuildtype(self):
+
+        cfgdefaults = {}
+        assert parse(cfgdefaults, ['install']).buildtype is None
+        cfgdefaults = { 'buildtype': 'somedebug' }
+        assert parse(cfgdefaults, ['install']).buildtype == 'somedebug'
+        assert parse(cfgdefaults, ['install', '--buildtype=my']).buildtype == 'my'
+
+    def testDestdir(self, monkeypatch):
+
+        cfgdefaults = {}
+        assert parse(cfgdefaults, ['install']).destdir == ''
+        assert parse(cfgdefaults, ['zipapp']).destdir == '.'
+
+        cfgdefaults = { 'destdir': 'dd' }
+        assert parse(cfgdefaults, ['install']).destdir == 'dd'
+        assert parse(cfgdefaults, ['zipapp']).destdir == 'dd'
+        assert parse(cfgdefaults, ['install', '--destdir=aa']).destdir == 'aa'
+        assert parse(cfgdefaults, ['zipapp', '--destdir=aa']).destdir == 'aa'
+        cfgdefaults = { 'destdir': { 'install' : 'cc', 'any' : 'ss' } }
+        assert parse(cfgdefaults, ['install']).destdir == 'cc'
+        assert parse(cfgdefaults, ['zipapp']).destdir == 'ss'
+        assert parse(cfgdefaults, ['install', '--destdir=aa']).destdir == 'aa'
+        assert parse(cfgdefaults, ['zipapp', '--destdir=aa']).destdir == 'aa'
+
+        monkeypatch.setenv('DESTDIR', 'dst')
+        cfgdefaults = {}
+        assert parse(cfgdefaults, ['install']).destdir == 'dst'
+        assert parse(cfgdefaults, ['zipapp']).destdir == 'dst'
+        cfgdefaults = { 'destdir': 'dd' }
+        assert parse(cfgdefaults, ['install']).destdir == 'dst'
+        assert parse(cfgdefaults, ['zipapp']).destdir == 'dst'
+        assert parse(cfgdefaults, ['install', '--destdir=aa']).destdir == 'aa'
+        assert parse(cfgdefaults, ['zipapp', '--destdir=aa']).destdir == 'aa'
+        cfgdefaults = { 'destdir': { 'install' : 'cc', 'any' : 'ss' } }
+        assert parse(cfgdefaults, ['install']).destdir == 'dst'
+        assert parse(cfgdefaults, ['zipapp']).destdir == 'dst'
+        assert parse(cfgdefaults, ['install', '--destdir=aa']).destdir == 'aa'
+        assert parse(cfgdefaults, ['zipapp', '--destdir=aa']).destdir == 'aa'
