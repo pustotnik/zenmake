@@ -439,6 +439,15 @@ class ConfigurationContext(WafConfContext):
         return self._confCache
 
     # override
+    def prepare_env(self, env):
+        """
+        Insert *PREFIX*, *BINDIR*, *LIBDIR* and other values into ``env``
+        """
+
+        rootbconf = self.bconfManager.root
+        rootbconf.installDirVars.setAllTo(env)
+
+    # override
     def post_recurse(self, node):
         # Avoid some actions from WafConfContext.post_recurse.
         # It's mostly for performance.
@@ -872,9 +881,6 @@ class ConfigurationContext(WafConfContext):
         rootbconf = self.bconfManager.root
         rootEnv = self.all_envs['']
         rootEnv['$builtin-vars'] = rootbconf.builtInVars
-
-        # set/fix vars PREFIX, BINDIR, LIBDIR, etc
-        rootbconf.installDirVars.setAllInEnv(rootEnv)
 
     def preconfigure(self):
         """

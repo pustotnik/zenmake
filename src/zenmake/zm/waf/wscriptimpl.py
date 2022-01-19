@@ -170,7 +170,7 @@ def build(bld):
     isInstallUninstall = bld.cmd in ('install', 'uninstall')
     if isInstallUninstall:
         # I think it's not necessery here but it doesn't make any problems
-        rootbconf.installDirVars.setAllInEnv(bld.env)
+        rootbconf.installDirVars.setAllTo(bld.env)
     elif bld.cmd == 'clean':
         _setupClean(bld, rootbconf.confPaths)
         # no need to make build tasks
@@ -212,7 +212,7 @@ def build(bld):
         if isInstallUninstall:
             # env of a build task doesn't have parents and we need to apply
             # install path vars to each task env
-            rootbconf.installDirVars.setAllInEnv(bld.env)
+            rootbconf.installDirVars.setAllTo(bld.env)
 
         assist.convertTaskParamNamesForWaf(taskParams)
 

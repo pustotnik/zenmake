@@ -90,10 +90,10 @@ class DirVars(object):
         """
         return self.__dict__.get(name, default)
 
-    def setAllInEnv(self, env):
+    def setAllTo(self, cont):
         """
-        Set all vars in the env
+        Copy all dir vars into a containter
         """
 
         for item in CONFIG:
-            env[item.envname] = self.get(item.name)
+            cont[item.envname] = self.get(item.name)
