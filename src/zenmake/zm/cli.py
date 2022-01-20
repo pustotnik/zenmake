@@ -8,6 +8,7 @@
 
 import os
 import sys
+import shutil
 from collections import defaultdict
 
 # argparse from the https://pypi.org/project/argparse/ supports aliases
@@ -331,6 +332,8 @@ def _generateOptDefaults(defaults):
 
     return optdefaults
 
+_TERMINAL_WIDTH = shutil.get_terminal_size().columns
+
 class CmdLineParser(object):
     """
     CLI for ZenMake.
@@ -356,16 +359,22 @@ class CmdLineParser(object):
         class MyHelpFormatter(argparse.HelpFormatter):
             """ Some customization"""
             def __init__(self, prog):
-                super().__init__(prog, max_help_position = 27)
+                # width detection from thirdparty.argparse doesn't work
+                super().__init__(prog, max_help_position = 27,
+                                width = _TERMINAL_WIDTH)
                 self._action_max_length = 23
 
-        kwargs = dict(
+        cmnParserArgs = dict(
             prog = progName,
             formatter_class = MyHelpFormatter,
             description = '%s: build system based on the Waf build system' % CAP_APPNAME,
+        )
+
+        kwargs = dict(
             usage = "%(prog)s <command> [options] [args]",
             add_help = False
         )
+        kwargs.update(cmnParserArgs)
         self._parser = argparse.ArgumentParser(**kwargs)
 
         groupGlobal = self._parser.add_argument_group('global options')
@@ -382,6 +391,7 @@ class CmdLineParser(object):
         for cmd in config.commands:
             commandHelps[cmd.name] = _AutoDict()
             cmdHelpInfo = commandHelps[cmd.name]
+            cmdHelpInfo.update(cmnParserArgs)
             cmdHelpInfo.usage = self._makeCmdUsageText(progName, cmd)
             cmdHelpInfo.help = cmd.description
             cmdHelpInfo.description = cmd.description.capitalize()
