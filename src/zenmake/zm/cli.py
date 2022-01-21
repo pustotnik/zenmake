@@ -146,7 +146,7 @@ config.posargs = [
 class Option(_AutoDict):
     """ Class to set up an option for CLI """
 
-    NOTARGPARSE_FIELDS = ('names', 'commands', 'runcmd', 'isglobal')
+    NOTARGPARSE_FIELDS = ('names', 'commands', 'runcmd', 'isglobal', 'defaultdesc')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -162,8 +162,6 @@ class Option(_AutoDict):
 ALL_CONF_CMD_NAMES = [
     'configure', 'build', 'test', 'run', 'install', 'uninstall'
 ]
-
-INSTALL_VAR_DEFAULTS = installdirvars.DirVars('$(prjname)', {})
 
 # Declarative list of options in CLI
 # Special param 'runcmd' is used to declare option that runs another command
@@ -261,15 +259,6 @@ config.options = [
         commands = ['zipapp', 'install', 'uninstall'],
         help = 'destination directory',
     ),
-    *[
-        Option(
-            names = ['--%s' % item.name],
-            commands = ALL_CONF_CMD_NAMES, # it must be in all these commands
-            help = '%s [default: %s]' % (item.desc,
-                                         INSTALL_VAR_DEFAULTS.get(item.name))
-        )
-        for item in installdirvars.CONFIG
-    ],
     Option(
         names = ['-v', '--verbose'],
         action = "count",
@@ -297,6 +286,16 @@ config.options = [
                             if x.name not in ('version', 'sysinfo')],
         help = 'whether to use colors (yes/no/auto)',
     ),
+]
+
+config.installoptions = [
+    Option(
+        names = ['--%s' % item.name],
+        commands = ALL_CONF_CMD_NAMES, # it must be in all these commands
+        help = item.desc,
+        defaultdesc = item.defaultdesc
+    )
+    for item in installdirvars.CONFIG
 ]
 
 config.optdefaults = {
@@ -378,7 +377,7 @@ class CmdLineParser(object):
         self._parser = argparse.ArgumentParser(**kwargs)
 
         groupGlobal = self._parser.add_argument_group('global options')
-        self._addOptions(groupGlobal, cmd = None)
+        self._addOptions(groupGlobal, self._globalOptions)
 
         kwargs = dict(
             title = 'list of commands',
@@ -408,7 +407,11 @@ class CmdLineParser(object):
             self._addCmdPosArgs(cmdParser, cmd)
 
             groupCmdOpts = cmdParser.add_argument_group('command options')
-            self._addOptions(groupCmdOpts, cmd = cmd)
+            self._addOptions(groupCmdOpts, config.options, cmd = cmd)
+
+            groupInstallOpts = cmdParser.add_argument_group('install dir options')
+            self._addOptions(groupInstallOpts, config.installoptions, cmd = cmd)
+
             cmdHelpInfo.help = cmdParser.format_help()
 
         # special case for 'help' command
@@ -464,30 +467,21 @@ class CmdLineParser(object):
     def _addCmdPosArgs(self, target, cmd):
         posargs = [x for x in config.posargs if cmd.name in x.commands]
         for arg in posargs:
-            kwargs = _AutoDict()
-            for k, v in arg.items():
-                if v is None or k in PosArg.NOTARGPARSE_FIELDS:
-                    continue
-                kwargs[k] = v
+            kwargs = { k:v for (k,v) in arg.items() \
+                        if not (v is None or k in PosArg.NOTARGPARSE_FIELDS) }
             target.add_argument(arg.name, **kwargs)
 
-    def _addOptions(self, target, cmd = None):
-        if cmd is None:
-            # get only global options
-            options = self._globalOptions
-        else:
+    def _addOptions(self, target, options, cmd = None):
+        if cmd is not None:
             def isvalid(opt):
                 if opt.isglobal:
                     return False
                 return cmd.name in opt.commands
-            options = [x for x in config.options if isvalid(x)]
+            options = [x for x in options if isvalid(x)]
 
         for opt in options:
-            kwargs = _AutoDict()
-            for k, v in opt.items():
-                if v is None or k in Option.NOTARGPARSE_FIELDS:
-                    continue
-                kwargs[k] = v
+            kwargs = _AutoDict({ k:v for k, v in opt.items() \
+                        if not (v is None or k in Option.NOTARGPARSE_FIELDS) })
 
             if 'runcmd' in opt:
                 kwargs.action = "store_true"
@@ -497,10 +491,15 @@ class CmdLineParser(object):
                     kwargs.help = "run command '%s' before command '%s'" \
                                   % (opt.runcmd, cmd.name)
             else:
+                defaultdesc = opt.get('defaultdesc')
                 default = self._getOptionDefault(opt, cmd)
                 if default is not None:
-                    kwargs['default'] = default
-                    kwargs['help'] += ' [default: %r]' % kwargs['default']
+                    kwargs.default = default
+                    if defaultdesc is None:
+                        defaultdesc = '[default: %r]' % default
+
+                if defaultdesc:
+                    kwargs.help += ' ' + defaultdesc
 
             target.add_argument(*opt.names, **kwargs)
 
@@ -526,7 +525,7 @@ class CmdLineParser(object):
         cmdline = [cmdName]
 
         # self._parsedCmd.args is AutoDict and it means that it'll create
-        # nonexistent keys inside, so we need to make a copy
+        # nonexistent keys inside itself, so we need to make a copy
         options = _AutoDict(self._parsedCmd.args)
 
         cmdConfig = next(x for x in config.commands if x.name == cmdName)

@@ -685,3 +685,19 @@ class TestDefaults(object):
         assert parse(cfgdefaults, ['zipapp']).destdir == 'dst'
         assert parse(cfgdefaults, ['install', '--destdir=aa']).destdir == 'aa'
         assert parse(cfgdefaults, ['zipapp', '--destdir=aa']).destdir == 'aa'
+
+    def testPrefix(self, monkeypatch):
+
+        cfgdefaults = {}
+        assert parse(cfgdefaults, ['install']).prefix is None
+
+        cfgdefaults = { 'prefix': 'dd' }
+        assert parse(cfgdefaults, ['install']).prefix == 'dd'
+        assert parse(cfgdefaults, ['install', '--prefix=aa']).prefix == 'aa'
+
+        monkeypatch.setenv('PREFIX', '/usr/ll')
+        cfgdefaults = {}
+        assert parse(cfgdefaults, ['install']).prefix == '/usr/ll'
+        cfgdefaults = { 'prefix': 'ccc' }
+        assert parse(cfgdefaults, ['install']).prefix == '/usr/ll'
+        assert parse(cfgdefaults, ['install', '--prefix=aa']).prefix == 'aa'

@@ -269,7 +269,9 @@ def _genCliOptionsVarsScheme(confnode, fullkey):
     # pylint: disable = unused-argument
 
     cmdNames = [ x.name for x in cliConfig.commands ]
-    optNames = [ x.names[-1].replace('-', '', 2) for x in cliConfig.options ]
+    optNames = []
+    for options in (cliConfig.options, cliConfig.installoptions):
+        optNames.extend([ x.names[-1].replace('-', '', 2) for x in options ])
 
     optionsOptDictTypeScheme = _genSameSchemeDict(
         cmdNames + ['any'],

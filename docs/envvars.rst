@@ -7,7 +7,6 @@ Environment variables
 
 ZenMake supports some environment variables that can be used. Most of examples
 are for POSIX platforms (Linux/MacOS) with ``gcc`` and ``clang`` installed.
-Some of these variables just provided by Waf.
 Also see :ref:`bash-like substitutions<buildconf-substitutions-vars>`.
 
 AR
@@ -128,33 +127,143 @@ BUILDROOT
 DESTDIR
     Default installation base directory when ``--destdir`` is not provided on
     the command line. It's mostly for installing to a temporary directory.
-    For example this is used when building deb packages.
+    For example it can be used to create deb/rpm/etc packages.
     Example::
 
         DESTDIR=dest zenmake install
 
-PREFIX
-    Default installation prefix when ``--prefix`` is not provided on the
-    command line. This path is always considered as an absolute path or
-    as a relative path to DESTDIR. Example::
+.. _envvars-prefix:
 
-        PREFIX=/usr/local/ zenmake install
+PREFIX
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``prefix``
+    as the installation prefix.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``. Example::
+
+        PREFIX=/usr zenmake install
+
+.. _envvars-execprefix:
+
+EXEC_PREFIX
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``execprefix``
+    as the installation prefix for machine-specific files.
+
+.. _envvars-bindir:
 
 BINDIR
-    Default installation bin directory when ``--bindir`` is not provided on the
-    command line. This path is always considered as an absolute path or
-    as a relative path to DESTDIR.
-    It ignores value of ``PREFIX`` if set. Example::
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``bindir``
+    as the directory for installing executable programs that users can run.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
+    Example::
 
-        BINDIR=/usr/local/bin zenmake install
+        BINDIR=/usr/bin zenmake install
+
+.. _envvars-sbindir:
+
+SBINDIR
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``sbindir``
+    as the directory for installing executable programs that can be run, but are
+    only generally useful to system administrators.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
+
+.. _envvars-libexecdir:
+
+LIBEXECDIR
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``libexecdir``
+    as the directory for installing executable programs to be run by other programs
+    rather than by users.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
+
+.. _envvars-libdir:
 
 LIBDIR
-    Default installation lib directory when ``--libdir`` is not provided on the
-    command line. This path is always considered as an absolute path or
-    as a relative path to DESTDIR.
-    It ignores value of ``PREFIX`` if set. Example::
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``libdir``
+    as the installation directory for object files and libraries of object code.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
 
-        LIBDIR=/usr/local/lib64 zenmake install
+.. _envvars-sysconfdir:
+
+SYSCONFDIR
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``sysconfdir``
+    as the installation directory for read-only single-machine data.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
+
+.. _envvars-sharedstatedir:
+
+SHAREDSTATEDIR
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``sharedstatedir``
+    as the installation directory for modifiable architecture-independent data.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
+
+.. _envvars-localstatedir:
+
+LOCALSTATEDIR
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``localstatedir``
+    as the installation directory for modifiable single-machine data.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
+
+.. _envvars-includedir:
+
+INCLUDEDIR
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``includedir``
+    as the installation directory for C header files.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
+
+.. _envvars-datarootdir:
+
+DATAROOTDIR
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``datarootdir``
+    as the installation root directory for read-only architecture-independent data.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
+
+.. _envvars-datadir:
+
+DATADIR
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``datadir``
+    as the installation directory for read-only architecture-independent data.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
+
+.. _envvars-docdir:
+
+DOCDIR
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``docdir``
+    as the installation directory for documentation.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
+
+.. _envvars-mandir:
+
+MANDIR
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``mandir``
+    as the installation directory for man documentation.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
+
+.. _envvars-infodir:
+
+INFODIR
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``infodir``
+    as the installation directory for info documentation.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
+
+.. _envvars-localedir:
+
+LOCALEDIR
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``localedir``
+    as the installation directory for locale-dependent data.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
 
 ZM_CACHE_CFGACTIONS
     When set to a 'True', 'true', 'yes' or non-zero number, ZenMake tries

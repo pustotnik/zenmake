@@ -620,7 +620,7 @@ run
 
     :cmd:
         Command line to run. It can be any suitable command line.
-        For convenience special :ref:`built-in substitution<buildconf-substitutions-builtin>`
+        For convenience special :ref:`built-in substitution<buildconf-builtin-vars>`
         variables ``src`` and ``tgt`` can be used here.
         The ``tgt`` variable contains string with the absolute path to resulting
         target file of the current task.
@@ -855,21 +855,21 @@ export-<param> / export
 
 install-path
 """""""""""""""""""""
-    String representing the installation path for the output files.
+    String representing the installation directory for the output files.
     It is used in the ``install`` and ``uninstall`` commands.
+    This path must be absolute.
     To disable installation, set it to False or to empty string.
     If it's absent then built-in ``prefix``, ``bindir``
     and ``libdir`` variables will be used to detect path.
-    Path must be absolute.
-    You can use any :ref:`built-in substitution<buildconf-substitutions-builtin>` variable
-    including ``$(prefix)``, ``$(bindir)`` and ``$(libdir)`` here
+    You can use any :ref:`built-in substitution<buildconf-builtin-vars>` variable
+    including ``prefix``, ``bindir`` and ``libdir`` here
     like this:
 
     Example in YAML format:
 
     .. code-block:: yaml
 
-        install-path : '$(prefix)/exe'
+        install-path : '$(prefix)/bin'
 
     This parameter is false for standalone runcmd tasks by default.
 

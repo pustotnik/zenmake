@@ -12,13 +12,7 @@ import platform as _platform
 from zm.constants import HOST_OS
 from zm.pyutils import struct
 from zm.pathutils import getNativePath
-
-if HOST_OS == 'windows':
-    def _getDefaultPrefix(dvars):
-        return 'C:\\Program Files\\' + dvars.pkgname
-else:
-    def _getDefaultPrefix(_):
-        return '/usr/local'
+from zm.utils import substBuiltInVars
 
 def _libDirPostfix():
 
@@ -32,22 +26,88 @@ def _libDirPostfix():
 
 LIBDIR_POSTFIX = _libDirPostfix()
 
-VarConfig = struct('VarConfig', 'name, envname, desc, default')
+VarConfig = struct('VarConfig', 'name, envname, default, desc, defaultdesc')
 
 CONFIG = (
     VarConfig(
-        'prefix', 'PREFIX', 'installation prefix',
-        _getDefaultPrefix
+        'prefix', 'PREFIX', '/usr/local',
+        'installation prefix',
     ),
     VarConfig(
-        'bindir', 'BINDIR', 'installation bin directory',
-        lambda dvars: '%s/bin' % dvars.prefix
+        'execprefix', 'EXEC_PREFIX', '$(prefix)',
+        'installation prefix for machine-specific files',
     ),
     VarConfig(
-        'libdir', 'LIBDIR', 'installation lib directory',
-        lambda dvars: '%s/lib%s' % (dvars.prefix, LIBDIR_POSTFIX)
+        'bindir', 'BINDIR', '$(execprefix)/bin',
+        'installation directory for user executables',
+    ),
+    VarConfig(
+        'sbindir', 'SBINDIR', '$(execprefix)/sbin',
+        'installation directory for system executables',
+    ),
+    VarConfig(
+        'libexecdir', 'LIBEXECDIR', '$(execprefix)/libexec',
+        'installation directory for program executables',
+    ),
+    VarConfig(
+        'libdir', 'LIBDIR', '$(execprefix)/lib%s' % LIBDIR_POSTFIX,
+        'installation directory for object code libraries',
+    ),
+    VarConfig(
+        'sysconfdir', 'SYSCONFDIR', '$(prefix)/etc',
+        'installation directory for read-only single-machine data',
+    ),
+    VarConfig(
+        'sharedstatedir', 'SHAREDSTATEDIR', '/var/lib',
+        'installation directory for modifiable architecture-independent data',
+    ),
+    VarConfig(
+        'localstatedir', 'LOCALSTATEDIR', '$(prefix)/var',
+        'installation directory for modifiable single-machine data',
+    ),
+    VarConfig(
+        'includedir', 'INCLUDEDIR', '$(prefix)/include',
+        'installation directory for C header files',
+    ),
+    VarConfig(
+        'datarootdir', 'DATAROOTDIR', '$(prefix)/share',
+        'installation root directory for read-only architecture-independent data',
+    ),
+    VarConfig(
+        'datadir', 'DATADIR', '$(datarootdir)',
+        'installation directory for read-only architecture-independent data',
+    ),
+    VarConfig(
+        'docdir', 'DOCDIR', '$(datarootdir)/doc/$(prjname)',
+        'installation directory for documentation',
+    ),
+    VarConfig(
+        'mandir', 'MANDIR', '$(datarootdir)/man',
+        'installation directory for the man documentation',
+    ),
+    VarConfig(
+        'infodir', 'INFODIR', '$(datarootdir)/info',
+        'installation directory for the info documentation',
+    ),
+    VarConfig(
+        'localedir', 'LOCALEDIR', '$(datarootdir)/locale',
+        'locale-dependent data installation directory',
     ),
 )
+
+if HOST_OS == 'windows':
+    _cfgmap = { item.name:item for item in CONFIG }
+
+    _cfgmap['prefix'].default = 'C:\\Program Files\\$(prjname)'
+    for _name in ('bindir', 'sbindir', 'libexecdir', 'libdir'):
+        _cfgmap[_name].default = '$(execprefix)'
+
+    for _name in ('sysconfdir', 'sharedstatedir', 'datarootdir'):
+        _cfgmap[_name].default = '$(prefix)'
+    _cfgmap['docdir'].default = '$(datarootdir)/doc'
+
+for _cfgitem in CONFIG:
+    _cfgitem.defaultdesc = '[default: %s]' % _cfgitem.default
 
 VAR_NAMES = tuple(x.name for x in CONFIG)
 VAR_ENVNAMES = tuple(x.envname for x in CONFIG)
@@ -57,9 +117,9 @@ class DirVars(object):
     Provides various standard install directory variables as defined for GNU software.
     """
 
-    def __init__(self, pkgname, clivars):
+    def __init__(self, prjname, clivars, getenv = os.environ.get):
 
-        self.pkgname = pkgname
+        self.prjname = prjname
 
         sep = os.sep
         isabs = os.path.isabs
@@ -70,7 +130,10 @@ class DirVars(object):
             # value only if an item doesn't exist while variable can exist but
             # can be None
             if val is None:
-                val = item.default(self)
+                val = getenv(item.envname)
+            if val is None:
+                val = substBuiltInVars(item.default,
+                                        svars = self.__dict__, check = False)
             val = getNativePath(val)
             if val and not isabs(val):
                 val = sep + val

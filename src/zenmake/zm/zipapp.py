@@ -29,7 +29,7 @@ IGNORE_EXTS = frozenset(('.pyc', '.PYC', '.pyo', '.PYO' ))
 IGNORE_FILE_PATHS = (
     {
         'dir' : os.path.join('waf', 'waflib', 'Tools'),
-        'files' : frozenset(('lua.py', 'waf_unit_test.py'))
+        'files' : frozenset(('lua.py', 'waf_unit_test.py', 'gnu_dirs.py'))
     },
     {
         'dir' : os.path.join('waf', 'waflib', 'extras'),

@@ -190,13 +190,14 @@ For YAML format there are some constraints with ${VAR} form due to YAML specific
     debug  :
       fcflags: ${GCC_BASE_FLAGS} -O0              # works
 
-.. _buildconf-substitutions-builtin:
+.. _buildconf-builtin-vars:
 
 Built-in variables
 """""""""""""""""""""""
 
-ZenMake has some built-in substitutions. To avoid conflicts with environment and
-bash-like variables the syntax is a little bit different:
+ZenMake has some built-in variables that can be used as substitutions.
+To avoid possible conflicts with environment and bash-like variables the syntax of
+substitutions is a little bit different in this case:
 
 in YAML format:
 
@@ -213,7 +214,8 @@ in YAML format:
 List of built-in variables:
 
     :prjname:
-        Name of the current project. See ``name`` :ref:`here<buildconf-project>`.
+        Name of the current project.
+        It can be changed via ``name`` from :ref:`here<buildconf-project>`.
 
     :topdir:
         Absolute path of :ref:`startdir<buildconf-startdir>` of the top-level buildconf file.
@@ -227,19 +229,107 @@ List of built-in variables:
         current value of :ref:`buildroot<buildconf-buildroot>` plus current buildtype.
 
     :prefix:
-        Installation prefix. It can be changed via ``--prefix`` on command line
-        or environment variable PREFIX. ALso see the
-        :ref:`cliopts<buildconf-cliopts>` parameter in buildconf.
+        The installation prefix. It is a directory that is prepended onto all
+        install directories and it defaults to ``/usr/local`` on UNIX and
+        ``C:/Program Files/$(prjname)`` on Windows.
+        It can be changed via environment variable :ref:`PREFIX<envvars-prefix>`
+        or via ``--prefix`` on the command line.
+
+    :execprefix:
+        The installation prefix for machine-specific files. In most cases it is
+        the same as the ``$(prefix)`` variable.
+        It was introduced mostly for compatibility with GNU standard:
+        https://www.gnu.org/prep/standards/html_node/Directory-Variables.html.
+        It can be changed via environment variable :ref:`EXEC_PREFIX<envvars-execprefix>`
+        or via ``--execprefix`` on the command line.
 
     :bindir:
-        Installation bin directory. It can be changed via ``--bindir`` on command line
-        or environment variable BINDIR. ALso see the
-        :ref:`cliopts<buildconf-cliopts>` parameter in buildconf.
+        The directory for installing executable programs that users can run.
+        It defaults to ``$(exeprefix)/bin`` on UNIX and ``$(exeprefix)`` on Windows.
+        It can be changed via environment variable :ref:`BINDIR<envvars-bindir>`
+        or via ``--bindir`` on the command line.
+
+    :sbindir:
+        The directory for installing executable programs that can be run, but
+        are only generally useful to system administrators.
+        It defaults to ``$(exeprefix)/sbin`` on UNIX and ``$(exeprefix)`` on Windows.
+        It can be changed via environment variable :ref:`SBINDIR<envvars-sbindir>`
+        or via ``--sbindir`` on the command line.
+
+    :libexecdir:
+        The directory for installing executable programs to be run by other
+        programs rather than by users.
+        It defaults to ``$(exeprefix)/libexec`` on UNIX and ``$(exeprefix)`` on Windows.
+        It can be changed via environment variable :ref:`LIBEXECDIR<envvars-libexecdir>`
+        or via ``--libexecdir`` on the command line.
 
     :libdir:
-        Installation lib directory. It can be changed via ``--libdir`` on command line
-        or environment variable LIBDIR. ALso see the
-        :ref:`cliopts<buildconf-cliopts>` parameter in buildconf.
+        The installation directory for object files and libraries of object code.
+        It defaults to ``$(exeprefix)/lib`` or ``$(exeprefix)/lib64`` on UNIX
+        and ``$(exeprefix)`` on Windows.
+        It can be changed via environment variable :ref:`LIBDIR<envvars-libdir>`
+        or via ``--libdir`` on the command line.
+
+    :sysconfdir:
+        The installation directory for read-only single-machine data.
+        It defaults to ``$(prefix)/etc`` on UNIX and ``$(prefix)`` on Windows.
+        It can be changed via environment variable :ref:`SYSCONFDIR<envvars-sysconfdir>`
+        or via ``--sysconfdir`` on the command line.
+
+    :sharedstatedir:
+        The installation directory for modifiable architecture-independent data.
+        It defaults to ``/var/lib`` on UNIX and ``$(prefix)`` on Windows.
+        It can be changed via environment variable :ref:`SHAREDSTATEDIR<envvars-sharedstatedir>`
+        or via ``--sharedstatedir`` on the command line.
+
+    :localstatedir:
+        The installation directory for modifiable single-machine data.
+        It defaults to ``$(prefix)/var``.
+        It can be changed via environment variable :ref:`LOCALSTATEDIR<envvars-localstatedir>`
+        or via ``--localstatedir`` on the command line.
+
+    :includedir:
+        The installation directory for C header files.
+        It defaults to ``$(prefix)/include``.
+        It can be changed via environment variable :ref:`INCLUDEDIR<envvars-includedir>`
+        or via ``--includedir`` on the command line.
+
+    :datarootdir:
+        The installation root directory for read-only architecture-independent data.
+        It defaults to ``$(prefix)/share`` on UNIX and ``$(prefix)`` on Windows.
+        It can be changed via environment variable :ref:`DATAROOTDIR<envvars-datarootdir>`
+        or via ``--datarootdir`` on the command line.
+
+    :datadir:
+        The installation directory for read-only architecture-independent data.
+        It defaults to ``$(datarootdir)``.
+        It can be changed via environment variable :ref:`DATADIR<envvars-datadir>`
+        or via ``--datadir`` on the command line.
+
+    :docdir:
+        The installation directory for documentation.
+        It defaults to ``$(datarootdir)/doc/$(prjname)`` on UNIX
+        and ``$(datarootdir)/doc`` on Windows.
+        It can be changed via environment variable :ref:`DOCDIR<envvars-docdir>`
+        or via ``--docdir`` on the command line.
+
+    :mandir:
+        The installation directory for man documentation.
+        It defaults to ``$(datarootdir)/man``.
+        It can be changed via environment variable :ref:`MANDIR<envvars-mandir>`
+        or via ``--mandir`` on the command line.
+
+    :infodir:
+        The installation directory for info documentation.
+        It defaults to ``$(datarootdir)/info``.
+        It can be changed via environment variable :ref:`INFODIR<envvars-infodir>`
+        or via ``--infodir`` on the command line.
+
+    :localedir:
+        The installation directory for locale-dependent data.
+        It defaults to ``$(datarootdir)/locale``.
+        It can be changed via environment variable :ref:`LOCALEDIR<envvars-localedir>`
+        or via ``--localedir`` on the command line.
 
 In some cases some extra variables are provided. For example,
 variables ``src`` and ``tgt`` are provided
