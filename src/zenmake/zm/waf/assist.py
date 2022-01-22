@@ -577,24 +577,3 @@ def needToConfigure(zmMetaConf, rootdir, zmcachedir, buildtype, cliargs):
         return True
 
     return False
-
-def isBuildConfChanged(buildconf, buildroot):
-    """
-    Try to detect if current buildconf file is changed.
-    Returns True if it's changed or file just doesn't exist.
-    """
-
-    # FIXME: remake
-    raise NotImplementedError
-
-    #from zm.buildconf.paths import ConfPaths
-    #try:
-    #    bconfPaths = ConfPaths(buildconf, buildroot)
-    #except AttributeError:
-    #    return True
-    #
-    #cmnConfSet = loadZenMakeCmnConfSet(bconfPaths)
-    #if not cmnConfSet:
-    #    return True
-    #
-    #return areMonitoredFilesChanged(cmnConfSet)
