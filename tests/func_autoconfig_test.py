@@ -45,7 +45,7 @@ class TestAutoconfig(object):
 
         self.testdir = os.path.abspath(joinpath(self.cwd, os.pardir))
 
-    @pytest.fixture(params = getMonitoredEnvVarNames())
+    @pytest.fixture(params = getMonitoredEnvVarNames()[::3])
     def toolEnvVar(self, request):
         self.toolEnvVar = request.param
 
