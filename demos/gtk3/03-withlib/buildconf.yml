@@ -17,7 +17,7 @@ tasks:
 
         export: config-results
 
-        defines : 'PACKAGE_DATA_DIR="$(datadir)/$(prjname)"'
+        defines : 'PACKAGE_DATA_DIR="$(appdatadir)"'
 
     gtk3demo:
         features : cprogram
@@ -33,4 +33,4 @@ buildtypes:
 install:
     - for: { task: gui }
       src: $(buildtypedir)/builder.ui
-      dst: $(datadir)/$(prjname)
+      dst: $(appdatadir)

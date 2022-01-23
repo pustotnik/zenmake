@@ -13,13 +13,13 @@ tasks = {
             {
                 # copy whole directory
                 'src' : 'scripts',
-                'dst': '$(datadir)/$(prjname)/${SCRIPTS_DIR}',
+                'dst': '$(appdatadir)/${SCRIPTS_DIR}',
                 'chmod' : 0o755,
             },
             {
                 # copy all files from directory
                 'src' : 'scripts/*',
-                'dst': '$(datadir)/$(prjname)/${SCRIPTS_DIR}2',
+                'dst': '$(appdatadir)/${SCRIPTS_DIR}2',
                 'chmod' : '755',
                 # copy links as is
                 'follow-symlinks' : False,
@@ -27,13 +27,13 @@ tasks = {
             {
                 # copy all files from directory recursively
                 'src' : 'scripts/**/', # the same as 'scripts/**'
-                'dst': '$(datadir)/$(prjname)/${SCRIPTS_DIR}3',
+                'dst': '$(appdatadir)/${SCRIPTS_DIR}3',
             },
             {
                 # copy as
                 'do' : 'copy-as',
                 'src' : 'scripts/my-script.py',
-                'dst': '$(datadir)/$(prjname)/${SCRIPTS_DIR}/mtest.py',
+                'dst': '$(appdatadir)/${SCRIPTS_DIR}/mtest.py',
                 'chmod' : '750',
             },
         ],
@@ -50,8 +50,8 @@ tasks = {
             'linux' : [
                 {
                     # symlink
-                    'src' : '$(datadir)/$(prjname)/${SCRIPTS_DIR}/mtest.py',
-                    'symlink': '$(datadir)/$(prjname)/${SCRIPTS_DIR}/mtest-link.py',
+                    'src' : '$(appdatadir)/${SCRIPTS_DIR}/mtest.py',
+                    'symlink': '$(appdatadir)/${SCRIPTS_DIR}/mtest-link.py',
                 },
             ],
         },

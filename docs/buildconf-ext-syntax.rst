@@ -306,6 +306,13 @@ List of built-in variables:
         It can be changed via environment variable :ref:`DATADIR<envvars-datadir>`
         or via ``--datadir`` on the command line.
 
+    :appdatadir:
+        The installation directory for read-only architecture-independent application data.
+        It defaults to ``$(datarootdir)/$(prjname)`` on UNIX
+        and ``$(datarootdir)`` on Windows.
+        It can be changed via environment variable :ref:`APPDATADIR<envvars-appdatadir>`
+        or via ``--appdatadir`` on the command line.
+
     :docdir:
         The installation directory for documentation.
         It defaults to ``$(datarootdir)/doc/$(prjname)`` on UNIX

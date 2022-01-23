@@ -78,6 +78,10 @@ CONFIG = (
         'installation directory for read-only architecture-independent data',
     ),
     VarConfig(
+        'appdatadir', 'APPDATADIR', '$(datarootdir)/$(prjname)',
+        'installation directory for read-only architecture-independent application data',
+    ),
+    VarConfig(
         'docdir', 'DOCDIR', '$(datarootdir)/doc/$(prjname)',
         'installation directory for documentation',
     ),
@@ -105,6 +109,7 @@ if HOST_OS == 'windows':
     for _name in ('sysconfdir', 'sharedstatedir', 'datarootdir'):
         _cfgmap[_name].default = '$(prefix)'
     _cfgmap['docdir'].default = '$(datarootdir)/doc'
+    _cfgmap['appdatadir'].default = '$(datarootdir)'
 
 for _cfgitem in CONFIG:
     _cfgitem.defaultdesc = '[default: %s]' % _cfgitem.default

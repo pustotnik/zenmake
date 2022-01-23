@@ -233,6 +233,14 @@ DATADIR
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
 
+.. _envvars-appdatadir:
+
+APPDATADIR
+    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``appdatadir``
+    as the installation directory for read-only architecture-independent application data.
+    This path is always considered as an absolute path or
+    as a relative path to ``DESTDIR``.
+
 .. _envvars-docdir:
 
 DOCDIR
