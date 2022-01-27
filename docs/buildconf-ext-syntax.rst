@@ -213,29 +213,41 @@ in YAML format:
 
 List of built-in variables:
 
-    :prjname:
+.. _buildconf-builtin-vars-prjname:
+
+    prjname
         Name of the current project.
         It can be changed via ``name`` from :ref:`here<buildconf-project>`.
 
-    :topdir:
+.. _buildconf-builtin-vars-topdir:
+
+    topdir
         Absolute path of :ref:`startdir<buildconf-startdir>` of the top-level buildconf file.
         Usually it is root directory of the current project.
 
-    :buildrootdir:
+.. _buildconf-builtin-vars-buildrootdir:
+
+    buildrootdir
         Absolute path of :ref:`buildroot<buildconf-buildroot>`.
 
-    :buildtypedir:
+.. _buildconf-builtin-vars-buildtypedir:
+
+    buildtypedir
         Absolute path of current buildtype directory. It is
         current value of :ref:`buildroot<buildconf-buildroot>` plus current buildtype.
 
-    :prefix:
+.. _buildconf-builtin-vars-prefix:
+
+    prefix
         The installation prefix. It is a directory that is prepended onto all
         install directories and it defaults to ``/usr/local`` on UNIX and
         ``C:/Program Files/$(prjname)`` on Windows.
         It can be changed via environment variable :ref:`PREFIX<envvars-prefix>`
         or via ``--prefix`` on the command line.
 
-    :execprefix:
+.. _buildconf-builtin-vars-execprefix:
+
+    execprefix
         The installation prefix for machine-specific files. In most cases it is
         the same as the ``$(prefix)`` variable.
         It was introduced mostly for compatibility with GNU standard:
@@ -243,96 +255,126 @@ List of built-in variables:
         It can be changed via environment variable :ref:`EXEC_PREFIX<envvars-execprefix>`
         or via ``--execprefix`` on the command line.
 
-    :bindir:
+.. _buildconf-builtin-vars-bindir:
+
+    bindir
         The directory for installing executable programs that users can run.
         It defaults to ``$(exeprefix)/bin`` on UNIX and ``$(exeprefix)`` on Windows.
         It can be changed via environment variable :ref:`BINDIR<envvars-bindir>`
         or via ``--bindir`` on the command line.
 
-    :sbindir:
+.. _buildconf-builtin-vars-sbindir:
+
+    sbindir
         The directory for installing executable programs that can be run, but
         are only generally useful to system administrators.
         It defaults to ``$(exeprefix)/sbin`` on UNIX and ``$(exeprefix)`` on Windows.
         It can be changed via environment variable :ref:`SBINDIR<envvars-sbindir>`
         or via ``--sbindir`` on the command line.
 
-    :libexecdir:
+.. _buildconf-builtin-vars-libexecdir:
+
+    libexecdir
         The directory for installing executable programs to be run by other
         programs rather than by users.
         It defaults to ``$(exeprefix)/libexec`` on UNIX and ``$(exeprefix)`` on Windows.
         It can be changed via environment variable :ref:`LIBEXECDIR<envvars-libexecdir>`
         or via ``--libexecdir`` on the command line.
 
-    :libdir:
+.. _buildconf-builtin-vars-libdir:
+
+    libdir
         The installation directory for object files and libraries of object code.
         It defaults to ``$(exeprefix)/lib`` or ``$(exeprefix)/lib64`` on UNIX
         and ``$(exeprefix)`` on Windows.
         It can be changed via environment variable :ref:`LIBDIR<envvars-libdir>`
         or via ``--libdir`` on the command line.
 
-    :sysconfdir:
+.. _buildconf-builtin-vars-sysconfdir:
+
+    sysconfdir
         The installation directory for read-only single-machine data.
         It defaults to ``$(prefix)/etc`` on UNIX and ``$(prefix)`` on Windows.
         It can be changed via environment variable :ref:`SYSCONFDIR<envvars-sysconfdir>`
         or via ``--sysconfdir`` on the command line.
 
-    :sharedstatedir:
+.. _buildconf-builtin-vars-sharedstatedir:
+
+    sharedstatedir
         The installation directory for modifiable architecture-independent data.
         It defaults to ``/var/lib`` on UNIX and ``$(prefix)`` on Windows.
         It can be changed via environment variable :ref:`SHAREDSTATEDIR<envvars-sharedstatedir>`
         or via ``--sharedstatedir`` on the command line.
 
-    :localstatedir:
+.. _buildconf-builtin-vars-localstatedir:
+
+    localstatedir
         The installation directory for modifiable single-machine data.
         It defaults to ``$(prefix)/var``.
         It can be changed via environment variable :ref:`LOCALSTATEDIR<envvars-localstatedir>`
         or via ``--localstatedir`` on the command line.
 
-    :includedir:
+.. _buildconf-builtin-vars-includedir:
+
+    includedir
         The installation directory for C header files.
         It defaults to ``$(prefix)/include``.
         It can be changed via environment variable :ref:`INCLUDEDIR<envvars-includedir>`
         or via ``--includedir`` on the command line.
 
-    :datarootdir:
+.. _buildconf-builtin-vars-datarootdir:
+
+    datarootdir
         The installation root directory for read-only architecture-independent data.
         It defaults to ``$(prefix)/share`` on UNIX and ``$(prefix)`` on Windows.
         It can be changed via environment variable :ref:`DATAROOTDIR<envvars-datarootdir>`
         or via ``--datarootdir`` on the command line.
 
-    :datadir:
+.. _buildconf-builtin-vars-datadir:
+
+    datadir
         The installation directory for read-only architecture-independent data.
         It defaults to ``$(datarootdir)``.
         It can be changed via environment variable :ref:`DATADIR<envvars-datadir>`
         or via ``--datadir`` on the command line.
 
-    :appdatadir:
+.. _buildconf-builtin-vars-appdatadir:
+
+    appdatadir
         The installation directory for read-only architecture-independent application data.
         It defaults to ``$(datarootdir)/$(prjname)`` on UNIX
         and ``$(datarootdir)`` on Windows.
         It can be changed via environment variable :ref:`APPDATADIR<envvars-appdatadir>`
         or via ``--appdatadir`` on the command line.
 
-    :docdir:
+.. _buildconf-builtin-vars-docdir:
+
+    docdir
         The installation directory for documentation.
         It defaults to ``$(datarootdir)/doc/$(prjname)`` on UNIX
         and ``$(datarootdir)/doc`` on Windows.
         It can be changed via environment variable :ref:`DOCDIR<envvars-docdir>`
         or via ``--docdir`` on the command line.
 
-    :mandir:
+.. _buildconf-builtin-vars-mandir:
+
+    mandir
         The installation directory for man documentation.
         It defaults to ``$(datarootdir)/man``.
         It can be changed via environment variable :ref:`MANDIR<envvars-mandir>`
         or via ``--mandir`` on the command line.
 
-    :infodir:
+.. _buildconf-builtin-vars-infodir:
+
+    infodir
         The installation directory for info documentation.
         It defaults to ``$(datarootdir)/info``.
         It can be changed via environment variable :ref:`INFODIR<envvars-infodir>`
         or via ``--infodir`` on the command line.
 
-    :localedir:
+.. _buildconf-builtin-vars-localedir:
+
+    localedir
         The installation directory for locale-dependent data.
         It defaults to ``$(datarootdir)/locale``.
         It can be changed via environment variable :ref:`LOCALEDIR<envvars-localedir>`

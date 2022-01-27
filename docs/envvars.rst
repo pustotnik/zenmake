@@ -135,7 +135,7 @@ DESTDIR
 .. _envvars-prefix:
 
 PREFIX
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``prefix``
+    Set value of built-in variable :ref:`prefix<buildconf-builtin-vars-prefix>`
     as the installation prefix.
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``. Example::
@@ -145,13 +145,13 @@ PREFIX
 .. _envvars-execprefix:
 
 EXEC_PREFIX
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``execprefix``
+    Set value of built-in variable :ref:`execprefix<buildconf-builtin-vars-execprefix>`
     as the installation prefix for machine-specific files.
 
 .. _envvars-bindir:
 
 BINDIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``bindir``
+    Set value of built-in variable :ref:`bindir<buildconf-builtin-vars-bindir>`
     as the directory for installing executable programs that users can run.
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
@@ -162,7 +162,7 @@ BINDIR
 .. _envvars-sbindir:
 
 SBINDIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``sbindir``
+    Set value of built-in variable :ref:`sbindir<buildconf-builtin-vars-sbindir>`
     as the directory for installing executable programs that can be run, but are
     only generally useful to system administrators.
     This path is always considered as an absolute path or
@@ -171,7 +171,7 @@ SBINDIR
 .. _envvars-libexecdir:
 
 LIBEXECDIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``libexecdir``
+    Set value of built-in variable :ref:`libexecdir<buildconf-builtin-vars-libexecdir>`
     as the directory for installing executable programs to be run by other programs
     rather than by users.
     This path is always considered as an absolute path or
@@ -180,7 +180,7 @@ LIBEXECDIR
 .. _envvars-libdir:
 
 LIBDIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``libdir``
+    Set value of built-in variable :ref:`libdir<buildconf-builtin-vars-libdir>`
     as the installation directory for object files and libraries of object code.
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
@@ -188,7 +188,7 @@ LIBDIR
 .. _envvars-sysconfdir:
 
 SYSCONFDIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``sysconfdir``
+    Set value of built-in variable :ref:`sysconfdir<buildconf-builtin-vars-sysconfdir>`
     as the installation directory for read-only single-machine data.
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
@@ -196,7 +196,7 @@ SYSCONFDIR
 .. _envvars-sharedstatedir:
 
 SHAREDSTATEDIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``sharedstatedir``
+    Set value of built-in variable :ref:`sharedstatedir<buildconf-builtin-vars-sharedstatedir>`
     as the installation directory for modifiable architecture-independent data.
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
@@ -204,7 +204,7 @@ SHAREDSTATEDIR
 .. _envvars-localstatedir:
 
 LOCALSTATEDIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``localstatedir``
+    Set value of built-in variable :ref:`localstatedir<buildconf-builtin-vars-localstatedir>`
     as the installation directory for modifiable single-machine data.
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
@@ -212,7 +212,7 @@ LOCALSTATEDIR
 .. _envvars-includedir:
 
 INCLUDEDIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``includedir``
+    Set value of built-in variable :ref:`includedir<buildconf-builtin-vars-includedir>`
     as the installation directory for C header files.
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
@@ -220,7 +220,7 @@ INCLUDEDIR
 .. _envvars-datarootdir:
 
 DATAROOTDIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``datarootdir``
+    Set value of built-in variable :ref:`datarootdir<buildconf-builtin-vars-datarootdir>`
     as the installation root directory for read-only architecture-independent data.
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
@@ -228,7 +228,7 @@ DATAROOTDIR
 .. _envvars-datadir:
 
 DATADIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``datadir``
+    Set value of built-in variable :ref:`datadir<buildconf-builtin-vars-datadir>`
     as the installation directory for read-only architecture-independent data.
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
@@ -236,7 +236,7 @@ DATADIR
 .. _envvars-appdatadir:
 
 APPDATADIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``appdatadir``
+    Set value of built-in variable :ref:`appdatadir<buildconf-builtin-vars-appdatadir>`
     as the installation directory for read-only architecture-independent application data.
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
@@ -244,7 +244,7 @@ APPDATADIR
 .. _envvars-docdir:
 
 DOCDIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``docdir``
+    Set value of built-in variable :ref:`docdir<buildconf-builtin-vars-docdir>`
     as the installation directory for documentation.
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
@@ -252,7 +252,7 @@ DOCDIR
 .. _envvars-mandir:
 
 MANDIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``mandir``
+    Set value of built-in variable :ref:`mandir<buildconf-builtin-vars-mandir>`
     as the installation directory for man documentation.
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
@@ -260,7 +260,7 @@ MANDIR
 .. _envvars-infodir:
 
 INFODIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``infodir``
+    Set value of built-in variable :ref:`infodir<buildconf-builtin-vars-infodir>`
     as the installation directory for info documentation.
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
@@ -268,7 +268,7 @@ INFODIR
 .. _envvars-localedir:
 
 LOCALEDIR
-    Set value of :ref:`built-in<buildconf-builtin-vars>` variable ``localedir``
+    Set value of built-in variable :ref:`localedir<buildconf-builtin-vars-localedir>`
     as the installation directory for locale-dependent data.
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
