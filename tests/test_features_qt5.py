@@ -2,7 +2,7 @@
 #
 
 # pylint: disable = missing-docstring, invalid-name
-# pylint: disable = too-many-statements
+# pylint: disable = too-many-statements, redefined-outer-name
 
 """
  Copyright (c) 2022, Alexander Magola. All rights reserved.
@@ -10,6 +10,7 @@
 """
 
 import os
+import pytest
 
 from waflib import Context
 from waflib.ConfigSet import ConfigSet
@@ -70,9 +71,8 @@ def testAddExtraMocIncludes(tmpdir):
         ctx.bldnode.make_node('incs').abspath()
     ]
 
-def testApplyQt5(tmpdir):
-
-    qt5 = _getQt5Module()
+@pytest.fixture
+def qt5tgen(tmpdir):
 
     buildWorkDirName = '@bld'
 
@@ -80,18 +80,16 @@ def testApplyQt5(tmpdir):
     srcroot = rootdir.mkdir("src")
     bldroot = rootdir.mkdir("build")
     bldout  = bldroot.mkdir("debug")
-    bldout = str(bldout)
+    bldout  = str(bldout)
 
     ctx = Context.Context(run_dir = str(rootdir))
     ctx.buildWorkDirName = buildWorkDirName
+    ctx.is_install = 0
 
     makeNode = ctx.root.make_node
     ctx.srcnode = makeNode(str(srcroot))
     ctx.bldnode = makeNode(joinpath(bldout, buildWorkDirName))
     ctx.bldnode.mkdir()
-
-    def makeBldNode(*args):
-        return makeNode(joinpath(bldout, *args))
 
     tgen = AutoDict()
     tgen.idx = 2
@@ -122,33 +120,61 @@ def testApplyQt5(tmpdir):
         return task
 
     tgen.create_task = createTaskEmu
+    tgen.createdTasks = createdTasks
+
+    def makeBldNode(*args):
+        return makeNode(joinpath(bldout, *args))
+
+    tgen.makeBldNode = makeBldNode
+
+    return tgen
+
+def testApplyQt5_TS(qt5tgen):
+
+    qt5 = _getQt5Module()
+    tgen = qt5tgen
+    tsFiles = tgen.lang
 
     ### CASE: regular translations files
     tgen['zm-task-params'] = {
         'name' : tgen.name,
     }
 
-    createdTasks.clear()
     qt5.apply_qt5(tgen)
 
-    assert createdTasks == [
-        ['ts2qm', tsFiles[0], makeBldNode('lang_en.qm'), {}],
-        ['ts2qm', tsFiles[1], makeBldNode('lang_nl.qm'), {}],
+    langprefix = ['@translations']
+    assert tgen.createdTasks == [
+        ['ts2qm', tsFiles[0], tgen.makeBldNode(*langprefix, 'lang_en.qm'), {}],
+        ['ts2qm', tsFiles[1], tgen.makeBldNode(*langprefix, 'lang_nl.qm'), {}],
     ]
+    assert not tgen.env['DEFINES']
+
+def testApplyQt5_BldLangprefix(qt5tgen):
+
+    qt5 = _getQt5Module()
+    tgen = qt5tgen
+    tsFiles = tgen.lang
 
     ### CASE: regular translations files with custom prefix
     tgen['zm-task-params'] = {
         'name' : tgen.name,
-        'qmpathprefix' : 'tt/lang',
+        'bld-langprefix' : 'tt/lang',
     }
 
-    createdTasks.clear()
     qt5.apply_qt5(tgen)
 
-    assert createdTasks == [
-        ['ts2qm', tsFiles[0], makeBldNode('tt', 'lang', 'lang_en.qm'), {}],
-        ['ts2qm', tsFiles[1], makeBldNode('tt', 'lang', 'lang_nl.qm'), {}],
+    langprefix = ['tt', 'lang']
+    assert tgen.createdTasks == [
+        ['ts2qm', tsFiles[0], tgen.makeBldNode(*langprefix, 'lang_en.qm'), {}],
+        ['ts2qm', tsFiles[1], tgen.makeBldNode(*langprefix, 'lang_nl.qm'), {}],
     ]
+    assert not tgen.env['DEFINES']
+
+def testApplyQt5_UnigueQMPaths(qt5tgen):
+
+    qt5 = _getQt5Module()
+    tgen = qt5tgen
+    tsFiles = tgen.lang
 
     ### CASE: regular translations files with 'unique-qmpaths'
     tgen['zm-task-params'] = {
@@ -156,13 +182,25 @@ def testApplyQt5(tmpdir):
         'unique-qmpaths' : True,
     }
 
-    createdTasks.clear()
     qt5.apply_qt5(tgen)
 
-    assert createdTasks == [
-        ['ts2qm', tsFiles[0], makeBldNode('%s_%s' % (tgen.name,'lang_en.qm')), {}],
-        ['ts2qm', tsFiles[1], makeBldNode('%s_%s' % (tgen.name,'lang_nl.qm')), {}],
+    langprefix = ['@translations']
+    assert tgen.createdTasks == [
+        ['ts2qm', tsFiles[0],
+            tgen.makeBldNode(*langprefix, '%s_%s' % (tgen.name,'lang_en.qm')), {}],
+        ['ts2qm', tsFiles[1],
+            tgen.makeBldNode(*langprefix, '%s_%s' % (tgen.name,'lang_nl.qm')), {}],
     ]
+    assert not tgen.env['DEFINES']
+
+def testApplyQt5_QMInsideRes(qt5tgen):
+
+    qt5 = _getQt5Module()
+    tgen = qt5tgen
+    tsFiles = tgen.lang
+    makeBldNode = tgen.makeBldNode
+    createdTasks = tgen.createdTasks
+    buildWorkDirName = tgen.bld.buildWorkDirName
 
     ### CASE: translations files within resource file
     tgen['zm-task-params'] = {
@@ -170,7 +208,6 @@ def testApplyQt5(tmpdir):
         'rclangprefix' : 'lang',
     }
 
-    createdTasks.clear()
     qt5.apply_qt5(tgen)
 
     qmNodes = [
@@ -185,3 +222,100 @@ def testApplyQt5(tmpdir):
     assert createdTasks[2] == ['qm2qrc', qmNodes, qrcNode, {'qrcprefix': 'lang'}]
     assert createdTasks[3] == ['rcc', qrcNode, cxxNode, {}]
     assert createdTasks[4] == ['cxx', cxxNode, cxxNode.change_ext('.o'), {}]
+
+    assert not tgen.env['DEFINES']
+
+def testApplyQt5_InstallQM(qt5tgen):
+
+    qt5 = _getQt5Module()
+    tgen = qt5tgen
+    makeBldNode = tgen.makeBldNode
+
+    tgen.bld.is_install = True
+    tgen['zm-task-params'] = {
+        'name' : tgen.name,
+        'install-files': [ { 'src' : 'from', 'dst': 'to', 'do': 'copy'}],
+        '$$tgen' : tgen,
+    }
+
+    tgen.env['$builtin-vars'] = {
+        'appdatadir' : 'app_data_dir',
+    }
+
+    qmSrc = [
+        makeBldNode('@translations', 'lang_en.qm').abspath(),
+        makeBldNode('@translations', 'lang_nl.qm').abspath(),
+    ]
+
+    installLangDir = joinpath('app_data_dir', 'translations')
+
+    def setUpInstallFiles(taskParams):
+
+        assert taskParams['install-files'] == [{
+            'src' : qmSrc,
+            'dst' : installLangDir,
+            'do'  : 'copy'
+        }]
+
+        tgen = taskParams['$$tgen']
+        tgen['install-tasks-created'] = True
+
+    tgen.bld.setUpInstallFiles = setUpInstallFiles
+
+    # CASE: regular .qm files with default install dir
+    tgen['install-tasks-created'] = False
+    qt5.apply_qt5(tgen)
+
+    assert tgen['install-tasks-created']
+
+    # CASE: regular .qm files with custom install dir
+    tgen.bld.qmInfo.clear()
+    installLangDir = tgen['zm-task-params']['install-langdir'] = '/my/install/langdir'
+
+    tgen['install-tasks-created'] = False
+    qt5.apply_qt5(tgen)
+
+    assert tgen['install-tasks-created']
+
+    # CASE: .qm files inside .qrc
+    tgen.bld.qmInfo.clear()
+    tgen['zm-task-params']['rclangprefix'] = ''
+    tgen['install-tasks-created'] = False
+    qt5.apply_qt5(tgen)
+
+    assert not tgen['install-tasks-created']
+
+def testApplyQt5_LangDirDefine(qt5tgen):
+
+    qt5 = _getQt5Module()
+    tgen = qt5tgen
+
+    bldout = tgen.bld.bconfManager.root.selectedBuildTypeDir
+
+    tgen['zm-task-params'] = {
+        'name' : tgen.name,
+        'langdir-defname': 'TRANSLATIONS_DIR',
+    }
+
+    tgen.env['$builtin-vars'] = {
+        'appdatadir' : 'app_data_dir',
+    }
+
+    ### CASE: 'build/run' and other regular command
+
+    qt5.apply_qt5(tgen)
+    assert tgen.env['DEFINES'] == [
+        'TRANSLATIONS_DIR="%s"' % joinpath(bldout, '@translations')
+    ]
+
+    ### CASE: 'install' command
+    del tgen.env['DEFINES']
+    tgen.bld.qmInfo.clear()
+
+    tgen.bld.is_install = True
+    tgen.bld.setUpInstallFiles = lambda _: None
+    qt5.apply_qt5(tgen)
+
+    assert tgen.env['DEFINES'] == [
+        'TRANSLATIONS_DIR="%s"' % joinpath('app_data_dir', 'translations')
+    ]

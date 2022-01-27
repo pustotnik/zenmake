@@ -239,7 +239,53 @@ def process_mocs(tgen):
 
     qt5.process_mocs(tgen)
 
-def _createTranslationTasks(tgen):
+def _checkQmPathUnique(tgen, qmpath, qmInfo):
+
+    otherQm = qmInfo.get(qmpath)
+    if otherQm is not None:
+        msg = "Tasks '%s' and '%s'" % (tgen.name, otherQm['tgen-name'])
+        msg += " have the same output .qm path:\n  %s" % qmpath
+        msg += "\nUse the 'bld-langprefix'/'unique-qmpaths' task "
+        msg += "parameters to fix it. Or don't use the same .ts files"
+        msg += " in these tasks."
+        raise error.ZenMakeError(msg)
+
+def _createRcTranslTasks(tgen, qmTasks, rclangprefix):
+
+    rcnode = 'rclang-%s' % tgen.name
+    rcnode = tgen.path.find_or_declare('%s.%d.qrc' % (rcnode, tgen.idx))
+
+    qmNodes = [x.outputs[0] for x in qmTasks]
+    kwargs = { 'qrcprefix' : rclangprefix }
+    qm2rccTask = tgen.create_task('qm2qrc', qmNodes, rcnode, **kwargs)
+    rccTask = qt5.create_rcc_task(tgen, qm2rccTask.outputs[0])
+    tgen.link_task.inputs.append(rccTask.outputs[0])
+
+def _createQmInstallTasks(tgen, qmTasks, taskParams):
+
+    bld = tgen.bld
+    if not bld.is_install or not taskParams:
+        return None
+
+    qmNodes = [x.outputs[0] for x in qmTasks]
+
+    destdir = taskParams.get('install-langdir')
+    if destdir is None:
+        destdir = '$(appdatadir)/translations'
+        destdir = utils.substBuiltInVars(destdir, tgen.env['$builtin-vars'])
+        destdir = os.path.normpath(getNativePath(destdir))
+
+    taskParams = taskParams.copy()
+    taskParams.pop('install-files', None)
+    taskParams['install-files'] = [{
+        'src' : [x.abspath() for x in qmNodes],
+        'dst' : destdir,
+        'do'  : 'copy'
+    }]
+    bld.setUpInstallFiles(taskParams)
+    return destdir
+
+def _createTranslTasks(tgen):
 
     tsFiles = getattr(tgen, 'lang', None)
     if not tsFiles:
@@ -256,11 +302,20 @@ def _createTranslationTasks(tgen):
         btypeNode = bld.root.make_node(bconfManager.root.selectedBuildTypeDir)
 
     fnprefix = ''
-    pathprefix = None
+    qmpathprefix = None
+    langDirDefine = None
     if zmTaskParams:
         if zmTaskParams.get('unique-qmpaths', False) and rclangprefix is None:
             fnprefix = zmTaskParams['name'] + '_'
-        pathprefix = getNativePath(zmTaskParams.get('qmpathprefix'))
+        qmpathprefix = getNativePath(zmTaskParams.get('bld-langprefix'))
+        langDirDefine = zmTaskParams.get('langdir-defname')
+
+    if qmpathprefix is None:
+        qmpathprefix = '@translations'
+
+    qmNodeDir = None
+    if rclangprefix is None:
+        qmNodeDir = btypeNode.find_or_declare(qmpathprefix)
 
     try:
         qmInfo = bld.qmInfo
@@ -274,22 +329,14 @@ def _createTranslationTasks(tgen):
         fname = fname[:extIdx] if extIdx > 0 else fname
         fname = '%s%s%s' % (fnprefix, fname, '.qm')
 
-        if rclangprefix is None:
-            prefix = snode.parent.srcpath() if pathprefix is None else pathprefix
-            qmnode = btypeNode.find_or_declare('%s%s%s' % (prefix, os.sep, fname))
+        if qmNodeDir is not None:
+            qmnode = qmNodeDir.find_or_declare(fname)
         else:
             qmnode = snode.change_ext('.%d.qm' % tgen.idx)
 
-        # check if .qm paths are unique
         qmpath = qmnode.abspath()
-        otherQm = qmInfo.get(qmpath)
-        if otherQm is not None:
-            msg = "Tasks '%s' and '%s'" % (tgen.name, otherQm['tgen-name'])
-            msg += " have the same output .qm path:\n  %s" % qmpath
-            msg += "\nUse the 'qmpathprefix'/'unique-qmpaths' task "
-            msg += "parameters to fix it. Or don't use the same .ts files"
-            msg += " in these tasks."
-            raise error.ZenMakeError(msg)
+        # check if .qm paths are unique
+        _checkQmPathUnique(tgen, qmpath, qmInfo)
 
         qmInfo[qmpath] = { 'tgen-name' : tgen.name, 'alies' : fname }
 
@@ -297,15 +344,14 @@ def _createTranslationTasks(tgen):
 
     qmTasks = [tgen.create_task('ts2qm', x, getQmNode(x)) for x in tsFiles]
 
-    if rclangprefix is not None:
-        rcnode = 'rclang-%s' % tgen.name
-        rcnode = tgen.path.find_or_declare('%s.%d.qrc' % (rcnode, tgen.idx))
-
-        qmNodes = [x.outputs[0] for x in qmTasks]
-        kwargs = { 'qrcprefix' : rclangprefix }
-        qm2rccTask = tgen.create_task('qm2qrc', qmNodes, rcnode, **kwargs)
-        rccTask = qt5.create_rcc_task(tgen, qm2rccTask.outputs[0])
-        tgen.link_task.inputs.append(rccTask.outputs[0])
+    if rclangprefix is None:
+        qmdestdir = _createQmInstallTasks(tgen, qmTasks, zmTaskParams)
+        if langDirDefine:
+            if qmdestdir is None:
+                qmdestdir = qmNodeDir.abspath()
+            tgen.env.append_value('DEFINES', '%s="%s"' % (langDirDefine, qmdestdir))
+    else:
+        _createRcTranslTasks(tgen, qmTasks, rclangprefix)
 
 @feature('qt5')
 @after('apply_link')
@@ -328,7 +374,7 @@ def apply_qt5(tgen):
     env.append_value('MOC_FLAGS', mocFlags)
 
     # .ts -> .qm and other related tasks
-    _createTranslationTasks(tgen)
+    _createTranslTasks(tgen)
 
 class qm2qrc(Task):
     """

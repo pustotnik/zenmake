@@ -6,16 +6,16 @@ tasks:
 
   qutil:
     features : cxxshlib qt5
-    source   : qutil/**/*.cpp
     source   : qutil/**/*.cpp qutil/**/*.ts
     use      : Qt5Core
+    langdir-defname: TRANSLATIONS_DIR
 
   myqt5app:
     features  : cxxprogram qt5
     source    : prog/**/*.cpp prog/**/*.qrc prog/**/*.ui prog/**/*.ts
     moc       : prog/**/*.h # suppose all .h files in the 'prog' have Q_OBJECT
     rclangprefix: lang
-    #qmpathprefix : prog/i18n
+    #bld-langprefix : prog/i18n
     #unique-qmpaths: true
     use       : Qt5Widgets qutil util
     configure:

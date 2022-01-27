@@ -11,9 +11,11 @@ from zm.buildconf.types import PATHS_SCHEME
 CONF_TASKSCHEME_SPEC = {
     'base' : {
         'moc' : PATHS_SCHEME,
-        'qmpathprefix'   : { 'type': 'str' },
+        'bld-langprefix'   : { 'type': 'str' },
         'unique-qmpaths' : { 'type': 'bool' },
         'rclangprefix'   : { 'type': 'str' },
+        'langdir-defname': { 'type': 'str' },
+        'install-langdir': { 'type': 'str', 'traits': ['one-path', 'abs'], },
     },
     # Can be boolean or list of particular param names
     # True means all keys from 'base'

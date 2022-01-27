@@ -53,7 +53,8 @@ QString getTranslated()
 {
     QTranslator translator;
     translator.load(QLocale(), QLatin1String("qutil_lang"), QLatin1String("_"),
-            QLatin1String("qutil/i18n"));
+            // TRANSLATIONS_DIR is defined via buildconf.yml
+            QString::fromLocal8Bit(TRANSLATIONS_DIR));
 
     return translator.translate("qutil", "translated message");
 }
