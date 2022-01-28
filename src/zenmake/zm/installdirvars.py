@@ -99,17 +99,17 @@ CONFIG = (
     ),
 )
 
-if HOST_OS == 'windows':
-    _cfgmap = { item.name:item for item in CONFIG }
+CONFIG_MAP = { item.name:item for item in CONFIG }
 
-    _cfgmap['prefix'].default = 'C:\\Program Files\\$(prjname)'
+if HOST_OS == 'windows':
+    CONFIG_MAP['prefix'].default = 'C:\\Program Files\\$(prjname)'
     for _name in ('bindir', 'sbindir', 'libexecdir', 'libdir'):
-        _cfgmap[_name].default = '$(execprefix)'
+        CONFIG_MAP[_name].default = '$(execprefix)'
 
     for _name in ('sysconfdir', 'sharedstatedir', 'datarootdir'):
-        _cfgmap[_name].default = '$(prefix)'
-    _cfgmap['docdir'].default = '$(datarootdir)/doc'
-    _cfgmap['appdatadir'].default = '$(datarootdir)'
+        CONFIG_MAP[_name].default = '$(prefix)'
+    CONFIG_MAP['docdir'].default = '$(datarootdir)/doc'
+    CONFIG_MAP['appdatadir'].default = '$(datarootdir)'
 
 for _cfgitem in CONFIG:
     _cfgitem.defaultdesc = '[default: %s]' % _cfgitem.default

@@ -12,10 +12,10 @@
 """
 
 import os
-import posixpath
 
 import pytest
-from zm import utils, installdirvars
+from zm.utils import substBuiltInVars
+from zm import installdirvars
 from zm.autodict import AutoDict
 from zm.constants import PLATFORM, DEFAULT_BUILDWORKNAME
 from zm.features import TASK_TARGET_FEATURES
@@ -30,23 +30,24 @@ FORINSTALL_PRJDIRS = [
 def getInstallFixtureParams():
 
     fixtures = []
+    dvarsCfgMap = installdirvars.CONFIG_MAP
+    defaultVars = {
+        name:dvarsCfgMap[name].default
+        for name in ('prefix', 'bindir', 'libdir')
+    }
 
     #### 1
-    prefix = installdirvars.DirVars('installtest', {}).prefix
-    bindir = joinpath(prefix, 'bin')
-    libdir = joinpath(prefix, 'lib%s' % installdirvars.LIBDIR_POSTFIX)
-
-    params = AutoDict(prefix = prefix, bindir = bindir, libdir = libdir)
+    params = AutoDict(**defaultVars)
     params.installArgs = []
 
     fixtures.append(AutoDict(id = len(fixtures) + 1, **params))
 
     #### 2
-    prefix = '/usr/my'
-    bindir = posixpath.join(prefix, 'bin')
-    libdir = posixpath.join(prefix, 'lib%s' % installdirvars.LIBDIR_POSTFIX)
-
-    params = AutoDict(prefix = prefix, bindir = bindir, libdir = libdir)
+    params = AutoDict(
+        prefix = '/usr/my',
+        bindir = defaultVars['bindir'],
+        libdir = defaultVars['libdir']
+    )
     params.installArgs = ['--prefix', params.prefix]
 
     fixtures.append(AutoDict(id = len(fixtures) + 1, **params))
@@ -84,7 +85,7 @@ def getInstallFixtureParams():
     #### 5
     params = AutoDict(
         prefix = 'usr2/my',
-        bindir = 'usr2/my/bin',
+        bindir = defaultVars['bindir'],
         libdir = 'mylib',
     )
 
@@ -138,12 +139,7 @@ class TestInstall(object):
 
     def _checkInstallResults(self, cmdLine, check):
 
-        svars = {
-            'prefix': check.prefix,
-            'bindir': check.bindir,
-            'libdir': check.libdir,
-        }
-
+        check = check.copy()
         assert isdir(check.destdir)
 
         isWindows = PLATFORM == 'windows'
@@ -152,6 +148,13 @@ class TestInstall(object):
         processConfManagerWithCLI(self, cmdLine)
 
         checkBuildWorkDir(self)
+
+        svars = self.confManager.root.builtInVars
+        for name in ('prefix', 'bindir', 'libdir'):
+            check[name] = substBuiltInVars(check[name], svars)
+            if not os.path.isabs(check[name]):
+                check[name] = '/' + check[name]
+            check[name] = check[name].replace('/', os.sep)
 
         tasks = getBuildTasks(self.confManager)
         for taskName, taskParams in tasks.items():
@@ -247,13 +250,7 @@ class TestInstall(object):
             exitcode, _, _ = runZm(self, cmdLine)
             assert exitcode == 0
 
-            check = fixtures.copy()
-            for name in ('prefix', 'bindir', 'libdir'):
-                if not os.path.isabs(check[name]):
-                    check[name] = '/' + check[name]
-                check[name] = check[name].replace('/', os.sep)
-
-            self._checkInstallResults(cmdLine, check)
+            self._checkInstallResults(cmdLine, fixtures)
 
             cmdLine[0] = 'uninstall'
             exitcode, _, _ = runZm(self, cmdLine)
@@ -287,41 +284,34 @@ class TestInstallFiles(object):
 
         fixtures['destdir'] = joinpath(testdir, 'inst')
 
-        prefix = fixtures['prefix']
-        if not os.path.isabs(prefix):
-            prefix = '/' + prefix
-        prefix = prefix.replace('/', os.sep)
-        prefix2 = os.path.splitdrive(prefix)[1].lstrip(os.sep)
-        prjName = self.outputPrjDirName
-
         if self.testDirPath == FORINSTALLFILES_PRJDIRS[0]:
 
-            dir1 = '%s/share/%s/scripts' % (prefix2, prjName)
-            dir2 = '%s/share/%s/scripts' % (prefix, prjName)
+            dirprfx = '$(appdatadir)/scripts'
+
             files = [
-                { 'path' : dir1 + '/my-script.py', 'chmod' : 0o755, },
-                { 'path' : dir1 + '/test.py', 'chmod' : 0o755, },
-                { 'path' : dir1 + '/asd/test2.py', 'chmod' : 0o755, },
-                #{ 'path' : dir1 + '/my-script.link.py', 'chmod' : 0o755, },
-                { 'path' : dir1 + '2/my-script.py', 'chmod' : 0o755, },
-                { 'path' : dir1 + '2/test.py', 'chmod' : 0o755, },
-                { 'path' : dir1 + '3/my-script.py', 'chmod' : 0o644, },
-                { 'path' : dir1 + '3/test.py', 'chmod' : 0o644, },
-                { 'path' : dir1 + '3/test2.py', 'chmod' : 0o644, },
-                { 'path' : dir1 + '/mtest.py', 'chmod' : 0o750 },
+                { 'path' : dirprfx + '/my-script.py', 'chmod' : 0o755, },
+                { 'path' : dirprfx + '/test.py', 'chmod' : 0o755, },
+                { 'path' : dirprfx + '/asd/test2.py', 'chmod' : 0o755, },
+                #{ 'path' : dirprfx + '/my-script.link.py', 'chmod' : 0o755, },
+                { 'path' : dirprfx + '2/my-script.py', 'chmod' : 0o755, },
+                { 'path' : dirprfx + '2/test.py', 'chmod' : 0o755, },
+                { 'path' : dirprfx + '3/my-script.py', 'chmod' : 0o644, },
+                { 'path' : dirprfx + '3/test.py', 'chmod' : 0o644, },
+                { 'path' : dirprfx + '3/test2.py', 'chmod' : 0o644, },
+                { 'path' : dirprfx + '/mtest.py', 'chmod' : 0o750 },
             ]
 
             if PLATFORM == 'linux':
                 files.extend([
-                    { 'path' : dir1 + '/mtest-link.py', 'linkto' : dir2 + '/mtest.py' },
+                    { 'path' : dirprfx + '/mtest-link.py', 'linkto' : dirprfx + '/mtest.py' },
                 ])
 
             if PLATFORM != 'windows':
                 files.extend([
-                    { 'path' : dir1 + '/my-script.link.py', 'chmod' : 0o755, },
+                    { 'path' : dirprfx + '/my-script.link.py', 'chmod' : 0o755, },
                 ])
                 files.extend([
-                    { 'path' : dir1 + '2/my-script.link.py', 'linkto' : './my-script.py' },
+                    { 'path' : dirprfx + '2/my-script.link.py', 'linkto' : './my-script.py' },
                 ])
         else:
             # unknown project, forgot to add ?
@@ -332,20 +322,25 @@ class TestInstallFiles(object):
 
         fixtures['files'] = files
 
+        return fixtures
+
     @pytest.fixture(params = INSTALL_FIXTURE_PARAMS, ids = lambda x: x[0]['id'])
     def installFixtures(self, request, tmpdir):
 
         testdir = str(tmpdir.realpath())
-        fixturesList = request.param.copy()
-        for fixtures in fixturesList:
-            self._prepareFixtures(fixtures, testdir)
+        fixturesList = request.param
+        fixturesList = [self._prepareFixtures(x.copy(), testdir) for x in fixturesList]
 
         return fixturesList
 
     def test(self, allZmExe, project, installFixtures):
 
+        def handlePath(path, svars):
+            return substBuiltInVars(path, svars).replace('/', os.sep)
+
         for fixtures in installFixtures:
 
+            fixtures = fixtures.copy()
             destdir = fixtures.destdir
 
             cmdLine = ['install', '--destdir', destdir]
@@ -356,10 +351,17 @@ class TestInstallFiles(object):
             processConfManagerWithCLI(self, cmdLine)
             checkBuildWorkDir(self)
 
+            svars = self.confManager.root.builtInVars
+
             for item in fixtures['files']:
-                filepath = joinpath(destdir, item['path'])
+                filepath = handlePath(item['path'], svars)
+                if os.path.isabs(filepath):
+                    # path must be relative because of os.path.join
+                    filepath = os.path.splitdrive(filepath)[1].lstrip(os.sep)
+                filepath = joinpath(destdir, filepath)
+
                 if 'linkto' in item:
-                    linkto = item['linkto']
+                    linkto = handlePath(item['linkto'], svars)
                     assert islink(filepath)
                     assert linkto == os.readlink(filepath)
                 else:
