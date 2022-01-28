@@ -80,6 +80,8 @@ def qt5tgen(tmpdir):
     srcroot = rootdir.mkdir("src")
     bldroot = rootdir.mkdir("build")
     bldout  = bldroot.mkdir("debug")
+
+    srcroot = str(srcroot)
     bldout  = str(bldout)
 
     ctx = Context.Context(run_dir = str(rootdir))
@@ -87,7 +89,7 @@ def qt5tgen(tmpdir):
     ctx.is_install = 0
 
     makeNode = ctx.root.make_node
-    ctx.srcnode = makeNode(str(srcroot))
+    ctx.srcnode = makeNode(srcroot)
     ctx.bldnode = makeNode(joinpath(bldout, buildWorkDirName))
     ctx.bldnode.mkdir()
 
