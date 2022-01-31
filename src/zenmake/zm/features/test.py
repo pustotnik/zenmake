@@ -60,6 +60,7 @@ def _wrapNeedToConfigure(_needToConfigure):
         testsConfigured = zmMetaConf.attrs.get('tests-configured', False)
         return not testsConfigured
 
+    execute.__doc__ = _needToConfigure.__doc__
     return execute
 
 assist.needToConfigure = _wrapNeedToConfigure(assist.needToConfigure)

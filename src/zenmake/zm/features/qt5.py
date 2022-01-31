@@ -17,22 +17,22 @@
 
 import os
 
-from waflib import Errors as waferror, Options
+from waflib import Errors as waferror
 from waflib.Task import Task
 from waflib.TaskGen import feature, before, after
 from waflib.Tools import qt5
 from zm.constants import PLATFORM
-from zm import error, utils, cli
+from zm import error, utils
 from zm.features import precmd, postcmd
 from zm.pathutils import getNativePath, getNodesFromPathsConf
-from zm.waf.assist import allowTGenAttrs
+from zm.waf import assist
 from zm.waf.taskgen import isolateExtHandler
 
 _relpath = os.path.relpath
 _commonpath = os.path.commonpath
 
 # Allow the 'moc' param for Waf taskgen instances
-allowTGenAttrs(['moc'])
+assist.allowTGenAttrs(['moc'])
 
 # Isolate existing extension handlers to avoid conflicts with other tools
 # and to avoid use of tools in tasks where these tools are inappropriate.
@@ -49,6 +49,28 @@ QRC_BODY_TEMPL = """<!DOCTYPE RCC><RCC version="1.0">
 """
 
 QRC_LINE_TEMPL = """    <file alias="%s">%s</file>"""
+
+QT5_SYSENV_VARS = ('QT5_ROOT', 'QT5_BINDIR', 'QT5_LIBDIR', 'QT5_INCLUDES')
+
+def _wrapMonEnvVarGetter(origFunc):
+    def execute():
+        return origFunc() + QT5_SYSENV_VARS
+    execute.__doc__ = origFunc.__doc__
+    return execute
+
+assist.getMonitoredEnvVarNames = _wrapMonEnvVarGetter(assist.getMonitoredEnvVarNames)
+
+@postcmd('init')
+def postInit(_):
+    """ Extra init after wscript.init """
+
+    # Prevent impact on Waf code: ZenMake uses QT5_BINDIR instead of QT5_BIN
+    os.environ.pop('QT5_BIN', None)
+
+    # adjust QT5_BINDIR to Waf code
+    qtbindir = os.environ.get('QT5_BINDIR')
+    if qtbindir:
+        os.environ['QT5_BIN'] = qtbindir
 
 def _configureQt5(conf):
     """
