@@ -179,7 +179,13 @@ def preConf(conf):
         if rclangname is not None:
             taskParams['langname'] = rclangname
 
+        def convertUse(name):
+            if name.startswith('Qt') and name[2] != '5':
+                return '%s5%s' % (name[:2], name[2:])
+            return name
+
         deps = taskParams.get('use', [])
+        deps = [ convertUse(x) for x in deps]
         if not any(x.upper() == 'QT5CORE' for x in deps):
             # 'Qt5Core' must be always in deps
             deps.insert(0, 'Qt5Core')
@@ -201,14 +207,14 @@ def preConf(conf):
 
 @feature('qt5')
 @before('process_use')
-def adjuctQt5UseNames(tgen):
+def adjustQt5UseNames(tgen):
     """
-    ZenMake uses Qt5 lib names in the original title case.
+    ZenMake uses Qt5 lib/module names in the original title case.
     Waf wants Qt5 lib names in 'use' in uppercase.
     """
 
     deps = utils.toList(getattr(tgen, 'use', []))
-    deps = [x.upper() if x.upper().startswith('QT5') else x for x in deps]
+    deps = [x.upper() if x.upper().startswith('QT') else x for x in deps]
     tgen.use = deps
 
 @feature('qt5')

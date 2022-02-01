@@ -35,13 +35,13 @@ def _getQt5Module():
 
     return module
 
-def testAdjuctQt5UseNames():
+def testAdjustQt5UseNames():
 
     qt5 = _getQt5Module()
     tgen = AutoDict()
     tgen.use = 'tool Qt5Widgets qutil util'
 
-    qt5.adjuctQt5UseNames(tgen)
+    qt5.adjustQt5UseNames(tgen)
     assert tgen.use == ['tool', 'QT5WIDGETS', 'qutil', 'util']
 
 def testAddExtraMocIncludes(tmpdir):

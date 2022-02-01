@@ -3,7 +3,7 @@ tasks:
   main:
     features : cxxprogram qt5
     source   : appwindow.cpp main.cpp
-    use      : Qt5Widgets
+    use      : QtWidgets
 
 GCC_BASE_FLAGS: -std=c++11 -fPIC
 

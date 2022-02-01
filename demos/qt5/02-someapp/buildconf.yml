@@ -7,7 +7,7 @@ tasks:
   qutil:
     features : cxxshlib qt5
     source   : qutil/**/*.cpp qutil/**/*.ts
-    use      : Qt5Core
+    use      : QtCore
     langdir-defname: TRANSLATIONS_DIR
 
   myqt5app:
@@ -17,7 +17,7 @@ tasks:
     rclangprefix: lang
     #bld-langprefix : prog/i18n
     #unique-qmpaths: true
-    use       : Qt5Widgets qutil util
+    use       : QtWidgets qutil util
     configure:
       - do : check-headers
         names : iostream
