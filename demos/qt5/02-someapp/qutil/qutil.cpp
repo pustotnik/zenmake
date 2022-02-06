@@ -4,6 +4,9 @@
 #include <QLocale>
 #include "qutil.h"
 
+#define _QUOTE(X)  #X
+#define QUOTE(X)   _QUOTE(X)
+
 // Useless class just to check compiling a class with Q_OBJECT in a '.cpp' file
 class TestVal: public QObject
 {
@@ -51,10 +54,14 @@ int calcSomething()
 
 QString getTranslated()
 {
+    // TRANSLATIONS_DIR is defined via buildconf.yml
+    auto translationDir = QString::fromLocal8Bit(QUOTE(TRANSLATIONS_DIR));
+    // remove symbol '"' from the begin/end
+    translationDir = translationDir.mid(1, translationDir.size() - 2);
+
     QTranslator translator;
     translator.load(QLocale(), QLatin1String("qutil_lang"), QLatin1String("_"),
-            // TRANSLATIONS_DIR is defined via buildconf.yml
-            QString::fromLocal8Bit(TRANSLATIONS_DIR));
+            translationDir);
 
     return translator.translate("qutil", "translated message");
 }
