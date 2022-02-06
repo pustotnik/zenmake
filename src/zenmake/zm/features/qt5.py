@@ -401,8 +401,6 @@ def _configureQt5CmnEnv(conf):
     _findQt5Libs(conf)
     _fixQtDefines(conf)
 
-    """
-
     qt5.simplify_qt5_libs(conf)
 
 def _detectQt5Flags(conf):
