@@ -16,19 +16,23 @@
 """
 
 import os
+import re
 
 from waflib import Errors as waferror
 from waflib.Task import Task
 from waflib.TaskGen import feature, before, after
 from waflib.Tools import qt5
-from zm.constants import PLATFORM
+from zm.constants import PLATFORM, HOST_OS
 from zm import error, utils
 from zm.features import precmd, postcmd
 from zm.pathutils import getNativePath, getNodesFromPathsConf
 from zm.waf import assist
 from zm.waf.taskgen import isolateExtHandler
 
-_relpath = os.path.relpath
+_joinpath   = os.path.join
+_pathexists = os.path.exists
+_isdir      = os.path.isdir
+_relpath    = os.path.relpath
 _commonpath = os.path.commonpath
 
 # Allow the 'moc' param for Waf taskgen instances
@@ -50,7 +54,23 @@ QRC_BODY_TEMPL = """<!DOCTYPE RCC><RCC version="1.0">
 
 QRC_LINE_TEMPL = """    <file alias="%s">%s</file>"""
 
-QT5_SYSENV_VARS = ('QT5_ROOT', 'QT5_BINDIR', 'QT5_LIBDIR', 'QT5_INCLUDES')
+EXTRA_PKG_CONFIG_PATHS = (
+    '/usr/lib/qt5/lib/pkgconfig',
+    '/opt/qt5/lib/pkgconfig',
+    '/usr/lib/qt5/lib',
+    '/opt/qt5/lib',
+)
+
+QT5_SYSENV_VARS = (
+    'QT5_BINDIR', 'QT5_LIBDIR', 'QT5_INCLUDES',
+    'QT5_NO_PKGCONF', 'QT5_FORCE_STATIC',
+    'QT5_SEARCH_ROOT',
+)
+
+QMAKE_NAMES = ('qmake', 'qmake-qt5', 'qmake5')
+
+_RE_QTINCL_DEPS = re.compile(r"^\s*#include\s*[<\"]([^<\"]+)/([^<\"]+)[>\"]\s*$")
+_RE_QCONFIG_PRI = re.compile(r"^\s*([\w\d\.\_]+)\s*=\s*([\w\d\.\_]+)\s*$")
 
 def _wrapMonEnvVarGetter(origFunc):
     def execute():
@@ -60,34 +80,332 @@ def _wrapMonEnvVarGetter(origFunc):
 
 assist.getMonitoredEnvVarNames = _wrapMonEnvVarGetter(assist.getMonitoredEnvVarNames)
 
+def toQt5Name(name):
+    """ Convert name from QtSomeName to Qt5SomeName """
+
+    if name.startswith('Qt') and name[2] != '5':
+        return '%s5%s' % (name[:2], name[2:])
+    return name
+
+def queryQmake(conf, qmake, prop):
+    """ Run qmake -query prop and return result """
+    if not isinstance(qmake, list):
+        qmake = [qmake]
+    return conf.cmd_and_log(qmake + ['-query', prop]).strip()
+
 @postcmd('init')
 def postInit(_):
     """ Extra init after wscript.init """
 
-    # Prevent impact on Waf code: ZenMake uses QT5_BINDIR instead of QT5_BIN
-    os.environ.pop('QT5_BIN', None)
+    # Prevent impact on Waf code
+    os.environ.pop('QT5_BIN', None)  # ZenMake provides QT5_BINDIR instead of QT5_BIN
+    os.environ.pop('QT5_ROOT', None) # ZenMake does not provide this variable
 
     # adjust QT5_BINDIR to Waf code
     qtbindir = os.environ.get('QT5_BINDIR')
     if qtbindir:
         os.environ['QT5_BIN'] = qtbindir
+        # Waf ignores QT5_BIN if QT5_ROOT is not set or empty (bug?)
+        os.environ['QT5_ROOT'] = os.path.normpath(_joinpath(qtbindir, os.pardir))
 
-def _configureQt5(conf):
+def _checkQtIsSuitable(conf, qmake, expectedMajorVer = '5'):
+
+    try:
+        qtver = queryQmake(conf, qmake, 'QT_VERSION')
+    except waferror.WafError:
+        return None
+
+    majorVer = qtver.split('.')[0]
+    if majorVer != expectedMajorVer:
+        return None
+
+    qtlibdir = queryQmake(conf, qmake, 'QT_INSTALL_LIBS')
+    dotLibExists = _pathexists(_joinpath(qtlibdir, 'Qt5Core.lib'))
+    isMSVC = conf.env.CXX_NAME == 'msvc'
+    if (isMSVC and not dotLibExists) or (not isMSVC and dotLibExists):
+        return None
+
+    def checkQtArchSoftly(qmake):
+
+        qtdatadir = queryQmake(conf, qmake, 'QT_HOST_DATA')
+        destCpu = conf.env.DEST_CPU
+
+        qtArchMap = {
+            'x86_64' : ('amd64', 'x86_64'),
+            'i386'   : ('x86', 'i386'),
+        }
+
+        filepath = _joinpath(qtdatadir, 'mkspecs', 'qconfig.pri')
+        if not _pathexists(filepath):
+            # Just ignore checking if the file not found
+            return True
+
+        with open(filepath, 'r') as file:
+            for line in file.readlines():
+                matchObj = _RE_QCONFIG_PRI.match(line)
+                if not matchObj:
+                    continue
+                name, value = matchObj.group(1), matchObj.group(2)
+                if name == 'QT_ARCH':
+                    qtArch = qtArchMap.get(value, [value])
+                    if destCpu not in qtArch:
+                        return False
+                    break
+            else:
+                # QT_ARCH not found, invalid qconfig.pri?
+                return False
+
+        return True
+
+    if not checkQtArchSoftly(qmake):
+        return None
+
+    return qtver
+
+def _tryToFindQt5(conf):
+
+    sysenv = conf.environ
+
+    if sysenv.get('QT5_BIN'):
+        return
+
+    searchdir = sysenv.get('QT5_SEARCH_ROOT')
+    if searchdir and not _isdir(searchdir):
+        msg = 'The %r directory from QT5_SEARCH_ROOT does not exist.' % searchdir
+        conf.fatal(msg)
+
+    if not searchdir:
+        if PLATFORM == 'windows':
+            searchdir = 'C:\\Qt'
+            if not _isdir(searchdir):
+                return
+        else:
+            return
+
+    qmakeFNames = QMAKE_NAMES
+    if HOST_OS == 'windows':
+        qmakeFNames = [x + '.exe' for x in QMAKE_NAMES]
+
+    foundQt = []
+    for dirpath, _, filenames in os.walk(searchdir):
+        filenames = set(filenames)
+        found = next((x for x in qmakeFNames if x in filenames), None)
+        if not found:
+            continue
+
+        qmake = dirpath + os.sep + found
+        qtver = _checkQtIsSuitable(conf, qmake)
+        if qtver:
+            foundQt.append((dirpath, qtver))
+
+    def getHighestQtVerDir(foundQt):
+        if len(foundQt) == 1:
+            return foundQt[0][0]
+
+        result = {}
+        for dirpath, qtver in foundQt:
+            qtver = tuple(int(x) for x in qtver.split('.'))
+            result[qtver] = dirpath
+
+        return result[sorted(result.keys())[-1]]
+
+    if foundQt:
+        paths = sysenv.get('PATH', '').split(os.pathsep)
+        paths.insert(0, getHighestQtVerDir(foundQt))
+        sysenv['PATH'] = os.pathsep.join(paths)
+
+def _findQt5LibsWithPkgConf(conf, forceStatic):
+
+    env    = conf.env
+    sysenv = conf.environ
+    qtlibs = env.QTLIBS
+
+    pkgCfgPaths = [qtlibs, '%s/pkgconfig' % qtlibs, *EXTRA_PKG_CONFIG_PATHS]
+    pkgCfgEnvPath = sysenv.get('PKG_CONFIG_PATH', '')
+    if pkgCfgEnvPath:
+        pkgCfgPaths.insert(0, pkgCfgEnvPath)
+    pkgCfgPaths = ':'.join(pkgCfgPaths)
+
+    kwargs = dict(
+        args = '--cflags --libs',
+        mandatory = False, force_static = forceStatic,
+        pkg_config_path = pkgCfgPaths
+    )
+
+    for name in conf.qt5_vars:
+        conf.check_cfg(package = name, **kwargs)
+
+def _gatherQt5LibDepsFromHeaders(conf, qtIncludes):
     """
-    Alternative version of 'configure' from waflib.Tools.qt5
-    The main reason is to use more optimal order of compiler flags
-    in the checks to speed up configuration.
+    Find Qt lib deps from *.Depends Qt headers
+    It's not perfect but better than nothing.
     """
 
-    conf.find_qt5_binaries()
-    conf.set_qt5_libs_dir()
-    conf.set_qt5_libs_to_check()
-    conf.set_qt5_defines()
-    conf.find_qt5_libraries()
-    conf.add_qt5_rpath()
-    conf.simplify_qt5_libs()
+    def readModulesFromFile(filepath):
+        modules = []
+        if not _pathexists(filepath):
+            return modules
+        with open(filepath, 'r') as file:
+            for line in file.readlines():
+                matchObj = _RE_QTINCL_DEPS.match(line)
+                if matchObj:
+                    qtmodname = matchObj.group(1)
+                    modules.append(qtmodname)
+        return utils.uniqueListWithOrder(modules)
 
-    # python module xml.sax exists since python 2.0 so we don't check qt5.has_xml
+    def gatherModules(modules, seen):
+
+        result = []
+        for module in modules:
+            if module in seen:
+                continue
+
+            seen.add(module)
+            result.append(module)
+
+            filepath = _joinpath(qtIncludes, module, '%sDepends' % module)
+            result.extend(gatherModules(readModulesFromFile(filepath), seen))
+
+        return result
+
+    deps = {}
+    for libname in conf.qt5_vars:
+        seen = set()
+        module = libname.replace('Qt5', 'Qt', 1)
+        deps[libname] = gatherModules([module], seen)
+
+    return deps
+
+def _findSingleQt5LibAsIs(conf, qtlibname, qtlibDeps, forceStatic):
+
+    env      = conf.env
+    qtLibDir = env.QTLIBS
+    uselib   = qtlibname.upper()
+
+    if forceStatic:
+        exts   = ('.a', '.lib')
+        envPrefix = 'STLIB'
+    else:
+        exts   = ('.so', '.lib')
+        envPrefix = 'LIB'
+
+    def libPrefixExt():
+        for ext in exts:
+            for prefix in ('lib', ''):
+                yield (prefix, ext)
+
+    def addModuleDefine(module):
+        defname = 'QT_%s_LIB' % module[2:].upper()
+        env.append_unique('DEFINES_%s' % uselib, defname)
+
+    def setUpLib(prefix, module, ext):
+        basename = toQt5Name(module)
+        libFileName = prefix + basename + ext
+        if not _pathexists(_joinpath(qtLibDir, libFileName)):
+            return False
+
+        libval = prefix + basename if env.DEST_OS == 'win32' else basename
+        env.append_unique('%s_%s' % (envPrefix, uselib), libval)
+        addModuleDefine(module)
+        return True
+
+    found = False
+    for prefix, ext in libPrefixExt():
+        for module in qtlibDeps[qtlibname]:
+            if setUpLib(prefix, module, ext):
+                found = True
+
+        if found:
+            env.append_unique('%sPATH_%s' % (envPrefix, uselib), qtLibDir)
+            # fix for header-only modules
+            addModuleDefine(qtlibDeps[qtlibname][0])
+            return True
+
+    return False
+
+def _findQt5LibsAsIs(conf, forceStatic):
+
+    env    = conf.env
+    sysenv = conf.environ
+
+    qtIncludes = sysenv.get('QT5_INCLUDES') or \
+                        queryQmake(conf, env.QMAKE, 'QT_INSTALL_HEADERS')
+    qtIncludes = getNativePath(qtIncludes)
+
+    deps = _gatherQt5LibDepsFromHeaders(conf, qtIncludes)
+
+    for qtlibname in conf.qt5_vars:
+        uselib = qtlibname.upper()
+
+        for depname in deps[qtlibname]:
+            env.append_unique('INCLUDES_' + uselib, _joinpath(qtIncludes, depname))
+        env.append_unique('INCLUDES_' + uselib, qtIncludes)
+
+        if PLATFORM == 'darwin':
+            fwkName = qtlibname.replace('Qt5', 'Qt', 1)
+            fwkDir  = fwkName + '.framework'
+
+            qtDynLib = _joinpath(env.QTLIBS, fwkDir, fwkName)
+            if _pathexists(qtDynLib):
+                env.append_unique('FRAMEWORK_' + uselib, fwkName)
+                env.append_unique('FRAMEWORKPATH_' + uselib, env.QTLIBS)
+                conf.msg('Checking for %s' % qtlibname, qtDynLib, 'GREEN')
+            else:
+                conf.msg('Checking for %s' % qtlibname, False, 'YELLOW')
+
+            env.append_unique('INCLUDES_' + uselib,
+                                _joinpath(env.QTLIBS, fwkDir, 'Headers'))
+        else:
+            result = _findSingleQt5LibAsIs(conf, qtlibname, deps, forceStatic)
+            if not result and not forceStatic:
+                result = _findSingleQt5LibAsIs(conf, qtlibname, deps, True)
+            msgColor = 'GREEN' if result else 'YELLOW'
+            conf.msg('Checking for %s' % qtlibname, result, msgColor)
+
+def _findQt5Libs(conf):
+
+    sysenv = conf.environ
+    forceStatic = utils.envValToBool(sysenv.get('QT5_FORCE_STATIC'))
+    noPkgConfig = utils.envValToBool(sysenv.get('QT5_NO_PKGCONF'))
+
+    if not noPkgConfig:
+        try:
+            conf.check_cfg(atleast_pkgconfig_version = '0.1')
+        except waferror.ConfigurationError:
+            noPkgConfig = True
+
+    if noPkgConfig:
+        _findQt5LibsAsIs(conf, forceStatic)
+    else:
+        _findQt5LibsWithPkgConf(conf, forceStatic)
+
+def _fixQtDefines(conf):
+
+    env = conf.env
+    hdefines = set()
+    for name in conf.qt5_vars:
+        defines = env['DEFINES_%s' % name.upper()]
+        defines = [x[:-4] if x.endswith('_LIB') else x for x in defines]
+        hdefines.update(['HAVE_%s' % x.replace('_', '5', 1) for x in defines])
+
+    for name in hdefines:
+        conf.define(name, 1, False)
+
+def _configureQt5CmnEnv(conf):
+
+    _tryToFindQt5(conf)
+
+    qt5.find_qt5_binaries(conf)
+    qt5.set_qt5_libs_dir(conf)
+
+    _findQt5Libs(conf)
+    _fixQtDefines(conf)
+
+    """
+
+    qt5.simplify_qt5_libs(conf)
+
+def _detectQt5Flags(conf):
 
     codefrag = '#include <QMap>\nint main(int argc, char **argv)'\
                ' { QMap<int,int> m; return m.keys().size(); }\n'
@@ -128,6 +446,9 @@ def _configureQt5(conf):
                         msg='Is /usr/local/lib required?', **kwargs)
 
 def _configureQt5ForTask(conf, taskParams, taskEnvs):
+    """
+    Based on waflib.Tools.qt5.configure
+    """
 
     conf.variant = taskVariant = taskParams['$task.variant']
     taskEnv = conf.env
@@ -139,6 +460,20 @@ def _configureQt5ForTask(conf, taskParams, taskEnvs):
     envId = utils.hashOrdObj([(k, taskEnv[k]) for k in envKeys])
     taskEnv.parent = rootEnv
 
+    qt5CmnEnv = taskEnvs.get('qt-cmn-env')
+    if qt5CmnEnv is None:
+
+        qt5CmnEnv = taskEnv.derive()
+        conf.env = qt5CmnEnv
+
+        _configureQt5CmnEnv(conf)
+        conf.env = taskEnv
+
+        delattr(qt5CmnEnv, 'parent')
+        taskEnvs['qt-cmn-env'] = qt5CmnEnv
+
+    taskEnv.update(utils.deepcopyEnv(qt5CmnEnv))
+
     readyEnv = taskEnvs.get(envId)
     if readyEnv is not None:
         readyEnv.parent = None # don't copy root env
@@ -147,9 +482,8 @@ def _configureQt5ForTask(conf, taskParams, taskEnvs):
         conf.all_envs[taskVariant] = newEnv
         return
 
-    _configureQt5(conf)
-
     taskEnvs[envId] = taskEnv
+    _detectQt5Flags(conf)
 
 # The 'after' and 'before' are not needed here, it is just for more stable
 # work for the possible future.
@@ -179,13 +513,8 @@ def preConf(conf):
         if rclangname is not None:
             taskParams['langname'] = rclangname
 
-        def convertUse(name):
-            if name.startswith('Qt') and name[2] != '5':
-                return '%s5%s' % (name[:2], name[2:])
-            return name
-
         deps = taskParams.get('use', [])
-        deps = [ convertUse(x) for x in deps]
+        deps = [ toQt5Name(x) for x in deps]
         if not any(x.upper() == 'QT5CORE' for x in deps):
             # 'Qt5Core' must be always in deps
             deps.insert(0, 'Qt5Core')
@@ -194,9 +523,8 @@ def preConf(conf):
         taskParams['use'] = deps
         qtTasks.append(taskParams)
 
-    # speed up: set the list of libraries to be requested via pkg-config/pkgconf
-    qtLibNames = utils.uniqueListWithOrder(qtLibNames)
-    conf.qt5_vars = qtLibNames
+    # set the list of qt modules/libraries
+    conf.qt5_vars = utils.uniqueListWithOrder(qtLibNames)
 
     qtTaskEnvs = {}
     for taskParams in qtTasks:

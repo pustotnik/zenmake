@@ -48,3 +48,4 @@ MS Windows:
     - pyyaml (optional)
     - msvc (Microsoft Visual C++)
     - boost
+    - qt5 (in C:\Qt)

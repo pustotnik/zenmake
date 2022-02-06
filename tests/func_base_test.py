@@ -48,7 +48,7 @@ TEST_CONDITIONS = {
         dict(regexp = RE_ALL_DBUS, condition = dict( os = ['linux'], )),
         dict(regexp = RE_ALL_GTK3, condition = dict( os = ['linux'], )),
         dict(regexp = RE_ALL_SDL2, condition = dict( os = ['linux'], )),
-        dict(regexp = RE_ALL_QT5, condition = dict( os = ['linux'], )),
+        dict(regexp = RE_ALL_QT5, condition = dict( os = ['linux', 'windows'], )),
         dict(regexp = RE_EXT_DEPS + '1-makefile',
             condition = dict( os = ['linux', 'darwin'], )),
     ],
