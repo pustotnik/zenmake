@@ -391,6 +391,24 @@ def _fixQtDefines(conf):
     for name in hdefines:
         conf.define(name, 1, False)
 
+def _detectQtRtLibPath(conf):
+    env = conf.env
+    qtCoreDynLibName = env.cxxshlib_PATTERN % 'Qt5Core'
+
+    def getDirs():
+        yield env.QTLIBS
+        yield getNativePath(queryQmake(conf, env.QMAKE, 'QT_INSTALL_BINS'))
+
+    rtLibPath = ''
+    for path in getDirs():
+        if _pathexists(_joinpath(path, qtCoreDynLibName)):
+            rtLibPath = path
+            break
+    else:
+        conf.fatal("Could not find Qt5 runtime library directory")
+
+    conf.env['QT5_RT_LIBPATH'] = rtLibPath
+
 def _configureQt5CmnEnv(conf):
 
     _tryToFindQt5(conf)
@@ -402,6 +420,8 @@ def _configureQt5CmnEnv(conf):
     _fixQtDefines(conf)
 
     qt5.simplify_qt5_libs(conf)
+
+    _detectQtRtLibPath(conf)
 
 def _detectQt5Flags(conf):
 
@@ -443,7 +463,7 @@ def _detectQt5Flags(conf):
             conf.check(uselib_store='qt5', libpath='/usr/local/lib',
                         msg='Is /usr/local/lib required?', **kwargs)
 
-def _configureQt5ForTask(conf, taskParams, taskEnvs):
+def _configureQt5ForTask(conf, taskParams, sharedData):
     """
     Based on waflib.Tools.qt5.configure
     """
@@ -458,7 +478,7 @@ def _configureQt5ForTask(conf, taskParams, taskEnvs):
     envId = utils.hashOrdObj([(k, taskEnv[k]) for k in envKeys])
     taskEnv.parent = rootEnv
 
-    qt5CmnEnv = taskEnvs.get('qt-cmn-env')
+    qt5CmnEnv = sharedData.get('qt-cmn-env')
     if qt5CmnEnv is None:
 
         qt5CmnEnv = taskEnv.derive()
@@ -468,11 +488,14 @@ def _configureQt5ForTask(conf, taskParams, taskEnvs):
         conf.env = taskEnv
 
         delattr(qt5CmnEnv, 'parent')
-        taskEnvs['qt-cmn-env'] = qt5CmnEnv
+        sharedData['qt-cmn-env'] = qt5CmnEnv
 
     taskEnv.update(utils.deepcopyEnv(qt5CmnEnv))
 
-    readyEnv = taskEnvs.get(envId)
+    rtLibPaths = taskParams.setdefault('$rt-libpath', [])
+    rtLibPaths.append(taskEnv['QT5_RT_LIBPATH'])
+
+    readyEnv = sharedData.get(envId)
     if readyEnv is not None:
         readyEnv.parent = None # don't copy root env
         newEnv = utils.deepcopyEnv(readyEnv)
@@ -480,7 +503,7 @@ def _configureQt5ForTask(conf, taskParams, taskEnvs):
         conf.all_envs[taskVariant] = newEnv
         return
 
-    taskEnvs[envId] = taskEnv
+    sharedData[envId] = taskEnv
     _detectQt5Flags(conf)
 
 # The 'after' and 'before' are not needed here, it is just for more stable
@@ -524,9 +547,9 @@ def preConf(conf):
     # set the list of qt modules/libraries
     conf.qt5_vars = utils.uniqueListWithOrder(qtLibNames)
 
-    qtTaskEnvs = {}
+    sharedData = {}
     for taskParams in qtTasks:
-        _configureQt5ForTask(conf, taskParams, qtTaskEnvs)
+        _configureQt5ForTask(conf, taskParams, sharedData)
 
     # switch current env to the root env
     conf.variant = ''
