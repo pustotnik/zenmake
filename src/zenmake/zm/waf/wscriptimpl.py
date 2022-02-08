@@ -41,7 +41,8 @@ out = 0
 APPNAME = None
 VERSION = None
 
-_runcmdInfo = {}
+_pairedCmds = []
+_pairedCmdInfo = {}
 
 def options(_):
     """
@@ -194,9 +195,9 @@ def build(bld):
     tasks = bld.zmtasks
     taskNames = _getAllowedBuildTaskNames(bld.zmOrdTaskNames, tasks)
 
-    actualCmdName = cli.selected.name
-    if actualCmdName == 'run':
-        _runcmdInfo['tasks'] = tasks
+    if cli.selected.name in _pairedCmds:
+        _pairedCmdInfo['bld'] = bld
+        _pairedCmdInfo['task-names'] = taskNames
 
     for taskName in taskNames:
 
@@ -272,26 +273,30 @@ def test(_):
 
     log.warn("There are no tests to build and run")
 
+# register the 'run' command as a paired command with the 'build' one
+_pairedCmds.append('run')
+
 def run(_):
     """
     Implementation of the 'run' command
     """
 
-    tasks = _runcmdInfo['tasks']
+    bld = _pairedCmdInfo['bld']
+    tasks = bld.zmtasks
 
     tname = cli.selected.args.task
     if tname:
-        taskParams = tasks.get(tname)
-        if taskParams is None:
+        runTaskParams = tasks.get(tname)
+        if runTaskParams is None:
             # try to find the name in the 'target' param
             for params in tasks.values():
                 target = os.path.split(params['target'])[1]
                 realTarget = os.path.split(params['$real.target'])[1]
                 if tname in (target, realTarget):
-                    taskParams = params
+                    runTaskParams = params
                     break
 
-        if taskParams is None:
+        if runTaskParams is None:
             msg = "Target '%s' not found" % tname
             raise error.ZenMakeError(msg)
     else:
@@ -306,21 +311,30 @@ def run(_):
             msg += " You can select one of them: %s" % ", ".join(names)
             raise error.ZenMakeError(msg)
 
-        taskParams = exeTasks[0]
+        runTaskParams = exeTasks[0]
 
-    realTarget = taskParams['$real.target']
+    # Gather all lib paths
+    paths = []
+    for taskName in _pairedCmdInfo['task-names']:
+        taskParams = tasks[taskName]
+        env = bld.all_envs[taskParams['$task.variant']]
+        paths.extend(assist.gatherRtLibPaths(taskParams, env))
+
+    paths = utils.uniqueListWithOrder(paths)
+    runEnv = utils.addRTLibPathsToOSEnv(paths, os.environ.copy())
+
+    realTarget = runTaskParams['$real.target']
     dirpath = os.path.dirname(realTarget)
 
     relTargetPath = os.path.relpath(realTarget, CWD)
     cmd = '"%s" %s' % (realTarget, ' '.join(cli.selected.notparsed))
 
+    # allow gc to release memory
+    _pairedCmdInfo.clear()
+
     # NOTE: Don't use any arg that can turn on the capture of the output.
     # Otherwise it can produce incorrect order of stdout from a target on Windows.
-    kwargs = {
-        'cwd' : dirpath,
-        'env' : utils.addRTLibPathToOSEnv(dirpath, os.environ.copy()),
-        'shell': False,
-    }
+    kwargs = {'cwd' : dirpath, 'env' : runEnv, 'shell': False }
 
     log.info("Running '%s' ..." % relTargetPath, extra = { 'c1': log.colors('PINK') } )
     result = utils.runCmd(cmd, **kwargs)

@@ -17,9 +17,10 @@ from waflib import Task
 from zm.constants import PLATFORM, EXE_FILE_EXTS, PYTHON_EXE
 from zm.pyutils import maptype, stringtype
 from zm import log, error
-from zm.utils import cmdHasShellSymbols, substVars, substBuiltInVars, addRTLibPathToOSEnv
+from zm.utils import cmdHasShellSymbols, substVars, substBuiltInVars, addRTLibPathsToOSEnv
 from zm.pathutils import PathsParam
 from zm.features import postcmd
+from zm.waf.assist import gatherRtLibPaths
 
 _normpath = os.path.normpath
 _relpath = os.path.relpath
@@ -282,7 +283,7 @@ def _makeCmdRuleArgs(tgen):
 
     env = tgen.env.derive()
     environ = (env.env or os.environ).copy()
-    addRTLibPathToOSEnv(os.path.dirname(realTarget), environ)
+    addRTLibPathsToOSEnv(gatherRtLibPaths(zmTaskParams, env), environ)
     environ.update(ruleArgs.pop('env', {}))
     env.env = environ
 

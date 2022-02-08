@@ -267,6 +267,22 @@ def fixToolchainEnvVars(env, taskParams):
             taskParams[paramName] = taskParams.get(paramName, []) + envLibPath
             del env[envVar]
 
+def gatherRtLibPaths(taskParams, env):
+    """
+    Gather all runtime library paths
+    """
+
+    # to avoid possible conflicts with system libraries this path must be always first
+    paths = [os.path.dirname(taskParams['$real.target'])]
+
+    paths.extend(taskParams.get('libpath', []))
+    paths.extend(taskParams.get('$rt-libpath', []))
+    for name in env:
+        if name.startswith('LIBPATH') and name != 'LIBPATH_ST':
+            paths.extend(env[name])
+
+    return paths
+
 def getTaskNamesWithDeps(tasks, names):
     """
     Gather all task names including tasks in 'use'

@@ -3,11 +3,13 @@
 # POSIX platform(Linux/MacOS) and msvc on MS Windows.
 
 # There is special case for boost libraries on Windows.
-# This setup for boost libraries installed on Windows as C:\local\boost_1_67_0
-# For example, command 'choco install boost-msvc-14.1' produces such an installation.
-# OS Windows needs to know path to dir with boost dlls to run program linked
-# with boost dlls. In console it can be made like this:
+# This setup is for boost libraries installed on Windows in
+# the C:\local\boost_1_67_0 directory.
+# For example, the command 'choco install boost-msvc-14.1' produces such an installation.
+# MS Windows OS needs to know path to dir with the boost dlls to run program linked
+# with boost dlls. In Windows console it can be made like this:
 # set PATH=C:\local\boost_1_67_0\lib64-msvc-14.1;%PATH%
+# But you don't need to do it to use ZenMake 'run' command.
 
 tasks:
     util:

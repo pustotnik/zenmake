@@ -544,24 +544,26 @@ def configSetToDict(configSet):
     result.pop('undo_stack', None)
     return result
 
-def addRTLibPathToOSEnv(path, osenv):
+def addRTLibPathsToOSEnv(paths, osenv):
     """
-    Add runtime lib path to OS environment depending on type of OS.
+    Add runtime lib paths to OS environment depending on type of OS.
     Returns the osenv parameter.
     """
 
-    def add(osenv, envname, val):
+    def add(osenv, envname, vals):
+        vals = os.pathsep.join(vals)
         paths = osenv.get(envname, '')
         if paths:
-            paths = os.path.pathsep + paths
-        osenv[envname] = val + paths
+            paths = os.pathsep + paths
+        osenv[envname] = vals + paths
 
+    paths = toList(paths)
     if PLATFORM == 'windows':
-        add(osenv, 'PATH', path)
+        add(osenv, 'PATH', paths)
     else:
-        add(osenv, 'LD_LIBRARY_PATH', path)
+        add(osenv, 'LD_LIBRARY_PATH', paths)
         if PLATFORM == 'darwin':
-            add(osenv, 'DYLD_LIBRARY_PATH', path)
+            add(osenv, 'DYLD_LIBRARY_PATH', paths)
 
     return osenv
 
