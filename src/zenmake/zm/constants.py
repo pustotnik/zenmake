@@ -59,8 +59,11 @@ LIBDIR_POSTFIX = utils.unixLibDirPostfix()
 if PLATFORM == 'windows':
     SYSTEM_LIB_PATHS = []
 else:
-    SYSTEM_LIB_PATHS = [ x + LIBDIR_POSTFIX for x in ('/usr/lib', '/usr/local/lib') ]
-    # '/usr/local/lib*' must be after '/usr/lib*'
-    SYSTEM_LIB_PATHS[1:0] = ['/usr/lib64', '/usr/lib']
-    SYSTEM_LIB_PATHS += ['/usr/local/lib64', '/usr/local/lib']
+    # '/usr/lib*' must be after '/usr/local/lib*'
+    SYSTEM_LIB_PATHS = [
+        '/usr/local/lib' + LIBDIR_POSTFIX,
+        '/usr/local/lib64', '/usr/local/lib',
+        '/usr/lib' + LIBDIR_POSTFIX,
+        '/usr/lib64', '/usr/lib'
+    ]
     SYSTEM_LIB_PATHS = utils.uniqueListWithOrder(SYSTEM_LIB_PATHS)
