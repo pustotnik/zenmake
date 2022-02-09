@@ -7,24 +7,11 @@
 """
 
 import os
-import platform as _platform
 
-from zm.constants import HOST_OS
+from zm.constants import HOST_OS, LIBDIR_POSTFIX
 from zm.pyutils import struct
 from zm.pathutils import getNativePath
 from zm.utils import substBuiltInVars
-
-def _libDirPostfix():
-
-    exists = os.path.exists
-    if os.sep == '/' and _platform.architecture()[0] == '64bit' and \
-        exists('/usr/lib64') and not exists('/usr/lib32'):
-
-        return '64'
-
-    return ''
-
-LIBDIR_POSTFIX = _libDirPostfix()
 
 VarConfig = struct('VarConfig', 'name, envname, default, desc, defaultdesc')
 

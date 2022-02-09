@@ -128,12 +128,7 @@ def _checkQtIsSuitable(conf, qmake, expectedMajorVer = '5'):
     def checkQtArchSoftly(qmake):
 
         qtdatadir = queryQmake(conf, qmake, 'QT_HOST_DATA')
-        destCpu = conf.env.DEST_CPU
-
-        qtArchMap = {
-            'x86_64' : ('amd64', 'x86_64'),
-            'i386'   : ('x86', 'i386'),
-        }
+        destArch = utils.toPosixArchName(conf.env.DEST_CPU)
 
         filepath = _joinpath(qtdatadir, 'mkspecs', 'qconfig.pri')
         if not _pathexists(filepath):
@@ -147,8 +142,7 @@ def _checkQtIsSuitable(conf, qmake, expectedMajorVer = '5'):
                     continue
                 name, value = matchObj.group(1), matchObj.group(2)
                 if name == 'QT_ARCH':
-                    qtArch = qtArchMap.get(value, [value])
-                    if destCpu not in qtArch:
+                    if destArch != value:
                         return False
                     break
             else:

@@ -12,6 +12,7 @@ import signal
 import re
 import shlex
 import inspect
+import platform as _platform
 from copy import deepcopy
 from hashlib import sha1
 from importlib import import_module as importModule
@@ -113,6 +114,64 @@ def distroInfo():
         pass
 
     return result
+
+def toPosixArchName(name):
+    """
+    Get 'standard' POSIX names for machine architecture type.
+    It means that for 'amd64' it returns 'x86_64', etc.
+    """
+
+    name = name.lower()
+    namesMap = {
+        'x86_64' : 'x86_64',
+        'amd64'  : 'x86_64',
+        'i386'   : 'i386',
+        'x86'    : 'i386',
+    }
+
+    return namesMap.get(name, name)
+
+def unixLibDirPostfix():
+    """
+    Return postfix of lib dirs on UNIX
+    """
+
+    isdir = os.path.isdir
+
+    # Debian, Ubuntu, etc
+    isDebianLike = PLATFORM == 'linux' and os.path.isfile('/etc/debian_version')
+    if isDebianLike:
+        # at first try to detect without call dpkg-architecture
+        pattern = '%s-linux-gnu'
+        hostArch = _platform.machine().lower()
+
+        params = [
+            (('x86_64', 'amd64'), 'x86_64'),
+            (('i386', 'i586', 'i686'), 'i386'),
+        ]
+        for variants,  arch in params:
+            dirname = pattern % arch
+            if hostArch in variants and isdir('/usr/lib/' + dirname):
+                return '/%s' % dirname
+
+        try:
+            result = runCmd(['dpkg-architecture', '-qDEB_HOST_MULTIARCH'],
+                            captureOutput = True)
+            if result.exitcode == 0:
+                return '/%s' % result.stdout.strip()
+        except ZenMakeError:
+            pass
+
+    if PLATFORM in ('freebsd', 'irix'):
+        return ''
+
+    if os.sep == '/' and _platform.architecture()[0] == '64bit' and \
+        isdir('/usr/lib64') and \
+        not os.path.exists('/usr/lib32'):
+
+        return '64'
+
+    return ''
 
 md5                = wafutils.md5
 readFile           = wafutils.readf
@@ -801,10 +860,10 @@ class ProcCmd(object):
             'env' : env,
         })
 
+        timer = None
         try:
             self._proc = subprocess.Popen(self._cmdLine, **kwargs)
 
-            timer = None
             if timeout is not None:
                 self._timeoutExpired = False
 

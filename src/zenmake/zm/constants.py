@@ -9,7 +9,7 @@
 import os
 import sys
 import platform
-from zm.utils import hostOS, distroInfo, platform as _platform
+from zm import utils
 
 APPNAME = 'zenmake'
 CAP_APPNAME = 'ZenMake'
@@ -40,13 +40,13 @@ INVALID_BUILDTYPES = (WAF_CONFIG_LOG, WAF_CACHE_DIRNAME, WAF_LOCKFILE)
 TASK_TARGET_KINDS = frozenset(('stlib', 'shlib', 'program'))
 
 CWD = os.getcwd()
-PLATFORM = _platform()
+PLATFORM = utils.platform()
 KNOWN_PLATFORMS = (
     'linux', 'windows', 'darwin', 'freebsd', 'openbsd', 'sunos', 'cygwin',
     'msys', 'riscos', 'atheos', 'os2', 'os2emx', 'hp-ux', 'hpux', 'aix', 'irix',
 )
-HOST_OS = hostOS()
-DISTRO_INFO = distroInfo()
+HOST_OS = utils.hostOS()
+DISTRO_INFO = utils.distroInfo()
 CPU_ARCH = platform.machine()
 
 if PLATFORM == 'windows':
@@ -54,7 +54,13 @@ if PLATFORM == 'windows':
 else:
     EXE_FILE_EXTS = ',.sh,.pl,.py'
 
+LIBDIR_POSTFIX = utils.unixLibDirPostfix()
+
 if PLATFORM == 'windows':
     SYSTEM_LIB_PATHS = []
 else:
-    SYSTEM_LIB_PATHS = ['/usr/lib64', '/usr/lib', '/usr/local/lib64', '/usr/local/lib']
+    SYSTEM_LIB_PATHS = [ x + LIBDIR_POSTFIX for x in ('/usr/lib', '/usr/local/lib') ]
+    # '/usr/local/lib*' must be after '/usr/lib*'
+    SYSTEM_LIB_PATHS[1:0] = ['/usr/lib64', '/usr/lib']
+    SYSTEM_LIB_PATHS += ['/usr/local/lib64', '/usr/local/lib']
+    SYSTEM_LIB_PATHS = utils.uniqueListWithOrder(SYSTEM_LIB_PATHS)
