@@ -198,8 +198,7 @@ def _tryToFindQt5(conf):
 
         result = {}
         for dirpath, qtver in foundQt:
-            qtver = tuple(int(x) for x in qtver.split('.'))
-            result[qtver] = dirpath
+            result[utils.Version(qtver)] = dirpath
 
         return result[sorted(result.keys())[-1]]
 

@@ -43,6 +43,7 @@ _RE_UNSAFE_FILENAME_CHARS = re.compile(r'[^-\w.]', re.UNICODE)
 _RE_TOLIST = re.compile(r"""((?:[^\s"']|"[^"]*"|'[^']*')+)""", re.ASCII)
 _RE_SUBST_VARS = re.compile(r"\${1,2}(\w+)|\${1,2}\{\s*(\w+)\s*\}", re.ASCII)
 _RE_SUBST_BUILTINVARS = re.compile(r"\$\((\s*(\w+)\s*)\)", re.ASCII)
+_RE_VERSION = re.compile(r"(\d+|[a-zA-Z]+)")
 
 def platform():
     """
@@ -147,7 +148,7 @@ def unixLibDirPostfix():
 
         params = [
             (('x86_64', 'amd64'), 'x86_64'),
-            (('i386', 'i586', 'i686'), 'i386'),
+            (('i386', 'i486', 'i586', 'i686'), 'i386'),
         ]
         for variants,  arch in params:
             dirname = pattern % arch
@@ -166,12 +167,83 @@ def unixLibDirPostfix():
         return ''
 
     if os.sep == '/' and _platform.architecture()[0] == '64bit' and \
-        isdir('/usr/lib64') and \
-        not os.path.exists('/usr/lib32'):
+        isdir('/usr/lib64') and not os.path.exists('/usr/lib32'):
 
         return '64'
 
     return ''
+
+class Version:
+    """
+    Class to compare application/package versions.
+    Based on the algo to compare RPM package versions.
+    """
+
+    __slots__ = ('_strver', '_fields', '_hashval')
+
+    def __init__(self, version):
+        self._strver = version
+        self._hashval = hash(version)
+
+        fields = _RE_VERSION.findall(version)
+        self._fields = [int(x) if x.isdigit() else x for x in fields]
+
+    def __hash__(self):
+        return self._hashval
+
+    def __str__(self):
+        return self._strver
+
+    def __repr__(self):
+        return '%s <%r>' % (self._strver, self._fields)
+
+    def __eq__(self, other):
+        return self._strver == other
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __gt__(self, other):
+        return self._greaterThan(other)
+
+    def __ge__(self, other):
+        return self == other or self._greaterThan(other)
+
+    def __lt__(self, other):
+        return not (self == other or self._greaterThan(other))
+
+    def __le__(self, other):
+        return self == other or not self._greaterThan(other)
+
+    def _greaterThan(self, other):
+
+        # pylint: disable = protected-access
+
+        if not isinstance(other, Version):
+            if isinstance(other, stringtype):
+                other = Version(other)
+            else:
+                return NotImplemented # pragma: no cover
+
+        # optimization
+        if self._strver == other._strver:
+            return False
+
+        for left, right in zip(self._fields, other._fields):
+
+            # In the case of a mismatch where one field is numeric and
+            # one is alphabetic, the numeric field is always
+            # considered greater (newer).
+            isLeftInt  = isinstance(left, int)
+            if isLeftInt != isinstance(right, int):
+                return isLeftInt
+
+            if left != right:
+                return left > right
+
+        # In the case where one string runs out of fields,
+        # the other is always considered greater (newer)
+        return len(self._fields) > len(other._fields)
 
 md5                = wafutils.md5
 readFile           = wafutils.readf

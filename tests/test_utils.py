@@ -3,6 +3,7 @@
 
 # pylint: disable = missing-docstring, invalid-name
 # pylint: disable = too-many-statements, protected-access
+# pylint: disable = unneeded-not, misplaced-comparison-constant
 
 """
  Copyright (c) 2019, Alexander Magola. All rights reserved.
@@ -204,3 +205,34 @@ def testDeepCopyEnv():
     childenv.test2 = 'dfg'
     assert childenv.test2 == 'dfg'
     assert newenv.test2 == 'test2'
+
+def testVersionComparison():
+
+    Version = utils.Version
+
+    assert Version('1.0.0') == Version('1.0.0')
+    assert Version('1.0.0') == '1.0.0'
+
+    assert Version('1.0.1-beta.1') != Version('1.0.0')
+    assert Version('1.0.1-beta.1') != '1.0.0'
+    assert Version('1.0.1-beta.1') > Version('1.0.0')
+    assert Version('1.0.1-beta.1') > '1.0.0'
+    assert Version('1.0.0') <  Version('1.0.1-beta.1')
+    assert Version('1.0.0') <= Version('1.0.1-beta.1')
+    assert '1.0.0' <  Version('1.0.1-beta.1')
+
+    assert     Version('1.1.2') >  Version('0.1.5')
+    assert     Version('1.1.2') >= Version('0.1.5')
+    assert     Version('1.1.2') != Version('0.1.5')
+    assert     Version('0.1.5') <  Version('1.1.2')
+    assert     Version('0.1.5') <= Version('1.1.2')
+    assert not Version('0.1.5') == Version('1.1.2')
+
+    assert not Version('1.1') >  Version('1.1.0')
+    assert     Version('1.1') <  Version('1.1.0')
+    assert     Version('1.1') <= Version('1.1.0')
+
+    assert     Version('1.1') >  Version('1.0.1')
+    assert not Version('1.1') <  Version('1.0.1')
+    assert     Version('1.1') <  Version('1.1.2')
+    assert not Version('1.1') >  Version('1.1.2')
