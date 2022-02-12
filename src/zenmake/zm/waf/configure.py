@@ -478,10 +478,7 @@ class ConfigurationContext(WafConfContext):
 
         quiet = kwargs.get('quiet', False)
         if quiet:
-            try:
-                self.in_msg += 1
-            except AttributeError:
-                self.in_msg = 1
+            self.in_msg += 1
 
         toolEnv = None
         try:

@@ -44,6 +44,7 @@ _cache = {}
 def _ctxInit(self, **kwargs):
     self.zmcache = _AutoDict()
     self.bconfManager = kwargs.get('bconfManager')
+    self.in_msg = 0
 
 @asmethod(WafContext, 'zmMetaConf')
 def _getZmMetaConf(self):
@@ -133,12 +134,10 @@ def _startMsg(self, *args, **kwargs):
 
     msg = kwargs.get('msg') or args[0]
 
-    try:
-        if self.in_msg:
-            self.in_msg += 1
-            return
-    except AttributeError:
-        self.in_msg = 0
+    if self.in_msg:
+        self.in_msg += 1
+        return
+
     self.in_msg += 1
 
     try:
