@@ -24,6 +24,10 @@ joinpath = os.path.join
 normpath = os.path.normpath
 isabspath = os.path.isabs
 
+STDOUT  = WafContextModule.STDOUT
+STDERR  = WafContextModule.STDERR
+STDBOTH = WafContextModule.BOTH
+
 TOOL_MODULE_PATTERNS = (
     'zm.tools.%s',
     'waflib.Tools.%s', 'waflib.extras.%s', 'waflib.%s', '%s'

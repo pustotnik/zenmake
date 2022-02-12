@@ -23,17 +23,21 @@ from waflib.Task import Task
 from waflib.TaskGen import feature, before, after
 from waflib.Tools import qt5
 from zm.constants import PLATFORM, HOST_OS
-from zm import error, utils
-from zm.features import precmd, postcmd
+from zm import error, utils, log
+from zm.features import precmd
 from zm.pathutils import getNativePath, getNodesFromPathsConf
 from zm.waf import assist
+from zm.waf import context
 from zm.waf.taskgen import isolateExtHandler
 
 _joinpath   = os.path.join
 _pathexists = os.path.exists
 _isdir      = os.path.isdir
+_isfile     = os.path.isfile
 _relpath    = os.path.relpath
 _commonpath = os.path.commonpath
+
+Version = utils.Version
 
 # Allow the 'moc' param for Waf taskgen instances
 assist.allowTGenAttrs(['moc'])
@@ -68,6 +72,8 @@ QT5_SYSENV_VARS = (
 )
 
 QMAKE_NAMES = ('qmake', 'qmake-qt5', 'qmake5')
+if HOST_OS == 'windows':
+    QMAKE_NAMES = tuple(x + '.exe' for x in QMAKE_NAMES)
 
 _RE_QTINCL_DEPS = re.compile(r"^\s*#include\s*[<\"]([^<\"]+)/([^<\"]+)[>\"]\s*$")
 _RE_QCONFIG_PRI = re.compile(r"^\s*([\w\d\.\_]+)\s*=\s*([\w\d\.\_]+)\s*$")
@@ -88,25 +94,29 @@ def toQt5Name(name):
     return name
 
 def queryQmake(conf, qmake, prop):
-    """ Run qmake -query prop and return result """
+    """ Run qmake -query and return prop """
+
     if not isinstance(qmake, list):
         qmake = [qmake]
-    return conf.cmd_and_log(qmake + ['-query', prop]).strip()
 
-@postcmd('init')
-def postInit(_):
-    """ Extra init after wscript.init """
+    _qmake = qmake[0]
+    props = conf.qmakeProps.get(_qmake)
+    if props is None:
+        props = {}
+        lines = conf.cmd_and_log(qmake + ['-query']).strip().splitlines()
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            k, v = line.split(':', 1)
+            props[k.strip()] = v.strip()
+        conf.qmakeProps[_qmake] = props
 
-    # Prevent impact on Waf code
-    os.environ.pop('QT5_BIN', None)  # ZenMake provides QT5_BINDIR instead of QT5_BIN
-    os.environ.pop('QT5_ROOT', None) # ZenMake does not provide this variable
-
-    # adjust QT5_BINDIR to Waf code
-    qtbindir = os.environ.get('QT5_BINDIR')
-    if qtbindir:
-        os.environ['QT5_BIN'] = qtbindir
-        # Waf ignores QT5_BIN if QT5_ROOT is not set or empty (bug?)
-        os.environ['QT5_ROOT'] = os.path.normpath(_joinpath(qtbindir, os.pardir))
+    val = props.get(prop)
+    if val is None:
+        msg = "The %r property is not known for %r" % (prop, _qmake)
+        raise error.ZenMakeError(msg)
+    return val
 
 def _checkQtIsSuitable(conf, qmake, expectedMajorVer = '5'):
 
@@ -156,56 +166,154 @@ def _checkQtIsSuitable(conf, qmake, expectedMajorVer = '5'):
 
     return qtver
 
-def _tryToFindQt5(conf):
+def _searchDirsWithQMake(conf):
+
+    searchdir = conf.environ.get('QT5_SEARCH_ROOT')
+    if not searchdir:
+        searchdir = 'C:\\Qt' if PLATFORM == 'windows' else '/usr/local/Trolltech'
+
+    if not _isdir(searchdir):
+        return []
+
+    found = []
+    for dirpath, _, filenames in os.walk(searchdir):
+        filenames = set(filenames)
+        foundName = next((x for x in QMAKE_NAMES if x in filenames), None)
+        if foundName:
+            found.append((dirpath, foundName))
+
+    return found
+
+def _findDirsWithQMake(conf):
 
     sysenv = conf.environ
 
-    if sysenv.get('QT5_BIN'):
-        return
+    def detectQMake(path):
+        for fname in QMAKE_NAMES:
+            if _isfile(_joinpath(path, fname)):
+                return fname
+        return None
 
-    searchdir = sysenv.get('QT5_SEARCH_ROOT')
+    singleBinDir = sysenv.get('QT5_BINDIR')
+    if singleBinDir:
+        dirpath = getNativePath(singleBinDir)
+        name = detectQMake(dirpath)
+        return [(dirpath, name)] if name else []
+
+    foundQmakes = _searchDirsWithQMake(conf)
+
+    paths = sysenv.get('PATH', '').split(os.pathsep)
+    paths.extend(['/usr/share/qt5/bin', '/usr/local/lib/qt5/bin'])
+    for path in paths:
+        name = detectQMake(path)
+        if name:
+            foundQmakes.append((path, name))
+
+    foundQmakes = utils.uniqueListWithOrder(foundQmakes)
+    return foundQmakes
+
+def _findSuitableQMake(conf):
+
+    conf.startMsg('Checking for Qt5 qmake')
+    qmakePaths = _findDirsWithQMake(conf)
+
+    suitableQMakes = {}
+    for dirpath, qmake in qmakePaths:
+        qmake = dirpath + os.sep + qmake
+        qtver = _checkQtIsSuitable(conf, qmake)
+        if qtver and qtver not in suitableQMakes:
+            suitableQMakes[qtver] = qmake
+
+    if not suitableQMakes:
+        conf.endMsg(False)
+        conf.fatal("Could not find 'qmake' for Qt5")
+
+    if len(suitableQMakes) == 1:
+        qtver, qmake = list(suitableQMakes.items())[0]
+    else:
+        # get highest Qt version
+        suitableQMakes = { Version(k):v for k,v in suitableQMakes.items() }
+        qtver = sorted(suitableQMakes.keys())[-1]
+        qmake = suitableQMakes[qtver]
+
+    conf.env.QMAKE = [qmake]
+    kwargs = { 'endmsg-postfix': ' (%s)' % qtver}
+    conf.endMsg('yes', **kwargs)
+
+    searchdir = conf.environ.get('QT5_SEARCH_ROOT')
     if searchdir and not _isdir(searchdir):
         msg = 'The %r directory from QT5_SEARCH_ROOT does not exist.' % searchdir
-        conf.fatal(msg)
+        log.warn(msg)
 
-    if not searchdir:
-        if PLATFORM == 'windows':
-            searchdir = 'C:\\Qt'
-            if not _isdir(searchdir):
-                return
-        else:
+def _findQt5Tools(conf):
+
+    env = conf.env
+
+    qtver  = queryQmake(conf, env.QMAKE, 'QT_VERSION')
+    qtbins = queryQmake(conf, env.QMAKE, 'QT_HOST_BINS')
+    paths = [qtbins]
+
+    def getToolVer(toolpath):
+        try:
+            toolver = conf.cmd_and_log(toolpath + ['-version'], output = context.STDBOTH)
+        except waferror.WafError as ex:
+            if conf.in_msg:
+                conf.endMsg(False)
+            conf.fatal(ex.msg)
+
+        toolver = ''.join(toolver).rsplit(' ', maxsplit = 1)[-1]
+        toolver = toolver.replace(')', '').strip()
+        return toolver
+
+    def findTool(names, var, sysvar):
+        if var in env:
             return
 
-    qmakeFNames = QMAKE_NAMES
-    if HOST_OS == 'windows':
-        qmakeFNames = [x + '.exe' for x in QMAKE_NAMES]
+        for name in names:
+            conf.startMsg('Checking for program %r' % name  )
+            try:
+                conf.find_program(name, var = sysvar, path_list = paths)
+            except waferror.ConfigurationError:
+                conf.endMsg(False)
+            else:
+                toolpath = env[sysvar]
+                toolver = getToolVer(toolpath)
+                if toolver != qtver:
+                    kwargs = { 'endmsg-postfix': ' (wrong version)' }
+                    conf.endMsg(False, **kwargs)
+                    continue
 
-    foundQt = []
-    for dirpath, _, filenames in os.walk(searchdir):
-        filenames = set(filenames)
-        found = next((x for x in qmakeFNames if x in filenames), None)
-        if not found:
-            continue
+                env[var] = toolpath
+                break
+        else:
+            return # tool not found
 
-        qmake = dirpath + os.sep + found
-        qtver = _checkQtIsSuitable(conf, qmake)
-        if qtver:
-            foundQt.append((dirpath, qtver))
+        conf.endMsg('%s (%s)' % (env[var][0], toolver))
 
-    def getHighestQtVerDir(foundQt):
-        if len(foundQt) == 1:
-            return foundQt[0][0]
+    findTool(['uic-qt5', 'uic'], 'QT_UIC', 'QT5_UIC')
+    findTool(['moc-qt5', 'moc'], 'QT_MOC', 'QT5_MOC')
+    findTool(['rcc-qt5', 'rcc'], 'QT_RCC', 'QT5_RCC')
+    findTool(['lrelease-qt5', 'lrelease'], 'QT_LRELEASE', 'QT5_LRELEASE')
+    findTool(['lupdate-qt5', 'lupdate'], 'QT_LUPDATE', 'QT5_LUPDATE')
 
-        result = {}
-        for dirpath, qtver in foundQt:
-            result[utils.Version(qtver)] = dirpath
+    env.UIC_ST = '%s -o %s'
+    env.MOC_ST = '-o'
+    env.ui_PATTERN = 'ui_%s.h'
+    env.QT_LRELEASE_FLAGS = ['-silent']
+    env.MOCCPPPATH_ST = '-I%s'
+    env.MOCDEFINES_ST = '-D%s'
 
-        return result[sorted(result.keys())[-1]]
-
-    if foundQt:
-        paths = sysenv.get('PATH', '').split(os.pathsep)
-        paths.insert(0, getHighestQtVerDir(foundQt))
-        sysenv['PATH'] = os.pathsep.join(paths)
+def _setQt5LibsDir(conf):
+    env = conf.env
+    qtlibs = conf.environ.get('QT5_LIBDIR')
+    if not qtlibs:
+        try:
+            qtlibs = queryQmake(conf, env.QMAKE, 'QT_INSTALL_LIBS')
+        except waferror.WafError:
+            qtdir = queryQmake(conf, env.QMAKE, 'QT_INSTALL_PREFIX')
+            qtlibs = _joinpath(qtdir, 'lib')
+    conf.msg('Found the Qt5 library path', qtlibs)
+    env.QTLIBS = qtlibs
 
 def _findQt5LibsWithPkgConf(conf, forceStatic):
 
@@ -225,7 +333,7 @@ def _findQt5LibsWithPkgConf(conf, forceStatic):
         pkg_config_path = pkgCfgPaths
     )
 
-    for name in conf.qt5_vars:
+    for name in conf.qt5libNames:
         conf.check_cfg(package = name, **kwargs)
 
 def _gatherQt5LibDepsFromHeaders(conf, qtIncludes):
@@ -262,7 +370,7 @@ def _gatherQt5LibDepsFromHeaders(conf, qtIncludes):
         return result
 
     deps = {}
-    for libname in conf.qt5_vars:
+    for libname in conf.qt5libNames:
         seen = set()
         module = libname.replace('Qt5', 'Qt', 1)
         deps[libname] = gatherModules([module], seen)
@@ -327,7 +435,7 @@ def _findQt5LibsAsIs(conf, forceStatic):
 
     deps = _gatherQt5LibDepsFromHeaders(conf, qtIncludes)
 
-    for qtlibname in conf.qt5_vars:
+    for qtlibname in conf.qt5libNames:
         uselib = qtlibname.upper()
 
         for depname in deps[qtlibname]:
@@ -376,7 +484,7 @@ def _fixQtDefines(conf):
 
     env = conf.env
     hdefines = set()
-    for name in conf.qt5_vars:
+    for name in conf.qt5libNames:
         defines = env['DEFINES_%s' % name.upper()]
         defines = [x[:-4] if x.endswith('_LIB') else x for x in defines]
         hdefines.update(['HAVE_%s' % x.replace('_', '5', 1) for x in defines])
@@ -404,15 +512,11 @@ def _detectQtRtLibPath(conf):
 
 def _configureQt5CmnEnv(conf):
 
-    _tryToFindQt5(conf)
-
-    qt5.find_qt5_binaries(conf)
-    qt5.set_qt5_libs_dir(conf)
-
+    _findSuitableQMake(conf)
+    _findQt5Tools(conf)
+    _setQt5LibsDir(conf)
     _findQt5Libs(conf)
     _fixQtDefines(conf)
-
-    qt5.simplify_qt5_libs(conf)
 
     _detectQtRtLibPath(conf)
 
@@ -538,7 +642,9 @@ def preConf(conf):
         qtTasks.append(taskParams)
 
     # set the list of qt modules/libraries
-    conf.qt5_vars = utils.uniqueListWithOrder(qtLibNames)
+    conf.qt5libNames = utils.uniqueListWithOrder(qtLibNames)
+
+    conf.qmakeProps = {}
 
     sharedData = {}
     for taskParams in qtTasks:
@@ -798,3 +904,23 @@ class qm2qrc(Task):
 # Set more understandable labels for some specific task runs
 setattr(qt5.moc, 'keyword', lambda _: "Generating moc")
 setattr(qt5.ts2qm, 'keyword', lambda _: "Generating .qm from")
+
+def _addToolVarCheckerToTask(cls, toolvar, toolname):
+
+    origmethod = cls.__init__
+
+    def wrapper(self, *args, **kwargs):
+        origmethod(self, *args, **kwargs)
+
+        env = self.generator.env
+        if not env[toolvar]:
+            msg = "Qt tool %r not found" % toolname
+            raise error.ZenMakeError(msg)
+
+    cls.__init__ = wrapper
+
+_addToolVarCheckerToTask(qt5.ui5, 'QT_UIC', 'uic')
+_addToolVarCheckerToTask(qt5.moc, 'QT_MOC', 'moc')
+_addToolVarCheckerToTask(qt5.rcc, 'QT_RCC', 'rcc')
+_addToolVarCheckerToTask(qt5.ts2qm, 'QT_LRELEASE', 'lrelease')
+_addToolVarCheckerToTask(qt5.trans_update, 'QT_LUPDATE', 'lupdate')
