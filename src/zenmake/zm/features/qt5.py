@@ -68,7 +68,7 @@ EXTRA_PKG_CONFIG_PATHS = (
 QT5_SYSENV_VARS = (
     'QT5_BINDIR', 'QT5_LIBDIR', 'QT5_INCLUDES',
     'QT5_NO_PKGCONF', 'QT5_FORCE_STATIC',
-    'QT5_SEARCH_ROOT',
+    'QT5_SEARCH_ROOT', 'QT5_MIN_VER', 'QT5_MAX_VER',
 )
 
 QMAKE_NAMES = ('qmake', 'qmake-qt5', 'qmake5')
@@ -214,6 +214,8 @@ def _findDirsWithQMake(conf):
 
 def _findSuitableQMake(conf):
 
+    sysenv = conf.environ
+
     conf.startMsg('Checking for Qt5 qmake')
     qmakePaths = _findDirsWithQMake(conf)
 
@@ -222,25 +224,45 @@ def _findSuitableQMake(conf):
         qmake = dirpath + os.sep + qmake
         qtver = _checkQtIsSuitable(conf, qmake)
         if qtver and qtver not in suitableQMakes:
-            suitableQMakes[qtver] = qmake
+            suitableQMakes[Version(qtver)] = qmake
 
     if not suitableQMakes:
         conf.endMsg(False)
         conf.fatal("Could not find 'qmake' for Qt5")
 
-    if len(suitableQMakes) == 1:
-        qtver, qmake = list(suitableQMakes.items())[0]
-    else:
-        # get highest Qt version
-        suitableQMakes = { Version(k):v for k,v in suitableQMakes.items() }
-        qtver = sorted(suitableQMakes.keys())[-1]
-        qmake = suitableQMakes[qtver]
+    # filter with QT5_MIN_VER, QT5_MAX_VER
+    minVer = str(sysenv.get('QT5_MIN_VER', ''))
+    minVer = Version(minVer) if minVer else None
+    maxVer = str(sysenv.get('QT5_MAX_VER', ''))
+    maxVer = Version(maxVer) if maxVer else None
+
+    def filterByMinMaxVer(qtver):
+        incorrect = (minVer and qtver < minVer) or (maxVer and qtver > maxVer)
+        return not incorrect
+
+    if minVer or maxVer:
+        suitableQMakes = { k:v for k,v in suitableQMakes.items() \
+                                            if filterByMinMaxVer(k) }
+        if not suitableQMakes:
+            conf.endMsg(False)
+            msg = "Could not find 'qmake' for Qt5 with version "
+            msgver = []
+            if minVer:
+                msgver.append(">= %s" % minVer)
+            if maxVer:
+                msgver.append("<= %s" % maxVer)
+            msg += " and ".join(msgver)
+            conf.fatal(msg)
+
+    # get highest Qt version
+    qtver = sorted(suitableQMakes.keys())[-1]
+    qmake = suitableQMakes[qtver]
 
     conf.env.QMAKE = [qmake]
     kwargs = { 'endmsg-postfix': ' (%s)' % qtver}
     conf.endMsg('yes', **kwargs)
 
-    searchdir = conf.environ.get('QT5_SEARCH_ROOT')
+    searchdir = sysenv.get('QT5_SEARCH_ROOT')
     if searchdir and not _isdir(searchdir):
         msg = 'The %r directory from QT5_SEARCH_ROOT does not exist.' % searchdir
         log.warn(msg)
