@@ -71,6 +71,10 @@ QT5_SYSENV_VARS = (
     'QT5_SEARCH_ROOT', 'QT5_MIN_VER', 'QT5_MAX_VER',
 )
 
+QT5_SYSENV_VARS += tuple(
+    'QT5_%s' % x for x in ('MOC', 'UIC', 'RCC' , 'LRELEASE', 'LUPDATE')
+)
+
 QMAKE_NAMES = ('qmake', 'qmake-qt5', 'qmake5')
 if HOST_OS == 'windows':
     QMAKE_NAMES = tuple(x + '.exe' for x in QMAKE_NAMES)
