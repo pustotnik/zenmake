@@ -101,7 +101,7 @@ def getMonitoredEnvVarNames():
     envVarNames = set(envVarNames)
     envVarNames -= set(['PATH']) # we cannot unset this var
 
-    return tuple(envVarNames)
+    return sorted(envVarNames)
 
 atexit.register(removeAllTmpDirsForTests)
 
