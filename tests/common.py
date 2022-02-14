@@ -89,6 +89,20 @@ def asRealConf(_buildconf, dirpath = None):
             setattr(buildconf, k, v)
     return buildconf
 
+def getMonitoredEnvVarNames():
+
+    from zm.features import ToolchainVars
+    from zm.waf.assist import getPermanentMonitEnvVarNames
+
+    envVarNames = ToolchainVars.allSysFlagVars()
+    envVarNames += ToolchainVars.allSysVarsToSetToolchain()
+    envVarNames += getPermanentMonitEnvVarNames()
+
+    envVarNames = set(envVarNames)
+    envVarNames -= set(['PATH']) # we cannot unset this var
+
+    return tuple(envVarNames)
+
 atexit.register(removeAllTmpDirsForTests)
 
 SHARED_TMP_DIR = makeTmpDirForTests()

@@ -25,7 +25,7 @@ from zm.constants import TASK_TARGET_KINDS, PLATFORM
 from zm.pyutils import maptype
 from zm.autodict import AutoDict
 from zm.pathutils import PathsParam
-from zm import utils, log, toolchains, error, db, version, cli, edeps
+from zm import utils, log, toolchains, error, db, version, cli, edeps, environmon
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
 from zm.buildconf.scheme import EXPORTING_TASK_PARAMS
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES, \
@@ -51,6 +51,13 @@ def _genToolAutoName(lang):
 TOOL_AUTO_NAMES = { _genToolAutoName(x) for x in ToolchainVars.allLangs() }
 _DONT_STORE_TASK_PARAMS = ('$bconf', )
 _EXPORT_PATH_PARAMS = frozenset(['includes', 'libpath', 'stlibpath'])
+_DROP_FROM_COLLECTED_ENVVARS = set([
+    'WAF_PRINT_FAILURE_LOG', 'WAF_CMD_FORMAT', 'WAF_LOG_FORMAT',
+    'WAF_HOUR_FORMAT', 'NOSYNC', 'WAFLOCK', 'NOCOLOR', 'CLICOLOR',
+    'CLICOLOR_FORCE', 'NO_LOCK_IN_RUN', 'NO_LOCK_IN_OUT', 'NO_LOCK_IN_TOP',
+    'JOBS', 'NUMBER_OF_PROCESSORS', 'WAF_NO_PREFORK',
+    'TERM', 'COLUMNS'
+])
 
 class ConfigurationContext(WafConfContext):
     """ Context for command 'configure' """
@@ -62,6 +69,8 @@ class ConfigurationContext(WafConfContext):
 
         self._fixSysEnvVars()
         super().__init__(*args, **kwargs)
+
+        environmon.assignMonitoringTo(self, 'environ')
 
         self._loadedTools = {}
         self._toolchainEnvs = {}
@@ -149,10 +158,13 @@ class ConfigurationContext(WafConfContext):
     def _gatherMonitoredEnvVars(self):
 
         names = set()
+        names.update(environmon.monitoredVars())
+        names -= _DROP_FROM_COLLECTED_ENVVARS
+
         for bconf in self.bconfManager.configs:
             names.update(bconf.usedEnvVars)
 
-        names.update(assist.getMonitoredEnvVarNames())
+        names.update(assist.getPermanentMonitEnvVarNames())
         return tuple(names)
 
     def _handleMonitLibs(self, taskParams):
@@ -942,6 +954,8 @@ class ConfigurationContext(WafConfContext):
     # override
     def execute(self):
 
+        environmon.doMonitoring = True
+
         self._prepareBConfs()
 
         bconf = self.bconfManager.root
@@ -1014,6 +1028,8 @@ class ConfigurationContext(WafConfContext):
 
         # store necessary info
         self.store()
+
+        environmon.doMonitoring = False
 
         instanceCache = self.zmcache
         if not instanceCache.get('confpaths-added-to-monit', False):

@@ -45,11 +45,10 @@ def unsetEnviron(monkeypatch):
 
     varnames = _cache.get('monitored-envs')
     if varnames is None:
-        from zm.waf.assist import getMonitoredEnvVarNames
+        from tests.common import getMonitoredEnvVarNames
         _cache['monitored-envs'] = varnames = getMonitoredEnvVarNames()
 
     for v in varnames:
-        #os.environ.pop(v, None)
         monkeypatch.delenv(v, raising = False)
 
 @pytest.fixture

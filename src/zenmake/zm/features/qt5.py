@@ -65,30 +65,12 @@ EXTRA_PKG_CONFIG_PATHS = (
     '/opt/qt5/lib',
 )
 
-QT5_SYSENV_VARS = (
-    'QT5_BINDIR', 'QT5_LIBDIR', 'QT5_INCLUDES',
-    'QT5_NO_PKGCONF', 'QT5_FORCE_STATIC',
-    'QT5_SEARCH_ROOT', 'QT5_MIN_VER', 'QT5_MAX_VER',
-)
-
-QT5_SYSENV_VARS += tuple(
-    'QT5_%s' % x for x in ('MOC', 'UIC', 'RCC' , 'LRELEASE', 'LUPDATE')
-)
-
 QMAKE_NAMES = ('qmake', 'qmake-qt5', 'qmake5')
 if HOST_OS == 'windows':
     QMAKE_NAMES = tuple(x + '.exe' for x in QMAKE_NAMES)
 
 _RE_QTINCL_DEPS = re.compile(r"^\s*#include\s*[<\"]([^<\"]+)/([^<\"]+)[>\"]\s*$")
 _RE_QCONFIG_PRI = re.compile(r"^\s*([\w\d\.\_]+)\s*=\s*([\w\d\.\_]+)\s*$")
-
-def _wrapMonEnvVarGetter(origFunc):
-    def execute():
-        return origFunc() + QT5_SYSENV_VARS
-    execute.__doc__ = origFunc.__doc__
-    return execute
-
-assist.getMonitoredEnvVarNames = _wrapMonEnvVarGetter(assist.getMonitoredEnvVarNames)
 
 def toQt5Name(name):
     """ Convert name from QtSomeName to Qt5SomeName """

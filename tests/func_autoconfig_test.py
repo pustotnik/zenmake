@@ -17,7 +17,6 @@ import shutil
 
 import pytest
 from zm import pyutils, version
-from zm.waf.assist import getMonitoredEnvVarNames
 
 import tests.common as cmn
 from tests.func_utils import *
@@ -45,7 +44,7 @@ class TestAutoconfig(object):
 
         self.testdir = os.path.abspath(joinpath(self.cwd, os.pardir))
 
-    @pytest.fixture(params = getMonitoredEnvVarNames()[::3])
+    @pytest.fixture(params = cmn.getMonitoredEnvVarNames()[::3])
     def toolEnvVar(self, request):
         self.toolEnvVar = request.param
 

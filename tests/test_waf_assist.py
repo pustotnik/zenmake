@@ -93,7 +93,7 @@ def testWriteZenMakeMetaFile(tmpdir, monkeypatch):
     assert cfgenv.eparams[prevbuildtype] == prevZmMeta.eparams[prevbuildtype]
 
     curParams = {
-        'envs' : {'LIBDIR': '/llib', 'MYVAR' : ''},
+        'envs' : {'LIBDIR': '/llib', 'MYVAR' : None},
         'cliargs': { 'prefix': '/dd/aa' },
     }
     assert cfgenv.eparams[buildtype] == curParams

@@ -13,6 +13,8 @@ if sys.hexversion < 0x3050000:
     raise ImportError('Python >= 3.5 is required')
 
 #pylint: disable=wrong-import-position
+from zm import environmon
+environmon.assignMonitoringTo(os, 'environ')
 
 from zm.constants import CWD
 from zm import utils, cli

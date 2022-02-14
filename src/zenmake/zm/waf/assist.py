@@ -18,8 +18,7 @@ from zm.pathutils import getNodesFromPathsConf
 from zm.error import ZenMakeError, ZenMakeConfError
 from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
 from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
-from zm.features import SUPPORTED_TASK_FEATURES
-from zm.features import ToolchainVars
+from zm.features import SUPPORTED_TASK_FEATURES, ToolchainVars
 from zm import utils, log, version, db, installdirvars
 
 joinpath  = os.path.join
@@ -57,12 +56,10 @@ def allowedTGenAttrs():
     ''' Get allowed Waf task gen attributes '''
     return _allowedTGenAttrs
 
-def getMonitoredEnvVarNames():
-    ''' Get all monitored env vars to reconfigure on their change '''
+def getPermanentMonitEnvVarNames():
+    ''' Get permanent monitored env vars to reconfigure on their change '''
 
-    envVarNames = ToolchainVars.allSysFlagVars()
-    envVarNames += ToolchainVars.allSysVarsToSetToolchain()
-    envVarNames += ('BUILDROOT', 'DESTDIR')
+    envVarNames = ('BUILDROOT', 'DESTDIR')
     envVarNames += installdirvars.VAR_ENVNAMES
 
     return envVarNames
@@ -98,7 +95,7 @@ def writeZenMakeMetaFile(filePath, meta, prevZmMeta):
     eparams = zmMeta.eparams[meta.buildtype] = { 'envs' : {}, 'cliargs': {} }
 
     for name in meta.envvars:
-        eparams['envs'][name] = _getenv(name, '')
+        eparams['envs'][name] = _getenv(name)
 
     for name in getMonitoredCliArgNames():
         val = meta.cliargs.get(name)
@@ -542,7 +539,7 @@ def areExternalParamsChanged(zmMetaConf, buildtype, cliargs):
 
     prevEnvVars = eparams.get('envs', {})
     for name, val in prevEnvVars.items():
-        if val != _getenv(name, ''):
+        if val != _getenv(name):
             return True
 
     prevCliArgs = eparams.get('cliargs', {})
