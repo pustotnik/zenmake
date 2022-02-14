@@ -28,8 +28,8 @@ from zm.pathutils import PathsParam
 from zm import utils, log, toolchains, error, db, version, cli, edeps
 from zm.buildconf.select import handleOneTaskParamSelect, handleTaskParamSelects
 from zm.buildconf.scheme import EXPORTING_TASK_PARAMS
-from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES
-from zm.features import BUILDCONF_PREPARE_TASKPARAMS, ToolchainVars, getLoadedFeatures
+from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES, \
+    TOOLCHAIN_VARS, BUILDCONF_PREPARE_TASKPARAMS, ToolchainVars, getLoadedFeatures
 from zm.waf import assist, context, config_actions as configActions
 
 joinpath = os.path.join
@@ -468,6 +468,15 @@ class ConfigurationContext(WafConfContext):
         self.variant = name
         self.all_envs[name] = env
 
+    def _cfgCompilerVarName(self, lang):
+        """
+        For selected language return WAF ConfigSet variable name to set/get
+        compiler name in the form COMPILER_CXX, COMPILER_CC, etc.
+        """
+
+        return TOOLCHAIN_VARS[lang].get('cfgenv-compiler',
+            'COMPILER_%s' % ToolchainVars.cfgVarToSetToolchain(lang))
+
     def loadTool(self, tool, **kwargs):
         """
         Load tool/toolchain from Waf or another places
@@ -500,7 +509,7 @@ class ConfigurationContext(WafConfContext):
                         # The COMPILER_%LANG% vars are almost useless because
                         # of existing vars like CXX, CC, etc. But in some rare
                         # places Waf checks and uses these vars.
-                        varName = ToolchainVars.cfgCompilerVarName(lang)
+                        varName = self._cfgCompilerVarName(lang)
                         toolEnv[varName] = tool
 
                         endMsg = toolEnv.get_flat(var)
