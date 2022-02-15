@@ -199,6 +199,9 @@ def build(bld):
         _pairedCmdInfo['bld'] = bld
         _pairedCmdInfo['task-names'] = taskNames
 
+    baseDropKeys = [x for x in KNOWN_TASK_PARAM_NAMES if not x.endswith('.select')]
+    baseDropKeys = set(baseDropKeys) - assist.allowedTGenAttrs()
+
     for taskName in taskNames:
 
         taskParams = tasks[taskName]
@@ -235,8 +238,8 @@ def build(bld):
 
         bldParams = taskParams.copy()
         # Remove params that can conflict with waf in theory
-        dropKeys = set(KNOWN_TASK_PARAM_NAMES) - assist.allowedTGenAttrs()
         bldParamKeys = tuple(bldParams.keys())
+        dropKeys = set(baseDropKeys)
         dropKeys.update([k for k in bldParamKeys if k[0] == '$' ])
         dropKeys = tuple(dropKeys)
         for k in dropKeys:

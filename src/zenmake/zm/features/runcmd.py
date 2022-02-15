@@ -215,7 +215,7 @@ def _fixRunCmdDepsOrder(tgen):
         runcmdTask.set_run_after(depTask)
 
 def _isCmdStandalone(tgen):
-    """ Detect is current runcmd standalone """
+    """ Detect if current runcmd is standalone """
     features = getattr(tgen, 'features', [])
     otherFeatures = set(features) - set(('runcmd', ))
     return not otherFeatures and getattr(tgen, 'rule', None) is None
