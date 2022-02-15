@@ -18,8 +18,8 @@ Then you have a choice:
 
     - If selected task has no feature \*program and has no
       :ref:`run <buildconf-taskparams-run>` but has \*stlib/\*shlib then
-      this task is cosidered as a task with test but ZenMake will not try
-      to run this task as test. It's useful for creation of separated
+      this task is considered as a task with test but ZenMake will not try
+      to run this task as a test. It's useful for creation of separated
       libraries for tests only.
 
     - Specify task parameter :ref:`run <buildconf-taskparams-run>`.
@@ -59,7 +59,7 @@ Example of test tasks in YAML format:
         source  : tests/test_shlib.cpp
         use     : shlib testcmn
         run:
-            cmd     : '${PROGRAM} a b c'
+            cmd     : '$(tgt) a b c'
             env     : { AZ : '111', BROKEN_TEST : 'false' }
             repeat  : 2
             timeout : 10 # in seconds
@@ -102,7 +102,7 @@ Example of test tasks in python format:
         'source'      : 'tests/test_shlib.cpp',
         'use'         : 'shlib testcmn',
         'run'      : {
-            'cmd'     : '${PROGRAM} a b c',
+            'cmd'     : '$(tgt) a b c',
             'env'     : { 'AZ' : '111', 'BROKEN_TEST' : 'false'},
             'repeat'  : 2,
             'timeout' : 10, # in seconds
@@ -137,9 +137,19 @@ To build but not run tests with command ``test``:
 
     zenmake test -T none
 
-You can run all tests but also you can tests only on changes. For this you can
+You can run all tests but also you can run tests only on changes. For this you can
 use ``--run-tests`` with value ``on-changes``:
 
 .. code-block:: console
 
     zenmake test -T on-changes
+
+To specify additional command line arguments for all compiled testing
+executables you can use ``--``:
+
+.. code-block:: console
+
+    zenmake test -- -vs
+
+Everything after ``--`` is considered as extra command line arguments
+for executable target files.

@@ -65,7 +65,7 @@ config.commands = [
         name = 'test',
         cmdBefore = 'build', # this command must be always in pair with 'build'
         description = 'build and run tests',
-        usageTextTempl = "%s [options] [task [task] ... ]",
+        usageTextTempl = "%s [options] [task [task] ... ] [-- test program args]",
     ),
     Command(
         name = 'run',

@@ -39,34 +39,66 @@ RUNBY_FILE_EXT = {
     '.rb'  : ['ruby'],
 }
 
-def _processCmdLine(conf, taskParams, cwd, cmdArgs):
-    """ Get and process 'cmd' at 'configure' stage """
-
-    # By default 'shell' is True to rid of some problems with Waf and Windows
-    shell = cmdArgs.get('shell', True)
-
-    bconf      = taskParams['$bconf']
-    bconfPaths = bconf.confPaths
-    btypeDir   = bconf.selectedBuildTypeDir
-    startdir   = bconfPaths.startdir
-
-    cmdline = cmdArgs.get('cmd', '').strip()
-    if not cmdline:
-        return cmdline, shell
-
-    shell = cmdHasShellSymbols(cmdline) if not shell else shell
+def _splitCmdLine(cmdline, taskName, bconfPath):
 
     posixMode = os.name == 'posix'
     try:
         cmdSplitted = shlex.split(cmdline, posix = posixMode)
     except ValueError as ex:
         # "No closing quotation" or "No escaped character"
-        taskName = taskParams['name']
         msg = "Task %r: command line %r is invalid (%s)" % (taskName, cmdline, ex)
-        msg += "\nYou can try to put the python 'r' prefix in front of value of command line"
-        msg += " like this: 'run': r'your command line'"
-        raise error.ZenMakeConfError(msg, confpath = bconf.path)
+        raise error.ZenMakeConfError(msg, confpath = bconfPath)
 
+    return cmdSplitted
+
+def _makeCmdForScript(cmdline, cmdExt, findfunc):
+
+    cmdExt = cmdExt.strip("'").strip('"')
+    # try to detect interpreter for some cases
+    launchers = RUNBY_FILE_EXT.get(cmdExt)
+    if not launchers:
+        return None
+
+    launcherPath = None
+    for launcher in launchers:
+        result = findfunc(launcher)
+        if result:
+            launcherPath = result[0]
+            break
+
+    if not launcherPath and cmdExt == '.py':
+        launcherPath = PYTHON_EXE
+    if launcherPath:
+        return '%s %s' % (launcherPath, cmdline)
+
+    return None
+
+def _processCmdLine(ctx, taskParams):
+    """ Get and process 'cmd' """
+
+    startNode = ctx.getStartDirNode(taskParams['$startdir'])
+
+    bconf      = ctx.getbconf(startNode)
+    btypeDir   = bconf.selectedBuildTypeDir
+    startdir   = bconf.startdir
+    cmdArgs    = taskParams['run']
+
+    # By default 'shell' is True to get rid of some problems with Waf and Windows
+    shell = cmdArgs.get('shell', True)
+
+    cmdline = cmdArgs.get('cmd', '').strip()
+    if not cmdline and taskParams['$runnable']:
+        cmdline = taskParams['$real.target']
+
+    if not cmdline:
+        return cmdline, shell
+
+    extraArgs = cmdArgs.get('extra-args')
+    if extraArgs:
+        cmdline = '%s %s' % (cmdline, ' '.join(extraArgs))
+
+    shell = cmdHasShellSymbols(cmdline) if not shell else shell
+    cmdSplitted = _splitCmdLine(cmdline, taskParams['name'], bconf.path)
     if not shell:
         # Waf cannot work correctly with paths with whitespaces when
         # 'shell' is False.
@@ -74,7 +106,7 @@ def _processCmdLine(conf, taskParams, cwd, cmdArgs):
         if any(' ' in s for s in cmdSplitted):
             shell = True
 
-    paths = [cwd, startdir, btypeDir]
+    paths = [cmdArgs['cwd'], startdir, btypeDir]
     paths.extend(os.environ.get('PATH', '').split(os.pathsep))
     fkw = {
         'path_list' : paths, 'quiet' : True,
@@ -85,28 +117,17 @@ def _processCmdLine(conf, taskParams, cwd, cmdArgs):
     launcher = cmdSplitted[0]
     cmdExt = os.path.splitext(launcher)[1]
     if partsCount == 1 and cmdExt:
-        cmdExt = cmdExt.strip("'").strip('"')
-        # try to detect interpreter for some cases
-        launchers = RUNBY_FILE_EXT.get(cmdExt)
-        if launchers:
-            launcherPath = None
-            for launcher in launchers:
-                result = conf.find_program(launcher, **fkw)
-                if result:
-                    launcherPath = result[0]
-                    break
-
-            if not launcherPath and cmdExt == '.py':
-                launcherPath = PYTHON_EXE
-            if launcherPath:
-                cmdline = '%s %s' % (launcherPath, cmdline)
+        find = lambda x: ctx.find_program(x, **fkw)
+        result = _makeCmdForScript(cmdline, cmdExt, find)
+        if result:
+            cmdline = result
 
     elif partsCount > 1 and not shell and not _RE_STARTS_WITH_SUBST.match(launcher):
         # Waf raises exception in verbose mode with 'shell' == False if it
         # cannot find full path to executable and on windows cmdline
         # like 'python file.py' doesn't work.
         # So here is the attempt to find full path for such a case.
-        result = conf.find_program(launcher, **fkw)
+        result = ctx.find_program(launcher, **fkw)
         if result:
             launcher = result[0]
             cmdSplitted[0] = launcher
@@ -139,12 +160,14 @@ def postConf(conf):
         elif not isinstance(cmdArgs, maptype):
             cmdArgs = { 'cmd' : cmdArgs }
 
-        cmdTaskArgs = {
+        cmdArgs.update({
             'name'   : taskParams['name'],
             'timeout': cmdArgs.get('timeout', None),
             'env'    : cmdArgs.get('env', {}),
             'repeat' : cmdArgs.get('repeat', 1),
-        }
+        })
+
+        taskParams['run'] = cmdArgs
 
         cwd = cmdArgs.get('cwd', None)
         if cwd:
@@ -155,27 +178,15 @@ def postConf(conf):
                 cwd = PathsParam(cwd, startdir, rootdir).abspath()
         else:
             cwd = btypeDir
-        cmdTaskArgs['cwd'] = cwd
+        cmdArgs['cwd'] = cwd
 
-        # mostly for _processCmdLine
-        conf.variant = taskParams['$task.variant']
-
-        cmdTaskArgs['$type'] = ''
+        cmdArgs['$type'] = ''
         cmd = cmdArgs.get('cmd', None)
         if cmd and callable(cmd):
             # it's needed because a function cannot be saved in a file as is
-            cmdTaskArgs['cmd'] = cmd.__name__
-            cmdTaskArgs['shell'] = False
-            cmdTaskArgs['$type'] = 'func'
-        else:
-            cmd, shell = _processCmdLine(conf, taskParams, cwd, cmdArgs)
-            cmdTaskArgs['shell'] = shell
-            cmdTaskArgs['cmd'] = cmd
-
-        taskParams['run'] = cmdTaskArgs
-
-    # switch current env to the root env
-    conf.variant = ''
+            cmdArgs['cmd'] = cmd.__name__
+            cmdArgs['shell'] = False
+            cmdArgs['$type'] = 'func'
 
 def _fixRunCmdDepsOrder(tgen):
     """ Fix order of running """
@@ -279,7 +290,12 @@ def _makeCmdRuleArgs(tgen):
         return None
 
     ruleArgs = cmdArgs.copy()
-    realTarget = zmTaskParams['$real.target']
+    cmdType = ruleArgs.pop('$type', '')
+
+    if cmdType != 'func':
+        cmd, shell = _processCmdLine(ctx, zmTaskParams)
+        ruleArgs['shell'] = shell
+        ruleArgs['cmd'] = cmd
 
     env = tgen.env.derive()
     environ = (env.env or os.environ).copy()
@@ -301,14 +317,10 @@ def _makeCmdRuleArgs(tgen):
     if deepInputs:
         ruleArgs['deep_inputs'] = True
 
-    if not cmd and zmTaskParams['$runnable']:
-        cmd = realTarget
-
     if not cmd:
         msg = 'Task %r has not runnable command: %r.' % (tgen.name, cmd)
         raise error.ZenMakeError(msg)
 
-    cmdType = ruleArgs.pop('$type', '')
     if cmdType == 'func':
         bconf = ctx.getbconf(tgen.path)
         ruleArgs['rule'] = _createRuleWithFunc(bconf, cmd)

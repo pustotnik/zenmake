@@ -287,6 +287,7 @@ List of built-in variables:
         The installation directory for object files and libraries of object code.
         It defaults to ``$(exeprefix)/lib`` or ``$(exeprefix)/lib64`` on UNIX
         and ``$(exeprefix)`` on Windows.
+        On Debian/Ubuntu, it may be ``$(exeprefix)/lib/<multiarch-tuple>``.
         It can be changed via environment variable :ref:`LIBDIR<envvars-libdir>`
         or via ``--libdir`` on the command line.
 

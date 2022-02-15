@@ -299,11 +299,14 @@ class TestContext(BuildContext):
     def _makeTask(self, taskParams, bconfPaths):
         ctx = self
 
+        notparsedArgs = cli.selected.notparsed
+        if notparsedArgs:
+            taskParams['run']['extra-args'] = notparsedArgs
+
         # make task generator suitable for add-on 'runcmd'.
         kwargs = {
             'features' : ['runcmd'],
             'color'    : 'PINK',
-            'run'      : taskParams.get('run', {}),
         }
 
         target = taskParams.get('target')
