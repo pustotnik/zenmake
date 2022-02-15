@@ -27,8 +27,10 @@ private:
     int _value;
 };
 
-void TestVal::set(int value) {
-    if (_value != value) {
+void TestVal::set(int value)
+{
+    if (_value != value)
+    {
         _value = value;
         emit changed(2 * value);
     }

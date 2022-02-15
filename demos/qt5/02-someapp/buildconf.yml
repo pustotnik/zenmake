@@ -18,9 +18,11 @@ tasks:
     #bld-langprefix : prog/i18n
     #unique-qmpaths: true
     use       : QtWidgets qutil util
-    configure:
-      - do : check-headers
-        names : iostream
+
+  my-test:
+    features  : cxxprogram qt5 test
+    source    : tests/my_test.cpp
+    use       : qutil QtTest
 
 GCC_BASE_FLAGS: -std=c++11 -fPIC
 
