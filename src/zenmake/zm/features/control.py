@@ -12,8 +12,8 @@ import os
 
 from zm.pyutils import struct, cached
 from zm.pypkg import PkgPath
-from zm.utils import loadPyModule
-from zm.error import ZenMakeError
+from zm.utils import loadPyModule, toListSimple, uniqueListWithOrder
+from zm.error import ZenMakeError, ZenMakeConfError
 
 # private cache
 _cache = {}
@@ -243,6 +243,53 @@ def postcmd(cmdMethod, before = None, after = None):
 #######################################################################
 ## Others
 
+def detectTaskFeatures(taskParams):
+    """
+    Detect missed features for task
+    """
+
+    detectFeaturesFuncs = _local.get('detect-features-funcs')
+    if not detectFeaturesFuncs:
+        detectFeaturesFuncs = _getFeatureDetectFuncs()
+        _local['detect-features-funcs'] = detectFeaturesFuncs
+
+    features = toListSimple(taskParams.get('features', []))
+
+    detected = [ TASK_TARGET_FEATURES_TO_LANG.get(x, '') for x in features ]
+    features = detected + features
+    features = [x for x in features if x]
+
+    taskParams['features'] = features
+    for func in detectFeaturesFuncs:
+        features.extend(func(taskParams))
+
+    taskParams['features'] = features = uniqueListWithOrder(features)
+    return features
+
+def validateTaskFeatures(taskParams):
+    """
+    Check that all task features are valid
+    """
+
+    features = taskParams['features']
+    unknown = [x for x in features if x not in SUPPORTED_TASK_FEATURES]
+    if unknown:
+        if len(unknown) == 1:
+            msg = "Feature %r in task %r is not supported." % \
+                (unknown[0], taskParams['name'])
+        else:
+            msg = "Features '%s' in task %r are not supported." % \
+                (', '.join(unknown), taskParams['name'])
+        raise ZenMakeConfError(msg)
+
+    if not features and taskParams.get('source'):
+        msg = "There is no way to proccess task %r" % taskParams['name']
+        msg += " with empty 'features'."
+        msg += " You need to specify 'features' for this task."
+        raise ZenMakeConfError(msg)
+
+    return features
+
 def loadFeatures(tasksList):
     """
     Load modules for selected features. Not existing modules are ignored.
@@ -256,18 +303,11 @@ def loadFeatures(tasksList):
     modules = _local.setdefault('feature-modules', {})
     allModuleNames = set(_allModuleNames())
 
-    detectFeaturesFuncs = _local.get('detect-features-funcs')
-    if not detectFeaturesFuncs:
-        detectFeaturesFuncs = _getFeatureDetectFuncs()
-        _local['detect-features-funcs'] = detectFeaturesFuncs
-
     # gather unique features
     features = set()
     for tasks in tasksList:
         for taskParams in tasks.values():
             features.update(taskParams['features'])
-        for func in detectFeaturesFuncs:
-            features.update(func(tasks))
 
     # ignore not existing modules
     features &= allModuleNames

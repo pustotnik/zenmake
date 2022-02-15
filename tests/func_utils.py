@@ -31,7 +31,7 @@ from zm.buildconf import loader as bconfloader
 from zm.buildconf.processing import ConfManager as BuildConfManager
 from zm.constants import ZENMAKE_BUILDMETA_FILENAME, PLATFORM, APPNAME
 from zm.constants import BUILDOUTNAME, WAF_CONFIG_LOG, PYTHON_EXE
-from zm.features import TASK_TARGET_FEATURES
+from zm.features import TASK_TARGET_FEATURES, detectTaskFeatures
 from zm.buildconf.scheme import KNOWN_CONF_PARAM_NAMES
 
 import tests.common as cmn
@@ -249,7 +249,7 @@ def getCachedTargetPattern(testSuit, taskName, features):
     return result
 
 def handleTaskFeatures(testSuit, taskParams):
-    assist.detectTaskFeatures(taskParams)
+    detectTaskFeatures(taskParams)
     assert isinstance(taskParams['features'], list)
 
 def getBuildTasks(confManager):

@@ -149,27 +149,6 @@ def testSetTaskEnvVars():
             assert envkey in env
             assert env[envkey] == utils.toList(val)
 
-def testDetectTaskFeatures():
-    taskParams = {}
-    assert assist.detectTaskFeatures(taskParams) == []
-
-    taskParams = { 'features' : '' }
-    assert assist.detectTaskFeatures(taskParams) == []
-
-    for ftype in ('stlib', 'shlib', 'program'):
-        for lang in ('c', 'cxx'):
-            fulltype = '%s%s' % (lang, ftype)
-
-            taskParams = { 'features' : fulltype }
-            assert sorted(assist.detectTaskFeatures(taskParams)) == sorted([
-                lang, fulltype
-            ])
-
-            taskParams = { 'features' : [lang, fulltype] }
-            assert sorted(assist.detectTaskFeatures(taskParams)) == sorted([
-                lang, fulltype
-            ])
-
 def testHandleTaskIncludesParam():
 
     rootdir = abspath(joinpath(os.getcwd(), 'testroot')) # just any abs path

@@ -55,3 +55,24 @@ def testInitModules():
         for param in spec:
             assert param not in scheme
         scheme.update(spec)
+
+def testDetectTaskFeatures():
+    taskParams = {}
+    assert features.detectTaskFeatures(taskParams) == []
+
+    taskParams = { 'features' : '' }
+    assert features.detectTaskFeatures(taskParams) == []
+
+    for ftype in ('stlib', 'shlib', 'program'):
+        for lang in ('c', 'cxx'):
+            fulltype = '%s%s' % (lang, ftype)
+
+            taskParams = { 'features' : fulltype }
+            assert sorted(features.detectTaskFeatures(taskParams)) == sorted([
+                lang, fulltype
+            ])
+
+            taskParams = { 'features' : [lang, fulltype] }
+            assert sorted(features.detectTaskFeatures(taskParams)) == sorted([
+                lang, fulltype
+            ])

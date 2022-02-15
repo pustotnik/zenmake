@@ -15,10 +15,8 @@ from zm.constants import PLATFORM
 from zm.pyutils import _unicode, _encode
 from zm.autodict import AutoDict as _AutoDict
 from zm.pathutils import getNodesFromPathsConf
-from zm.error import ZenMakeError, ZenMakeConfError
-from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
-from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_TARGET_FEATURES
-from zm.features import SUPPORTED_TASK_FEATURES, ToolchainVars
+from zm.error import ZenMakeError, ZenMakePathNotFoundError, ZenMakeDirNotFoundError
+from zm.features import TASK_TARGET_FEATURES, ToolchainVars
 from zm import utils, log, version, db, installdirvars
 
 joinpath  = os.path.join
@@ -311,51 +309,6 @@ def convertTaskParamNamesForWaf(taskParams):
         val = taskParams.pop(zmKey, None)
         if val is not None:
             taskParams[wafKey] = val
-
-def detectTaskFeatures(taskParams):
-    """
-    Detect all features for task
-    Param 'ctx' is used only if an alias exists in features.
-    """
-
-    features = toListSimple(taskParams.get('features', []))
-
-    detected = [ TASK_TARGET_FEATURES_TO_LANG.get(x, '') for x in features ]
-    features = detected + features
-
-    if 'run' in taskParams:
-        features.append('runcmd')
-
-    features = utils.uniqueListWithOrder(features)
-    if '' in features:
-        features.remove('')
-    taskParams['features'] = features
-
-    return features
-
-def validateTaskFeatures(taskParams):
-    """
-    Check all features are valid
-    """
-
-    features = taskParams['features']
-    unknown = [x for x in features if x not in SUPPORTED_TASK_FEATURES]
-    if unknown:
-        if len(unknown) == 1:
-            msg = "Feature %r in task %r is not supported." % \
-                (unknown[0], taskParams['name'])
-        else:
-            msg = "Features '%s' in task %r are not supported." % \
-                (', '.join(unknown), taskParams['name'])
-        raise ZenMakeConfError(msg)
-
-    if not features and taskParams.get('source'):
-        msg = "There is no way to proccess task %r" % taskParams['name']
-        msg += " with empty 'features'."
-        msg += " You need to specify 'features' for this task."
-        raise ZenMakeConfError(msg)
-
-    return features
 
 def handleTaskLibPathParams(taskParams):
     """

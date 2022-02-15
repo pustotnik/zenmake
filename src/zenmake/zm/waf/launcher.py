@@ -19,7 +19,7 @@ from zm import WAF_DIR
 from zm.constants import WAF_LOCKFILE
 from zm import log, utils, cli
 from zm.error import ZenMakeConfError
-from zm.waf import wscriptimpl, assist
+from zm.waf import wscriptimpl
 from zm.waf.options import setupOptionVerbose
 
 joinpath = os.path.join
@@ -53,7 +53,7 @@ def loadFeatureModules(bconfManager):
     Load modules for all features from current build tasks.
     """
 
-    from zm.features import loadFeatures
+    from zm.features import detectTaskFeatures, validateTaskFeatures, loadFeatures
 
     tasksList = [bconf.tasks for bconf in bconfManager.configs]
 
@@ -61,8 +61,8 @@ def loadFeatureModules(bconfManager):
         # process all actual features from buildconf(s)
         for i, tasks in enumerate(tasksList):
             for taskParams in tasks.values():
-                assist.detectTaskFeatures(taskParams)
-                assist.validateTaskFeatures(taskParams)
+                detectTaskFeatures(taskParams)
+                validateTaskFeatures(taskParams)
     except ZenMakeConfError as ex:
         if not ex.confpath:
             origMsg = ex.msg
