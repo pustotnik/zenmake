@@ -391,11 +391,20 @@ def _findSingleQt5LibAsIs(conf, qtlibname, qtlibDeps, forceStatic):
     qtLibDir = env.QTLIBS
     uselib   = qtlibname.upper()
 
+    isMSVC = conf.env.CXX_NAME == 'msvc'
+
     if forceStatic:
         exts   = ('.a', '.lib')
         envPrefix = 'STLIB'
     else:
-        exts   = ('.so', '.lib')
+        if isMSVC:
+            exts = ('.lib', )
+        elif env.DEST_OS == 'win32':
+            # MinGW g++/clang++
+            # .a files from mingw version of Qt5 are not static libs
+            exts = ('.a', )
+        else:
+            exts = ('.so', '.lib')
         envPrefix = 'LIB'
 
     def libPrefixExt():
@@ -413,7 +422,8 @@ def _findSingleQt5LibAsIs(conf, qtlibname, qtlibDeps, forceStatic):
         if not _pathexists(_joinpath(qtLibDir, libFileName)):
             return False
 
-        libval = prefix + basename if env.DEST_OS == 'win32' else basename
+        #libval = prefix + basename if env.DEST_OS == 'win32' else basename
+        libval = basename
         env.append_unique('%s_%s' % (envPrefix, uselib), libval)
         addModuleDefine(module)
         return True

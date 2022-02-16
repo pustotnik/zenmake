@@ -32,6 +32,7 @@ RE_ALL_DBUS  = '^dbus/'
 RE_ALL_GTK3  = '^gtk3/'
 RE_ALL_SDL2  = '^sdl2/'
 RE_ALL_QT5   = '^qt5/'
+RE_QT5_WINONLY = '^qt5/03-simple-nomsvc'
 RE_EXT_DEPS  = '^external-deps/'
 
 TEST_CONDITIONS = {
@@ -48,6 +49,7 @@ TEST_CONDITIONS = {
         dict(regexp = RE_ALL_DBUS, condition = dict( os = ['linux'], )),
         dict(regexp = RE_ALL_GTK3, condition = dict( os = ['linux'], )),
         dict(regexp = RE_ALL_SDL2, condition = dict( os = ['linux'], )),
+        dict(regexp = RE_QT5_WINONLY, condition = dict( os = ['windows'], )),
         dict(regexp = RE_ALL_QT5, condition = dict( os = ['linux', 'windows'], )),
         dict(regexp = RE_EXT_DEPS + '1-makefile',
             condition = dict( os = ['linux', 'darwin'], )),
