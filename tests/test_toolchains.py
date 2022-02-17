@@ -64,10 +64,19 @@ def testGetNames():
 
 def testGetAllNames():
 
+    allLangs = set(toolchains.knownLangs())
+    removeLangs = list(allLangs - set(SUPPORTED_LANGS))
+
     for platform in ('linux', 'windows', 'darwin', 'all'):
         expectedCompilers = []
         for lang in SUPPORTED_LANGS:
             expectedCompilers.extend(toolchains.getNames(lang, platform))
-        expectedCompilers = list(set(expectedCompilers))
-        assert sorted(toolchains.getAllNames(platform)) == \
-                                        sorted(expectedCompilers)
+        expectedCompilers = set(expectedCompilers)
+
+        allCompilers = set(toolchains.getAllNames(platform))
+
+        for lang in removeLangs:
+            # remove an impact from other tests
+            allCompilers -= set(toolchains.getNames(lang, 'all'))
+
+        assert sorted(allCompilers) == sorted(expectedCompilers)

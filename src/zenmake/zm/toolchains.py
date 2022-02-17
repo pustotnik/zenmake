@@ -33,6 +33,13 @@ def regToolchains(lang, table):
 
     _langTable[lang] = table
 
+def knownLangs():
+    """
+    Return all langs of registered toolchains.
+    """
+
+    return _langTable.keys()
+
 def getNames(lang, platform = PLATFORM, withAuto = False):
     """
     Return toolchains tuple for selected language for current platform

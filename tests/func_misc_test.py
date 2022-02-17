@@ -157,7 +157,7 @@ class TestParams(object):
                 targetKind = getTargetPattern(usedEnv, features)[1]
 
                 # check toolchain
-                assert usedEnv[cfgEnvToolVar] == [info['sysenvval']]
+                assert usedEnv[cfgEnvToolVar] == [find_executable(info['sysenvval'])]
 
                 isLink = data['is-link']
                 if not isLink:

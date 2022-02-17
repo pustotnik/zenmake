@@ -32,9 +32,10 @@ from zm.features import TASK_TARGET_FEATURES_TO_LANG, TASK_LANG_FEATURES, \
     TOOLCHAIN_VARS, BUILDCONF_PREPARE_TASKPARAMS, ToolchainVars, getLoadedFeatures
 from zm.waf import assist, context, config_actions as configActions
 
-joinpath = os.path.join
-normpath = os.path.normpath
-relpath  = os.path.relpath
+joinpath   = os.path.join
+normpath   = os.path.normpath
+relpath    = os.path.relpath
+pathexists = os.path.exists
 
 toList       = utils.toList
 toListSimple = utils.toListSimple
@@ -533,6 +534,29 @@ class ConfigurationContext(WafConfContext):
 
         return toolEnv
 
+    def _getToolchainSysEnvVals(self, sysEnvToolVars, actualToolchains):
+
+        sysEnvToolVals = []
+        for var, val in sysEnvToolVars.items():
+            lang = ToolchainVars.langBySysVarToSetToolchain(var)
+            if not lang:
+                continue
+            if val in actualToolchains:
+                # This val is a name of a toolchain, not a path to it, so it is
+                # necessery to remove this var from environ otherwise
+                # ctx.find_program will not try to find this toolchain
+                os.environ.pop(var, None)
+                self.environ.pop(var, None)
+            else:
+                # Value from OS env is not a name of a toolchain
+                # (it can be path to toolchain) and
+                # therefore it should be set auto-* for toolchain name
+                # ZenMake detects actual name later.
+                val = _genToolAutoName(lang)
+            sysEnvToolVals.append((lang, val))
+
+        return sysEnvToolVals
+
     def handleToolchains(self, bconf):
         """
         Handle all toolchains from current build tasks.
@@ -553,6 +577,9 @@ class ConfigurationContext(WafConfContext):
             { var:osenv[var] for var in toolchainVars if var in osenv }
         sysEnvFlagVars = \
             { var:osenv[var].split() for var in flagVars if var in osenv}
+
+        sysEnvToolVals = self._getToolchainSysEnvVals(
+                                    sysEnvToolVars, actualToolchains)
 
         toolchainSettings = self._toolchainSettings[bconf.path] = AutoDict()
         toolchainSettings.update(customToolchains)
@@ -578,18 +605,9 @@ class ConfigurationContext(WafConfContext):
             _toolchains = []
 
             # handle env vars to set toolchain
-            for var, val in sysEnvToolVars.items():
-                lang = ToolchainVars.langBySysVarToSetToolchain(var)
-                if not lang or lang not in features:
-                    continue
-                if val in actualToolchains:
-                    # it's lucky value
+            for lang, val in sysEnvToolVals:
+                if lang in features:
                     _toolchains.append(val)
-                else:
-                    # Value from OS env is not name of a toolchain and
-                    # therefore it should be set auto-* for toolchain name
-                    # ZenMake detects actual name later.
-                    _toolchains.append(_genToolAutoName(lang))
 
             # try to get from the task
             if not _toolchains:
@@ -644,7 +662,8 @@ class ConfigurationContext(WafConfContext):
                 if not lang:
                     # it's not toolchain var
                     continue
-                self.env[var] = val
+                if val and pathexists(val[0]):
+                    self.env[var] = val
                 toolId += '%s=%r ' % (var, val)
 
             allowedNames = toolchains.getAllNames(withAuto = True)

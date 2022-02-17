@@ -2,7 +2,7 @@
 #
 
 # pylint: disable = wildcard-import, unused-wildcard-import
-# pylint: disable = missing-docstring, invalid-name
+# pylint: disable = missing-docstring, invalid-name, too-many-statements
 # pylint: disable = no-member, redefined-outer-name
 
 """
@@ -21,7 +21,7 @@ from zm.error import *
 from zm.waf import assist
 from zm.buildconf.processing import Config as BuildConfig
 # pylint: disable = unused-import
-from zm.features import ToolchainVars, c, cxx
+from zm.features import ToolchainVars, c, cxx, d
 # pylint: enable = unused-import
 from tests.common import asRealConf
 
@@ -46,12 +46,26 @@ def cfgctx(cfgctx, mocker):
     def loadTool(toolchain, **kwargs):
         # pylint: disable = unused-argument
         self = cfgCtx
-        env = self.all_envs[cfgCtx.variant]
-        for lang in ('c', 'cxx'):
+        env = self.all_envs[self.variant]
+
+        knownToolchains = set(toolchains.getAllNames(withAuto = True))
+
+        for lang in ('c', 'cxx', 'd'):
             compilers = toolchains.getNames(lang)
-            envVar    = ToolchainVars.sysVarToSetToolchain(lang)
+            envVar    = ToolchainVars.cfgVarToSetToolchain(lang)
+            sysenvVar = ToolchainVars.sysVarToSetToolchain(lang)
+
+            for sysenv in (os.environ, self.environ):
+                if sysenvVar not in sysenv:
+                    continue
+                assert sysenv[sysenvVar] not in knownToolchains
+
+            # we should not set envVar in env (at least before find_program)
+            if envVar in env:
+                assert env[envVar] not in knownToolchains
             if toolchain in compilers:
                 env[envVar] = ['/usr/bin/%s' % toolchain]
+
         env.loaded = 'loaded-' + toolchain
         return env
 
@@ -326,7 +340,7 @@ def testToolchainNames(testingBuildConf, cfgctx, monkeypatch):
     for tool in ('clang', 'gcc'):
         monkeypatch.setenv('CC', tool)
         _checkToolchainNames(ctx, buildconf, buildtype, [tool])
-        monkeypatch.delenv('CC')
+        monkeypatch.delenv('CC', raising = False)
 
     ### byfilter
 
@@ -378,7 +392,7 @@ def testLoadToolchains(cfgctx):
     bconf.path = "path"
 
     # load existing tools by name
-    toolchainNames = ['gcc', 'g++', 'g++']
+    toolchainNames = ['gcc', 'g++', 'g++', 'dmd']
     _setToolchains(ctx, bconf, toolchainNames)
     bconf.customToolchains = AutoDict()
     toolchainsEnvs = ctx.loadToolchains(bconf)
@@ -389,14 +403,14 @@ def testLoadToolchains(cfgctx):
 
     # auto load existing tool by lang
     bconf.customToolchains = AutoDict()
-    toolchainNames = ['auto-c', 'auto-c++']
+    toolchainNames = ['auto-c', 'auto-c++', 'auto-d']
     _setToolchains(ctx, bconf, toolchainNames)
     toolchainsEnvs = ctx.loadToolchains(bconf)
     assert toolchainsEnvs
     for name in toolchainNames:
         assert name in toolchainsEnvs
         lang = name[5:].replace('+', 'x')
-        envVar = ToolchainVars.sysVarToSetToolchain(lang)
+        envVar = ToolchainVars.cfgVarToSetToolchain(lang)
         assert envVar in toolchainsEnvs[name]
         assert toolchainsEnvs[name][envVar]
 
@@ -415,6 +429,31 @@ def testLoadToolchains(cfgctx):
     assert toolchainsEnvs['g++'].loaded == 'loaded-g++'
     assert toolchainsEnvs['local-g++'].loaded == 'loaded-g++'
     assert ctx.variant == 'old'
+
+def testLoadToolchainsSysEnv(cfgctx, monkeypatch):
+
+    ctx = cfgctx
+    ctx.variant = 'old'
+
+    # load existing tools by name (not path to) from system environment
+
+    bconf = AutoDict()
+    bconf.path = "path"
+    bconf.customToolchains = AutoDict()
+    bconf.tasks = AutoDict()
+
+    for lang, tool in (('c', 'gcc'), ('cxx', 'g++'), ('d', 'dmd')):
+        _setToolchains(ctx, bconf, [tool])
+        bconf.tasks['task1'].features = [lang]
+        sysenvVar = ToolchainVars.sysVarToSetToolchain(lang)
+        monkeypatch.setenv(sysenvVar, tool)
+        toolchainsEnvs = ctx.loadToolchains(bconf)
+
+        envVar = ToolchainVars.cfgVarToSetToolchain(lang)
+        assert envVar in toolchainsEnvs[tool]
+        assert ctx.variant == 'old'
+
+        monkeypatch.delenv(sysenvVar, raising = False)
 
 def testLoadToolchainsErrors(mocker, cfgctx):
 
