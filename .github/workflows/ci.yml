@@ -21,13 +21,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-18.04, python: 3.5 }
-          - { os: ubuntu-18.04, python: 3.6 }
-          - { os: ubuntu-18.04, python: 3.7 }
-          - { os: ubuntu-18.04, python: 3.8 }
-          - { os: ubuntu-18.04, python: 3.9 }
-          - { os: macos-10.15, python: 3.6 }
-          - { os: windows-2019, python: 3.7 }
+          - { os: ubuntu-18.04, python: 3.5  }
+          - { os: ubuntu-18.04, python: 3.6  }
+          - { os: ubuntu-18.04, python: 3.7  }
+          - { os: ubuntu-18.04, python: 3.8  }
+          - { os: ubuntu-18.04, python: 3.9  }
+          - { os: ubuntu-20.04, python: 3.10 }
+          - { os: macos-10.15,  python: 3.7  }
+          - { os: windows-2019, python: 3.8  }
 
     runs-on: ${{ matrix.os }}
 
