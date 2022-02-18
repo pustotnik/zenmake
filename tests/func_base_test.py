@@ -121,7 +121,8 @@ BASE_PROJECTS = filterBaseProjectDirs()
 class TestBase(object):
 
     def _runZm(self, cmdline):
-        return runZm(self, utils.toList(cmdline) + ['-v'])
+        #return runZm(self, utils.toList(cmdline) + ['-v'])
+        return runZm(self, utils.toList(cmdline) + ['-vvv'])
 
     @pytest.fixture(params = getZmExecutables(), autouse = True)
     def allZmExe(self, request):
