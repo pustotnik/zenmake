@@ -22,7 +22,6 @@ from waflib import Task, Options, Runner
 from waflib.Utils import SIG_NIL, O755
 from waflib.Context import create_context as createContext
 from waflib.Configure import ConfigurationContext as WafConfContext, conf
-from waflib.Configure import find_program as wafFindProgram
 from waflib import Errors as waferror
 from waflib.Tools.c_config import DEFKEYS, SNIP_EMPTY_PROGRAM, build_fun as defaultCfgBuildFunc
 from zm.constants import CONFTEST_DIR_PREFIX
@@ -50,12 +49,12 @@ CONFTEST_HASH_IGNORED_FUNC_ARGS = frozenset(
     ('mandatory', 'msg', 'okmsg', 'errmsg', 'id', 'before', 'after')
 )
 
-_cache = {}
-
 def cfgmandatory(func):
     """
     Handle a parameter named 'mandatory' to disable the configuration errors
     """
+
+    # pylint: disable = inconsistent-return-statements
 
     def decorator(*args, **kwargs):
         mandatory = kwargs.pop('mandatory', True)
@@ -66,34 +65,6 @@ def cfgmandatory(func):
                 raise
 
     return decorator
-
-@conf
-def find_program(self, filename, **kwargs):
-    """
-    It's replacement for waflib.Configure.find_program to provide some
-    additional abilities.
-    """
-    # pylint: disable = invalid-name
-
-    filename = utils.toListSimple(filename)
-
-    # simple caching
-    useCache = all(x not in kwargs for x in ('environ', 'exts', 'value'))
-    if useCache:
-        cache = _cache.setdefault('find-program', {})
-        pathList = kwargs.get('path_list')
-        pathList = tuple(pathList) if pathList else None
-        filenameKey = (tuple(filename), kwargs.get('interpreter'), pathList)
-        result = cache.get(filenameKey)
-        if result is not None:
-            kwargs['value'] = result
-            kwargs['endmsg-postfix'] = ' (cached)'
-
-    result = wafFindProgram(self, filename, **kwargs)
-
-    if useCache:
-        cache[filenameKey] = result
-    return result
 
 def _applyFindProgramResults(cfgCtx, args):
     cfgCtx.env[args['var']] = args['$result']
@@ -1567,6 +1538,3 @@ def runActions(cfgCtx):
 
     # switch to the root env
     cfgCtx.variant = ''
-
-    # mark cache memory as ready to free
-    _cache.clear()

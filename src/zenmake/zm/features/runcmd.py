@@ -14,7 +14,7 @@ import shlex
 
 from waflib.TaskGen import feature, after
 from waflib import Task
-from zm.constants import PLATFORM, EXE_FILE_EXTS, PYTHON_EXE
+from zm.constants import EXE_FILE_EXTS, PYTHON_EXE
 from zm.pyutils import maptype, stringtype
 from zm import log, error
 from zm.utils import cmdHasShellSymbols, substVars, substBuiltInVars, addRTLibPathsToOSEnv
@@ -24,11 +24,6 @@ from zm.waf.assist import gatherRtLibPaths
 
 _normpath = os.path.normpath
 _relpath = os.path.relpath
-
-if PLATFORM == 'windows':
-    _CMDFILE_EXTS = EXE_FILE_EXTS + '.py,.pl'
-else:
-    _CMDFILE_EXTS = EXE_FILE_EXTS
 
 _RE_STARTS_WITH_SUBST = re.compile(r'\s*\$[\{\(]', re.ASCII)
 
@@ -110,7 +105,7 @@ def _processCmdLine(ctx, taskParams):
     paths.extend(os.environ.get('PATH', '').split(os.pathsep))
     fkw = {
         'path_list' : paths, 'quiet' : True,
-        'exts' : _CMDFILE_EXTS, 'mandatory' : False
+        'exts' : EXE_FILE_EXTS, 'mandatory' : False
     }
 
     partsCount = len(cmdSplitted)

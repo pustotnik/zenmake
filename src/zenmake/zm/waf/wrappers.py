@@ -20,7 +20,7 @@ from zm.waf import assist, launcher, configure
 joinpath = os.path.join
 
 # Force to turn off internal WAF autoconfigure decorator.
-# It's just to rid of needless work and to save working time.
+# It's just to get rid of needless work and to save working time.
 Configure.autoconfig = False
 
 def _handleNoLockInTop(ctx, zmMetaGetter):

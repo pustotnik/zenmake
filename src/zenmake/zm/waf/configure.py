@@ -19,7 +19,8 @@ import platform
 
 from waflib import Errors as waferror, Context as WafContext
 from waflib.ConfigSet import ConfigSet
-from waflib.Configure import ConfigurationContext as WafConfContext
+from waflib.Configure import ConfigurationContext as WafConfContext, conf
+from waflib.Configure import find_program as wafFindProgram
 from zm.constants import ZENMAKE_CONF_CACHE_PREFIX, WAF_CACHE_DIRNAME, WAF_CONFIG_LOG
 from zm.constants import TASK_TARGET_KINDS, PLATFORM
 from zm.pyutils import maptype
@@ -36,6 +37,9 @@ joinpath   = os.path.join
 normpath   = os.path.normpath
 relpath    = os.path.relpath
 pathexists = os.path.exists
+isabspath  = os.path.isabs
+isfile     = os.path.isfile
+getfsize   = os.path.getsize
 
 toList       = utils.toList
 toListSimple = utils.toListSimple
@@ -59,6 +63,8 @@ _DROP_FROM_COLLECTED_ENVVARS = set([
     'JOBS', 'NUMBER_OF_PROCESSORS', 'WAF_NO_PREFORK',
     'TERM', 'COLUMNS'
 ])
+
+_cache = {}
 
 class ConfigurationContext(WafConfContext):
     """ Context for command 'configure' """
@@ -1073,3 +1079,55 @@ class ConfigurationContext(WafConfContext):
         )
 
         assist.writeZenMakeMetaFile(zmMetaFilePath, zmmeta, self.zmMetaConf())
+
+@conf
+def find_program(self, filename, **kwargs):
+    """
+    It's replacement for waflib.Configure.find_program to provide some
+    additional abilities.
+    """
+    # pylint: disable = invalid-name
+
+    filename = utils.toListSimple(filename)
+
+    # simple caching
+    useCache = all(x not in kwargs for x in ('environ', 'exts', 'value'))
+    if useCache:
+        cache = _cache.setdefault('find-program', {})
+        pathList = kwargs.get('path_list')
+        pathList = tuple(pathList) if pathList else None
+        filenameKey = (tuple(filename), kwargs.get('interpreter'), pathList)
+        result = cache.get(filenameKey)
+        if result is not None:
+            kwargs['value'] = result
+            kwargs['endmsg-postfix'] = ' (cached)'
+
+    result = wafFindProgram(self, filename, **kwargs)
+
+    if useCache:
+        cache[filenameKey] = result
+    return result
+
+@conf
+def find_binary(_, filenames, exts, paths):
+    """
+    It's replacement for waflib.Configure.find_binary to fix some problems.
+    """
+    # pylint: disable = invalid-name
+
+    expanduser = os.path.expanduser
+
+    for name in filenames:
+        for ext in exts:
+            exeName = name + ext
+            if isabspath(exeName):
+                # zero-byte files cannot be used
+                if isfile(exeName) and getfsize(exeName):
+                    return exeName
+            else:
+                for path in paths:
+                    fullpath = expanduser(joinpath(path, exeName))
+                    # zero-byte files cannot be used
+                    if isfile(fullpath) and getfsize(fullpath):
+                        return fullpath
+    return None
