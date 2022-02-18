@@ -28,8 +28,10 @@ jobs:
           #- { os: ubuntu-18.04, python: '3.9'  }
           #- { os: ubuntu-20.04, python: '3.10' }
           #- { os: macos-10.15,  python: '3.7'  }
-          #- { os: windows-2019, python: '3.7'  }
+          - { os: windows-2019, python: '3.6'  }
+          - { os: windows-2019, python: '3.7'  }
           - { os: windows-2019, python: '3.8'  }
+          - { os: windows-2019, python: '3.9'  }
 
     runs-on: ${{ matrix.os }}
 
@@ -123,7 +125,7 @@ jobs:
     - name: Run tests
       run: |
         #python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=2
-        pytest tests -svv -k "testConfigureAndBuild and not zipapp" --maxfail=2
+        pytest tests -svv -k "testConfigureAndBuild and trivial and not zipapp" --maxfail=2
         RESULT=$?
         if (( $RESULT == 0 )); then
           python -m pytest tests -v -k "zipapp" --maxfail=2
