@@ -123,10 +123,9 @@ def printOutputs(testSuit):
 
 def printErrorOnFailed(testSuit, request):
     rep_call = getattr(request.node, 'rep_call', None)
-    printOutputs(testSuit)
-    #if not rep_call or rep_call.failed:
-    #    printOutputs(testSuit)
-    #    return True
+    if not rep_call or rep_call.failed:
+        printOutputs(testSuit)
+        return True
     return False
 
 def setupTest(self, request, tmpdir):
