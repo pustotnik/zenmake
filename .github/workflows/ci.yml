@@ -122,7 +122,8 @@ jobs:
 
     - name: Run tests
       run: |
-        python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=2
+        #python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=2
+        python -m pytest --cov zm tests -v -k "not zipapp" --maxfail=5
         RESULT=$?
         if (( $RESULT == 0 )); then
           python -m pytest tests -v -k "zipapp" --maxfail=2
