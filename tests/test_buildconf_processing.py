@@ -533,8 +533,8 @@ class TestSuite(object):
         confPaths = bconf.confPaths
         expected = deepcopy(buildconf.toolchains)
         expected['something']['vars'] = {
-            'CXX' : [unfoldPath(confPaths.startdir,
-                                     buildconf.toolchains['something']['CXX'])]
+            'CXX' : [unfoldPath(buildconf.toolchains['something']['CXX'],
+                                cwd = confPaths.startdir)]
         }
         del expected['something']['CXX']
         assert bconf.customToolchains == expected

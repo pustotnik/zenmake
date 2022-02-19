@@ -25,7 +25,7 @@ from waflib.Tools import qt5
 from zm.constants import PLATFORM, HOST_OS
 from zm import error, utils, log
 from zm.features import precmd
-from zm.pathutils import getNativePath, getNodesFromPathsConf
+from zm.pathutils import getNativePath, unfoldPath, getNodesFromPathsConf
 from zm.waf import assist
 from zm.waf import context
 from zm.waf.taskgen import isolateExtHandler
@@ -154,7 +154,7 @@ def _checkQtIsSuitable(conf, qmake, expectedMajorVer = '5'):
 
 def _searchDirsWithQMake(conf):
 
-    searchdir = conf.environ.get('QT5_SEARCH_ROOT')
+    searchdir = unfoldPath(conf.environ.get('QT5_SEARCH_ROOT'))
     if not searchdir:
         searchdir = 'C:\\Qt' if PLATFORM == 'windows' else '/usr/local/Trolltech'
 
@@ -182,7 +182,7 @@ def _findDirsWithQMake(conf):
 
     singleBinDir = sysenv.get('QT5_BINDIR')
     if singleBinDir:
-        dirpath = getNativePath(singleBinDir)
+        dirpath = unfoldPath(getNativePath(singleBinDir))
         name = detectQMake(dirpath)
         return [(dirpath, name)] if name else []
 
@@ -313,7 +313,7 @@ def _findQt5Tools(conf):
 
 def _setQt5LibsDir(conf):
     env = conf.env
-    qtlibs = conf.environ.get('QT5_LIBDIR')
+    qtlibs = unfoldPath(conf.environ.get('QT5_LIBDIR'))
     if not qtlibs:
         try:
             qtlibs = queryQmake(conf, env.QMAKE, 'QT_INSTALL_LIBS')
@@ -447,7 +447,7 @@ def _findQt5LibsAsIs(conf, forceStatic):
     env    = conf.env
     sysenv = conf.environ
 
-    qtIncludes = sysenv.get('QT5_INCLUDES') or \
+    qtIncludes = unfoldPath(sysenv.get('QT5_INCLUDES')) or \
                         queryQmake(conf, env.QMAKE, 'QT_INSTALL_HEADERS')
     qtIncludes = getNativePath(qtIncludes)
 

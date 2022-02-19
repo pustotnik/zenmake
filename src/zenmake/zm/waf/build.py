@@ -109,10 +109,8 @@ def _loadTasks(self):
 
 @asmethod(WafBuildContext, 'init_dirs', wrap = True, callOrigFirst = True)
 def _initDirs(self):
-    blddir = self.variant_dir
     if self.buildWorkDirName:
-        blddir = joinpath(blddir, self.buildWorkDirName)
-        self.bldnode = self.root.make_node(blddir)
+        self.bldnode = self.bldnode.make_node(self.buildWorkDirName)
         self.bldnode.mkdir()
 
 @asmethod(WafBuildContext, 'execute_build')

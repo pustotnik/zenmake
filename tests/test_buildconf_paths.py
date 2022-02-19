@@ -15,7 +15,6 @@ from zm import utils
 from zm.autodict import AutoDict
 from zm.buildconf.paths import ConfPaths
 from zm.constants import *
-from zm.pathutils import unfoldPath
 
 joinpath = os.path.join
 

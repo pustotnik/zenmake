@@ -271,7 +271,7 @@ class Config(object):
             startdir = getNativePath(startdir)
         except AttributeError:
             startdir = os.curdir
-        meta.startdir = unfoldPath(meta.buildconfdir, startdir)
+        meta.startdir = unfoldPath(startdir, cwd = meta.buildconfdir)
         buildconf.startdir = meta.startdir
 
     def _makeBuildDirParams(self, buildroot):
@@ -287,11 +287,11 @@ class Config(object):
 
         def mergeBuildRoot(param):
             value = getattr(srcbconf._conf, param)
-            value = unfoldPath(srcbconf.startdir, getNativePath(value))
+            value = unfoldPath(getNativePath(value), cwd = srcbconf.startdir)
             setattr(currentConf, param, value)
 
         if buildroot and not self._parent:
-            buildroot = unfoldPath(self.startdir, getNativePath(buildroot))
+            buildroot = unfoldPath(getNativePath(buildroot), cwd = self.startdir)
             currentConf.buildroot = buildroot
         else:
             mergeBuildRoot('buildroot')
@@ -1059,7 +1059,7 @@ class Config(object):
             for k, v in _vars.items():
                 if k in _TOOLCHAIN_PATH_ENVVARS:
                     # try to identify path and do warning if not
-                    path = unfoldPath(self.startdir, getNativePath(v))
+                    path = unfoldPath(getNativePath(v), cwd = self.startdir)
                     if not os.path.exists(path):
                         log.warn("Path to toolchain '%s' doesn't exist" % path)
                     v = path

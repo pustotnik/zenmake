@@ -510,7 +510,7 @@ def findFile(checkArgs, params):
         result = None
         for name in names:
             for path in paths:
-                path = unfoldPath(startdir, joinpath(path, name))
+                path = unfoldPath(joinpath(path, name), cwd = startdir)
                 if os.path.isfile(path) or os.path.islink(path):
                     result = path
                     break

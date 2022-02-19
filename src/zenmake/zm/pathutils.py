@@ -10,6 +10,7 @@ import os
 
 from waflib.Node import exclude_regs as DEFAULT_PATH_EXCLUDES
 from waflib import Utils as wafutils
+from zm.constants import CWD
 from zm.pyutils import maptype, stringtype
 from zm.utils import toList, toListSimple
 from zm.error import ZenMakePathNotFoundError, ZenMakeDirNotFoundError
@@ -18,7 +19,8 @@ DEFAULT_PATH_EXCLUDES = toListSimple(DEFAULT_PATH_EXCLUDES)
 
 _joinpath = os.path.join
 _normpath = os.path.normpath
-_relpath = os.path.relpath
+_realpath = os.path.realpath
+_relpath  = os.path.relpath
 _isabs = os.path.isabs
 _isdir = os.path.isdir
 _expanduser = os.path.expanduser
@@ -29,11 +31,11 @@ _pathPatternsCache = {}
 
 splitPath = wafutils.split_path
 
-def unfoldPath(cwd, path):
+def unfoldPath(path, cwd = CWD):
     """
-    Unfold path applying os.path.expanduser.
-    Joins 'path' with 'cwd' in the beginning If the 'path' is not absolute path.
-    Returns normalized absolute path.
+    Unfold path applying os.path.expanduser and joining 'path' with 'cwd' in
+    the beginning if the 'path' is not absolute path.
+    Returns real path.
     """
 
     if not path:
@@ -42,7 +44,11 @@ def unfoldPath(cwd, path):
     path = _expanduser(path)
     if not _isabs(path):
         path = _joinpath(cwd, path)
-    return _normpath(path)
+
+    # It is better to use os.path.realpath than os.path.abspath here
+    # Since python 3.8 the os.path.realpath resolves symbolic links, junctions
+    # and short file names (8.3 notation) on Windows.
+    return _realpath(path)
 
 def getNativePath(path):
     """

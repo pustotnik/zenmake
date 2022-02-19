@@ -41,7 +41,7 @@ def handleCLI(args, noBuildConf, options, cwd):
     for param in ('buildroot', 'destdir'):
         val = cmd.args.get(param)
         if val:
-            cmd.args[param] = unfoldPath(cwd, val)
+            cmd.args[param] = unfoldPath(val, cwd)
 
     return cmd
 

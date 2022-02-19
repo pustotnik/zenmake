@@ -60,6 +60,11 @@ they can be used for some custom purposes.
     For example, path 'my/path' will be converted into 'my\\path' on Windows.
     Also it's recommended to use relative paths wherever possible.
 
+.. warning::
+
+    ``Windows only``: do NOT use short filename notation (8.3 filename) for
+    paths in buildconf files. It can cause unexpected errors.
+
 Below is the detailed description of each buildconf variable.
 
 .. _buildconf-startdir:

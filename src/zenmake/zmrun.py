@@ -53,6 +53,18 @@ def main():
     if ZENMAKE_DIR not in sys.path:
         sys.path.insert(0, ZENMAKE_DIR)
 
+    # Since python 3.8 the os.path.realpath resolves symbolic links and junctions
+    # on Windows. It means also that it resolves short files names
+    # (8.3 notation) and as result it produces mixed paths (short + long names)
+    # and causes errors in some cases. If zenmake was run from a directory
+    # in 8.3 notation it can produce 8.3 name for os.getcwd(). It has effect
+    # for any call of os.path.abspath as well. So it fixes CWD here because
+    # it is necessery to do as soon as possible.
+    cwd = os.getcwd()
+    realcwd = os.path.realpath(cwd)
+    if realcwd != cwd:
+        os.chdir(realcwd)
+
     try:
         from zm import starter
     except ImportError:

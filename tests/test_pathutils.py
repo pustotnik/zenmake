@@ -23,12 +23,12 @@ def testUnfoldPath():
     abspath = joinpath(cwd, 'something')
     relpath = joinpath('a', 'b', 'c')
 
-    assert unfoldPath(cwd, None) is None
-    assert unfoldPath(cwd, abspath) == abspath
+    assert unfoldPath(None, cwd) is None
+    assert unfoldPath(abspath, cwd) == abspath
 
-    path = unfoldPath(cwd, relpath)
+    path = unfoldPath(relpath, cwd)
     assert joinpath(cwd, relpath) == path
-    assert os.path.isabs(unfoldPath(abspath, relpath))
+    assert os.path.isabs(unfoldPath(relpath, abspath))
 
 def testGetNativePath(monkeypatch):
 
