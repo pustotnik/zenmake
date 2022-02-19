@@ -172,6 +172,7 @@ def setupTest(self, request, tmpdir):
                     ignore = copytreeIgnore)
 
     self.cwd = joinpath(tmptestDir, os.sep.join(testPathParts[2:]))
+    self.realcwd = os.path.realpath(self.cwd)
     self.projectConf = bconfloader.load(dirpath = self.cwd)
     self.origProjectDir = currentPrjDir
 
@@ -187,19 +188,20 @@ def processConfManagerWithCLI(testSuit, cmdLine):
     except AttributeError:
         pass
 
+    cwd = testSuit.realcwd
     noBuildConf = False
-    cmd = starter.handleCLI(cmdLine, noBuildConf, None, testSuit.cwd)
+    cmd = starter.handleCLI(cmdLine, noBuildConf, None, cwd)
 
     def cliOptsHandler(defaults):
-        return starter.handleCLI(cmdLine, noBuildConf, defaults, testSuit.cwd)
+        return starter.handleCLI(cmdLine, noBuildConf, defaults, cwd)
 
-    bconfDir = testSuit.cwd
+    bconfDir = cwd
     confManager = BuildConfManager(bconfDir, clivars = cmd.args,
                                         clihandler = cliOptsHandler)
     testSuit.confManager = confManager
     testSuit.confPaths = confManager.root.confPaths
 
-    cmd = starter.handleCLI(cmdLine, False, confManager.root.cliopts, testSuit.cwd)
+    cmd = starter.handleCLI(cmdLine, False, confManager.root.cliopts, cwd)
 
     testSuit.cmdLine = cmdLine
     db.useformat(confManager.root.general['db-format'])
