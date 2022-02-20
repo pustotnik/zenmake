@@ -74,7 +74,7 @@ jobs:
         if [[ $RUNNER_OS == "Linux" ]]; then
           sudo apt-get update
           sudo ACCEPT_EULA=Y DEBIAN_FRONTEND=noninteractive apt-get upgrade --no-install-recommends --yes
-          PKGS=`cat tests/deb-deps.txt`
+          PKGS=`cat demos/deb-deps.txt`
           sudo apt-get -y --no-install-recommends install $PKGS
         elif [[ $RUNNER_OS == "macOS" ]]; then
           export HOMEBREW_NO_INSTALL_CLEANUP=1
@@ -85,8 +85,6 @@ jobs:
           brew install dmd
           brew install ldc
         elif [[ $RUNNER_OS == "Windows" ]]; then
-          PKGS=`cat tests/deb-deps.txt`
-          echo $PKGS
           #choco install python --version "3.7.4"
           choco install boost-msvc-14.1 --version=1.67.0
           #choco install mingw
