@@ -55,7 +55,7 @@ case $DIST in
     ;;
     centos)
         BASE_DIST_NAME="centos"
-        BASE_IMAGE="centos:centos8.3.2011"
+        BASE_IMAGE="centos:centos8.4.2105"
         # centos 8 has system python 3.6
         SYSTEM_PY_VER="3.6"
     ;;

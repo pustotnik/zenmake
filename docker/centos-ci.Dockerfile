@@ -26,6 +26,11 @@ SHELL ["/bin/bash", "-c"]
 
 RUN useradd -m -G users $USERNAME
 
+RUN cd /etc/yum.repos.d/ \
+    && sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* \
+    && sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-* \
+    && cd -
+
 ##########################################################################
 #########  Make image with pyenv and selected python versions
 FROM base AS pyenv-pythons
