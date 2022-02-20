@@ -2,6 +2,11 @@
 
 set -ex
 
+if [[ $CACHE_INDY_HIT == "true" ]]; then
+    echo "Qt is already installed"
+    exit
+fi
+
 python -m pip install --upgrade pip
 python -m pip install --upgrade aqtinstall
 # there is no win64_msvc2019_64 for Qt 5.12.12

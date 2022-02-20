@@ -76,10 +76,22 @@ jobs:
         path: ~\AppData\Local\Temp\chocolatey
         key: ${{ runner.os }}-choco-${{ hashFiles('**/gh-choco-install.sh') }}
 
+    - name: Cache indy deps [Windows]
+      uses: actions/cache@v2
+      if: startsWith(runner.os, 'Windows')
+      id: cache-windows-indy
+      with:
+        path: |
+          C:\local
+          C:\Qt
+        key: ${{ runner.os }}-indy-${{ hashFiles('**/gh-choco-install.sh', '**/gh-install-qt-on-windows.sh') }}
+
     ########## deps
 
     - name: Install dependency packages
       #if: startsWith(matrix.os,'ubuntu')
+      env:
+        CACHE_INDY_HIT: ${{ steps.cache-windows-indy.outputs.cache-hit }}
       run: |
         if [[ $RUNNER_OS == "Linux" ]]; then
           sudo apt-get update
