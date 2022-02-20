@@ -85,6 +85,8 @@ jobs:
           brew install dmd
           brew install ldc
         elif [[ $RUNNER_OS == "Windows" ]]; then
+          PKGS=`cat tests/deb-deps.txt`
+          echo $PKGS
           #choco install python --version "3.7.4"
           choco install boost-msvc-14.1 --version=1.67.0
           #choco install mingw
