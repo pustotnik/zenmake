@@ -48,23 +48,33 @@ jobs:
 
     ########### cache
 
-    - uses: actions/cache@v2
+    - name: Cache pip [Linux]
+      uses: actions/cache@v2
       if: startsWith(runner.os, 'Linux')
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ hashFiles('**/dev-requirements.txt', '**/requirements.txt') }}
 
-    - uses: actions/cache@v2
+    - name: Cache pip [MacOS]
+      uses: actions/cache@v2
       if: startsWith(runner.os, 'macOS')
       with:
         path: ~/Library/Caches/pip
         key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ hashFiles('**/dev-requirements.txt', '**/requirements.txt') }}
 
-    - uses: actions/cache@v2
+    - name: Cache pip [Windows]
+      uses: actions/cache@v2
       if: startsWith(runner.os, 'Windows')
       with:
         path: ~\AppData\Local\pip\Cache
         key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ hashFiles('**/dev-requirements.txt', '**/requirements.txt') }}
+
+    - name: Cache choco [Windows]
+      uses: actions/cache@v2
+      if: startsWith(runner.os, 'Windows')
+      with:
+        path: ~\AppData\Local\Temp\chocolatey
+        key: ${{ runner.os }}-choco-${{ hashFiles('**/gh-choco-install.sh') }}
 
     ########## deps
 
@@ -88,10 +98,6 @@ jobs:
           chmod +x scripts/gh-choco-install.sh
           scripts/gh-choco-install.sh
 
-          #choco install python --version "3.7.4"
-          choco install boost-msvc-14.1 --version=1.67.0
-          #choco install mingw
-          #choco install ldc
           python -m pip install --upgrade pip
           python -m pip install --upgrade aqtinstall
           # there is no win64_msvc2019_64 for Qt 5.12.12
@@ -116,7 +122,7 @@ jobs:
 
     ########### tests
 
-    - name: Prapare tests [Windows only]
+    - name: Prapare tests [Windows]
       if: startsWith(runner.os, 'Windows')
       run: |
         Set-MpPreference -DisableArchiveScanning $true
