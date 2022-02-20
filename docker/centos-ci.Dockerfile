@@ -89,7 +89,7 @@ RUN dnf --nodocs -y install $DLANG_INSTALL_PKG_DEPS \
 FROM base AS full-package
 
 WORKDIR /home/$USERNAME/
-COPY ./tests/rpm-deps.txt .
+COPY ./demos/rpm-deps.txt .
 
 RUN dnf --nodocs -y install python36 \
     && find "/usr/lib" -depth \

@@ -95,7 +95,7 @@ RUN apt-get -y update \
 FROM base AS full-package
 
 WORKDIR /home/$USERNAME/
-COPY ./tests/deb-deps.txt .
+COPY ./demos/deb-deps.txt .
 
 # install zenmake deps for tests on system python and toolchain system packages
 
