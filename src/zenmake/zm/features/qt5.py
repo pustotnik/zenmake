@@ -538,19 +538,29 @@ def _configureQt5CmnEnv(conf):
 
     _detectQtRtLibPath(conf)
 
+def _getKnownQt5Flags(conf):
+
+    cxxName = conf.env.CXX_NAME
+
+    if cxxName in ('gcc', 'clang'):
+        return ['-fPIC'] if HOST_OS != 'windows' else []
+
+    if cxxName == 'msvc':
+        return []
+
+    return None
+
 def _detectQt5Flags(conf):
+
+    knownFlags = _getKnownQt5Flags(conf)
+    if knownFlags is not None:
+        conf.env.CXXFLAGS_qt5 = knownFlags
+        return
 
     codefrag = '#include <QMap>\nint main(int argc, char **argv)'\
                ' { QMap<int,int> m; return m.keys().size(); }\n'
 
-    cxxName = conf.env.CXX_NAME
-    if cxxName in ('gcc', 'clang'):
-        # Starting with GCC5 the only option for Qt is -fPIC
-        # https://lists.qt-project.org/pipermail/development/2015-May/021557.html
-        flagsToTry = ['-fPIC', [], '-fPIE', '-std=c++11' ,
-                    ['-std=c++11', '-fPIC'], ['-std=c++11', '-fPIE']]
-    else:
-        flagsToTry = [[], '-fPIC', '-fPIE', '-std=c++11' ,
+    flagsToTry = [[], '-fPIC', '-fPIE', '-std=c++11' ,
                     ['-std=c++11', '-fPIE'], ['-std=c++11', '-fPIC']]
 
     for flags in flagsToTry:
@@ -567,16 +577,17 @@ def _detectQt5Flags(conf):
     else:
         conf.fatal('Could not build a simple Qt application')
 
-    if PLATFORM == 'freebsd':
-        kwargs = dict(
-            features = 'qt5 cxx cxxprogram',
-            use = 'Qt5Core', fragment = codefrag,
-        )
-        try:
-            conf.check(msg='Can we link Qt programs on FreeBSD directly?', **kwargs)
-        except waferror.ConfigurationError:
-            conf.check(uselib_store='qt5', libpath='/usr/local/lib',
-                        msg='Is /usr/local/lib required?', **kwargs)
+    # It was copied from Waf code but I'm not sure that it is really necessery
+    #if PLATFORM == 'freebsd':
+    #    kwargs = dict(
+    #        features = 'qt5 cxx cxxprogram',
+    #        use = 'Qt5Core', fragment = codefrag,
+    #    )
+    #    try:
+    #        conf.check(msg='Can we link Qt programs on FreeBSD directly?', **kwargs)
+    #    except waferror.ConfigurationError:
+    #        conf.check(uselib_store='qt5', libpath='/usr/local/lib',
+    #                    msg='Is /usr/local/lib required?', **kwargs)
 
 def _configureQt5ForTask(conf, taskParams, sharedData):
     """
