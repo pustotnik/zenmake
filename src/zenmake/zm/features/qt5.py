@@ -17,6 +17,7 @@
 
 import os
 import re
+from collections import Counter
 
 from waflib import Errors as waferror
 from waflib.Task import Task
@@ -25,6 +26,7 @@ from waflib.Tools import qt5
 from zm.constants import PLATFORM, HOST_OS
 from zm import error, utils, log
 from zm.features import precmd
+from zm.pyutils import cached
 from zm.pathutils import getNativePath, unfoldPath, getNodesFromPathsConf
 from zm.waf import assist
 from zm.waf import context
@@ -350,6 +352,9 @@ def _gatherQt5LibDepsFromHeaders(conf, qtIncludes):
     It's not perfect but better than nothing.
     """
 
+    cacheReadModules = {}
+
+    @cached(cacheReadModules)
     def readModulesFromFile(filepath):
         modules = []
         if not _pathexists(filepath):
@@ -362,26 +367,26 @@ def _gatherQt5LibDepsFromHeaders(conf, qtIncludes):
                     modules.append(qtmodname)
         return utils.uniqueListWithOrder(modules)
 
-    def gatherModules(modules, seen):
+    def gatherModules(modules):
 
         result = []
         for module in modules:
-            if module in seen:
-                continue
-
-            seen.add(module)
             result.append(module)
 
             filepath = _joinpath(qtIncludes, module, '%sDepends' % module)
-            result.extend(gatherModules(readModulesFromFile(filepath), seen))
+            result.extend(gatherModules(readModulesFromFile(filepath)))
 
         return result
 
     deps = {}
     for libname in conf.qt5libNames:
-        seen = set()
         module = libname.replace('Qt5', 'Qt', 1)
-        deps[libname] = gatherModules([module], seen)
+        modules = gatherModules([module])
+
+        dmodules = modules[1:]
+        mcounter = Counter(dmodules)
+        modules[1:] = sorted(set(dmodules), key = mcounter.__getitem__)
+        deps[libname] = modules
 
     return deps
 
