@@ -72,7 +72,7 @@ if HOST_OS == 'windows':
     QMAKE_NAMES = tuple(x + '.exe' for x in QMAKE_NAMES)
 
 _RE_QTINCL_DEPS = re.compile(r"^\s*#include\s*[<\"]([^<\"]+)/([^<\"]+)[>\"]\s*$")
-_RE_QCONFIG_PRI = re.compile(r"^\s*([\w\d\.\_]+)\s*=\s*([\w\d\.\_]+)\s*$")
+_RE_QCONFIG_PRI = re.compile(r"^\s*([\w\d\.\_]+)\s*\+?=\s*(\S+(\s+\S+)*)\s*$")
 
 def toQt5Name(name):
     """ Convert name from QtSomeName to Qt5SomeName """
@@ -133,19 +133,18 @@ def _checkQtIsSuitable(conf, qmake, expectedMajorVer = '5'):
             # Just ignore checking if the file not found
             return True
 
-        with open(filepath, 'r') as file:
-            for line in file.readlines():
-                matchObj = _RE_QCONFIG_PRI.match(line)
-                if not matchObj:
-                    continue
-                name, value = matchObj.group(1), matchObj.group(2)
-                if name == 'QT_ARCH':
-                    if destArch != value:
-                        return False
-                    break
-            else:
-                # QT_ARCH not found, invalid qconfig.pri?
-                return False
+        for line in utils.readFile(filepath).splitlines():
+            matchObj = _RE_QCONFIG_PRI.match(line)
+            if not matchObj:
+                continue
+            name, value = matchObj.group(1, 2)
+            if name == 'QT_ARCH':
+                if destArch != value:
+                    return False
+                break
+        else:
+            # QT_ARCH not found, invalid qconfig.pri?
+            return False
 
         return True
 
@@ -156,19 +155,23 @@ def _checkQtIsSuitable(conf, qmake, expectedMajorVer = '5'):
 
 def _searchDirsWithQMake(conf):
 
-    searchdir = unfoldPath(conf.environ.get('QT5_SEARCH_ROOT'))
-    if not searchdir:
-        searchdir = 'C:\\Qt' if PLATFORM == 'windows' else '/usr/local/Trolltech'
-
-    if not _isdir(searchdir):
-        return []
+    paths = conf.environ.get('QT5_SEARCH_ROOT')
+    if paths is None:
+        paths = ['C:\\Qt'] if PLATFORM == 'windows' else ['/usr/local/Trolltech']
+    else:
+        paths = paths.split(os.pathsep)
 
     found = []
-    for dirpath, _, filenames in os.walk(searchdir):
-        filenames = set(filenames)
-        foundName = next((x for x in QMAKE_NAMES if x in filenames), None)
-        if foundName:
-            found.append((dirpath, foundName))
+    for searchdir in paths:
+        searchdir = unfoldPath(searchdir)
+        if not _isdir(searchdir):
+            continue
+
+        for dirpath, _, filenames in os.walk(searchdir):
+            filenames = set(filenames)
+            foundName = next((x for x in QMAKE_NAMES if x in filenames), None)
+            if foundName:
+                found.append((dirpath, foundName))
 
     return found
 
@@ -190,7 +193,7 @@ def _findDirsWithQMake(conf):
 
     foundQmakes = _searchDirsWithQMake(conf)
 
-    paths = sysenv.get('PATH', '').split(os.pathsep)
+    paths = [x for x in sysenv.get('PATH', '').split(os.pathsep) if x]
     paths.extend(['/usr/share/qt5/bin', '/usr/local/lib/qt5/bin'])
     for path in paths:
         name = detectQMake(path)
@@ -359,12 +362,10 @@ def _gatherQt5LibDepsFromHeaders(conf, qtIncludes):
         modules = []
         if not _pathexists(filepath):
             return modules
-        with open(filepath, 'r') as file:
-            for line in file.readlines():
-                matchObj = _RE_QTINCL_DEPS.match(line)
-                if matchObj:
-                    qtmodname = matchObj.group(1)
-                    modules.append(qtmodname)
+        for line in utils.readFile(filepath).splitlines():
+            matchObj = _RE_QTINCL_DEPS.match(line)
+            if matchObj:
+                modules.append(matchObj.group(1))
         return utils.uniqueListWithOrder(modules)
 
     def gatherModules(modules):
@@ -517,19 +518,32 @@ def _fixQtDefines(conf):
 
 def _detectQtRtLibPath(conf):
     env = conf.env
+
+    if env.STLIBPATH_QT5CORE:
+        # Qt libs are static ones
+        return
+
     qtCoreDynLibName = env.cxxshlib_PATTERN % 'Qt5Core'
+    qtCoreStLibName  = env.cxxstlib_PATTERN % 'Qt5Core'
 
     def getDirs():
         yield env.QTLIBS
         yield getNativePath(queryQmake(conf, env.QMAKE, 'QT_INSTALL_BINS'))
 
+    def findDir(libName):
+        for path in getDirs():
+            if _pathexists(_joinpath(path, libName)):
+                return path
+        return None
+
     rtLibPath = ''
-    for path in getDirs():
-        if _pathexists(_joinpath(path, qtCoreDynLibName)):
-            rtLibPath = path
-            break
+    dirpath = findDir(qtCoreDynLibName)
+    if dirpath:
+        rtLibPath = dirpath
     else:
-        conf.fatal("Could not find Qt5 runtime library directory")
+        dirpath = findDir(qtCoreStLibName)
+        if not dirpath:
+            conf.fatal("Could not find Qt5 runtime library directory")
 
     conf.env['QT5_RT_LIBPATH'] = rtLibPath
 
@@ -624,7 +638,8 @@ def _configureQt5ForTask(conf, taskParams, sharedData):
     taskEnv.update(utils.deepcopyEnv(qt5CmnEnv))
 
     rtLibPaths = taskParams.setdefault('$rt-libpath', [])
-    rtLibPaths.append(taskEnv['QT5_RT_LIBPATH'])
+    if taskEnv['QT5_RT_LIBPATH']:
+        rtLibPaths.append(taskEnv['QT5_RT_LIBPATH'])
 
     readyEnv = sharedData.get(envId)
     if readyEnv is not None:
