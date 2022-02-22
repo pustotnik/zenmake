@@ -22,7 +22,7 @@ from collections import Counter
 from waflib import Errors as waferror
 from waflib.Task import Task
 from waflib.TaskGen import feature, before, after
-from waflib.Tools import qt5
+from waflib.Tools import c_preproc, qt5
 from zm.constants import PLATFORM, HOST_OS
 from zm import error, utils, log
 from zm.features import precmd
@@ -73,6 +73,7 @@ if HOST_OS == 'windows':
 
 _RE_QTINCL_DEPS = re.compile(r"^\s*#include\s*[<\"]([^<\"]+)/([^<\"]+)[>\"]\s*$")
 _RE_QCONFIG_PRI = re.compile(r"^\s*([\w\d\.\_]+)\s*\+?=\s*(\S+(\s+\S+)*)\s*$")
+_RE_Q_OBJECT_EXISTS = re.compile(r"\bQ_OBJECT\b")
 
 def toQt5Name(name):
     """ Convert name from QtSomeName to Qt5SomeName """
@@ -730,6 +731,19 @@ def addExtraMocIncludes(tgen):
             includes.append(node.parent.get_bld())
     tgen.includes = utils.uniqueListWithOrder(includes)
 
+def _filterMocHeaders(nodes):
+
+    result = []
+    for node in nodes:
+        code = node.read()
+        code = c_preproc.re_nl.sub('', code)
+        code = c_preproc.re_cpp.sub(c_preproc.repl, code)
+
+        if _RE_Q_OBJECT_EXISTS.search(code):
+            result.append(node)
+
+    return result
+
 @feature('qt5')
 @before('process_source')
 def process_mocs(tgen):
@@ -758,6 +772,7 @@ def process_mocs(tgen):
 
     startNode = bld.getStartDirNode(taskParams['$startdir'])
     moc = getNodesFromPathsConf(bld, moc, rootdir)
+    moc = _filterMocHeaders(moc)
     # moc headers as 'includes' paths must be relative to the startdir
     moc = [x.path_from(startNode) for x in moc]
     tgen.moc = moc

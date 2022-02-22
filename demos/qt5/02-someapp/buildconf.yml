@@ -13,7 +13,7 @@ tasks:
   myqt5app:
     features  : cxxprogram qt5
     source    : prog/**/*.cpp prog/**/*.qrc prog/**/*.ui prog/**/*.ts
-    moc       : prog/**/*.h # suppose all .h files in the 'prog' have Q_OBJECT
+    moc       : prog/**/*.h # .h files can contain Q_OBJECT or not
     rclangprefix: lang
     #bld-langprefix : prog/i18n
     #unique-qmpaths: true
