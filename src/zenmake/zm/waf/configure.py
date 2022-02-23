@@ -231,7 +231,7 @@ class ConfigurationContext(WafConfContext):
             # check in configured external libs
             env = self.all_envs[taskParams['$task.variant']]
             _dep = dep.upper()
-            envNames = ('LIB_%s' % _dep, 'STLIB_%s' % _dep)
+            envNames = ('LIB_%s' % _dep, 'STLIB_%s' % _dep, 'FRAMEWORK_%s' % _dep)
             if any(x in env for x in envNames):
                 return
 

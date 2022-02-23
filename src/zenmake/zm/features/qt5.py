@@ -549,6 +549,10 @@ def _detectQtRtLibPath(conf):
         # Qt libs are static ones
         return
 
+    if PLATFORM == 'darwin':
+        conf.env['QT5_RT_LIBPATH'] = env.QTLIBS
+        return
+
     qtCoreDynLibName = env.cxxshlib_PATTERN % 'Qt5Core'
     qtCoreStLibName  = env.cxxstlib_PATTERN % 'Qt5Core'
 
