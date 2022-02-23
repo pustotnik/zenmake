@@ -60,12 +60,17 @@ QRC_BODY_TEMPL = """<!DOCTYPE RCC><RCC version="1.0">
 
 QRC_LINE_TEMPL = """    <file alias="%s">%s</file>"""
 
-EXTRA_PKG_CONFIG_PATHS = (
-    '/usr/lib/qt5/lib/pkgconfig',
-    '/opt/qt5/lib/pkgconfig',
-    '/usr/lib/qt5/lib',
-    '/opt/qt5/lib',
-)
+if PLATFORM == 'windows':
+    EXTRA_BIN_PATHS = []
+else:
+    EXTRA_BIN_PATHS = [
+        '/usr/local/lib/qt5/bin',
+        '/usr/local/opt/qt5/bin',
+        '/usr/local/opt/qt/bin',
+        '/usr/share/qt5/bin',
+        '/opt/qt5/bin',
+        '/opt/qt/bin',
+    ]
 
 QMAKE_NAMES = ('qmake', 'qmake-qt5', 'qmake5')
 if HOST_OS == 'windows':
@@ -107,7 +112,7 @@ def queryQmake(conf, qmake, prop):
         raise error.ZenMakeError(msg)
     return val
 
-def _checkQtIsSuitable(conf, qmake, expectedMajorVer = '5'):
+def _checkQtIsSuitable(conf, qmake, requiredMajorVer = 5):
 
     try:
         qtver = queryQmake(conf, qmake, 'QT_VERSION')
@@ -115,7 +120,8 @@ def _checkQtIsSuitable(conf, qmake, expectedMajorVer = '5'):
         return None
 
     majorVer = qtver.split('.')[0]
-    if majorVer != expectedMajorVer:
+    requiredMajorVer = str(requiredMajorVer)
+    if majorVer != requiredMajorVer:
         return None
 
     qtlibdir = queryQmake(conf, qmake, 'QT_INSTALL_LIBS')
@@ -158,7 +164,7 @@ def _searchDirsWithQMake(conf):
 
     paths = conf.environ.get('QT5_SEARCH_ROOT')
     if paths is None:
-        paths = ['C:\\Qt'] if PLATFORM == 'windows' else ['/usr/local/Trolltech']
+        paths = ['C:\\Qt'] if PLATFORM == 'windows' else []
     else:
         paths = paths.split(os.pathsep)
 
@@ -195,7 +201,7 @@ def _findDirsWithQMake(conf):
     foundQmakes = _searchDirsWithQMake(conf)
 
     paths = [x for x in sysenv.get('PATH', '').split(os.pathsep) if x]
-    paths.extend(['/usr/share/qt5/bin', '/usr/local/lib/qt5/bin'])
+    paths.extend(EXTRA_BIN_PATHS)
     for path in paths:
         name = detectQMake(path)
         if name:
@@ -211,45 +217,64 @@ def _findSuitableQMake(conf):
     conf.startMsg('Checking for Qt5 qmake')
     qmakePaths = _findDirsWithQMake(conf)
 
-    suitableQMakes = {}
-    for dirpath, qmake in qmakePaths:
-        qmake = dirpath + os.sep + qmake
-        qtver = _checkQtIsSuitable(conf, qmake)
-        if qtver and qtver not in suitableQMakes:
-            suitableQMakes[Version(qtver)] = qmake
+    useHighestVer = utils.envValToBool(sysenv.get('QT5_USE_HIGHEST_VER'))
 
-    if not suitableQMakes:
-        conf.endMsg(False)
-        conf.fatal("Could not find 'qmake' for Qt5")
-
-    # filter with QT5_MIN_VER, QT5_MAX_VER
     minVer = str(sysenv.get('QT5_MIN_VER', ''))
     minVer = Version(minVer) if minVer else None
     maxVer = str(sysenv.get('QT5_MAX_VER', ''))
     maxVer = Version(maxVer) if maxVer else None
 
-    def filterByMinMaxVer(qtver):
+    # check with QT5_MIN_VER, QT5_MAX_VER
+    def isVerCorrect(qtver):
         incorrect = (minVer and qtver < minVer) or (maxVer and qtver > maxVer)
         return not incorrect
 
-    if minVer or maxVer:
-        suitableQMakes = { k:v for k,v in suitableQMakes.items() \
-                                            if filterByMinMaxVer(k) }
+    def fatalByVer():
+        conf.endMsg(False)
+        msg = "Could not find 'qmake' for Qt5 with version "
+        msgver = []
+        if minVer:
+            msgver.append(">= %s" % minVer)
+        if maxVer:
+            msgver.append("<= %s" % maxVer)
+        msg += " and ".join(msgver)
+        conf.fatal(msg)
+
+    def selectSuitable():
+        suitableQMakes = {}
+        correctVerNotFound = False
+        for dirpath, qmake in qmakePaths:
+            qmake = dirpath + os.sep + qmake
+            qtver = _checkQtIsSuitable(conf, qmake, 5)
+            if not qtver:
+                continue
+            qtver = Version(qtver)
+            if useHighestVer and qtver not in suitableQMakes:
+                suitableQMakes[qtver] = qmake
+            else:
+                if isVerCorrect(qtver):
+                    return (qmake, qtver)
+                correctVerNotFound = True
+
         if not suitableQMakes:
-            conf.endMsg(False)
-            msg = "Could not find 'qmake' for Qt5 with version "
-            msgver = []
-            if minVer:
-                msgver.append(">= %s" % minVer)
-            if maxVer:
-                msgver.append("<= %s" % maxVer)
-            msg += " and ".join(msgver)
-            conf.fatal(msg)
+            if correctVerNotFound:
+                fatalByVer()
+            else:
+                conf.endMsg(False)
+                conf.fatal("Could not find 'qmake' for Qt5")
 
-    # get highest Qt version
-    qtver = sorted(suitableQMakes.keys())[-1]
-    qmake = suitableQMakes[qtver]
+        suitableQMakes = { k:v for k,v in suitableQMakes.items() \
+                                            if isVerCorrect(k) }
+        if not suitableQMakes:
+            fatalByVer()
 
+        # get highest Qt version
+        qtver = sorted(suitableQMakes.keys())[-1]
+        qmake = suitableQMakes[qtver]
+
+        return (qmake, qtver)
+
+    qmake, qtver = selectSuitable()
     conf.env.QMAKE = [qmake]
     kwargs = { 'endmsg-postfix': ' (%s)' % qtver}
     conf.endMsg('yes', **kwargs)
@@ -335,7 +360,7 @@ def _findQt5LibsWithPkgConf(conf, forceStatic):
     sysenv = conf.environ
     qtlibs = env.QTLIBS
 
-    pkgCfgPaths = [qtlibs, '%s/pkgconfig' % qtlibs, *EXTRA_PKG_CONFIG_PATHS]
+    pkgCfgPaths = [qtlibs, '%s/pkgconfig' % qtlibs]
     pkgCfgEnvPath = sysenv.get('PKG_CONFIG_PATH', '')
     if pkgCfgEnvPath:
         pkgCfgPaths.insert(0, pkgCfgEnvPath)
