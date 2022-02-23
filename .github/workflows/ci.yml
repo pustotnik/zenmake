@@ -104,12 +104,13 @@ jobs:
           ###################
           set +e
           set -x
-          echo `which pkg-config`
+          #echo `which pkg-config`
           #brew install pkg-config
           brew install qt5
-          echo `which pkg-config`
+          brew install qt
+          #echo `which pkg-config`
           echo `which qmake`
-          echo $PATH
+          #echo $PATH
           export PATH="/usr/local/opt/qt@5/bin:$PATH"
           echo `which qmake`
           qmake -query
@@ -118,9 +119,12 @@ jobs:
           pkg-config --cflags --libs Qt5Multimedia
 
           ls -la /usr/local
-          ls -la /usr/local/opt
+          ls -la /usr/local/opt/
+          ls -la /usr/local/Cellar
           ls -la /usr/local/opt/qt
           ls -la /usr/local/opt/qt@5
+          ls -la /usr/local/opt/qt@6
+          ls -la /usr/local/Homebrew
 
           ##################
           brew install boost
