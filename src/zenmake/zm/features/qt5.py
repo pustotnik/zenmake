@@ -569,7 +569,8 @@ def _detectQtRtLibPath(conf):
     else:
         dirpath = findDir(qtCoreStLibName)
         if not dirpath:
-            conf.fatal("Could not find Qt5 runtime library directory")
+            log.warn("Could not find Qt5 runtime library directory")
+            return
 
     conf.env['QT5_RT_LIBPATH'] = rtLibPath
 
