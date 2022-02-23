@@ -104,6 +104,7 @@ jobs:
           brew install boost
           # deprecated
           #brew install boost-python
+          brew install qt5
           brew install dmd
           brew install ldc
         elif [[ $RUNNER_OS == "Windows" ]]; then
