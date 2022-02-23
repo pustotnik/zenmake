@@ -123,7 +123,6 @@ class TestCmds(object):
             'cacheCfgActionResults' : False,
         }
         baseExpectedArgs.update(INSTALL_DIRVAR_CLI_DEFAULTS)
-        #baseExpectedArgs.update(INSTALL_DIRVAR_CLI_DEFAULTS)
 
         CMDNAME = 'build'
         CMNOPTS = ['--color=auto']
@@ -240,7 +239,6 @@ class TestCmds(object):
             'cacheCfgActionResults' : False,
         }
         baseExpectedArgs.update(INSTALL_DIRVAR_CLI_DEFAULTS)
-        #baseExpectedArgs.update(INSTALL_DIRVAR_CLI_DEFAULTS)
 
         CMDNAME = 'test'
         CMNOPTS = ['--color=auto']
@@ -351,7 +349,6 @@ class TestCmds(object):
             'force' : False,
         }
         baseExpectedArgs.update(INSTALL_DIRVAR_CLI_DEFAULTS)
-        #baseExpectedArgs.update(INSTALL_DIRVAR_CLI_DEFAULTS)
 
         CMDNAME = 'configure'
         CMNOPTS = ['--color=auto']
