@@ -101,6 +101,20 @@ jobs:
         elif [[ $RUNNER_OS == "macOS" ]]; then
           export HOMEBREW_NO_INSTALL_CLEANUP=1
           export HOMEBREW_NO_AUTO_UPDATE=1
+          ###################
+          set -x
+          echo `which pkg-config`
+          #brew install pkg-config
+          brew install qt5
+          echo `which pkg-config`
+          pkg-config --cflags --libs Qt5Multimedia
+          echo `which qmake`
+          qmake -query
+          ls -la /usr/local
+          ls -la /usr/local/opt
+          ls -la /usr/local/opt/qt
+          echo $PATH
+          ##################
           brew install boost
           # deprecated
           #brew install boost-python
