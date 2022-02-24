@@ -13,8 +13,7 @@
 
 import os
 import fnmatch
-from distutils.spawn import find_executable
-
+import shutil
 import pytest
 
 from zm import utils
@@ -78,7 +77,7 @@ class TestParams(object):
                     'ldflags'   : '',
                 },
                 'clang-path': {
-                    'sysenvval' : find_executable('clang'),
+                    'sysenvval' : shutil.which('clang'),
                     'compflags' : '-O1 -g',
                     'linkflags' : '-Wl,-rpath,. ',
                     'ldflags'   : '',
@@ -157,7 +156,7 @@ class TestParams(object):
                 targetKind = getTargetPattern(usedEnv, features)[1]
 
                 # check toolchain
-                assert usedEnv[cfgEnvToolVar] == [find_executable(info['sysenvval'])]
+                assert usedEnv[cfgEnvToolVar] == [shutil.which(info['sysenvval'])]
 
                 isLink = data['is-link']
                 if not isLink:

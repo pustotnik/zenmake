@@ -38,7 +38,7 @@ import os
 import io
 import re
 import subprocess
-from distutils.spawn import find_executable as findProg
+import shutil
 
 if sys.hexversion < 0x3050000:
     raise ImportError('Python >= 3.5 is required')
@@ -52,7 +52,7 @@ from zenmake.zm import pyutils
 
 version = setup.version
 
-GIT_EXE = findProg('git')
+GIT_EXE = shutil.which('git')
 PY_EXE = sys.executable
 
 def _runInShell(cmd):
@@ -64,7 +64,7 @@ def _runInShell(cmd):
     return output.decode(sys.stdout.encoding)
 
 def _runPyScript(args, tryPy3 = True):
-    python = findProg('python3') if tryPy3 else PY_EXE
+    python = shutil.which('python3') if tryPy3 else PY_EXE
     if not python:
         python = PY_EXE
     return _runInShell('%s %s' % (python, args))

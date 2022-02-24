@@ -13,8 +13,6 @@ import subprocess
 if sys.hexversion < 0x3050000:
     raise ImportError('Python >= 3.5 is required')
 
-from distutils.errors import DistutilsOptionError
-from distutils.spawn import find_executable as findProg
 from setuptools import setup
 from setuptools import Command
 from setuptools.command.egg_info import egg_info as _egg_info
@@ -161,13 +159,13 @@ class publish(Command):
         try:
             import twine
         except ImportError:
-            raise DistutilsOptionError("Module 'twine' not found. You need to install it.")
+            raise ImportError("Module 'twine' not found. You need to install it.")
 
         if self.username is None:
             self.username = PYPI_USER
 
     def run(self):
-        python = findProg('python3')
+        python = shutil.which('python3')
         if not python:
             python = sys.executable
         cmd = "%s -m twine upload -u %s %s/*" % (python, self.username, DIST_DIR)
