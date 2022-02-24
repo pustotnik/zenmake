@@ -3,6 +3,14 @@ branch = true
 source =
     src/zenmake/zm/
 
+[paths]
+source =
+    # The first value must be an actual file path
+    src/zenmake/zm/
+    # The other values can be file patterns to match against the paths of collected data
+    */pytest-*/*/zenmake/zm/
+    *\Temp\*\zenmake\zm
+
 [report]
 # Regexes for lines to exclude from consideration
 exclude_lines =

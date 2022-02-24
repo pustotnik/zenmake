@@ -31,15 +31,6 @@ class TestAutoconfig(object):
     @pytest.fixture(params = [joinpath('c', '01-trivial')])
     def project(self, request, tmpdir):
 
-        self.testdir = None
-
-        def teardown():
-            if not printErrorOnFailed(self, request) and self.testdir:
-                zmdir = joinpath(self.testdir, 'zenmake')
-                if isdir(zmdir):
-                    shutil.rmtree(zmdir, ignore_errors = True)
-
-        request.addfinalizer(teardown)
         setupTest(self, request, tmpdir)
 
         self.testdir = os.path.abspath(joinpath(self.cwd, os.pardir))
