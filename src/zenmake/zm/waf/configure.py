@@ -222,16 +222,18 @@ class ConfigurationContext(WafConfContext):
 
     def _checkTaskDepsInUse(self):
 
+        envPrefixes = ('LIB', 'STLIB', 'FRAMEWORK', 'INCLUDES')
+
         def check(dep, bconf, taskParams, allTasks):
 
             # check in local deps
             if dep in allTasks:
                 return
 
-            # check in configured external libs
+            # check in configured external libs/frameworks
             env = self.all_envs[taskParams['$task.variant']]
-            _dep = dep.upper()
-            envNames = ('LIB_%s' % _dep, 'STLIB_%s' % _dep, 'FRAMEWORK_%s' % _dep)
+            uselib = dep.upper()
+            envNames = ('%s_%s' % (x, uselib) for x in envPrefixes)
             if any(x in env for x in envNames):
                 return
 

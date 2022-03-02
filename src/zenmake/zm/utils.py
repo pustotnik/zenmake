@@ -173,6 +173,20 @@ def unixLibDirPostfix():
 
     return ''
 
+def macosFrameworkHeadersDir(fwkroot, fwkname):
+    """
+    Return path to MacOS framework headers
+    """
+
+    return _joinpath(fwkroot, '%s.framework' % fwkname, 'Headers')
+
+def macosFrameworkDynLibPath(fwkroot, fwkname):
+    """
+    Return path to MacOS framework dynamic library
+    """
+
+    return _joinpath(fwkroot, '%s.framework' % fwkname, fwkname)
+
 class Version:
     """
     Class to compare application/package versions.

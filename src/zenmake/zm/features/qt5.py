@@ -394,14 +394,27 @@ def _gatherQt5LibDepsFromHeaders(conf, qtIncludes):
                 modules.append(matchObj.group(1))
         return utils.uniqueListWithOrder(modules)
 
+    if PLATFORM == 'darwin':
+        qtlibs = conf.env.QTLIBS
+        def getHeaderFilePaths(module):
+            headerName = '%sDepends' % module
+            headersDir = utils.macosFrameworkHeadersDir(qtlibs, module)
+            return [
+                _joinpath(headersDir, headerName),
+                _joinpath(qtIncludes, module, headerName)
+            ]
+    else:
+        def getHeaderFilePaths(module):
+            return [_joinpath(qtIncludes, module, '%sDepends' % module)]
+
     def gatherModules(modules):
 
         result = []
         for module in modules:
             result.append(module)
 
-            filepath = _joinpath(qtIncludes, module, '%sDepends' % module)
-            result.extend(gatherModules(readModulesFromFile(filepath)))
+            for filepath in getHeaderFilePaths(module):
+                result.extend(gatherModules(readModulesFromFile(filepath)))
 
         return result
 
@@ -417,7 +430,13 @@ def _gatherQt5LibDepsFromHeaders(conf, qtIncludes):
 
     return deps
 
-def _findSingleQt5LibAsIs(conf, qtlibname, qtlibDeps, forceStatic):
+def _addQtModuleDefine(env, qtlibname, module):
+
+    uselib = qtlibname.upper()
+    defname = 'QT_%s_LIB' % module[2:].upper()
+    env.append_unique('DEFINES_%s' % uselib, defname)
+
+def _preconfQt5Lib(conf, qtlibname, qtlibDeps, forceStatic):
 
     env      = conf.env
     qtLibDir = env.QTLIBS
@@ -444,35 +463,50 @@ def _findSingleQt5LibAsIs(conf, qtlibname, qtlibDeps, forceStatic):
             for prefix in ('lib', ''):
                 yield (prefix, ext)
 
-    def addModuleDefine(module):
-        defname = 'QT_%s_LIB' % module[2:].upper()
-        env.append_unique('DEFINES_%s' % uselib, defname)
-
     def setUpLib(prefix, module, ext):
         basename = toQt5Name(module)
         libFileName = prefix + basename + ext
         if not _pathexists(_joinpath(qtLibDir, libFileName)):
             return False
 
-        #libval = prefix + basename if env.DEST_OS == 'win32' else basename
         libval = basename
         env.append_unique('%s_%s' % (envPrefix, uselib), libval)
-        addModuleDefine(module)
+        _addQtModuleDefine(env, qtlibname, module)
         return True
 
     found = False
     for prefix, ext in libPrefixExt():
-        for module in qtlibDeps[qtlibname]:
+        for module in qtlibDeps:
             if setUpLib(prefix, module, ext):
                 found = True
 
         if found:
+            # not sure this is really necessery
             env.append_unique('%sPATH_%s' % (envPrefix, uselib), qtLibDir)
-            # fix for header-only modules
-            addModuleDefine(qtlibDeps[qtlibname][0])
             return True
 
     return False
+
+def _preconfQt5LibOnMacOS(conf, qtlibname, qtlibDeps):
+
+    env      = conf.env
+    qtLibDir = env.QTLIBS
+    uselib   = qtlibname.upper()
+
+    found = False
+    for module in qtlibDeps:
+        dynLib = utils.macosFrameworkDynLibPath(qtLibDir, module)
+        if _pathexists(dynLib):
+            _addQtModuleDefine(env, qtlibname, module)
+            env.append_unique('FRAMEWORK_' + uselib, module)
+            env.append_unique('FRAMEWORKPATH_' + uselib, qtLibDir)
+            found = True
+
+        depIncludes = utils.macosFrameworkHeadersDir(qtLibDir, module)
+        if _pathexists(depIncludes):
+            env.append_unique('INCLUDES_' + uselib, depIncludes)
+
+    return found
 
 def _findQt5LibsAsIs(conf, forceStatic):
 
@@ -486,32 +520,29 @@ def _findQt5LibsAsIs(conf, forceStatic):
     deps = _gatherQt5LibDepsFromHeaders(conf, qtIncludes)
 
     for qtlibname in conf.qt5libNames:
+        _deps = deps[qtlibname]
         uselib = qtlibname.upper()
-
-        for depname in deps[qtlibname]:
-            env.append_unique('INCLUDES_' + uselib, _joinpath(qtIncludes, depname))
-        env.append_unique('INCLUDES_' + uselib, qtIncludes)
+        result = False
 
         if PLATFORM == 'darwin':
-            fwkName = qtlibname.replace('Qt5', 'Qt', 1)
-            fwkDir  = fwkName + '.framework'
-
-            qtDynLib = _joinpath(env.QTLIBS, fwkDir, fwkName)
-            if _pathexists(qtDynLib):
-                env.append_unique('FRAMEWORK_' + uselib, fwkName)
-                env.append_unique('FRAMEWORKPATH_' + uselib, env.QTLIBS)
-                conf.msg('Checking for %s' % qtlibname, qtDynLib, 'GREEN')
-            else:
-                conf.msg('Checking for %s' % qtlibname, False, 'YELLOW')
-
-            env.append_unique('INCLUDES_' + uselib,
-                                _joinpath(env.QTLIBS, fwkDir, 'Headers'))
+            result = _preconfQt5LibOnMacOS(conf, qtlibname, _deps)
         else:
-            result = _findSingleQt5LibAsIs(conf, qtlibname, deps, forceStatic)
+            result = _preconfQt5Lib(conf, qtlibname, _deps, forceStatic)
             if not result and not forceStatic:
-                result = _findSingleQt5LibAsIs(conf, qtlibname, deps, True)
-            msgColor = 'GREEN' if result else 'YELLOW'
-            conf.msg('Checking for %s' % qtlibname, result, msgColor)
+                result = _preconfQt5Lib(conf, qtlibname, _deps, True)
+
+        # fix for header-only modules
+        _addQtModuleDefine(env, qtlibname, _deps[0])
+
+        for depname in _deps:
+            depIncludes = _joinpath(qtIncludes, depname)
+            if _pathexists(depIncludes):
+                env.append_unique('INCLUDES_' + uselib, depIncludes)
+        if _pathexists(qtIncludes):
+            env.append_unique('INCLUDES_' + uselib, qtIncludes)
+
+        msgColor = 'GREEN' if result else 'YELLOW'
+        conf.msg('Checking for %s' % qtlibname, result, msgColor)
 
 def _findQt5Libs(conf):
 
