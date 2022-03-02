@@ -273,6 +273,87 @@ LOCALEDIR
     This path is always considered as an absolute path or
     as a relative path to ``DESTDIR``.
 
+.. _envvars-qt5bindir:
+
+QT5_BINDIR
+    Set the bin directory of the installed Qt5 toolkit. This directory must
+    contain such tools like qmake, moc, uic, etc.
+    This path must be absolute native path or path relative
+    to the current working directory but last variant is not recommended.
+    This variable can be especially useful for standalone installation of Qt5,
+    for example on Windows.
+    The ``PATH`` and ``QT5_SEARCH_ROOT`` environment variables are ignored
+    if ``QT5_BINDIR`` is not empty.
+
+.. _envvars-qt5libdir:
+
+QT5_LIBDIR
+    Set the library directory of the installed Qt5 toolkit.
+    This path must be absolute native path or path relative
+    to the current working directory but last variant is not recommended.
+    Usually you don't need to use this variable if you
+    set the ``QT5_BINDIR`` variable.
+
+.. _envvars-qt5includes:
+
+QT5_INCLUDES
+    Set the directory with 'includes' of the installed Qt5 toolkit.
+    This path must be absolute native path or path relative
+    to the current working directory but last variant is not recommended.
+    Usually you don't need to use this variable if you
+    set the ``QT5_BINDIR`` variable. This variable has no effect
+    on systems with pkg-config/pkgconf installed (while you
+    don't turn on the :ref:`QT5_NO_PKGCONF<envvars-qt5nopkgconf>`).
+
+.. _envvars-qt5searchroot:
+
+QT5_SEARCH_ROOT
+    Set the root directory to search for installed Qt5 toolkit(s).
+    ZenMake will try to find the bin directories of all Qt5 toolkits in this
+    directory recursively. Dot not set this variable to path like ``/`` or ``C:\``
+    because it will slow down the detection very much.
+    Qt5 toolkits found in this directory have priority over values from
+    the ``PATH`` environment variable.
+    You can set more than one directories using path separator
+    (``;`` on Windows and ``:`` on other OS) like this::
+
+        QT5_SEARCH_ROOT=/usr/local/qt:/usr/local/opt/qt zenmake
+
+    It defaults to ``C:\Qt`` on Windows.
+    Usually you don't need to use this variable on Linux.
+
+.. _envvars-qt5minver:
+
+QT5_MIN_VER
+    Set minimum version of Qt5. For example it can be  ``5.1`` or ``5.1.2``.
+
+.. _envvars-qt5maxver:
+
+QT5_MAX_VER
+    Set maximum version of Qt5. For example it can be  ``5.12`` or ``5.12.2``.
+
+.. _envvars-qt5usehighestver:
+
+QT5_USE_HIGHEST_VER
+    By default ZenMake will use first useful version of Qt5.
+    When this variable set to a 'True', 'true', 'yes' or non-zero number then
+    ZenMake will try to use the highest version of Qt5 among found versions.
+
+.. _envvars-qt5nopkgconf:
+
+QT5_NO_PKGCONF
+    When set to a 'True', 'true', 'yes' or non-zero number,
+    ZenMake will not use pkg-config/pkgconf
+    to configure building with Qt5.
+    Usually you don't need to use this variable.
+
+.. _envvars-qt5tools:
+
+QT5_{MOC,UIC,RCC,LRELEASE,LUPDATE}
+    These variables can be used to specify full file paths to Qt5 tools
+    ``moc``, ``uic``, ``rcc``, ``lrelease`` and ``lupdate``.
+    Usually you don't need to use these variables.
+
 ZM_CACHE_CFGACTIONS
     When set to a 'True', 'true', 'yes' or non-zero number, ZenMake tries
     to use a cache for some :ref:`configuration actions<config-actions>`.

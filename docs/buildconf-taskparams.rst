@@ -53,6 +53,9 @@ features
         Means that the task is a test. More details about
         tests are :ref:`here<buildtests>`. It is not needed to add ``runcmd``
         to this feature because ZenMake adds ``runcmd`` itself if necessary.
+    :qt5:
+        Means that the task has Qt5 code.
+        More details are :ref:`here<toolkits_qt5>`.
 
     Some features can be mixed. For example ``cxxprogram`` can be mixed
     with ``cxx`` for C++ build tasks but it's not necessary because ZenMake
@@ -100,7 +103,7 @@ target
 
 source
 """""""""""""""""""""
-    One or more source files for compiler/toolchain.
+    One or more source files for compiler/toolchain/toolkit.
     It can be:
 
         - a string with one or more paths separated by space
@@ -192,7 +195,7 @@ source
 
         # get all *.c files in the 'src' and in '../others' recursively
         source :
-            - 'src/**/*.c'
+            - src/**/*.c
             - incl: '**/*.c'
               startdir: ../others
 
@@ -471,6 +474,9 @@ use
         'use' : ['util', 'my lib']
         'use' : 'util mylib someproject:somelib'
 
+    It can be used to specify libraries of qt5 as well.
+    More details are :ref:`here<toolkits_qt5>`.
+
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
 
@@ -586,6 +592,96 @@ monitstlibs
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     variables to set this parameter.
+
+.. _buildconf-taskparams-moc:
+
+moc
+"""""""""""""""""""""
+    One or more header files (.h) with C++ class declarations with Q_OBJECT.
+    These files are handled with Qt Meta-Object Compiler, moc.
+    Format for this parameter is the same as for
+    the :ref:`source<buildconf-taskparams-source>` parameter.
+
+    You can specify header files without Q_OBJECT here because ZenMake filters
+    such files by itself. So you can specify just all .h files of your directory
+    with header files if you wish.
+
+    It can be used only for tasks with ``qt5``
+    in :ref:`features<buildconf-taskparams-features>`.
+
+.. _buildconf-taskparams-rclangprefix:
+
+rclangprefix
+"""""""""""""""""""""
+    Value of ``qresource prefix`` in generated .qrc file for a qt5 task.
+    When .ts files are specified in the :ref:`source<buildconf-taskparams-source>`
+    parameter ZenMake compiles these files into .qm files.
+    If you set the ``rclangprefix`` parameter ZenMake will insert all
+    compiled .qm files in .qrc file to embed .qm files as internal binary
+    resourses inside compiled task target file.
+    And the value of this parameter can be used in the QTranslator::load method
+    in the 'directory' argument in your Qt5 code.
+
+    The :ref:`bld-langprefix<buildconf-taskparams-bld-langprefix>`,
+    :ref:`unique-qmpaths<buildconf-taskparams-unique-qmpaths>`
+    and :ref:`install-langdir<buildconf-taskparams-install-langdir>`
+    parameters are ignored if the ``rclangprefix`` is set.
+
+    It can be used only for tasks with ``qt5``
+    in :ref:`features<buildconf-taskparams-features>`.
+
+.. _buildconf-taskparams-langdir-defname:
+
+langdir-defname
+"""""""""""""""""""""
+    Name of a define to set for your Qt5 code to detect current directory with
+    compiled .qm files to use in the QTranslator::load method.
+    When .ts files are specified in the :ref:`source<buildconf-taskparams-source>`
+    parameter ZenMake compiles these files into .qm files. But when you use
+    the ``install`` command ZenMake copies these files from build directory
+    into install directory. So during regular building and for installed
+    application the directory with .qm files are different.
+    Value of the define with the name from the ``langdir-defname`` is
+    the install directory of .qm files for the ``install`` command and
+    the build directory of .qm files in other cases.
+
+    This parameter is ignored if
+    :ref:`rclangprefix<buildconf-taskparams-rclangprefix>` is set.
+
+    It can be used only for tasks with ``qt5``
+    in :ref:`features<buildconf-taskparams-features>`.
+
+.. _buildconf-taskparams-bld-langprefix:
+
+bld-langprefix
+"""""""""""""""""""""
+    Set build directory path prefix for compiled .qm files.
+    It is relative to :ref:`buildtypedir<buildconf-builtin-vars-buildtypedir>`
+    and defaults to ``@translations``.
+    Usually you don't need to use this parameter.
+
+    This parameter is ignored if
+    :ref:`rclangprefix<buildconf-taskparams-rclangprefix>` is set.
+
+    It can be used only for tasks with ``qt5``
+    in :ref:`features<buildconf-taskparams-features>`.
+
+.. _buildconf-taskparams-unique-qmpaths:
+
+unique-qmpaths
+"""""""""""""""""""""
+    Make unique file paths for compiled .qm files by adding name of current
+    buld task by the pattern:
+    ``$(buildtypedir)/<bld-langprefix>/<task name>_<original .qm file name>``
+    where :ref:`buildtypedir<buildconf-builtin-vars-buildtypedir>` is
+    the built-in variable.
+    Usually you don't need to use this parameter.
+
+    This parameter is ignored if
+    :ref:`rclangprefix<buildconf-taskparams-rclangprefix>` is set.
+
+    It can be used only for tasks with ``qt5``
+    in :ref:`features<buildconf-taskparams-features>`.
 
 rpath
 """""""""""""""""""""
@@ -789,7 +885,7 @@ export-<param> / export
     exports nothing.
 
     Supported names:  ``includes``, ``defines``, ``config-results``,
-    ``libpath``, ``stlibpath`` and all ``*flags``.
+    ``libpath``, ``stlibpath``, ``moc`` and all ``*flags``.
 
     But the parameter ``export-config-results`` accepts boolean True/False only value.
 
@@ -855,7 +951,8 @@ export-<param> / export
 
 install-path
 """""""""""""""""""""
-    String representing the installation directory for the output files.
+    String representing the installation directory for the task
+    :ref:`target<buildconf-taskparams-target>` file.
     It is used in the ``install`` and ``uninstall`` commands.
     This path must be absolute.
     To disable installation, set it to False or to empty string.
@@ -977,6 +1074,20 @@ install-files
 
     It's possible to use :ref:`selectable parameters<buildconf-select>`
     to set this parameter.
+
+.. _buildconf-taskparams-install-langdir:
+
+install-langdir
+"""""""""""""""""""""
+    Installation directory for .qm files.
+    It defaults to ``$(appdatadir)/translations`` where
+    :ref:`appdatadir<buildconf-builtin-vars-appdatadir>` is the built-in variable.
+
+    This parameter is ignored if
+    :ref:`rclangprefix<buildconf-taskparams-rclangprefix>` is set.
+
+    It can be used only for tasks with ``qt5``
+    in :ref:`features<buildconf-taskparams-features>`.
 
 normalize-target-name
 """""""""""""""""""""

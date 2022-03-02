@@ -42,6 +42,7 @@ macOS:
     - dmd
     - ldc
     - boost
+    - qt5
 
 MS Windows:
     - python 3.x

@@ -34,6 +34,10 @@ Main features
       - D: dmd, ldc2, gdc; MS Windows is not supported yet
       - Fortran: gfortran, ifort (should work but not tested)
       - Assembler: gas (GNU Assembler)
+    - Supported toolkits/frameworks:
+      - SDL v2 (Linux only)
+      - GTK v3 (Linux only)
+      - Qt v5
 
 Plans to do
 ------------

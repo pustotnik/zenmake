@@ -26,6 +26,7 @@ ZenMake documentation
    commands
    envvars
    langs
+   toolkits
    config-actions
    dependencies
    tests
