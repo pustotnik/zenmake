@@ -553,7 +553,10 @@ class ConfigurationContext(WafConfContext):
                 # This val is a name of a toolchain, not a path to it, so it is
                 # necessery to remove this var from environ otherwise
                 # ctx.find_program will not try to find this toolchain
-                os.environ.pop(var, None)
+
+                # DON'T remove var from os.environ: it breaks saving of env vars
+                # in ZenMake metafile (writeZenMakeMetaFile) and the autoconf
+                # feature doesn't work correctly
                 self.environ.pop(var, None)
             else:
                 # Value from OS env is not a name of a toolchain

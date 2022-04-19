@@ -55,10 +55,9 @@ def cfgctx(cfgctx, mocker):
             envVar    = ToolchainVars.cfgVarToSetToolchain(lang)
             sysenvVar = ToolchainVars.sysVarToSetToolchain(lang)
 
-            for sysenv in (os.environ, self.environ):
-                if sysenvVar not in sysenv:
-                    continue
-                assert sysenv[sysenvVar] not in knownToolchains
+            for sysenv in (self.environ,):
+                if sysenvVar in sysenv:
+                    assert sysenv[sysenvVar] not in knownToolchains
 
             # we should not set envVar in env (at least before find_program)
             if envVar in env:
