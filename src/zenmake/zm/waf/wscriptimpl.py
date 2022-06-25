@@ -342,8 +342,13 @@ def run(_):
     log.info("Running '%s' ..." % relTargetPath, extra = { 'c1': log.colors('PINK') } )
     result = utils.runCmd(cmd, **kwargs)
     if result.exitcode != 0:
-        log.warn("Program '%s' has finished with exit code %d" \
-                            % (relTargetPath, result.exitcode))
+        if result.exitcode < 0:
+            msg = "Program '%s' was terminated by signal %d" \
+                            % (relTargetPath, -result.exitcode)
+        else:
+            msg = "Program '%s' has finished with exit code %d" \
+                            % (relTargetPath, result.exitcode)
+        log.warn(msg)
 
 def distclean(ctx):
     """
