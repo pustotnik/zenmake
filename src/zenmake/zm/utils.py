@@ -946,6 +946,15 @@ class ProcCmd(object):
             'env' : env,
         })
 
+        def killProc(proc):
+            if kwargs.get('start_new_session') and hasattr(os, 'killpg'):
+                # If 'shell' is true then killing of current process is killing of
+                # executed shell but not childs.
+                # Unix only.
+                os.killpg(proc.pid, signal.SIGKILL)
+            else:
+                proc.kill()
+
         timer = None
         try:
             self._proc = subprocess.Popen(self._cmdLine, **kwargs)
@@ -953,18 +962,11 @@ class ProcCmd(object):
             if timeout is not None:
                 self._timeoutExpired = False
 
-                def killProc(self):
-                    proc = self._proc
-                    if kwargs.get('start_new_session') and hasattr(os, 'killpg'):
-                        # If 'shell' is true then killing of current process is killing of
-                        # executed shell but not childs.
-                        # Unix only.
-                        os.killpg(proc.pid, signal.SIGKILL)
-                    else:
-                        proc.kill()
+                def killProcTimeout(self):
+                    killProc(self._proc)
                     self._timeoutExpired = True
 
-                timer = threading.Timer(timeout, killProc, args = [self])
+                timer = threading.Timer(timeout, killProcTimeout, args = [self])
                 # allow entire program to exit on unexpected exception like KeyboardInterrupt
                 timer.daemon = True
                 timer.start()
@@ -977,6 +979,10 @@ class ProcCmd(object):
 
         except (OSError, subprocess.SubprocessError) as ex:
             raise ZenMakeError(str(ex)) from ex
+        except KeyboardInterrupt:
+            if self._proc:
+                killProc(self._proc)
+            raise
         finally:
             if timer:
                 timer.cancel()
