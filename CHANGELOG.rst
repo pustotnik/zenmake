@@ -2,6 +2,57 @@
 Changelog
 =========
 
+Version 0.11.0 (2022-09-04)
+----------------------------
+
+Added
+    - embed pyyaml
+    - add value 'all' for variable 'for' in the 'byfilter' parameter
+    - add buildconf parameter export-* for libpath, stlibpath and all \*flags
+    - add the 'cleanall' command as replacement for the 'distclean' command
+    - remake/improve/extend substitutions (buildconf variables inside a text)
+    - add some syntactic sugar for buildconf
+    - get rid of ${TARGET} and rewrite substitution of ${SRC} and ${TGT}
+    - add ability to use 'and', 'or' and 'not' in the '\*.select'
+    - add 'host-os' and 'distro' for the '\*.select' conditions
+    - add 'if' for the 'byfilter' parameter
+    - add the 'run' command
+    - support qt5 for c++ (almost done) #31
+    - enable absolute paths in path patterns
+    - add runtime lib paths for the 'run' command and for the 'run' feature
+    - support python 3.10
+
+Changed
+    - update waf to 2.0.23
+    - fix bug with auto detection of interpreter in 'runcmd'
+    - rename 'include' to 'incl' and 'exclude' to 'excl' for buildconf parameter 'source'
+    - rename buildconf parameter 'matrix' to 'byfilter'
+    - rename 'export-config-actions' to 'export-config-results'
+    - rename buildconf parameter 'config-actions' to 'configure'
+    - remake and improve the buildconf parameters 'export-*'
+    - prioritize yaml buildconf format
+    - fix bug of no automatic reconfiguration with changed env/cli args for install/uninstall
+    - rename buildconf 'features' to 'general'
+    - fix bug with 'enabled.select'
+    - improve buildconf validator
+    - extend/improve install directory vars
+    - fix problem when not all values from buildconf.cliopts have effect
+    - fix order of reading config values from env, cli and config file
+    - fix terminal width detection in CLI
+    - improve system libraries detection
+    - fix bug when zenmake could not find toolchain from sys env vars like CC, CXX, etc
+    - fix problem with found zero-byte executables (mostly windows problem)
+    - fix problem with short file names (8.3 filename) on windows
+    - fix bug when getting rid of CXX in cmd line does not induce reconfigure
+    - make stop child procces in the 'run' command on keyboard interrupt
+    - many other fixes
+
+Removed
+    - drop python 2.x, 3.4 and pypy
+    - remove task features aliases: more problems than profits
+    - remove redundant 'default-buildtype' parameter
+    - remove the 'platforms' parameter
+
 Version 0.10.0 (2020-09-23)
 ----------------------------
 
