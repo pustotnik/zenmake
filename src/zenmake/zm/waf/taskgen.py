@@ -71,6 +71,11 @@ def isolateExtHandler(handler, exts, feature):
     isolatedExt(exts, feature)(handler)
 
 def _getExtensions(name):
+    """
+    Return list of one or more file extentions in form:
+        'a.cpp'    -> ['.cpp']
+        'a.ss.cpp' -> ['.ss.cpp', '.cpp']
+    """
 
     if name[0] == '.':
         name = name[1:]
@@ -114,7 +119,14 @@ def _tgenGetHook(self, node):
             supportedExts.append(ext)
     supportedExts = ', '.join(supportedExts)
 
-    msg = "File %r has unknown/unsupported extension." % node
+    for ext in exts:
+        if ext in FILE_EXTENSIONS_TO_LANG:
+            msg = "File %r has supported extension '%s'" % (node, ext)
+            msg += ",\n    but choosen task toolchain can not be used for files with this extention."
+            break
+    else:
+        msg = "File %r has unknown/unsupported extension." % node
+
     msg += "\nSupported file extensions for task %r are: %s" % (self.name, supportedExts)
     if error.verbose > 0:
         mapExts = ', '.join(self.mappings.keys())
