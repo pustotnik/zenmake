@@ -72,7 +72,7 @@ else:
         '/opt/qt/bin',
     ]
 
-QMAKE_NAMES = ('qmake', 'qmake-qt5', 'qmake5')
+QMAKE_NAMES = ('qmake-qt5', 'qmake5', 'qmake')
 if HOST_OS == 'windows':
     QMAKE_NAMES = tuple(x + '.exe' for x in QMAKE_NAMES)
 
