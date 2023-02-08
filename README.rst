@@ -56,7 +56,7 @@ Project links
 .. |Docs| image:: https://readthedocs.org/projects/zenmake/badge/?version=latest
    :target: https://zenmake.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
-.. |GithubCI| image:: https://img.shields.io/github/workflow/status/pustotnik/zenmake/CI
+.. |GithubCI| image:: https://img.shields.io/github/actions/workflow/status/pustotnik/zenmake/ci.yml
    :target: https://github.com/pustotnik/zenmake/actions
    :alt: GitHub Workflow CI Status
 .. |coveralls| image:: https://coveralls.io/repos/github/pustotnik/zenmake/badge.svg
