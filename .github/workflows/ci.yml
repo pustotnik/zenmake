@@ -36,10 +36,10 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python ${{ matrix.python }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python }}
 
@@ -49,35 +49,35 @@ jobs:
     ########### cache
 
     - name: Cache pip [Linux]
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       if: startsWith(runner.os, 'Linux')
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ hashFiles('**/dev-requirements.txt', '**/requirements.txt') }}
 
     - name: Cache pip [MacOS]
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       if: startsWith(runner.os, 'macOS')
       with:
         path: ~/Library/Caches/pip
         key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ hashFiles('**/dev-requirements.txt', '**/requirements.txt') }}
 
     - name: Cache pip [Windows]
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       if: startsWith(runner.os, 'Windows')
       with:
         path: ~\AppData\Local\pip\Cache
         key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ hashFiles('**/dev-requirements.txt', '**/requirements.txt') }}
 
     - name: Cache choco [Windows]
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       if: startsWith(runner.os, 'Windows')
       with:
         path: ~\AppData\Local\Temp\chocolatey
         key: ${{ runner.os }}-choco-${{ hashFiles('**/gh-choco-install.sh') }}
 
     - name: Cache indy deps [Windows]
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       if: startsWith(runner.os, 'Windows')
       id: cache-windows-indy
       with:
