@@ -3,9 +3,9 @@
 
 ARG BASE_IMAGE=centos:8
 
-ARG DMD_VER="2.096.1"
+ARG DMD_VER="2.102.2"
 ARG DMD_VERNAME="dmd-$DMD_VER"
-ARG LDC_VER="1.26.0"
+ARG LDC_VER="1.30.0"
 ARG LDC_VERNAME="ldc-$LDC_VER"
 
 #########  Base image

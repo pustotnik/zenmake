@@ -1,7 +1,7 @@
 ##########################################################################
 #########  Global
 
-ARG DMD_VER="2.096.1"
+ARG DMD_VER="2.102.2"
 ARG DMD_VERNAME="dmd-$DMD_VER"
 
 ARG BASE_IMAGE=debian:10
