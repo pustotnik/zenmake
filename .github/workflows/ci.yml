@@ -74,7 +74,7 @@ jobs:
       if: startsWith(runner.os, 'Windows')
       with:
         path: ~\AppData\Local\Temp\chocolatey
-        key: ${{ runner.os }}-choco-${{ hashFiles('**/gh-choco-install.sh') }}
+        key: ${{ runner.os }}-choco-${{ hashFiles('**/gh-install-choco-deps.sh') }}
 
     - name: Cache indy deps [Windows]
       uses: actions/cache@v3
@@ -84,7 +84,7 @@ jobs:
         path: |
           C:\local
           C:\Qt
-        key: ${{ runner.os }}-indy-${{ hashFiles('**/gh-choco-install.sh', '**/gh-install-qt-on-windows.sh') }}
+        key: ${{ runner.os }}-indy-${{ hashFiles('**/gh-install-choco-deps.sh', '**/gh-install-windows-qt.sh') }}
 
     ########## deps
 
@@ -96,8 +96,7 @@ jobs:
         if [[ $RUNNER_OS == "Linux" ]]; then
           sudo apt-get update
           sudo ACCEPT_EULA=Y DEBIAN_FRONTEND=noninteractive apt-get upgrade --no-install-recommends --yes
-          PKGS=`cat demos/deb-deps.txt`
-          sudo apt-get -y --no-install-recommends install $PKGS
+          sudo bash ./scripts/install-demos-deb-deps.sh
         elif [[ $RUNNER_OS == "macOS" ]]; then
           export HOMEBREW_NO_INSTALL_CLEANUP=1
           export HOMEBREW_NO_AUTO_UPDATE=1
@@ -108,10 +107,10 @@ jobs:
           brew install dmd
           brew install ldc
         elif [[ $RUNNER_OS == "Windows" ]]; then
-          chmod +x scripts/gh-choco-install.sh
-          scripts/gh-choco-install.sh
-          chmod +x scripts/gh-install-qt-on-windows.sh
-          scripts/gh-install-qt-on-windows.sh
+          chmod +x scripts/gh-install-choco-deps.sh
+          scripts/gh-install-choco-deps.sh
+          chmod +x scripts/gh-install-windows-qt.sh
+          scripts/gh-install-windows-qt.sh
         fi
       shell: bash
 

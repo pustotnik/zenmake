@@ -33,13 +33,10 @@ RUN useradd -m -G users $USERNAME
 #########  Make image with pyenv and selected python versions
 FROM base AS pyenv-pythons
 
-ENV PYBUILD_DEPS="build-essential libssl-dev zlib1g-dev libbz2-dev \
-            libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev \
-            xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev \
-            libncursesw5-dev python-openssl git ca-certificates"
+COPY ./scripts/install-pybuild-deb-deps.sh .
 
 RUN apt-get -y update \
-    && apt-get -y --no-install-recommends install $PYBUILD_DEPS \
+    && bash ./install-pybuild-deb-deps.sh && rm -f ./install-pybuild-deb-deps.sh \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/share/doc/* \
@@ -95,7 +92,7 @@ RUN apt-get -y update \
 FROM base AS full-package
 
 WORKDIR /home/$USERNAME/
-COPY ./demos/deb-deps.txt .
+COPY ./scripts/install-demos-deb-deps.sh .
 
 # install zenmake deps for tests on system python and toolchain system packages
 
@@ -114,8 +111,7 @@ RUN apt-get -y update \
     && apt-get -y --no-install-recommends install python3-yaml \
     \
     # install toolchains
-    && ZMTESTS_PKG_DEPS=`cat deb-deps.txt` \
-    && apt-get -y --no-install-recommends install $ZMTESTS_PKG_DEPS \
+    && bash ./install-demos-deb-deps.sh && rm -f ./install-demos-deb-deps.sh \
     \
     && apt-get --purge -y autoremove \
     && apt-get clean \

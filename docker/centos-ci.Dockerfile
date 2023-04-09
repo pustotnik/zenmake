@@ -35,11 +35,9 @@ RUN cd /etc/yum.repos.d/ \
 #########  Make image with pyenv and selected python versions
 FROM base AS pyenv-pythons
 
-ENV PYBUILD_DEPS="make gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite \
-            sqlite-devel openssl-devel tk-devel libffi-devel xz-devel\
-            git"
+COPY ./scripts/install-pybuild-rpm-deps.sh .
 
-RUN dnf --nodocs -y install $PYBUILD_DEPS \
+RUN bash ./install-pybuild-rpm-deps.sh && rm -f ./install-pybuild-rpm-deps.sh \
     && dnf clean all \
     && rm -rf /var/cache/dnf /var/cache/yum \
     && rm -rf /usr/share/doc/* \
@@ -94,7 +92,7 @@ RUN dnf --nodocs -y install $DLANG_INSTALL_PKG_DEPS \
 FROM base AS full-package
 
 WORKDIR /home/$USERNAME/
-COPY ./demos/rpm-deps.txt .
+COPY ./scripts/install-demos-rpm-deps.sh .
 
 RUN dnf --nodocs -y install python36 \
     && find "/usr/lib" -depth \
@@ -104,8 +102,7 @@ RUN dnf --nodocs -y install python36 \
         \) -exec rm -rf '{}' + \
     \
     # install toolchains
-    && ZMTESTS_PKG_DEPS=`cat rpm-deps.txt` \
-    && dnf --nodocs -y --enablerepo=powertools install $ZMTESTS_PKG_DEPS \
+    && bash ./install-demos-rpm-deps.sh && rm -f ./install-demos-rpm-deps.sh \
     \
     && dnf clean all \
     && rm -rf /var/cache/dnf /var/cache/yum \
