@@ -28,6 +28,7 @@ jobs:
           - { os: ubuntu-20.04, python: '3.9'  }
           - { os: ubuntu-22.04, python: '3.10' }
           - { os: ubuntu-22.04, python: '3.11' }
+          - { os: ubuntu-22.04, python: '3.12' }
           - { os: macos-12,     python: '3.10' }
           - { os: windows-2019, python: '3.7'  }
           - { os: windows-2019, python: '3.8'  }
@@ -105,6 +106,9 @@ jobs:
           # deprecated
           #brew install boost-python
           brew install qt5
+          # python -m pip install --upgrade pip
+          # python -m pip install --upgrade aqtinstall
+          # aqt install-qt --outputdir /usr/local/qt mac desktop 5.15.2 clang_64
           brew install dmd
           brew install ldc
         elif [[ $RUNNER_OS == "Windows" ]]; then
