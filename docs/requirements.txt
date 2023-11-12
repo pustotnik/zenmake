@@ -1,6 +1,7 @@
-sphinx<2
-#sphinx
+#sphinx<2
+sphinx
 sphinx_rtd_theme
 #sphinxcontrib-spelling
 # https://github.com/readthedocs/readthedocs.org/issues/8616
-docutils<0.18
+#docutils<0.18
+docutils

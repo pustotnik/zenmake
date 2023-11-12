@@ -70,7 +70,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -97,7 +97,29 @@ today_fmt = '%Y-%m-%d'
 #html_theme = 'agogo'
 #html_theme = 'haiku'
 
-# sphinx_rtd_theme
+################################ sphinx_rtd_theme
+import sphinx_rtd_theme
+extensions.append('sphinx_rtd_theme')
+html_theme = 'sphinx_rtd_theme'
+
+html_theme_options = {
+    'logo_only': False,
+    'display_version' : False,
+    #'prev_next_buttons_location' : 'bottom' # default,
+    'prev_next_buttons_location' : 'both',
+    'style_external_links' : True,
+    'style_nav_header_background' : '#4c3a7a',
+}
+
+# This causes wide tables to wrap content within their cells rather than
+# producing a table with a scroll bar see
+# https://github.com/readthedocs/sphinx_rtd_theme/issues/117 for details.
+# https://rackerlabs.github.io/docs-rackspace/tools/rtd-tables.html
+html_css_files = [
+  'theme_overrides.css',  # fix wide tables in RTD theme
+]
+
+"""
 sys.path.insert(0, path.join(HERE, '_themes'))
 import sphinx_rtd_theme
 extensions.append('sphinx_rtd_theme')
@@ -124,6 +146,7 @@ html_context = {
 if sphinx.version_info[0] >= 2:
     # https://github.com/readthedocs/sphinx_rtd_theme/issues/766
     html4_writer=True
+"""
 
 # sphinx_bootstrap_theme
 #import sphinx_bootstrap_theme
