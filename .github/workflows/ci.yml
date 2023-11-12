@@ -53,41 +53,41 @@ jobs:
 
     - name: Cache pip [Linux]
       uses: actions/cache@v3
-      if: startsWith(runner.os, 'Linux')
+      if: runner.os == 'Linux'
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ hashFiles('**/dev-requirements.txt', '**/requirements.txt') }}
+        key: ${{ matrix.os }}-pip-${{ matrix.python }}-${{ hashFiles('**/dev-requirements.txt', '**/requirements.txt') }}
 
     - name: Cache pip [MacOS]
       uses: actions/cache@v3
-      if: startsWith(runner.os, 'macOS')
+      if: runner.os == 'macOS'
       with:
         path: ~/Library/Caches/pip
-        key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ hashFiles('**/dev-requirements.txt', '**/requirements.txt') }}
+        key: ${{ matrix.os }}-pip-${{ matrix.python }}-${{ hashFiles('**/dev-requirements.txt', '**/requirements.txt') }}
 
     - name: Cache pip [Windows]
       uses: actions/cache@v3
-      if: startsWith(runner.os, 'Windows')
+      if: runner.os == 'Windows'
       with:
         path: ~\AppData\Local\pip\Cache
-        key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ hashFiles('**/dev-requirements.txt', '**/requirements.txt') }}
+        key: ${{ matrix.os }}-pip-${{ matrix.python }}-${{ hashFiles('**/dev-requirements.txt', '**/requirements.txt') }}
 
     - name: Cache choco [Windows]
       uses: actions/cache@v3
-      if: startsWith(runner.os, 'Windows')
+      if: runner.os == 'Windows'
       with:
         path: ~\AppData\Local\Temp\chocolatey
-        key: ${{ runner.os }}-choco-${{ hashFiles('**/gh-install-choco-deps.sh') }}
+        key: ${{ matrix.os }}-choco-${{ hashFiles('**/gh-install-choco-deps.sh') }}
 
     - name: Cache indy deps [Windows]
       uses: actions/cache@v3
-      if: startsWith(runner.os, 'Windows')
+      if: runner.os == 'Windows'
       id: cache-windows-indy
       with:
         path: |
           C:\local
           C:\Qt
-        key: ${{ runner.os }}-indy-${{ hashFiles('**/gh-install-choco-deps.sh', '**/gh-install-windows-qt.sh') }}
+        key: ${{ matrix.os }}-indy-${{ hashFiles('**/gh-install-choco-deps.sh', '**/gh-install-windows-qt.sh') }}
 
     ########## deps
 
@@ -136,7 +136,7 @@ jobs:
     ########### tests
 
     - name: Prapare tests [Windows]
-      if: startsWith(runner.os, 'Windows')
+      if: runner.os == 'Windows'
       run: |
         Set-MpPreference -DisableArchiveScanning $true
         Set-MpPreference -DisableRealtimeMonitoring $true
