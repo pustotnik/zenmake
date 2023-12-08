@@ -33,7 +33,9 @@ jobs:
           - { os: macos-13,     python: '3.11' }
           - { os: windows-2019, python: '3.7'  }
           - { os: windows-2019, python: '3.8'  }
-          - { os: windows-2022, python: '3.10' }
+          # At the moment of writing there was a regular problems with installing boost via choco:
+          # "The request was aborted: Could not create SSL/TLS secure channel."
+          #- { os: windows-2022, python: '3.10' }
 
     runs-on: ${{ matrix.os }}
 
