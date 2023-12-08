@@ -4,12 +4,12 @@
 
 # There is special case for boost libraries on Windows.
 # This setup is for boost libraries installed on Windows in
-# the C:\local\boost_1_67_0 directory.
+# the C:\local\boost_1_74_0 directory.
 # For example, the command 'choco install boost-msvc-14.1' produces such an installation.
 # MS Windows OS needs to know path to dir with the boost dlls to run program linked
 # with boost dlls. In Windows console it can be made like this:
-# set PATH=C:\local\boost_1_67_0\lib64-msvc-14.1;%PATH%
-# But you don't need to do it to use ZenMake 'run' command.
+# set PATH=C:\local\boost_1_74_0\lib64-msvc-14.1;%PATH%
+# But you don't need this to use ZenMake 'run' command.
 
 tasks:
     util:
@@ -18,9 +18,9 @@ tasks:
         libs     : boost_timer
 
         includes.select:
-            windows : C:\local\boost_1_67_0
+            windows : C:\local\boost_1_74_0
         libpath.select :
-            windows : C:\local\boost_1_67_0\lib64-msvc-14.1
+            windows : C:\local\boost_1_74_0\lib64-msvc-14.1
 
         configure:
             - { do: check-headers, names: cmath iostream }
@@ -42,14 +42,14 @@ buildtypes:
             default: -fPIC -O0 -g # g++/clang++
             msvc   : /Od /EHsc
         libs.select:
-            util-on-windows : boost_timer-vc141-mt-gd-x64-1_67
+            util-on-windows : boost_timer-vc141-mt-gd-x64-1_74
 
     release:
         cxxflags.select:
             default: -fPIC -O2 # g++/clang++
             msvc   : /O2 /EHsc
         libs.select:
-            util-on-windows: boost_timer-vc141-mt-x64-1_67
+            util-on-windows: boost_timer-vc141-mt-x64-1_74
 
     default: debug
 
