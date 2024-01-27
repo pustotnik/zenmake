@@ -30,7 +30,11 @@ jobs:
           - { os: ubuntu-22.04, python: '3.11' }
           - { os: ubuntu-22.04, python: '3.12' }
           - { os: macos-12,     python: '3.10' }
-          - { os: macos-13,     python: '3.11' }
+          # TODO: enable
+          # disable it for a while
+          # Check status of https://github.com/actions/runner-images/issues/8500
+          # and https://github.com/actions/runner-images/issues/8529
+          #- { os: macos-13,     python: '3.11' }
           - { os: windows-2019, python: '3.7'  }
           - { os: windows-2019, python: '3.8'  }
           # At the moment of writing there was a regular problems with installing boost via choco:
