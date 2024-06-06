@@ -112,7 +112,8 @@ jobs:
           brew install boost
           # deprecated
           #brew install boost-python
-          brew install qt5
+          # Formula qt5 was renamed to qt@5
+          brew install qt@5
           # python -m pip install --upgrade pip
           # python -m pip install --upgrade aqtinstall
           # aqt install-qt --outputdir /usr/local/qt mac desktop 5.15.2 clang_64
