@@ -72,6 +72,11 @@ else:
         '/opt/qt/bin',
     ]
 
+if PLATFORM == 'darwin':
+    EXTRA_BIN_PATHS[:0] = [
+        '/usr/local/opt/qt@5/bin',
+    ]
+
 QMAKE_NAMES = ('qmake-qt5', 'qmake5', 'qmake')
 if HOST_OS == 'windows':
     QMAKE_NAMES = tuple(x + '.exe' for x in QMAKE_NAMES)
