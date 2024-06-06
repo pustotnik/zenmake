@@ -7,7 +7,7 @@ Installation
 
 **Dependencies**
 
-* Python_ >=3.5. Python must have threading support.
+* Python_ >=3.6. Python must have threading support.
   Python has threading in most cases while nobody uses ``--without-threads``
   for Python building. Python >= 3.7 always has threading.
 * `PyYAML <https://pyyaml.org/>`_ It's optional and needed only

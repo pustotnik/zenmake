@@ -9,8 +9,8 @@
 import sys
 import os
 from os import path
-if sys.hexversion < 0x3050000:
-    raise ImportError('Python >= 3.5 is required')
+if sys.hexversion < 0x3060000:
+    raise ImportError('Python >= 3.6 is required')
 
 #pylint: disable=wrong-import-position
 from zm import environmon

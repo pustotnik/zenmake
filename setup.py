@@ -10,8 +10,8 @@ import sys
 import shutil
 import fnmatch
 import subprocess
-if sys.hexversion < 0x3050000:
-    raise ImportError('Python >= 3.5 is required')
+if sys.hexversion < 0x3060000:
+    raise ImportError('Python >= 3.6 is required')
 
 from setuptools import setup
 from setuptools import Command
@@ -50,7 +50,6 @@ Environment :: Console
 Intended Audience :: Developers
 Programming Language :: Python
 Programming Language :: Python :: 3 :: Only
-Programming Language :: Python :: 3.5
 Programming Language :: Python :: 3.6
 Programming Language :: Python :: 3.7
 Programming Language :: Python :: 3.8
@@ -65,7 +64,7 @@ Operating System :: Microsoft :: Windows
 Topic :: Software Development :: Build Tools
 """.splitlines()
 
-PYTHON_REQUIRES = '>=3.5'
+PYTHON_REQUIRES = '>=3.6'
 RUNTIME_DEPS = ['PyYAML']
 
 PKG_DIRS = [APPNAME]

@@ -12,7 +12,7 @@ usage()
 	echo "Usage: run-tests.sh <LINUX DISTRIBUTIVE NAME> [\"list of python versions\"]"
 	echo "Examples:"
 	echo "   run-tests.sh debian"
-	echo "   run-tests.sh debian \"3.5 3.7\""
+	echo "   run-tests.sh debian \"3.6 3.7\""
 }
 
 if (( $# == 0 )); then
@@ -23,7 +23,6 @@ fi
 USERNAME=zenmake
 
 declare -A PYVERS_MAP=(
-    ["3.5"]="3.5.10"
     ["3.6"]="3.6.15"
     ["3.7"]="3.7.13"
     ["3.8"]="3.8.14"

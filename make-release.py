@@ -40,8 +40,8 @@ import re
 import subprocess
 import shutil
 
-if sys.hexversion < 0x3050000:
-    raise ImportError('Python >= 3.5 is required')
+if sys.hexversion < 0x3060000:
+    raise ImportError('Python >= 3.6 is required')
 
 here = os.path.dirname(os.path.abspath(__file__))
 os.chdir(here)
