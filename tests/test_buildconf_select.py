@@ -71,7 +71,6 @@ def _setup():
 
 TASKPARAM_NAMES, PARAM_TEST_VALUES = _setup()
 
-@pytest.mark.usefixtures("unsetEnviron")
 @pytest.fixture
 def cfgctx(cfgctx):
 
@@ -426,6 +425,7 @@ def paramfixture(monkeypatch, testingBuildConf, paramName, paramFixtureFunc):
     return paramFixtureFunc(monkeypatch, testingBuildConf, paramName)
 
 @pytest.mark.skipif(PLATFORM != 'linux', reason = "It's enough to test on linux only")
+@pytest.mark.usefixtures("unsetEnviron")
 def testParam(cfgctx, monkeypatch, paramfixture):
 
     # it's necessary because 'id' is used for each bconf in cache and
